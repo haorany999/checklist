@@ -1359,11 +1359,11 @@ function progressBarHTML() {
 function nowStamp() {
   const now = new Date();
   try {
-    return now.toLocaleString('en-US', {
-      timeZone: 'America/New_York',
-      year: 'numeric', month: '2-digit', day: '2-digit',
-      hour: '2-digit', minute: '2-digit', hour12: false
-    }).replace(',', '') + ' ET';
+    const opts = { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false };
+    const parts = new Intl.DateTimeFormat('en-CA', opts).formatToParts(now);
+    const get = (t) => (parts.find(p => p.type === t) || {}).value || '';
+    // en-CA + hour12 false → YYYY-MM-DD and 24h
+    return `${get('year')}-${get('month')}-${get('day')} ${get('hour')}:${get('minute')} ET`;
   } catch (e) {
     return now.toISOString().slice(0, 16).replace('T', ' ') + ' UTC';
   }
@@ -1426,35 +1426,76 @@ function csvCell(s) {
 function buildCSVSnapshot() {
   const items = currentItems();
   const v = overallVerdict();
-  const rows = [
-    ['Group', 'Item', 'Status', 'Value', 'Required', 'Hard'],
-    ['_META', 'Time', nowStamp(), '', '', ''],
-    ['_META', 'Strategy', STRAT_LABEL[state.strategy] + ' · ' + subtypeString(), '', '', ''],
-    ['_META', 'Verdict', v.status, '', '', ''],
-    ['_META', 'Tally', `${v.pass} pass / ${v.fail} block / ${v.pending} pending`, '', '', ''],
-  ];
+  const timestamp = nowStamp();
+  const strategy = STRAT_LABEL[state.strategy] || '';
+  const subtype = subtypeString();
+  const verdict = v.status;
+
+  // Map item ids to compact column names for the Inputs cell
+  const nameMap = {
+    'dte': 'DTE',
+    'delta': 'Delta',
+    'ivp': 'IVP',
+    'roc': 'ROC',
+    'kdj_j': 'KDJ_J',
+    'contracts': 'Contracts',
+    'profit_gradient': 'Profit%',
+    'profit_200': 'Profit%',
+    'loss_50': 'Loss%',
+    'dte_below_9m': 'DTE_months',
+    'dte_6m': 'DTE_months',
+    'new_leaps_dte': 'NewDTE',
+  };
+
+  const failed = [];
+  const pending = [];
+  const hardFails = [];
+  const inputs = [];
+
   items.forEach(it => {
     const iv = itemVerdict(it);
-    const status = iv.toUpperCase();
-    let val = '';
-    let req = '';
-    if (it.numeric) {
-      val = state.items[it.id] || '';
-      const n = it.numeric;
-      if (n.range) req = `${n.range[0]}-${n.range[1]} ${n.unit || ''}`;
-      else if (n.min != null) req = `${n.comparator} ${n.min}${n.unit ? ' ' + n.unit : ''}`;
-      else if (n.max != null) req = `${n.comparator} ${n.max}${n.unit ? ' ' + n.unit : ''}`;
+    if (iv === 'fail') {
+      failed.push(it.title);
+      if (it.hard) hardFails.push(it.title);
+    } else if (iv === 'pending') {
+      pending.push(it.title);
     }
-    rows.push([it.group, it.title, status, val, req, it.hard ? 'Yes' : '']);
+    if (it.numeric) {
+      const val = state.items[it.id];
+      if (val != null && val !== '') {
+        const key = nameMap[it.id] || it.id;
+        inputs.push(`${key}=${val}`);
+      }
+    }
   });
+
+  // Position (LEAPS open only)
+  let nav = '', existing = '', budget = '', exposurePct = '', capPct = '';
   if (state.strategy === 'leaps' && state.leapsDirection === 'open') {
-    rows.push(['_META', 'NAV', state.nav || '', '', '', '']);
-    rows.push(['_META', 'Existing exposure', state.existingExposure || '', '', '', '']);
-    rows.push(['_META', 'Budget', state.budget || '', '', '', '']);
-    const pctVal = positionUsedPct();
-    if (pctVal != null) rows.push(['_META', 'Combined LEAPS %', pctVal.toFixed(1) + '%', '', `cap ${positionCapPct()}%`, '']);
+    nav = state.nav || '';
+    existing = state.existingExposure || '';
+    budget = state.budget || '';
+    const pct = positionUsedPct();
+    if (pct != null) exposurePct = pct.toFixed(1);
+    capPct = positionCapPct();
   }
-  return rows.map(row => row.map(csvCell).join(',')).join('\n');
+
+  const headers = [
+    'Timestamp', 'Strategy', 'Subtype', 'Verdict',
+    'Pass', 'Block', 'Pending',
+    'Hard_Fails', 'Failed_Items', 'Pending_Items',
+    'Inputs',
+    'NAV', 'Existing', 'Budget', 'Exposure_%', 'Cap_%'
+  ];
+  const row = [
+    timestamp, strategy, subtype, verdict,
+    v.pass, v.fail, v.pending,
+    hardFails.join(' | '), failed.join(' | '), pending.join(' | '),
+    inputs.join('; '),
+    nav, existing, budget, exposurePct, capPct,
+  ];
+
+  return [headers, row].map(r => r.map(csvCell).join(',')).join('\n');
 }
 
 async function copyToClipboard(text) {
