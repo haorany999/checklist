@@ -21,6 +21,10 @@
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   :root {
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  body.theme-slate {
     --bg: #0F1419; --panel: #171C22; --panel-2: #1E252D;
     --border: #2A323C; --border-hi: #3A4552;
     --text: #E6E8EB; --text-dim: #8A94A0; --text-faint: #5A6470;
@@ -28,8 +32,15 @@
     --fail: #F85149; --fail-bg: rgba(248, 81, 73, 0.10);
     --pending: #D29922; --pending-bg: rgba(210, 153, 34, 0.08);
     --accent: #58A6FF;
-    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas, monospace;
-    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  body.theme-terminal {
+    --bg: #000000; --panel: #0A0F0A; --panel-2: #101810;
+    --border: #1A2E1A; --border-hi: #2E5E2E;
+    --text: #E0F5E0; --text-dim: #8FBF8F; --text-faint: #567856;
+    --pass: #00FF66; --pass-bg: rgba(0, 255, 102, 0.10);
+    --fail: #FF4444; --fail-bg: rgba(255, 68, 68, 0.10);
+    --pending: #F0C000; --pending-bg: rgba(240, 192, 0, 0.10);
+    --accent: #00CC66;
   }
   html, body { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 15px; line-height: 1.45; min-height: 100vh; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
   body { padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
@@ -61,6 +72,11 @@
   .btn.primary:disabled { background: var(--panel); color: var(--text-faint); border-color: var(--border); cursor: not-allowed; font-weight: 400; }
   .btn.ghost { color: var(--text-faint); }
   .btn.big { padding: 12px 18px; font-size: 15px; min-height: 44px; }
+
+  .theme-btn { display: inline-flex; align-items: center; gap: 7px; padding: 8px 10px; background: transparent; color: var(--text-dim); border: 1px solid var(--border); border-radius: 6px; cursor: pointer; min-height: 36px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; transition: all 0.12s ease; -webkit-appearance: none; appearance: none; }
+  .theme-btn:hover { border-color: var(--border-hi); color: var(--text); }
+  .theme-btn:active { transform: scale(0.98); }
+  .theme-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 6px var(--accent); display: block; flex-shrink: 0; }
 
   .picker { padding: 32px 0 40px; }
   .picker-title { font-size: 24px; font-weight: 600; margin-bottom: 8px; letter-spacing: -0.01em; }
@@ -145,9 +161,22 @@
 
   .footer { margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
   .disclaimer { font-size: 11px; color: var(--text-faint); margin-top: 12px; text-align: center; line-height: 1.6; font-family: var(--mono); }
+  .progress-bar { display: flex; height: 3px; background: var(--panel-2); border-radius: 2px; overflow: hidden; margin: -8px 0 16px; }
+  .progress-fill-pass { height: 100%; background: var(--pass); transition: width 0.25s ease; }
+  .progress-fill-fail { height: 100%; background: var(--fail); transition: width 0.25s ease; }
+
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 100; display: flex; align-items: center; justify-content: center; padding: 16px; }
+  .modal-card { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; max-width: 720px; width: 100%; max-height: 90vh; display: flex; flex-direction: column; }
+  .modal-head { padding: 14px 18px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+  .modal-title { font-family: var(--mono); font-size: 12px; color: var(--text-dim); letter-spacing: 0.1em; text-transform: uppercase; }
+  .modal-close { background: transparent; border: none; color: var(--text-dim); font-size: 24px; cursor: pointer; padding: 0 8px; line-height: 1; }
+  .modal-close:hover { color: var(--text); }
+  .modal-body { padding: 14px 18px; flex: 1; overflow-y: auto; min-height: 0; }
+  .modal-preview { width: 100%; min-height: 260px; height: 50vh; font-family: var(--mono); font-size: 12px; line-height: 1.55; background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 12px; border-radius: 6px; resize: vertical; -webkit-appearance: none; appearance: none; }
+  .modal-actions { padding: 12px 18px; border-top: 1px solid var(--border); display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
 </style>
 </head>
-<body>
+<body class="theme-slate">
 <div class="app" id="app"></div>
 <script>
 "use strict";
@@ -171,11 +200,11 @@ const LEAPS_CLOSE_TYPE_LABEL = {
   trend_break: '止损 · 趋势破坏'
 };
 const CSP_INTENT_LABEL = { assign: '想接股', neutral: '一般', premium: '只赚权利金' };
-const PMCC_MODE_LABEL = { standard: '标准 (≤0.15)', defensive: '防守 (≤0.10)' };
+const PMCC_MODE_LABEL = { standard: '标准 (≤15)', defensive: '防守 (≤10)' };
 
-function leapsDeltaMin() { return { stock_sub: 0.70, standard: 0.60, aggressive: 0.40 }[state.leapsStyle] || null; }
-function cspDeltaMax() { return { assign: 0.30, neutral: 0.25, premium: 0.15 }[state.cspIntent] || null; }
-function pmccDeltaMax() { return { standard: 0.15, defensive: 0.10 }[state.pmccMode] || null; }
+function leapsDeltaMin() { return { stock_sub: 70, standard: 60, aggressive: 40 }[state.leapsStyle] || null; }
+function cspDeltaMax() { return { assign: 30, neutral: 25, premium: 15 }[state.cspIntent] || null; }
+function pmccDeltaMax() { return { standard: 15, defensive: 10 }[state.pmccMode] || null; }
 function positionCapPct() { return state.leapsBluechip ? 30 : 15; }
 function positionUsedPct() {
   const nav = parseFloat(state.nav);
@@ -201,9 +230,9 @@ const SOP = {
       <li>明确交易预期: 波段 (Swing) 还是长期配置拿到新高</li>
       <li>风格分类:
         <ul>
-          <li>股票替代: <code>Δ ≥ 0.70</code>, DTE 400+, DITM, 长持</li>
-          <li>标准 Swing: <code>Δ ≥ 0.60</code>, DTE 400+, ITM/ATM, 短持</li>
-          <li>激进 Swing: <code>Δ ≥ 0.40</code>, DTE 400+, ATM, 短持</li>
+          <li>股票替代: <code>Δ ≥ 70</code>, DTE 400+, DITM, 长持</li>
+          <li>标准 Swing: <code>Δ ≥ 60</code>, DTE 400+, ITM/ATM, 短持</li>
+          <li>激进 Swing: <code>Δ ≥ 40</code>, DTE 400+, ATM, 短持</li>
         </ul>
       </li>
     </ul>
@@ -215,7 +244,7 @@ const SOP = {
       <li><b>加仓 · MACD 金叉:</b> 日线 MACD 低位金叉确立 (滞后指标, 严禁作为第一买点)</li>
       <li>同一张 LEAPS 每周最多加 1-2 手, 需冷却</li>
       <li>加仓次数可以多次, 按信号类型触发, 不限于三次</li>
-      <li>熊市筑底建仓: Δ 0.70-0.80, DTE 12-18 个月, 预留 50% 预算给后续 MACD 金叉阶段</li>
+      <li>熊市筑底建仓: Δ 70-80, DTE 12-18 个月, 预留 50% 预算给后续 MACD 金叉阶段</li>
     </ul>
     <h4>关仓 / 减仓 / 止损</h4>
     <ul>
@@ -239,7 +268,7 @@ const SOP = {
     <ul>
       <li>DTE 建议 30-45 天 (非硬性, 根据 IV 和支撑位判断)</li>
       <li>选 OI 大的合约</li>
-      <li>Delta: 一般 <code>≤ 0.25</code>, 不想被指派 <code>≤ 0.15</code>, 想接股 <code>≤ 0.30</code></li>
+      <li>Delta: 一般 <code>≤ 25</code>, 不想被指派 <code>≤ 15</code>, 想接股 <code>≤ 30</code></li>
       <li>30 天 ROC ≥ 2-3%</li>
     </ul>
     <h4>关仓 / Roll</h4>
@@ -257,7 +286,9 @@ const SOP = {
     <h4>卖 Short Call 检查项</h4>
     <ul>
       <li>底仓 LEAPS 目前处于盈利状态 (未盈利 = 禁止卖 call)</li>
-      <li>Short call Delta ≤ 0.15 (标准) 或 ≤ 0.10 (防守)</li>
+      <li>标的大周期 (周 K) 非底部或强势启动, 只在高位整理时开</li>
+      <li>非在突破当天卖 short call (动能最强, 短腿易被推爆)</li>
+      <li>Short call Delta ≤ 15 (标准) 或 ≤ 10 (防守)</li>
       <li>标的位于 Bollinger 中轨之上 (右侧位置, 卖强)</li>
       <li>日线 KDJ 的 J 值 > 90 (超买, 权利金饱满)</li>
     </ul>
@@ -285,6 +316,7 @@ const state = {
   items: {},
   // UI
   qrefOpen: false,
+  theme: 'slate',  // 'slate' | 'terminal'
 };
 
 /* ==========================================================
@@ -292,6 +324,9 @@ const state = {
  * ========================================================== */
 function leapsOpenItems() {
   const base = [];
+  base.push({ group: 'Discipline · 交易前提', id: 'discipline',
+    title: '本笔非临时起意 · 前一天已计划',
+    desc: '非当天上班/盘中随机发现。动机非: 报复、FOMO、回本、无聊、证明自己。慢即是快。' });
   base.push({ group: 'Market environment', id: 'fg',
     title: 'Fear & Greed 处于 Fear 底部 / Extreme Fear',
     desc: '且大盘属于高位良性回调，或超跌阶段性见底。' });
@@ -301,74 +336,77 @@ function leapsOpenItems() {
     hard: true });
   base.push({ group: 'Market environment', id: 'macro',
     title: '未来 7 天无重大宏观事件冲击',
-    desc: 'FOMC / CPI / PPI / NFP 就在明天当天，通常不宜进场；已在日历里核对。' });
+    desc: 'FOMC / CPI / PPI / NFP 已在日历核对。' });
 
   base.push({ group: 'Underlying & technicals', id: 'ticker',
     title: '标的选择合规',
-    desc: 'QQQ (熊市筑底期必配, LEAPS 仓位 20-30%) 或 周线向上、基本面健康、高 Beta 的强资产个股。' });
+    desc: 'QQQ (熊市筑底期必配, 20-30%) 或 周线向上、基本面健康、高 Beta 个股。' });
   base.push({ group: 'Underlying & technicals', id: 'support',
     title: '价格回落至 200MA / 250MA 或历史核心支撑附近',
     desc: '基本面体检通过。' });
   base.push({ group: 'Underlying & technicals', id: 'volprofile',
     title: '价格位于 1Y 与 180D Volume Profile 的 HVN 或 VAL 附近',
-    desc: '成交量结构给出参与理由。' });
+    desc: '' });
   base.push({ group: 'Underlying & technicals', id: 'avwap',
     title: '价格受重要波段低点的 Anchored VWAP 支撑',
-    desc: '选择合适的锚点，价格在其之上或刚触及。' });
+    desc: '锚点合适, 价格在其之上或刚触及。' });
   base.push({ group: 'Underlying & technicals', id: 'earnings',
     title: '不在财报前后 3-5 天窗口',
-    desc: '若刚好在窗口内且要开仓，请三思。' });
+    desc: '在窗口内 = 慎重。' });
 
   base.push({ group: 'Trade plan', id: 'expectation',
     title: '交易预期已明确',
-    desc: '是波段 (Swing) 还是长期配置拿到新高，两者的止盈/持仓思路不同。' });
+    desc: '波段 vs 长期 → 止盈思路不同。' });
+  base.push({ group: 'Trade plan', id: 'stop_level',
+    title: '已明确正股止损位',
+    desc: '具体价位, 如 "跌破 200MA" / "$XXX" / "前低 $YYY"。' });
   base.push({ group: 'Trade plan', id: 'dte',
     title: 'DTE ≥ 400 天',
-    desc: '实盘可直接从 broker 读取 DTE。',
+    desc: '',
     numeric: { placeholder: 'DTE', unit: 'days', min: 400, comparator: '≥' } });
 
   const dMin = leapsDeltaMin();
   const styleName = LEAPS_STYLE_LABEL[state.leapsStyle];
   base.push({ group: 'Trade plan', id: 'delta',
-    title: `Delta ≥ ${dMin != null ? dMin.toFixed(2) : '?'}  (风格: ${styleName || '未选'})`,
-    desc: dMin != null ? `你选择了 ${styleName}，Delta 门槛为 ${dMin.toFixed(2)} 以上。` : '请先在上方选择风格分类。',
-    numeric: { placeholder: 'Delta', unit: '', min: dMin, comparator: '≥', step: 0.01 } });
+    title: `Delta ≥ ${dMin != null ? dMin : '?'}  (${styleName || '未选'})`,
+    desc: dMin != null ? `≥ ${dMin} (=0.${dMin < 10 ? '0' + dMin : dMin}), 整数。` : '先选风格。',
+    numeric: { placeholder: 'Delta', unit: '', min: dMin, comparator: '≥' } });
 
   base.push({ group: 'Position sizing', id: 'sizecap',
     title: `单标的 LEAPS 敞口 ≤ ${positionCapPct()}% 账户净值`,
-    desc: state.leapsBluechip ? '你已勾选大蓝筹（上限 30%），仍需谨慎。' : '常规上限 15%；大蓝筹极限 30%（上方切换）。',
+    desc: state.leapsBluechip ? '已勾选大蓝筹 (上限 30%)。' : '常规 15%, 大蓝筹 30% (上方切换)。',
     hard: true, positionCheck: true });
 
   if (state.leapsPhase === 'entry') {
     const g = 'Entry signals (首笔 · 左侧衰竭)';
     base.push({ group: g, id: 'mj2',
-      title: 'MJ2 系统给出信号', desc: '你的自定义 MJ2 指标已触发。' });
+      title: 'MJ2 系统给出信号', desc: 'MJ2 已触发。' });
     base.push({ group: g, id: 'exhaustion',
       title: '左侧动能衰竭已确认',
-      desc: '日线 RSI ≤ 30；或 RSI ≤ 50 触及布林下轨且斜率放缓；或有底背离；或 MACD 红柱缩短。' });
+      desc: 'RSI ≤ 30；或 RSI ≤ 50 触及布林下轨且斜率放缓；或底背离；或 MACD 红柱缩短。' });
     base.push({ group: g, id: 'budget50pct',
-      title: '若属于熊市筑底建仓：已预留 50% 预算给后续 MACD 金叉阶段',
-      desc: 'Delta 0.70-0.80、DTE 12-18 个月。' });
+      title: '若熊市筑底建仓: 已预留 50% 预算给 MACD 金叉阶段',
+      desc: 'Δ 70-80, DTE 12-18 个月。' });
   }
   if (state.leapsPhase === 'add_right') {
     const g = 'Add signals (加仓 · 右侧确认)';
     base.push({ group: g, id: 'cooldown_right',
-      title: '本周同一张 LEAPS 加仓次数 ≤ 2', desc: '任何情况下每周最多加 1-2 手，需要冷却期。' });
+      title: '本周同一张 LEAPS 加仓次数 ≤ 2', desc: '每周最多加 1-2 手, 需冷却。' });
     base.push({ group: g, id: 'right_ma',
-      title: '日线收复 5MA、10MA 或 20MA 之一', desc: '右侧确认信号，任一即可。' });
+      title: '日线收复 5MA、10MA 或 20MA 之一', desc: '任一即可。' });
     base.push({ group: g, id: 'pattern',
-      title: '出现放量反包 / 吞没 / 锤头形态 或 站稳 EMA21/SMA50 之上', desc: '两者之一即可。' });
+      title: '出现放量反包 / 吞没 / 锤头形态 或 站稳 EMA21/SMA50 之上', desc: '两者之一。' });
   }
   if (state.leapsPhase === 'add_macd') {
     const g = 'Add signals (加仓 · MACD 金叉)';
     base.push({ group: g, id: 'cooldown_macd',
-      title: '本周同一张 LEAPS 加仓次数 ≤ 2', desc: '距上次加仓有冷却期。' });
+      title: '本周同一张 LEAPS 加仓次数 ≤ 2', desc: '距上次有冷却。' });
     base.push({ group: g, id: 'macd_golden',
       title: '日线 MACD 低位金叉确立',
-      desc: '注意：这是滞后性指标，严禁作为第一买点。当前是右侧动能完全确立后的加仓。' });
+      desc: '滞后指标, 严禁作为第一买点。' });
     base.push({ group: g, id: 'momentum_right',
       title: '动能完全右侧化 (价格 + 均线 + 成交量协同)',
-      desc: '不是单一信号，是趋势健康的综合确认。' });
+      desc: '综合确认。' });
   }
   return base;
 }
@@ -382,6 +420,11 @@ function leapsCloseItems() {
   const styleLabel = LEAPS_STYLE_LABEL[style] || '未指定';
   const base = [];
 
+  // Discipline check applies to all close types
+  base.push({ group: 'Discipline · 关仓前提', id: 'planned_exit',
+    title: '关仓动作与开仓时的计划一致',
+    desc: '未提前止盈 (NFLX / UBER 教训) / 挪止损 / 情绪临时改主意。偏离原计划 = 停。' });
+
   if (t === 'gradient') {
     const g = '分批止盈';
     // Style-based initial trigger threshold (% profit)
@@ -390,13 +433,13 @@ function leapsCloseItems() {
     // 1. Contract count
     base.push({ group: g, id: 'contracts',
       title: '当前剩余张数',
-      desc: '本笔 LEAPS 手上还有几张。决定是否触发 "平掉一半" 逻辑。',
+      desc: '决定是否触发 "平掉一半"。',
       numeric: { placeholder: '# 张', unit: '', min: 1, comparator: '≥' } });
 
     // 2. Profit trigger (style-adaptive)
     base.push({ group: g, id: 'profit_gradient',
       title: `当前浮盈 ≥ ${profitThresh}%  (${styleLabel})`,
-      desc: `${styleLabel} 的分批止盈起始门槛：股票替代 ≥100%，标准 Swing ≥50%，激进 Swing ≥30%。达到即启动分批。`,
+      desc: `分批止盈门槛: 长期 ≥100, 标准 ≥50, 激进 ≥30。`,
       numeric: { placeholder: 'Profit', unit: '%', min: profitThresh, comparator: '≥' } });
 
     const contracts = parseInt(state.items['contracts']) || 0;
@@ -406,8 +449,8 @@ function leapsCloseItems() {
     if (contracts >= 2 && profit >= 100) {
       const half = Math.floor(contracts / 2);
       base.push({ group: g, id: 'half_close',
-        title: `多张 + 利润 ≥ 100% → 已计划平掉 ${half} 张 (一半)`,
-        desc: `SOP: 剩余 ${contracts} 张，本次平掉 ${half} 张锁定利润，余仓继续。`,
+        title: `多张 + 利润 ≥ 100% → 已平掉 ${half} 张`,
+        desc: `剩余 ${contracts} 张, 本次平 ${half} 张锁利, 余仓继续。`,
         hard: true });
     }
 
@@ -415,30 +458,30 @@ function leapsCloseItems() {
     if (style === 'aggressive' && profit >= 50) {
       base.push({ group: g, id: 'swing_walk_agg',
         title: '激进 Swing + 利润 ≥ 50% → 必须走大部分',
-        desc: '激进 swing 不适合久拿。达到 50% 应走 70-100% 仓位。防止利润回吐 (NFLX 教训)。',
+        desc: '达 50% 走 70-100%。NFLX 教训: 防利润回吐。',
         hard: true });
     } else if (style === 'standard' && profit >= 100) {
       base.push({ group: g, id: 'swing_walk_std',
         title: '标准 Swing + 利润 ≥ 100% → 必须走大部分',
-        desc: '标准 swing 达到 100% 应锁定大部分利润，防止利润回吐。',
+        desc: '达 100% 锁大部分, 防利润回吐。',
         hard: true });
     }
 
     // 5. Long-term ≥150% hint (not hard block)
     if (style === 'stock_sub' && profit >= 150) {
       base.push({ group: g, id: 'lt_roll',
-        title: '长期 + 利润 ≥ 150% → 考虑滚动至更远 DTE 或再减仓',
-        desc: '长期配置不必强制退出。可选：卖近的保远的；或换成更远 DTE 更高 strike 保留敞口。' });
+        title: '长期 + 利润 ≥ 150% → 考虑滚动或再减仓',
+        desc: '长期不强制退。可选: 卖近保远, 或换更远 DTE + 更高 strike。' });
     }
 
     // 6. Trend intact
     base.push({ group: g, id: 'trend_intact',
-      title: '上升趋势未破坏 (仍可移动止盈防卖飞)',
-      desc: '若趋势仍强，可考虑用移动止盈让利润奔跑，而不是硬止盈。' });
+      title: '上升趋势未破坏 (仍可移动止盈)',
+      desc: '趋势强 → 移动止盈, 不硬止盈。' });
     // 7. Execution
     base.push({ group: g, id: 'gtc_set',
-      title: 'GTC 单已设置 或 手动执行方式已明确',
-      desc: '避免情绪化操作。GTC 单最好提前挂在梯度价位。' });
+      title: 'GTC 单已设置 或 执行方式已明确',
+      desc: 'GTC 提前挂梯度价位。' });
   }
 
   if (t === 'profit200') {
@@ -460,55 +503,55 @@ function leapsCloseItems() {
       const half = Math.floor(contracts / 2);
       base.push({ group: g, id: 'plan_half',
         title: `平仓 ${half} 张 (约一半) 计划已确定`,
-        desc: '锁定一半利润，剩余仓位继续吃趋势。' });
+        desc: '锁一半利润, 余仓继续吃趋势。' });
     } else if (contracts === 1) {
       base.push({ group: g, id: 'plan_half_single',
         title: '单张 → 部分止盈 or 滚动 计划已定',
-        desc: '单张无法真正平半。可选：全部止盈；或滚动到更远 DTE 更高 strike 保留敞口。' });
+        desc: '单张无法平半。可: 全部止盈, 或滚动更远 DTE + 更高 strike。' });
     } else {
       base.push({ group: g, id: 'plan_half',
         title: '平仓方案已确定',
-        desc: '先填上方"剩余张数"以获得具体建议。' });
+        desc: '先填上方"剩余张数"。' });
     }
 
     base.push({ group: g, id: 'trailing_stop',
       title: '余仓移动止盈已规划',
-      desc: '选择合适的 trailing % 或 ATR 倍数。' });
+      desc: '选择 trailing % 或 ATR 倍数。' });
   }
 
   if (t === 'time_loss') {
     const g = '止损 · 时间 + 浮亏';
     base.push({ group: g, id: 'dte_below_9m',
       title: 'DTE < 9 个月',
-      desc: '同时满足浮亏 ≥ 50% 才触发此止损条件。',
+      desc: '配合浮亏 ≥ 50% 触发。',
       numeric: { placeholder: 'DTE', unit: 'months', max: 9, comparator: '<' },
       hard: true });
     base.push({ group: g, id: 'loss_50',
       title: '浮亏 ≥ 50%',
-      desc: '未达 50% 亏损时不强制止损。',
+      desc: '未达 50% 不强制止损。',
       numeric: { placeholder: 'Loss', unit: '%', min: 50, comparator: '≥' },
       hard: true });
     base.push({ group: g, id: 'considered_roll',
-      title: '已考虑换约 (roll to further DTE) 作为替代方案',
-      desc: '换约优先于割肉。仅当换约不划算时才平仓。' });
+      title: '已考虑换约 (roll to further DTE)',
+      desc: '换约优先, 不划算才平仓。' });
     base.push({ group: g, id: 'roll_infeasible',
       title: '换约不可行 → 才执行平仓',
-      desc: '例如换约成本过高、标的基本面已彻底破坏、无 DTE 更远的合约等。' });
+      desc: '如换约成本过高 / 基本面已彻底破坏 / 无更远合约。' });
   }
 
   if (t === 'time_forced') {
     const g = '时间必退 (DTE ≤ 6 个月)';
     base.push({ group: g, id: 'dte_6m',
       title: 'DTE ≤ 6 个月',
-      desc: '距到期 6 个月，SOP 硬性无条件退出。',
+      desc: 'SOP 硬性无条件退。',
       numeric: { placeholder: 'DTE', unit: 'months', max: 6, comparator: '≤' },
       hard: true });
     base.push({ group: g, id: 'roll_or_close',
-      title: '已决定：平仓 or 滚动至更远期 LEAPS',
-      desc: '两个选项都可以，但必须做出决定。' });
+      title: '已决定: 平仓 or 滚动至更远 LEAPS',
+      desc: '两个都可, 必须决定。' });
     base.push({ group: g, id: 'new_leaps_dte',
-      title: '若选择滚动：目标 LEAPS DTE ≥ 400 天',
-      desc: '若是平仓则忽略本项 (可留空)。',
+      title: '若滚动: 目标 LEAPS DTE ≥ 400 天',
+      desc: '平仓则留空。',
       numeric: { placeholder: 'New DTE', unit: 'days', min: 400, comparator: '≥', optional: true } });
   }
 
@@ -516,15 +559,15 @@ function leapsCloseItems() {
     const g = '止损 · 趋势破坏 + 基本面';
     base.push({ group: g, id: 'below_200ma',
       title: '标的跌破 200MA 年线',
-      desc: '技术趋势彻底破坏。',
+      desc: '',
       hard: true });
     base.push({ group: g, id: 'fundamental_break',
       title: '基本面发生实质性恶化',
-      desc: '例如：主营业务爆雷、监管重大变化、盈利模型不再成立。不是短期波动。',
+      desc: '如主营爆雷 / 监管变化 / 盈利模型失效。非短期波动。',
       hard: true });
     base.push({ group: g, id: 'reduce_half',
-      title: '仓位减半执行 (SOP: 无条件减半)',
-      desc: 'SOP 规定：跌破 200MA + 基本面恶化 → 仓位无条件减半。' });
+      title: '仓位减半执行',
+      desc: 'SOP: 200MA + 基本面 → 减半。' });
   }
 
   return base;
@@ -535,42 +578,45 @@ function leapsCloseItems() {
  * ========================================================== */
 function cspItems() {
   const base = [];
+  base.push({ group: 'Discipline · 交易前提', id: 'discipline',
+    title: '本笔非临时起意 · 前一天已计划',
+    desc: '非当天上班/盘中随机发现。动机非: 报复、FOMO、回本、无聊、证明自己。慢即是快。' });
   base.push({ group: 'Market environment', id: 'vix',
     title: 'VIX 上升 且 信用利差 未上升',
-    desc: '优质入场窗口。若信用利差同步上升，说明市场结构性紧张，放弃。',
+    desc: '信用利差同步上升 = 市场结构性紧张, 放弃。',
     hard: true });
   base.push({ group: 'Market environment', id: 'macro',
     title: '合约存续期内无 FOMC / CPI / NFP 等重大数据',
-    desc: 'DTE 30-45 天大概率覆盖至少一次 Fed 会议，需提前核查。' });
+    desc: 'DTE 30-45 天大概率覆盖至少一次 Fed 会议。' });
   base.push({ group: 'Underlying', id: 'no_earnings',
     title: '合约存续期不覆盖财报',
-    desc: 'CSP 硬性禁令：不过财报。同时不在财报前后 3-5 天新开仓。',
+    desc: '硬性禁令。前后 3-5 天也不新开。',
     hard: true });
   base.push({ group: 'Underlying', id: 'strike_hvn',
     title: '行权价位于 1Y 与 180D Volume Profile 的 HVN 下沿或下方',
-    desc: '成交量密集区提供承接。' });
+    desc: '密集区承接。' });
   base.push({ group: 'Underlying', id: 'strike_support',
     title: '行权价位于多次测试的关键支撑下方',
-    desc: '不是硬支撑就不算。' });
+    desc: '' });
 
   const dMax = cspDeltaMax();
   const intentLabel = CSP_INTENT_LABEL[state.cspIntent];
   base.push({ group: 'Contract structure', id: 'ivp',
     title: 'IVP > 30%',
-    desc: '波动性百分位足够高，权利金才有性价比。',
+    desc: 'IVP 低 = 权利金差。',
     numeric: { placeholder: 'IVP', unit: '%', min: 30, comparator: '>' } });
   base.push({ group: 'Contract structure', id: 'dte',
     title: 'DTE 合适 (建议 30-45 天)',
-    desc: '非硬性区间。根据 IV、支撑位、宏观事件位置综合判断。' });
+    desc: '非硬性。综合 IV / 支撑位 / 宏观事件判断。' });
   base.push({ group: 'Contract structure', id: 'oi',
-    title: '合约 OI 足够大 (流动性)', desc: '避免宽 bid-ask、避免难以 roll 或 close。' });
+    title: '合约 OI 足够大 (流动性)', desc: '避免宽 bid-ask / 难 roll。' });
   base.push({ group: 'Contract structure', id: 'delta',
-    title: `Delta ≤ ${dMax != null ? dMax.toFixed(2) : '?'}  (意图: ${intentLabel || '未选'})`,
-    desc: dMax != null ? `你选择了 "${intentLabel}"，Delta 门槛为 ${dMax.toFixed(2)} 以下。` : '请先在上方选择目标意图。',
-    numeric: { placeholder: 'Delta', unit: '', max: dMax, comparator: '≤', step: 0.01 } });
+    title: `Delta ≤ ${dMax != null ? dMax : '?'}  (${intentLabel || '未选'})`,
+    desc: dMax != null ? `≤ ${dMax} (=0.${dMax < 10 ? '0' + dMax : dMax}), 整数。` : '先选意图。',
+    numeric: { placeholder: 'Delta', unit: '', max: dMax, comparator: '≤' } });
   base.push({ group: 'Contract structure', id: 'roc',
     title: '30 天 ROC ≥ 2-3%',
-    desc: '收益率不足，机会成本不划算。',
+    desc: '低 ROC = 机会成本不划算。',
     numeric: { placeholder: 'ROC', unit: '%', min: 2, comparator: '≥', step: 0.1 } });
   return base;
 }
@@ -580,23 +626,34 @@ function cspItems() {
  * ========================================================== */
 function pmccItems() {
   const base = [];
+  base.push({ group: 'Discipline · 交易前提', id: 'discipline',
+    title: '本笔非临时起意 · 前一天已计划',
+    desc: '非当天上班/盘中随机发现。动机非: 报复、FOMO、回本、无聊、证明自己。慢即是快。' });
   base.push({ group: 'Underlying LEAPS health', id: 'leaps_profit',
     title: '底仓 LEAPS 目前处于盈利状态',
-    desc: '过滤器: 底仓未盈利就不要卖 call，避免用亏损的 LEAPS 换少量权利金。',
+    desc: '底仓未盈利 = 禁止卖 call。',
     hard: true });
+
+  base.push({ group: 'Underlying context · 大周期', id: 'weekly_top_range',
+    title: '标的大周期 (周 K) 非底部或强势启动',
+    desc: '只在周 K 高位整理时开。底部或强势启动不开。' });
 
   const dMax = pmccDeltaMax();
   const modeLabel = PMCC_MODE_LABEL[state.pmccMode];
+  base.push({ group: 'Short call selection', id: 'no_breakout_day',
+    title: '非在突破当天卖 short call',
+    desc: '突破当天动能最强, 短腿易被推爆。等第二天冲高回落再卖。',
+    hard: true });
   base.push({ group: 'Short call selection', id: 'delta',
-    title: `Short call Delta ≤ ${dMax != null ? dMax.toFixed(2) : '?'}  (模式: ${modeLabel || '未选'})`,
-    desc: `${modeLabel} 模式：Delta 门槛 ${dMax != null ? dMax.toFixed(2) : '?'} 以下。防止被 assign 走底仓 LEAPS。`,
-    numeric: { placeholder: 'Delta', unit: '', max: dMax, comparator: '≤', step: 0.01 } });
+    title: `Short call Delta ≤ ${dMax != null ? dMax : '?'}  (${modeLabel || '未选'})`,
+    desc: `≤ ${dMax != null ? dMax : '?'} (=0.${dMax < 10 ? '0' + dMax : dMax}), 整数。防止 assign 走底仓。`,
+    numeric: { placeholder: 'Delta', unit: '', max: dMax, comparator: '≤' } });
   base.push({ group: 'Short call selection', id: 'bb_mid',
     title: '标的位于 Bollinger 中轨之上',
-    desc: '右侧位置卖强。若在中轨下方，说明趋势弱，卖 call 意义不大且被拉高的可能性小。' });
+    desc: '右侧卖强。中轨下方 = 趋势弱, 意义不大。' });
   base.push({ group: 'Short call selection', id: 'kdj_j',
     title: '日线 KDJ 的 J 值 > 90',
-    desc: '短线超买，权利金饱满，回落概率高。',
+    desc: '超买 = 权利金饱满。',
     numeric: { placeholder: 'J', unit: '', min: 90, comparator: '>' } });
   return base;
 }
@@ -676,10 +733,16 @@ function render() {
 }
 
 function headerHTML() {
+  const themeName = state.theme === 'terminal' ? 'Terminal' : 'Slate';
   return `
     <div class="header">
       <div class="brand">Pre-Trade Checklist</div>
       <div class="header-actions">
+        <button class="theme-btn" onclick="cycleTheme()" title="Toggle theme">
+          <span class="theme-dot"></span>
+          <span>${themeName}</span>
+        </button>
+        ${state.strategy ? `<button class="btn ghost" onclick="showSnapshot()">Snapshot</button>` : ''}
         ${state.strategy ? `<button class="btn ghost" onclick="switchStrategy()">Switch</button>` : ''}
         <button class="btn" onclick="resetAll()">Reset</button>
       </div>
@@ -703,28 +766,35 @@ function subtypeString() {
 }
 
 function renderPicker() {
+  const themeName = state.theme === 'terminal' ? 'Terminal' : 'Slate';
   $app.innerHTML = `
     <div class="header">
       <div class="brand">Pre-Trade Checklist</div>
+      <div class="header-actions">
+        <button class="theme-btn" onclick="cycleTheme()" title="Toggle theme">
+          <span class="theme-dot"></span>
+          <span>${themeName}</span>
+        </button>
+      </div>
     </div>
     <div class="picker">
       <div class="picker-title">选择要检查的策略</div>
-      <div class="picker-sub">下单前顺着过一遍。全绿放行，任何红灯不执行。</div>
+      <div class="picker-sub">全绿放行, 红灯不执行。</div>
       <div class="picker-choices">
         <button class="picker-card" onclick="pickStrategy('leaps')">
           <div class="picker-card-tag">Long-dated calls</div>
           <div class="picker-card-title">LEAPS</div>
-          <div class="picker-card-desc">开仓 / 加仓 / 关仓·止盈·止损 全流程自查。</div>
+          <div class="picker-card-desc">开仓 / 加仓 / 关仓 全流程。</div>
         </button>
         <button class="picker-card" onclick="pickStrategy('csp')">
           <div class="picker-card-tag">Cash-secured put</div>
           <div class="picker-card-title">CSP</div>
-          <div class="picker-card-desc">接股或权利金意图决定 Delta 门槛，不过财报。</div>
+          <div class="picker-card-desc">意图定 Delta, 不过财报。</div>
         </button>
         <button class="picker-card" onclick="pickStrategy('pmcc')">
           <div class="picker-card-tag">Poor Man's CC</div>
           <div class="picker-card-title">PMCC</div>
-          <div class="picker-card-desc">在已开 LEAPS 上卖 short call，Delta ≤ 0.15 (防守 ≤ 0.10)。</div>
+          <div class="picker-card-desc">已开 LEAPS 上卖 call, Δ ≤ 15/10。</div>
         </button>
       </div>
     </div>
@@ -746,7 +816,7 @@ function renderLeapsConfig() {
           <button data-v="add_macd">加仓 · MACD 金叉</button>
         </div>
         <div style="font-size: 11.5px; color: var(--text-faint); margin-top: 8px; line-height: 1.5;">
-          按信号类型分类，不是"第几笔"。加仓次数可以多次，每次归属于其中一类。
+          按信号类型分, 不是"第几笔"。加仓可以多次, 每次归属一类。
         </div>
       </div>
     `;
@@ -769,11 +839,11 @@ function renderLeapsConfig() {
     <div class="config">
       <div class="config-title">底仓 style · ${dir === 'open' ? '决定 Delta 门槛' : '决定止盈门槛'}</div>
       <div class="segmented" id="style-seg">
-        <button data-v="stock_sub">股票替代${dir === 'open' ? ' · Δ≥0.70' : ''}</button>
-        <button data-v="standard">标准 Swing${dir === 'open' ? ' · Δ≥0.60' : ''}</button>
-        <button data-v="aggressive">激进 Swing${dir === 'open' ? ' · Δ≥0.40' : ''}</button>
+        <button data-v="stock_sub">股票替代${dir === 'open' ? ' · Δ≥70' : ''}</button>
+        <button data-v="standard">标准 Swing${dir === 'open' ? ' · Δ≥60' : ''}</button>
+        <button data-v="aggressive">激进 Swing${dir === 'open' ? ' · Δ≥40' : ''}</button>
       </div>
-      ${dir === 'close' ? `<div style="font-size: 11.5px; color: var(--text-faint); margin-top: 8px; line-height: 1.5;">这笔 LEAPS 当初开的时候是哪一类？影响止盈门槛：长期 100%+, 标准 Swing 50-100%, 激进 Swing 30-50%。</div>` : ''}
+      ${dir === 'close' ? `<div style="font-size: 11.5px; color: var(--text-faint); margin-top: 8px; line-height: 1.5;">这笔当初是哪一类? 决定止盈门槛: 长期 100%+, 标准 50-100%, 激进 30-50%。</div>` : ''}
     </div>
   ` : '';
 
@@ -781,7 +851,7 @@ function renderLeapsConfig() {
     ${headerHTML()}
     <div class="picker">
       <div class="picker-title">LEAPS · 交易画像</div>
-      <div class="picker-sub">先声明是开仓还是关仓、底仓 style 和具体触发。后续 checklist 按你选的类型自动生成。</div>
+      <div class="picker-sub">方向 · style · 触发类型。</div>
       <div class="config" style="margin-top: 20px;">
         <div class="config-title">Direction · 开仓 or 关仓</div>
         <div class="segmented" id="direction-seg">
@@ -849,13 +919,13 @@ function renderCspConfig() {
     ${headerHTML()}
     <div class="picker">
       <div class="picker-title">CSP · 交易意图</div>
-      <div class="picker-sub">先声明这笔的目的。想接股 = 你对标的有 conviction；只赚权利金 = Delta 更低更防守。</div>
+      <div class="picker-sub">接股 vs 权利金 → Delta 门槛不同。</div>
       <div class="config" style="margin-top: 20px;">
         <div class="config-title">Intent · 意图</div>
         <div class="segmented" id="intent-seg">
-          <button data-v="assign">想接股 · Δ≤0.30</button>
-          <button data-v="neutral">一般 · Δ≤0.25</button>
-          <button data-v="premium">只赚权利金 · Δ≤0.15</button>
+          <button data-v="assign">想接股 · Δ≤30</button>
+          <button data-v="neutral">一般 · Δ≤25</button>
+          <button data-v="premium">只赚权利金 · Δ≤15</button>
         </div>
       </div>
       <button class="btn primary big" id="proceed-btn" style="margin-top: 12px; width: 100%;" disabled>先选择意图</button>
@@ -872,7 +942,7 @@ function renderPmccConfig() {
     ${headerHTML()}
     <div class="picker">
       <div class="picker-title">PMCC · 卖 Short Call 前自查</div>
-      <div class="picker-sub">底仓 LEAPS 已经开好，本表用于每次考虑卖 short call 时。</div>
+      <div class="picker-sub">底仓 LEAPS 已开, 每次卖 call 前用。</div>
       <div class="config" style="margin-top: 20px;">
         <div class="config-title">底仓 LEAPS 原始目的</div>
         <div class="segmented" id="purpose-seg">
@@ -884,8 +954,8 @@ function renderPmccConfig() {
       <div class="config">
         <div class="config-title">Short Call Delta 模式</div>
         <div class="segmented" id="mode-seg">
-          <button data-v="standard">标准 · Δ≤0.15</button>
-          <button data-v="defensive">防守 · Δ≤0.10</button>
+          <button data-v="standard">标准 · Δ≤15</button>
+          <button data-v="defensive">防守 · Δ≤10</button>
         </div>
       </div>
       <button class="btn primary big" id="proceed-btn" style="margin-top: 12px; width: 100%;" disabled>先选择底仓目的</button>
@@ -917,13 +987,13 @@ function statusBarHTML() {
   return `
     <div class="status-bar">
       <div class="status-row">
-        <div class="status-main ${cls}">${esc(v.status)}</div>
+        <div class="status-main ${cls}" id="status-main">${esc(v.status)}</div>
         <div class="status-meta">
           <strong>${esc(STRAT_LABEL[state.strategy])}</strong><br>
           ${esc(subtypeString())}
         </div>
       </div>
-      <div class="status-tally">
+      <div class="status-tally" id="status-tally">
         <span class="tally-item"><span class="tally-dot pass"></span> ${v.pass} pass</span>
         <span class="tally-item"><span class="tally-dot fail"></span> ${v.fail} block</span>
         <span class="tally-item"><span class="tally-dot pending"></span> ${v.pending} pending</span>
@@ -972,9 +1042,9 @@ function renderChecklist() {
         <div class="num-row">
           <div class="num-field"><label class="num-field-label">Account NAV</label>
             <input inputmode="decimal" type="number" id="in-nav" placeholder="e.g. 250000" value="${esc(state.nav)}"></div>
-          <div class="num-field"><label class="num-field-label">已有该标的 LEAPS 敞口</label>
+          <div class="num-field"><label class="num-field-label">已有敞口</label>
             <input inputmode="decimal" type="number" id="in-ex" placeholder="0" value="${esc(state.existingExposure)}"></div>
-          <div class="num-field"><label class="num-field-label">本次建仓预算</label>
+          <div class="num-field"><label class="num-field-label">本次预算</label>
             <input inputmode="decimal" type="number" id="in-bg" placeholder="e.g. 8000" value="${esc(state.budget)}"></div>
           <div class="num-field"><label class="num-field-label">是否大蓝筹</label>
             <div class="segmented" id="bluechip-seg" style="margin-top: 0;">
@@ -982,8 +1052,8 @@ function renderChecklist() {
               <button data-v="yes">是 (≤30%)</button>
             </div></div>
         </div>
-        <div class="position-summary ${pctCls}">
-          <span class="position-summary-label">Combined LEAPS exposure / NAV</span>
+        <div class="position-summary ${pctCls}" id="position-summary">
+          <span class="position-summary-label">敞口 / NAV</span>
           <span class="position-summary-val ${pctCls}">${pctDisp} <span style="color:var(--text-faint); font-weight:400;"> / cap ${cap}%</span></span>
         </div>
       </div>
@@ -1008,18 +1078,20 @@ function renderChecklist() {
   const v = overallVerdict();
   const isClose = state.strategy === 'leaps' && state.leapsDirection === 'close';
   const blockMsg = isClose
-    ? 'Any single "block" = do not close (revisit reason).'
-    : 'Any single "block" = do not open.';
+    ? '任一 block = 不关仓, 重新评估。'
+    : '任一 block = 不开仓。';
 
   $app.innerHTML = `
     ${headerHTML()}
     ${statusBarHTML()}
+    ${progressBarHTML()}
     ${qrefHTML()}
     ${configHTML}
     ${checklistHTML}
     <div class="footer">
-      <button class="btn" onclick="clearItems()">Clear ticks</button>
-      <button class="btn ghost" onclick="switchStrategy()">Switch strategy</button>
+      <button class="btn" onclick="clearItems()">Clear</button>
+      <button class="btn primary" onclick="showSnapshot()">Snapshot</button>
+      <button class="btn ghost" onclick="switchStrategy()">Switch</button>
     </div>
     <div class="disclaimer">
       Self-check only. Not investment advice.<br>
@@ -1031,7 +1103,12 @@ function renderChecklist() {
     const bind = (id, key) => {
       const el = document.getElementById(id);
       if (!el) return;
-      el.addEventListener('input', e => { state[key] = e.target.value; render(); });
+      el.addEventListener('input', e => {
+        state[key] = e.target.value;
+        updateVerdictsInPlace();
+      });
+      el.addEventListener('blur', () => scheduleFullRender());
+      el.addEventListener('focus', () => cancelFullRender());
     };
     bind('in-nav', 'nav');
     bind('in-ex', 'existingExposure');
@@ -1049,7 +1126,14 @@ function renderChecklist() {
     if (it.positionCheck) return;
     if (it.numeric) {
       const el = document.getElementById(`num-${it.id}`);
-      if (el) el.addEventListener('input', e => { state.items[it.id] = e.target.value; render(); });
+      if (el) {
+        el.addEventListener('input', e => {
+          state.items[it.id] = e.target.value;
+          updateVerdictsInPlace();
+        });
+        el.addEventListener('blur', () => scheduleFullRender());
+        el.addEventListener('focus', () => cancelFullRender());
+      }
     } else {
       const p = document.getElementById(`pass-${it.id}`);
       const f = document.getElementById(`fail-${it.id}`);
@@ -1057,22 +1141,110 @@ function renderChecklist() {
       if (f) f.addEventListener('click', () => { state.items[it.id] = state.items[it.id] === 'fail' ? null : 'fail'; render(); });
     }
   });
-  restoreFocus();
 }
 
-function restoreFocus() {
-  if (window.__lastFocusId) {
-    const el = document.getElementById(window.__lastFocusId);
-    if (el) {
-      const len = el.value ? el.value.length : 0;
-      el.focus();
-      try { el.setSelectionRange(len, len); } catch (e) {}
+/* ==========================================================
+ * PARTIAL UPDATES (no DOM rebuild — preserves input focus)
+ * ========================================================== */
+let __fullRenderTimer = null;
+function scheduleFullRender(delay = 250) {
+  cancelFullRender();
+  __fullRenderTimer = setTimeout(() => {
+    __fullRenderTimer = null;
+    // Only re-render if no input is currently focused
+    const ae = document.activeElement;
+    if (!ae || ae.tagName !== 'INPUT') {
+      render();
+    }
+  }, delay);
+}
+function cancelFullRender() {
+  if (__fullRenderTimer) { clearTimeout(__fullRenderTimer); __fullRenderTimer = null; }
+}
+
+function updateVerdictsInPlace() {
+  const items = currentItems();
+  const v = overallVerdict();
+
+  // Status bar main text
+  const $statusMain = document.getElementById('status-main');
+  if ($statusMain) {
+    const cls = v.status.startsWith('CLEAR') ? 'pass' : v.status === 'BLOCKED' ? 'fail' : 'pending';
+    $statusMain.className = 'status-main ' + cls;
+    $statusMain.textContent = v.status;
+  }
+
+  // Progress bar
+  const $progressBar = document.getElementById('progress-bar');
+  if ($progressBar) {
+    const total = v.total || 1;
+    const passPct = (v.pass / total * 100).toFixed(1);
+    const failPct = (v.fail / total * 100).toFixed(1);
+    const $pass = $progressBar.querySelector('.progress-fill-pass');
+    const $fail = $progressBar.querySelector('.progress-fill-fail');
+    if ($pass) $pass.style.width = passPct + '%';
+    if ($fail) $fail.style.width = failPct + '%';
+  }
+
+  // Tally counts
+  const $tally = document.getElementById('status-tally');
+  if ($tally) {
+    $tally.innerHTML = `
+      <span class="tally-item"><span class="tally-dot pass"></span> ${v.pass} pass</span>
+      <span class="tally-item"><span class="tally-dot fail"></span> ${v.fail} block</span>
+      <span class="tally-item"><span class="tally-dot pending"></span> ${v.pending} pending</span>
+    `;
+  }
+
+  // Each item's class + numeric badge
+  items.forEach(it => {
+    const $item = document.getElementById(`item-${it.id}`);
+    if (!$item) return;  // Item isn't in DOM yet (conditional, waiting for full re-render)
+    const newV = itemVerdict(it);
+    const hardCls = it.hard && newV === 'fail' ? ' hard-fail' : '';
+    $item.className = 'item ' + newV + hardCls;
+
+    if (it.numeric) {
+      const $badge = document.getElementById(`badge-${it.id}`);
+      if ($badge) {
+        $badge.className = 'item-numeric-verdict ' + (newV === 'pass' || newV === 'fail' ? newV : '');
+        $badge.textContent = newV === 'pass' ? 'PASS' : newV === 'fail' ? 'BLOCK' : '';
+      }
+    }
+  });
+
+  // Group counts (X / Y)
+  const groupCounts = {};
+  items.forEach(it => {
+    if (!groupCounts[it.group]) groupCounts[it.group] = { pass: 0, total: 0 };
+    groupCounts[it.group].total++;
+    if (itemVerdict(it) === 'pass') groupCounts[it.group].pass++;
+  });
+  document.querySelectorAll('.group').forEach($grp => {
+    const $title = $grp.querySelector('.group-title');
+    const $count = $grp.querySelector('.group-count');
+    if ($title && $count) {
+      const name = $title.textContent;
+      if (groupCounts[name]) {
+        $count.textContent = `${groupCounts[name].pass} / ${groupCounts[name].total}`;
+      }
+    }
+  });
+
+  // Position summary (LEAPS open only)
+  const $posSum = document.getElementById('position-summary');
+  if ($posSum && state.strategy === 'leaps' && state.leapsDirection === 'open') {
+    const pctVal = positionUsedPct();
+    const cap = positionCapPct();
+    const pctCls = pctVal == null ? '' : (pctVal <= cap ? 'pass' : 'fail');
+    const pctDisp = pctVal == null ? '—' : pctVal.toFixed(1) + '%';
+    $posSum.className = 'position-summary ' + pctCls;
+    const $val = $posSum.querySelector('.position-summary-val');
+    if ($val) {
+      $val.className = 'position-summary-val ' + pctCls;
+      $val.innerHTML = `${pctDisp} <span style="color:var(--text-faint); font-weight:400;"> / cap ${cap}%</span>`;
     }
   }
-  document.querySelectorAll('input').forEach(inp => {
-    inp.addEventListener('focus', e => { window.__lastFocusId = e.target.id; });
-    inp.addEventListener('blur', () => { setTimeout(() => { window.__lastFocusId = null; }, 100); });
-  });
 }
 
 function itemHTML(it) {
@@ -1088,10 +1260,11 @@ function itemHTML(it) {
     else if (n.min != null) req = `Required: ${n.comparator} ${n.min}${n.unit ? ' ' + n.unit : ''}`;
     else if (n.max != null) req = `Required: ${n.comparator} ${n.max}${n.unit ? ' ' + n.unit : ''}`;
     if (n.optional) req += ' (可留空)';
-    let verdictText = v === 'pass' ? `<span class="item-numeric-verdict pass">PASS</span>` :
-                      v === 'fail' ? `<span class="item-numeric-verdict fail">BLOCK</span>` : '';
+    let verdictText = v === 'pass' ? `<span class="item-numeric-verdict pass" id="badge-${esc(it.id)}">PASS</span>` :
+                      v === 'fail' ? `<span class="item-numeric-verdict fail" id="badge-${esc(it.id)}">BLOCK</span>` :
+                      `<span class="item-numeric-verdict" id="badge-${esc(it.id)}"></span>`;
     return `
-      <div class="item ${v} ${hardClass}">
+      <div class="item ${v} ${hardClass}" id="item-${esc(it.id)}">
         <div class="item-head">
           <div class="item-text">
             <div class="item-title">${esc(it.title)} ${hardBadge}</div>
@@ -1099,8 +1272,8 @@ function itemHTML(it) {
           </div>
         </div>
         <div class="item-numeric">
-          <input class="item-numeric-input" id="num-${esc(it.id)}" type="number" inputmode="decimal"
-                 placeholder="${esc(n.placeholder || '')}" value="${esc(val)}" step="${esc(n.step || 'any')}">
+          <input class="item-numeric-input" id="num-${esc(it.id)}" type="text" inputmode="decimal" autocomplete="off" autocorrect="off"
+                 placeholder="${esc(n.placeholder || '')}" value="${esc(val)}">
           <span class="item-numeric-req">${esc(req)}</span>
           ${verdictText}
         </div>
@@ -1109,7 +1282,7 @@ function itemHTML(it) {
   }
   if (it.positionCheck) {
     return `
-      <div class="item ${v} ${hardClass}">
+      <div class="item ${v} ${hardClass}" id="item-${esc(it.id)}">
         <div class="item-head">
           <div class="item-text">
             <div class="item-title">${esc(it.title)} ${hardBadge}</div>
@@ -1121,7 +1294,7 @@ function itemHTML(it) {
   }
   const s = state.items[it.id];
   return `
-    <div class="item ${v} ${hardClass}">
+    <div class="item ${v} ${hardClass}" id="item-${esc(it.id)}">
       <div class="item-head">
         <div class="item-text">
           <div class="item-title">${esc(it.title)} ${hardBadge}</div>
@@ -1166,14 +1339,255 @@ function clearItems() {
   render();
 }
 
+/* ==========================================================
+ * PROGRESS BAR
+ * ========================================================== */
+function progressBarHTML() {
+  const v = overallVerdict();
+  const total = v.total || 1;
+  const passPct = (v.pass / total * 100).toFixed(1);
+  const failPct = (v.fail / total * 100).toFixed(1);
+  return `<div class="progress-bar" id="progress-bar">
+    <div class="progress-fill-pass" style="width: ${passPct}%"></div>
+    <div class="progress-fill-fail" style="width: ${failPct}%"></div>
+  </div>`;
+}
+
+/* ==========================================================
+ * SNAPSHOT · TEXT + CSV EXPORT
+ * ========================================================== */
+function nowStamp() {
+  const now = new Date();
+  try {
+    return now.toLocaleString('en-US', {
+      timeZone: 'America/New_York',
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', hour12: false
+    }).replace(',', '') + ' ET';
+  } catch (e) {
+    return now.toISOString().slice(0, 16).replace('T', ' ') + ' UTC';
+  }
+}
+
+function buildTextSnapshot() {
+  const items = currentItems();
+  const v = overallVerdict();
+  const lines = [];
+  lines.push('── Pre-Trade Snapshot ──');
+  lines.push(`Time:     ${nowStamp()}`);
+  lines.push(`Strategy: ${STRAT_LABEL[state.strategy]} · ${subtypeString()}`);
+  lines.push(`Verdict:  ${v.status}`);
+  lines.push(`Tally:    ${v.pass} pass · ${v.fail} block · ${v.pending} pending`);
+  lines.push('');
+
+  const groups = [];
+  const seen = {};
+  items.forEach(it => {
+    if (!seen[it.group]) { seen[it.group] = []; groups.push({ name: it.group, items: seen[it.group] }); }
+    seen[it.group].push(it);
+  });
+  groups.forEach(g => {
+    let passCount = 0;
+    g.items.forEach(it => { if (itemVerdict(it) === 'pass') passCount++; });
+    lines.push(`[${g.name}]  ${passCount}/${g.items.length}`);
+    g.items.forEach(it => {
+      const iv = itemVerdict(it);
+      const symbol = iv === 'pass' ? '✓' : iv === 'fail' ? '✗' : '□';
+      const hard = it.hard ? ' [HARD]' : '';
+      let valStr = '';
+      if (it.numeric) {
+        const rawVal = state.items[it.id];
+        if (rawVal !== '' && rawVal != null) valStr = ` = ${rawVal}`;
+      }
+      lines.push(`  ${symbol} ${it.title}${hard}${valStr}`);
+    });
+    lines.push('');
+  });
+
+  if (state.strategy === 'leaps' && state.leapsDirection === 'open') {
+    const pctVal = positionUsedPct();
+    const cap = positionCapPct();
+    lines.push('[Position]');
+    lines.push(`  NAV $${state.nav || '—'}  ·  Existing $${state.existingExposure || '0'}  ·  Budget $${state.budget || '—'}`);
+    if (pctVal != null) lines.push(`  Combined LEAPS: ${pctVal.toFixed(1)}% / cap ${cap}%`);
+    lines.push('');
+  }
+
+  lines.push('──────────────────────');
+  return lines.join('\n');
+}
+
+function csvCell(s) {
+  const str = String(s == null ? '' : s);
+  if (/[,"\n]/.test(str)) return '"' + str.replace(/"/g, '""') + '"';
+  return str;
+}
+
+function buildCSVSnapshot() {
+  const items = currentItems();
+  const v = overallVerdict();
+  const rows = [
+    ['Group', 'Item', 'Status', 'Value', 'Required', 'Hard'],
+    ['_META', 'Time', nowStamp(), '', '', ''],
+    ['_META', 'Strategy', STRAT_LABEL[state.strategy] + ' · ' + subtypeString(), '', '', ''],
+    ['_META', 'Verdict', v.status, '', '', ''],
+    ['_META', 'Tally', `${v.pass} pass / ${v.fail} block / ${v.pending} pending`, '', '', ''],
+  ];
+  items.forEach(it => {
+    const iv = itemVerdict(it);
+    const status = iv.toUpperCase();
+    let val = '';
+    let req = '';
+    if (it.numeric) {
+      val = state.items[it.id] || '';
+      const n = it.numeric;
+      if (n.range) req = `${n.range[0]}-${n.range[1]} ${n.unit || ''}`;
+      else if (n.min != null) req = `${n.comparator} ${n.min}${n.unit ? ' ' + n.unit : ''}`;
+      else if (n.max != null) req = `${n.comparator} ${n.max}${n.unit ? ' ' + n.unit : ''}`;
+    }
+    rows.push([it.group, it.title, status, val, req, it.hard ? 'Yes' : '']);
+  });
+  if (state.strategy === 'leaps' && state.leapsDirection === 'open') {
+    rows.push(['_META', 'NAV', state.nav || '', '', '', '']);
+    rows.push(['_META', 'Existing exposure', state.existingExposure || '', '', '', '']);
+    rows.push(['_META', 'Budget', state.budget || '', '', '', '']);
+    const pctVal = positionUsedPct();
+    if (pctVal != null) rows.push(['_META', 'Combined LEAPS %', pctVal.toFixed(1) + '%', '', `cap ${positionCapPct()}%`, '']);
+  }
+  return rows.map(row => row.map(csvCell).join(',')).join('\n');
+}
+
+async function copyToClipboard(text) {
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch (e) {}
+  try {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.top = '-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    const ok = document.execCommand('copy');
+    document.body.removeChild(ta);
+    return ok;
+  } catch (e) {
+    return false;
+  }
+}
+
+function downloadFile(filename, mime, content) {
+  try {
+    const blob = new Blob(['\ufeff' + content], { type: mime + ';charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    return true;
+  } catch (e) {
+    try {
+      const dataUrl = 'data:' + mime + ';charset=utf-8,' + encodeURIComponent(content);
+      window.open(dataUrl, '_blank');
+      return true;
+    } catch (e2) { return false; }
+  }
+}
+
+function ensureSnapshotModal() {
+  if (document.getElementById('snapshot-modal')) return;
+  const modal = document.createElement('div');
+  modal.id = 'snapshot-modal';
+  modal.className = 'modal-overlay';
+  modal.style.display = 'none';
+  modal.innerHTML = `
+    <div class="modal-card">
+      <div class="modal-head">
+        <div class="modal-title">Snapshot</div>
+        <button class="modal-close" onclick="hideSnapshot()" aria-label="Close">×</button>
+      </div>
+      <div class="modal-body">
+        <textarea class="modal-preview" id="snapshot-preview" readonly></textarea>
+      </div>
+      <div class="modal-actions">
+        <button class="btn ghost" onclick="hideSnapshot()">关闭</button>
+        <button class="btn" id="snap-download">下载 CSV</button>
+        <button class="btn primary" id="snap-copy">复制文本</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e => { if (e.target === modal) hideSnapshot(); });
+  document.getElementById('snap-copy').addEventListener('click', async e => {
+    const btn = e.currentTarget;
+    const ok = await copyToClipboard(buildTextSnapshot());
+    const original = btn.textContent;
+    btn.textContent = ok ? '✓ 已复制' : '复制失败';
+    setTimeout(() => { btn.textContent = original; }, 1500);
+  });
+  document.getElementById('snap-download').addEventListener('click', e => {
+    const btn = e.currentTarget;
+    const stamp = new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-');
+    const strat = (state.strategy || 'check').toUpperCase();
+    const filename = `checklist-${strat}-${stamp}.csv`;
+    const ok = downloadFile(filename, 'text/csv', buildCSVSnapshot());
+    const original = btn.textContent;
+    btn.textContent = ok ? '✓ 已下载' : '下载失败';
+    setTimeout(() => { btn.textContent = original; }, 1500);
+  });
+}
+
+function showSnapshot() {
+  if (!state.strategy) return;
+  ensureSnapshotModal();
+  document.getElementById('snapshot-preview').value = buildTextSnapshot();
+  document.getElementById('snapshot-modal').style.display = 'flex';
+}
+function hideSnapshot() {
+  const m = document.getElementById('snapshot-modal');
+  if (m) m.style.display = 'none';
+}
+
+/* ==========================================================
+ * THEME
+ * ========================================================== */
+function setTheme(t) {
+  state.theme = t;
+  document.body.className = 'theme-' + t;
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute('content', t === 'terminal' ? '#000000' : '#0F1419');
+  try { localStorage.setItem('pretrade_theme', t); } catch (e) {}
+}
+function cycleTheme() {
+  setTheme(state.theme === 'slate' ? 'terminal' : 'slate');
+  render();
+}
+function loadTheme() {
+  try {
+    const saved = localStorage.getItem('pretrade_theme');
+    if (saved === 'terminal' || saved === 'slate') state.theme = saved;
+  } catch (e) {}
+  setTheme(state.theme);
+}
+
 /* Expose */
 window.pickStrategy = pickStrategy;
 window.switchStrategy = switchStrategy;
 window.resetAll = resetAll;
 window.clearItems = clearItems;
 window.toggleQref = toggleQref;
+window.cycleTheme = cycleTheme;
+window.showSnapshot = showSnapshot;
+window.hideSnapshot = hideSnapshot;
 
 /* Boot */
+loadTheme();
 render();
 
 </script>
