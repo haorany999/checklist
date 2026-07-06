@@ -299,6 +299,33 @@
     box-shadow: 0 0 0 3px rgba(0, 204, 102, 0.18), 0 0 12px rgba(0, 204, 102, 0.2);
   }
 
+  /* Ticker bar */
+  .ticker-bar {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 14px; margin: 0 0 12px;
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  }
+  body.theme-light .ticker-bar { box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05); }
+  .ticker-label {
+    font-family: var(--mono); font-size: 10.5px;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--text-faint); flex-shrink: 0;
+  }
+  .ticker-input {
+    flex: 1; background: transparent; border: none; outline: none;
+    color: var(--text); font-size: 17px; font-weight: 600;
+    font-family: var(--mono); letter-spacing: 0.06em;
+    text-transform: uppercase; padding: 4px 0;
+    -webkit-appearance: none; appearance: none;
+  }
+  .ticker-input::placeholder { color: var(--text-faint); font-weight: 400; letter-spacing: 0.02em; text-transform: none; font-family: var(--sans); font-size: 14px; }
+  body.theme-terminal .ticker-input { text-shadow: 0 0 4px rgba(0, 255, 102, 0.4); }
+
+  /* History ticker badge */
+  .history-ticker { color: var(--accent); font-weight: 700; letter-spacing: 0.06em; }
+
   /* Draft banner */
   .draft-banner {
     display: flex; justify-content: space-between; align-items: center; gap: 12px;
@@ -483,6 +510,8 @@ const state = {
   pmccMode: 'standard',
   // Checklist item state
   items: {},
+  // Session context
+  ticker: '',
   // UI
   qrefOpen: false,
   theme: 'auto',  // 'auto' | 'slate' | 'terminal' | 'light'
@@ -1228,6 +1257,16 @@ function wireSegmented(id, cb) {
   });
 }
 
+function tickerBarHTML() {
+  return `
+    <div class="ticker-bar">
+      <label class="ticker-label">Ticker</label>
+      <input class="ticker-input" id="in-ticker" type="text" autocomplete="off" autocorrect="off"
+             spellcheck="false" placeholder="e.g. MSFT / QQQ / AAPL" value="${esc(state.ticker || '')}">
+    </div>
+  `;
+}
+
 function statusBarHTML() {
   const v = overallVerdict();
   const cls = v.status.startsWith('CLEAR') ? 'pass' : v.status === 'BLOCKED' ? 'fail' : 'pending';
@@ -1330,6 +1369,7 @@ function renderChecklist() {
 
   $app.innerHTML = `
     ${headerHTML()}
+    ${tickerBarHTML()}
     ${statusBarHTML()}
     ${progressBarHTML()}
     ${qrefHTML()}
@@ -1364,9 +1404,26 @@ function renderChecklist() {
     if (bcSeg) {
       bcSeg.querySelector(`button[data-v="${state.leapsBluechip ? 'yes' : 'no'}"]`)?.classList.add('active');
       bcSeg.querySelectorAll('button').forEach(b => {
-        b.addEventListener('click', () => { state.leapsBluechip = b.dataset.v === 'yes'; render(); });
+        b.addEventListener('click', () => { pushUndo(); state.leapsBluechip = b.dataset.v === 'yes'; render(); });
       });
     }
+  }
+
+  // Ticker input (always present in checklist)
+  const tickerEl = document.getElementById('in-ticker');
+  if (tickerEl) {
+    tickerEl.addEventListener('focus', () => { pushUndo(); cancelFullRender(); });
+    tickerEl.addEventListener('input', e => {
+      const v = e.target.value.toUpperCase();
+      if (v !== e.target.value) {
+        const pos = e.target.selectionStart;
+        e.target.value = v;
+        try { e.target.setSelectionRange(pos, pos); } catch (err) {}
+      }
+      state.ticker = v;
+      scheduleSaveDraft();
+    });
+    tickerEl.addEventListener('blur', () => scheduleFullRender());
   }
 
   items.forEach(it => {
@@ -1608,6 +1665,7 @@ function resetAll(silent) {
   state.nav = ''; state.existingExposure = ''; state.budget = '';
   state.cspIntent = null;
   state.pmccUnderlyingPurpose = null; state.pmccMode = 'standard';
+  state.ticker = '';
   state.items = {};
   clearDraft();
   hideDraftBanner();
@@ -1708,6 +1766,7 @@ function snapshotStateForStorage() {
     nav: state.nav,
     existingExposure: state.existingExposure,
     budget: state.budget,
+    ticker: state.ticker,
     items: { ...state.items }
   };
 }
@@ -1820,6 +1879,7 @@ function saveToHistory() {
       id: 'snap_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
       timestamp: nowStamp(),
       timestampSort: Date.now(),
+      ticker: state.ticker || '',
       strategy: STRAT_LABEL[state.strategy] || '',
       subtype: subtypeString(),
       verdict: v.status,
@@ -1862,12 +1922,12 @@ function clearAllHistory() {
 function exportAllHistoryCSV() {
   const history = loadHistory();
   if (history.length === 0) { showToast('没有历史记录', 'error'); return; }
-  const headers = ['Timestamp', 'Strategy', 'Subtype', 'Verdict', 'Pass', 'Block', 'Pending', 'Hard_Fails', 'Failed_Items', 'Pending_Items', 'Inputs', 'NAV', 'Existing', 'Budget', 'Exposure_%', 'Cap_%'];
+  const headers = ['Timestamp', 'Ticker', 'Strategy', 'Subtype', 'Verdict', 'Pass', 'Block', 'Pending', 'Hard_Fails', 'Failed_Items', 'Pending_Items', 'Inputs', 'NAV', 'Existing', 'Budget', 'Exposure_%', 'Cap_%'];
   const rows = [headers];
   const sorted = [...history].sort((a, b) => a.timestampSort - b.timestampSort);
   sorted.forEach(e => {
     rows.push([
-      e.timestamp, e.strategy, e.subtype, e.verdict,
+      e.timestamp, e.ticker || '', e.strategy, e.subtype, e.verdict,
       e.pass, e.fail, e.pending,
       (e.hardFails || []).join(' | '),
       (e.failed || []).join(' | '),
@@ -1927,7 +1987,7 @@ function renderHistoryList() {
     return `
       <div class="history-item">
         <div class="history-main">
-          <div class="history-time">${esc(e.timestamp)}</div>
+          <div class="history-time">${esc(e.timestamp)}${e.ticker ? ` · <span class="history-ticker">${esc(e.ticker)}</span>` : ''}</div>
           <div class="history-title">${esc(e.strategy)} · ${esc(e.subtype)}</div>
           <div class="history-meta">
             <span class="history-verdict ${cls}">${esc(e.verdict)}</span>
@@ -2006,6 +2066,7 @@ function buildTextSnapshot() {
   const lines = [];
   lines.push('── Pre-Trade Snapshot ──');
   lines.push(`Time:     ${nowStamp()}`);
+  if (state.ticker) lines.push(`Ticker:   ${state.ticker}`);
   lines.push(`Strategy: ${STRAT_LABEL[state.strategy]} · ${subtypeString()}`);
   lines.push(`Verdict:  ${v.status}`);
   lines.push(`Tally:    ${v.pass} pass · ${v.fail} block · ${v.pending} pending`);
@@ -2118,14 +2179,14 @@ function buildCSVSnapshot() {
   }
 
   const headers = [
-    'Timestamp', 'Strategy', 'Subtype', 'Verdict',
+    'Timestamp', 'Ticker', 'Strategy', 'Subtype', 'Verdict',
     'Pass', 'Block', 'Pending',
     'Hard_Fails', 'Failed_Items', 'Pending_Items',
     'Inputs',
     'NAV', 'Existing', 'Budget', 'Exposure_%', 'Cap_%'
   ];
   const row = [
-    timestamp, strategy, subtype, verdict,
+    timestamp, state.ticker || '', strategy, subtype, verdict,
     v.pass, v.fail, v.pending,
     hardFails.join(' | '), failed.join(' | '), pending.join(' | '),
     inputs.join('; '),
@@ -2213,7 +2274,8 @@ function ensureSnapshotModal() {
   document.getElementById('snap-download').addEventListener('click', () => {
     const stamp = new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-');
     const strat = (state.strategy || 'check').toUpperCase();
-    const filename = `checklist-${strat}-${stamp}.csv`;
+    const ticker = state.ticker ? `-${state.ticker}` : '';
+    const filename = `checklist-${strat}${ticker}-${stamp}.csv`;
     const ok = downloadFile(filename, 'text/csv', buildCSVSnapshot());
     showToast(ok ? '已下载 CSV' : '下载失败', ok ? 'success' : 'error', ok ? filename : '');
   });
