@@ -401,6 +401,7 @@ const PMCC_MODE_LABEL = { standard: '标准 (≤15)', defensive: '防守 (≤10)
 function leapsDeltaMin() { return { stock_sub: 70, standard: 60, aggressive: 40 }[state.leapsStyle] || null; }
 function cspDeltaMax() { return { assign: 30, neutral: 25, premium: 15 }[state.cspIntent] || null; }
 function pmccDeltaMax() { return { standard: 15, defensive: 10 }[state.pmccMode] || null; }
+function pmccKdjMin() { return { standard: 80, defensive: 70 }[state.pmccMode] || null; }
 function positionCapPct() { return state.leapsBluechip ? 30 : 15; }
 function positionUsedPct() {
   const nav = parseFloat(state.nav);
@@ -486,7 +487,7 @@ const SOP = {
       <li>非在突破当天卖 short call (动能最强, 短腿易被推爆)</li>
       <li>Short call Delta ≤ 15 (标准) 或 ≤ 10 (防守)</li>
       <li>标的位于 Bollinger 中轨之上 (右侧位置, 卖强)</li>
-      <li>日线 KDJ 的 J 值 > 90 (超买, 权利金饱满)</li>
+      <li>日线 KDJ 的 J 值: Standard > 75 · Defensive > 90 (超买 = 权利金饱满)</li>
     </ul>
   `
 };
@@ -863,9 +864,11 @@ function pmccItems() {
     title: '标的位于 Bollinger 中轨之上',
     desc: '右侧卖强。中轨下方 = 趋势弱, 意义不大。' });
   base.push({ group: 'Short call selection', id: 'kdj_j',
-    title: '日线 KDJ 的 J 值 > 90',
-    desc: '超买 = 权利金饱满。',
-    numeric: { placeholder: 'J', unit: '', min: 90, comparator: '>' } });
+    title: `日线 KDJ 的 J 值 > ${pmccKdjMin() != null ? pmccKdjMin() : '?'}  (${modeLabel || '未选'})`,
+    desc: state.pmccMode === 'standard'
+      ? 'Δ 15 仍有 assign 风险, 需较强超买确认顶部。'
+      : 'Δ 10 已提供 assign 保护, 门槛放宽以获取更多机会。',
+    numeric: { placeholder: 'J', unit: '', min: pmccKdjMin(), comparator: '>' } });
   return base;
 }
 
