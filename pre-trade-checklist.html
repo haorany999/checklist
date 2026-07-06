@@ -2529,7 +2529,8 @@ function ensureSnapshotModal() {
         <button class="btn ghost" onclick="hideSnapshot()">关闭</button>
         ${canShare ? '<button class="btn" id="snap-share">分享</button>' : ''}
         <button class="btn" id="snap-download">下载 CSV</button>
-        <button class="btn primary" id="snap-copy">复制文本</button>
+        <button class="btn" id="snap-copy">复制文本</button>
+        <button class="btn primary" id="snap-upload">☁ 上传到云端</button>
       </div>
     </div>
   `;
@@ -2548,6 +2549,25 @@ function ensureSnapshotModal() {
     const filename = `checklist-${strat}${ticker}-${stamp}.csv`;
     const ok = downloadFile(filename, 'text/csv', buildCSVSnapshot());
     showToast(ok ? '已下载 CSV' : '下载失败', ok ? 'success' : 'error', ok ? filename : '');
+  });
+
+  document.getElementById('snap-upload').addEventListener('click', async () => {
+    const cfg = loadSyncConfig();
+    if (!cfg || !cfg.token) {
+      showToast('请先设置 Sync', 'info', '将跳转到设置页面');
+      hideSnapshot();
+      setTimeout(() => showSyncModal(), 350);
+      return;
+    }
+    if (!confirm('确定要上传本次 snapshot 到云端?\n(会双向合并本地与云端历史)')) return;
+    hideSnapshot();
+    try {
+      showToast('上传中...', 'info');
+      const stats = await syncMergeCore();
+      showToast('已上传', 'success', `云端 ${stats.total} 条 · 合并新增 ${stats.newFromRemote} 条`);
+    } catch (e) {
+      showToast('上传失败', 'error', e.message);
+    }
   });
 
   if (canShare) {
@@ -2669,37 +2689,60 @@ async function syncDownload() {
   } catch (e) { showToast('下载失败', 'error', e.message); }
 }
 
+// Core merge logic returning stats. Used by user-triggered syncMerge, snapshot upload, and auto-sync.
+async function syncMergeCore() {
+  const local = loadHistory();
+  const localIds = new Set(local.map(e => e.id));
+  let remoteHistory = [];
+  try {
+    const remote = await pullFromGist();
+    remoteHistory = Array.isArray(remote.history) ? remote.history : [];
+  } catch (e) {
+    // If gist doesn't exist yet (first sync), just upload local
+    if (!/未设置|不存在/.test(e.message)) throw e;
+  }
+  const remoteIds = new Set(remoteHistory.map(e => e.id));
+  const map = new Map();
+  [...local, ...remoteHistory].forEach(e => {
+    const cur = map.get(e.id);
+    if (!cur || (e.timestampSort || 0) > (cur.timestampSort || 0)) map.set(e.id, e);
+  });
+  const merged = Array.from(map.values())
+    .sort((a, b) => (b.timestampSort || 0) - (a.timestampSort || 0))
+    .slice(0, HISTORY_MAX);
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(merged));
+  const payload = { version: 1, syncedAt: new Date().toISOString(), history: merged };
+  await pushToGist(payload);
+  const cfg = loadSyncConfig();
+  saveSyncConfig({ ...cfg, lastSyncAt: payload.syncedAt });
+  const newFromRemote = remoteHistory.filter(e => !localIds.has(e.id)).length;
+  const newFromLocal = local.filter(e => !remoteIds.has(e.id)).length;
+  return { total: merged.length, newFromRemote, newFromLocal };
+}
+
 async function syncMerge() {
   try {
     showToast('合并中...', 'info');
-    const local = loadHistory();
-    let remoteHistory = [];
-    try {
-      const remote = await pullFromGist();
-      remoteHistory = Array.isArray(remote.history) ? remote.history : [];
-    } catch (e) {
-      // If gist doesn't exist yet (first sync), just upload local
-      if (!/未设置|不存在/.test(e.message)) throw e;
-    }
-    const map = new Map();
-    [...local, ...remoteHistory].forEach(e => {
-      const cur = map.get(e.id);
-      if (!cur || (e.timestampSort || 0) > (cur.timestampSort || 0)) map.set(e.id, e);
-    });
-    const merged = Array.from(map.values())
-      .sort((a, b) => (b.timestampSort || 0) - (a.timestampSort || 0))
-      .slice(0, HISTORY_MAX);
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(merged));
-    const payload = { version: 1, syncedAt: new Date().toISOString(), history: merged };
-    await pushToGist(payload);
-    const cfg = loadSyncConfig();
-    saveSyncConfig({ ...cfg, lastSyncAt: payload.syncedAt });
-    const localOnly = merged.length - remoteHistory.length;
-    const remoteOnly = merged.length - local.length;
-    showToast('已合并', 'success', `本地+云端 = ${merged.length} 条`);
+    const stats = await syncMergeCore();
+    showToast('已合并', 'success', `本地+云端 = ${stats.total} 条`);
     hideSyncModal();
     if (!state.strategy) render();
   } catch (e) { showToast('合并失败', 'error', e.message); }
+}
+
+// Silent auto-sync used on app boot. Toasts only for changes / errors.
+async function syncMergeSilent() {
+  try {
+    const stats = await syncMergeCore();
+    if (stats.newFromRemote > 0) {
+      showToast(`已从云端同步 ${stats.newFromRemote} 条新记录`, 'success');
+      if (!state.strategy) render();
+    }
+    // If only local-only entries were uploaded (nothing new to us), stay silent.
+  } catch (e) {
+    // Q3 (b): user chose to see failure toasts
+    showToast('云端同步失败', 'error', e.message);
+  }
 }
 
 function ensureSyncModal() {
@@ -2913,6 +2956,14 @@ render();
 showDraftBanner();
 // Warn user if localStorage is unavailable
 showStorageWarningIfNeeded();
+
+// Auto-sync on boot if Gist Sync is configured (Q2 = a: every launch)
+(function bootAutoSync() {
+  const cfg = loadSyncConfig();
+  if (!cfg || !cfg.token) return;
+  // Delay 800ms so UI renders + user sees the app before any sync toast
+  setTimeout(() => { syncMergeSilent(); }, 800);
+})();
 
 </script>
 </body>
