@@ -398,7 +398,13 @@ const PMCC_MODE_LABEL = { standard: '标准 (≤15)', defensive: '防守 (≤10)
 function leapsDeltaMin() { return { stock_sub: 70, standard: 60, aggressive: 40 }[state.leapsStyle] || null; }
 function cspDeltaMax() { return { assign: 30, neutral: 25, premium: 15 }[state.cspIntent] || null; }
 function pmccDeltaMax() { return { standard: 15, defensive: 10 }[state.pmccMode] || null; }
-function pmccKdjMin() { return { standard: 80, defensive: 70 }[state.pmccMode] || null; }
+function pmccKdjMin() {
+  // J threshold based on underlying LEAPS type (底仓珍贵 → 门槛越严)
+  //   股票替代 (Δ 70+, 长持底仓): 85 — 底仓珍贵, 卖飞代价大, 需极端超买
+  //   标准 Swing (Δ 60 底仓): 75 — 中位
+  //   激进 Swing (Δ 40 底仓): 65 — 底仓本身短期, 门槛放宽
+  return { stock_sub: 85, standard: 75, aggressive: 65 }[state.pmccUnderlyingPurpose] || null;
+}
 function positionCapPct() { return state.leapsBluechip ? 30 : 15; }
 function positionUsedPct() {
   const nav = parseFloat(state.nav);
@@ -484,7 +490,7 @@ const SOP = {
       <li>非在突破当天卖 short call (动能最强, 短腿易被推爆)</li>
       <li>Short call Delta ≤ 15 (标准) 或 ≤ 10 (防守)</li>
       <li>标的位于 Bollinger 中轨之上 (右侧位置, 卖强)</li>
-      <li>日线 KDJ 的 J 值: Standard > 80 · Defensive > 70 (超买 = 权利金饱满)</li>
+      <li>日线 KDJ 的 J 值 (按底仓类型): 股票替代 > 85 · 标准 Swing > 75 · 激进 Swing > 65</li>
     </ul>
   `
 };
@@ -861,10 +867,14 @@ function pmccItems() {
     title: '标的位于 Bollinger 中轨之上',
     desc: '右侧卖强。中轨下方 = 趋势弱, 意义不大。' });
   base.push({ group: 'Short call selection', id: 'kdj_j',
-    title: `日线 KDJ 的 J 值 > ${pmccKdjMin() != null ? pmccKdjMin() : '?'}  (${modeLabel || '未选'})`,
-    desc: state.pmccMode === 'standard'
-      ? 'Δ 15 仍有 assign 风险, 需较强超买确认顶部。'
-      : 'Δ 10 已提供 assign 保护, 门槛放宽以获取更多机会。',
+    title: `日线 KDJ 的 J 值 > ${pmccKdjMin() != null ? pmccKdjMin() : '?'}  (底仓 ${LEAPS_STYLE_LABEL[state.pmccUnderlyingPurpose] || '未选'})`,
+    desc: (() => {
+      const p = state.pmccUnderlyingPurpose;
+      if (p === 'stock_sub') return '股票替代底仓 = 长期珍贵。Assign 走底仓代价大, 需极端超买 (J > 85) 才卖 call。';
+      if (p === 'standard') return '标准 Swing 底仓 = 中期。中位门槛 (J > 75)。';
+      if (p === 'aggressive') return '激进 Swing 底仓 = 短期。底仓无所谓, 门槛放宽 (J > 65) 获取更多机会。';
+      return '选底仓类型决定 J 门槛。';
+    })(),
     numeric: { placeholder: 'J', unit: '', min: pmccKdjMin(), comparator: '>' } });
   return base;
 }
