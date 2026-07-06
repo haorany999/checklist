@@ -5,7 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Pre-Trade">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#0F1419">
+<link rel="apple-touch-icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' rx='40' fill='%230F1419'/><path d='M50 90 L80 120 L135 60' stroke='%233FB950' stroke-width='18' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+<link rel="icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' rx='40' fill='%230F1419'/><path d='M50 90 L80 120 L135 60' stroke='%233FB950' stroke-width='18' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
 <title>Pre-Trade Checklist</title>
 <!--
   PRE-TRADE CHECKLIST · LEAPS / CSP / PMCC self-check
@@ -41,6 +45,15 @@
     --fail: #FF4444; --fail-bg: rgba(255, 68, 68, 0.10);
     --pending: #F0C000; --pending-bg: rgba(240, 192, 0, 0.10);
     --accent: #00CC66;
+  }
+  body.theme-light {
+    --bg: #F9FAFB; --panel: #FFFFFF; --panel-2: #F3F4F6;
+    --border: #E5E7EB; --border-hi: #D1D5DB;
+    --text: #111827; --text-dim: #6B7280; --text-faint: #9CA3AF;
+    --pass: #059669; --pass-bg: rgba(5, 150, 105, 0.08);
+    --fail: #DC2626; --fail-bg: rgba(220, 38, 38, 0.08);
+    --pending: #D97706; --pending-bg: rgba(217, 119, 6, 0.08);
+    --accent: #2563EB;
   }
   html, body { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 15px; line-height: 1.45; min-height: 100vh; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
   body { padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
@@ -174,10 +187,166 @@
   .modal-body { padding: 14px 18px; flex: 1; overflow-y: auto; min-height: 0; }
   .modal-preview { width: 100%; min-height: 260px; height: 50vh; font-family: var(--mono); font-size: 12px; line-height: 1.55; background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 12px; border-radius: 6px; resize: vertical; -webkit-appearance: none; appearance: none; }
   .modal-actions { padding: 12px 18px; border-top: 1px solid var(--border); display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+  /* ==== POLISH: transitions, elevation, focus, toast, animations ==== */
+
+  /* Global micro-transitions */
+  button, input, textarea, .item, .picker-card, .qref-header, .theme-btn, .modal-close {
+    transition: background-color 0.15s ease-out, border-color 0.15s ease-out, color 0.15s ease-out, box-shadow 0.2s ease-out, transform 0.12s ease-out;
+  }
+
+  /* Button press feedback (global) */
+  button:active:not(:disabled), .picker-card:active { transform: scale(0.98); }
+
+  /* Elevation & hover lift on cards */
+  .item { box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18); }
+  .item:hover { box-shadow: 0 3px 8px rgba(0, 0, 0, 0.28); transform: translateY(-1px); }
+  .picker-card { box-shadow: 0 1px 3px rgba(0, 0, 0, 0.20); }
+  .picker-card:hover { box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35); transform: translateY(-2px); border-color: var(--border-hi); }
+  .config { box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15); }
+  .status-bar { box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15); }
+
+  /* Light theme: softer shadows */
+  body.theme-light .item { box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06); }
+  body.theme-light .item:hover { box-shadow: 0 3px 8px rgba(0, 0, 0, 0.10); }
+  body.theme-light .picker-card { box-shadow: 0 1px 3px rgba(0, 0, 0, 0.07); }
+  body.theme-light .picker-card:hover { box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12); }
+  body.theme-light .config, body.theme-light .status-bar { box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05); }
+  body.theme-light .modal-card { box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15); }
+  body.theme-light .toast { box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15); }
+
+  /* Button hover lift */
+  .btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25); }
+  .btn.primary:hover:not(:disabled) { box-shadow: 0 4px 12px rgba(88, 166, 255, 0.35); }
+
+  /* Input focus glow */
+  input:focus, textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.15); }
+
+  /* Keyboard focus ring (only when using keyboard, not mouse) */
+  button:focus-visible, .item-btn:focus-visible, .theme-btn:focus-visible, .picker-card:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 2px;
+  }
+  button:focus:not(:focus-visible) { outline: none; }
+
+  /* Cursors */
+  input[type="text"], input[type="number"], textarea { cursor: text; }
+  button:disabled { cursor: not-allowed; opacity: 0.5; }
+
+  /* Typography tune */
+  .group-title, .picker-card-tag, .qref-title, .num-field-label, .config-title, .position-summary-label, .modal-title, .status-meta strong {
+    letter-spacing: 0.12em;
+  }
+
+  /* Group separator gradient */
+  .group + .group { position: relative; margin-top: 26px; }
+  .group + .group::before {
+    content: ""; position: absolute; top: -14px; left: 22%; right: 22%; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border), transparent);
+    pointer-events: none;
+  }
+
+  /* Tally bump animation on count change */
+  .tally-item.bumped { animation: tally-bump 0.35s cubic-bezier(0.34, 1.56, 0.64, 1); }
+  @keyframes tally-bump { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.14); } }
+
+  /* Progress bar with spring easing */
+  .progress-fill-pass, .progress-fill-fail {
+    transition: width 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+  }
+
+  /* Modal spring open */
+  .modal-overlay { animation: overlay-in 0.2s ease-out; }
+  .modal-card { animation: card-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
+  @keyframes overlay-in { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes card-in {
+    from { opacity: 0; transform: translateY(16px) scale(0.96); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  /* Toast notifications (bottom-right on desktop, full-width on mobile) */
+  .toast-container {
+    position: fixed; bottom: 20px; right: 20px; z-index: 200;
+    display: flex; flex-direction: column; gap: 8px; pointer-events: none;
+    max-width: 340px;
+  }
+  @media (max-width: 480px) {
+    .toast-container { left: 16px; right: 16px; bottom: 16px; max-width: none; }
+  }
+  .toast {
+    background: var(--panel); border: 1px solid var(--border-hi); border-radius: 8px;
+    padding: 12px 16px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+    min-width: 220px; font-size: 13px; color: var(--text); font-weight: 500;
+    opacity: 0; transform: translateY(12px);
+    transition: opacity 0.28s cubic-bezier(0.34, 1.56, 0.64, 1), transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+    pointer-events: auto;
+  }
+  .toast.visible { opacity: 1; transform: translateY(0); }
+  .toast.success { border-left: 3px solid var(--pass); }
+  .toast.error   { border-left: 3px solid var(--fail); }
+  .toast.info    { border-left: 3px solid var(--accent); }
+  .toast-sub { font-size: 11.5px; color: var(--text-dim); margin-top: 3px; font-weight: 400; letter-spacing: 0.02em; }
+
+  /* Terminal theme: CRT phosphor glow */
+  body.theme-terminal .status-main.pass, body.theme-terminal .status-main.fail { text-shadow: 0 0 12px currentColor; }
+  body.theme-terminal .item-numeric-verdict.pass, body.theme-terminal .item-numeric-verdict.fail { text-shadow: 0 0 6px currentColor; }
+  body.theme-terminal .tally-dot { box-shadow: 0 0 8px currentColor; }
+  body.theme-terminal .theme-dot { box-shadow: 0 0 10px var(--accent); }
+  body.theme-terminal .progress-fill-pass { box-shadow: 0 0 10px var(--pass); }
+  body.theme-terminal .btn.primary { box-shadow: 0 0 14px rgba(0, 204, 102, 0.35); }
+  body.theme-terminal .btn.primary:hover:not(:disabled) { box-shadow: 0 0 20px rgba(0, 204, 102, 0.55); }
+  body.theme-terminal .item-btn.pass-btn.on, body.theme-terminal .item-btn.fail-btn.on { text-shadow: 0 0 6px currentColor; }
+  body.theme-terminal .brand { text-shadow: 0 0 8px rgba(0, 204, 102, 0.3); }
+  body.theme-terminal input:focus, body.theme-terminal textarea:focus {
+    box-shadow: 0 0 0 3px rgba(0, 204, 102, 0.18), 0 0 12px rgba(0, 204, 102, 0.2);
+  }
+
+  /* Draft banner */
+  .draft-banner {
+    display: flex; justify-content: space-between; align-items: center; gap: 12px;
+    padding: 10px 14px; background: var(--pending-bg);
+    border: 1px solid var(--pending); border-radius: 8px;
+    margin: 0 0 12px; font-size: 13px;
+    animation: card-in 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .draft-msg { color: var(--text); flex: 1; min-width: 0; }
+  .draft-msg-sub { font-size: 11px; color: var(--text-dim); margin-top: 2px; letter-spacing: 0.02em; }
+  .draft-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .btn.small { padding: 5px 10px; font-size: 11.5px; min-height: 28px; letter-spacing: 0.06em; }
+
+  /* History list */
+  .history-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 4px; border-bottom: 1px solid var(--border); gap: 12px;
+    transition: background-color 0.15s ease-out;
+  }
+  .history-item:hover { background: var(--panel-2); }
+  .history-item:last-child { border-bottom: none; }
+  .history-main { flex: 1; min-width: 0; }
+  .history-time { font-family: var(--mono); font-size: 10.5px; color: var(--text-faint); margin-bottom: 4px; letter-spacing: 0.04em; }
+  .history-title { font-size: 13px; color: var(--text); margin-bottom: 6px; line-height: 1.35; }
+  .history-meta { display: flex; gap: 8px; font-size: 11px; align-items: center; flex-wrap: wrap; }
+  .history-verdict { padding: 2px 6px; border-radius: 3px; font-family: var(--mono); letter-spacing: 0.08em; text-transform: uppercase; font-size: 10px; font-weight: 600; }
+  .history-verdict.pass { background: var(--pass-bg); color: var(--pass); }
+  .history-verdict.fail { background: var(--fail-bg); color: var(--fail); }
+  .history-verdict.pending { background: var(--pending-bg); color: var(--pending); }
+  .history-tally { color: var(--text-dim); font-family: var(--mono); font-size: 10.5px; }
+  .history-hard { color: var(--fail); font-size: 10px; font-family: var(--mono); font-weight: 600; letter-spacing: 0.06em; }
+  .history-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .history-empty { padding: 60px 20px; text-align: center; color: var(--text-dim); font-size: 13px; line-height: 1.6; }
+  .history-empty-sub { font-size: 11px; color: var(--text-faint); margin-top: 8px; }
+
 </style>
 </head>
 <body class="theme-slate">
+<div id="banner-slot"></div>
 <div class="app" id="app"></div>
+<script>
+  // Service Worker registration (silent, no-op if sw.js not present)
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js').catch(() => {});
+    });
+  }
+</script>
 <script>
 "use strict";
 
@@ -230,9 +399,9 @@ const SOP = {
       <li>明确交易预期: 波段 (Swing) 还是长期配置拿到新高</li>
       <li>风格分类:
         <ul>
-          <li>股票替代: <code>Δ ≥ 70</code>, DTE 400+, DITM, 长持</li>
-          <li>标准 Swing: <code>Δ ≥ 60</code>, DTE 400+, ITM/ATM, 短持</li>
-          <li>激进 Swing: <code>Δ ≥ 40</code>, DTE 400+, ATM, 短持</li>
+          <li>股票替代: <code>Δ ≥ 70</code>, DTE 400+, DITM, 长持, R:R ≥ 1.5</li>
+          <li>标准 Swing: <code>Δ ≥ 60</code>, DTE 400+, ITM/ATM, 短持, R:R ≥ 2</li>
+          <li>激进 Swing: <code>Δ ≥ 40</code>, DTE 400+, ATM, 短持, R:R ≥ 2.5</li>
         </ul>
       </li>
     </ul>
@@ -316,7 +485,7 @@ const state = {
   items: {},
   // UI
   qrefOpen: false,
-  theme: 'slate',  // 'slate' | 'terminal'
+  theme: 'auto',  // 'auto' | 'slate' | 'terminal' | 'light'
 };
 
 /* ==========================================================
@@ -357,12 +526,22 @@ function leapsOpenItems() {
   base.push({ group: 'Trade plan', id: 'expectation',
     title: '交易预期已明确',
     desc: '波段 vs 长期 → 止盈思路不同。' });
+  base.push({ group: 'Trade plan', id: 'entry_price',
+    title: '正股当前价',
+    desc: '本次开仓时正股价格。用于自动计算 R:R。',
+    numeric: { placeholder: 'e.g. 180.50', unit: '$', priceField: true } });
   base.push({ group: 'Trade plan', id: 'stop_level',
-    title: '已明确正股止损位',
-    desc: '具体价位, 如 "跌破 200MA" / "$XXX" / "前低 $YYY"。' });
+    title: '正股止损位',
+    desc: '跌到此价 → 平 LEAPS。例如 "跌破 200MA" / 前低 / 关键支撑。必须 < 当前价。',
+    numeric: { placeholder: 'e.g. 170', unit: '$', priceField: true } });
   base.push({ group: 'Trade plan', id: 'target_level',
-    title: '已明确正股止盈位',
-    desc: '具体价位, 如 "前高 $XXX" / "$YYY 阻力" / "Fib 1.618 位" / "整数关口"。配合止损定义 R:R。' });
+    title: '正股止盈位',
+    desc: '涨到此价 → 平 LEAPS。例如 前高 / 阻力 / Fib 1.618。必须 > 当前价。',
+    numeric: { placeholder: 'e.g. 220', unit: '$', priceField: true } });
+  base.push({ group: 'Trade plan', id: 'rr_check',
+    title: `R:R ≥ ${rrThreshold()} : 1  (${LEAPS_STYLE_LABEL[state.leapsStyle] || ''} · 自动计算)`,
+    desc: rrCheckDesc(),
+    positionCheck: true });
   base.push({ group: 'Trade plan', id: 'dte',
     title: 'DTE ≥ 400 天',
     desc: '',
@@ -673,9 +852,60 @@ function currentItems() {
 }
 
 /* ==========================================================
+ * R:R (Risk : Reward) auto-computation for LEAPS
+ * ========================================================== */
+function rrThreshold() {
+  // Different thresholds per LEAPS style:
+  //   股票替代 (Δ 70+): 1.5 — long hold + delta protection = lower threshold OK
+  //   标准 Swing (Δ 60): 2.0 — classic swing standard
+  //   激进 Swing (Δ 40): 2.5 — low delta = theta drain, needs bigger reward
+  const t = { stock_sub: 1.5, standard: 2, aggressive: 2.5 }[state.leapsStyle];
+  return t || 2;
+}
+function computeRR() {
+  const entry = parseFloat(state.items['entry_price']);
+  const stop = parseFloat(state.items['stop_level']);
+  const target = parseFloat(state.items['target_level']);
+  if (!entry || !stop || !target || entry <= 0 || stop <= 0 || target <= 0) return null;
+  if (stop >= entry) return { error: '止损必须 < 当前价' };
+  if (target <= entry) return { error: '止盈必须 > 当前价' };
+  const downsideDollar = entry - stop;
+  const upsideDollar = target - entry;
+  const downsidePct = downsideDollar / entry * 100;
+  const upsidePct = upsideDollar / entry * 100;
+  const rr = upsideDollar / downsideDollar;
+  return { downsidePct, upsidePct, rr, downsideDollar, upsideDollar, entry, stop, target };
+}
+function rrCheckVerdict() {
+  const rr = computeRR();
+  if (!rr) return 'pending';
+  if (rr.error) return 'fail';
+  const thresh = rrThreshold();
+  if (rr.rr >= thresh) return 'pass';
+  if (rr.rr >= thresh - 0.5) return 'pending';  // pending zone: 0.5 below threshold
+  return 'fail';
+}
+function rrCheckDesc() {
+  const thresh = rrThreshold();
+  const styleReason = {
+    stock_sub: '长持 + Δ 高 → 门槛可低',
+    standard: '经典 swing 门槛',
+    aggressive: '低 Δ, theta 大 → 门槛需高',
+  }[state.leapsStyle] || '';
+  const rr = computeRR();
+  if (!rr) return `${LEAPS_STYLE_LABEL[state.leapsStyle] || ''}: 门槛 R:R ≥ ${thresh} : 1  (${styleReason})。填入三个价位自动计算。`;
+  if (rr.error) return `⚠ ${rr.error}`;
+  const rating = rr.rr >= thresh ? '✓ 好' : rr.rr >= thresh - 0.5 ? '~ 可接受' : '✗ 不足, 慎重';
+  return `下跌 -${rr.downsidePct.toFixed(1)}% ($${rr.downsideDollar.toFixed(2)})  ·  上涨 +${rr.upsidePct.toFixed(1)}% ($${rr.upsideDollar.toFixed(2)})  ·  R:R = ${rr.rr.toFixed(2)} : 1  · ${rating}`;
+}
+
+/* ==========================================================
  * VERDICT
  * ========================================================== */
 function itemVerdict(item) {
+  // R:R computed item
+  if (item.id === 'rr_check') return rrCheckVerdict();
+
   if (item.positionCheck) {
     const pct = positionUsedPct();
     if (pct == null) return 'pending';
@@ -683,6 +913,16 @@ function itemVerdict(item) {
   }
   if (item.numeric) {
     const raw = state.items[item.id];
+    // Price fields have cross-validation but no threshold
+    if (item.numeric.priceField) {
+      if (raw === '' || raw == null) return 'pending';
+      const v = parseFloat(raw);
+      if (isNaN(v) || v <= 0) return 'pending';
+      const entry = parseFloat(state.items['entry_price']);
+      if (item.id === 'stop_level' && entry && v >= entry) return 'fail';
+      if (item.id === 'target_level' && entry && v <= entry) return 'fail';
+      return 'pass';
+    }
     // For optional numeric fields, empty = pass (not required)
     if ((raw === '' || raw == null) && item.numeric.optional) return 'pass';
     if (raw === '' || raw == null) return 'pending';
@@ -728,23 +968,26 @@ function render() {
     if (state.leapsDirection === 'open' && !state.leapsPhase) { renderLeapsConfig(); return; }
     if (state.leapsDirection === 'close' && !state.leapsCloseType) { renderLeapsConfig(); return; }
     renderChecklist();
+    scheduleSaveDraft();
     return;
   }
   if (state.strategy === 'csp' && !state.cspIntent) { renderCspConfig(); return; }
   if (state.strategy === 'pmcc' && !state.pmccUnderlyingPurpose) { renderPmccConfig(); return; }
   renderChecklist();
+  scheduleSaveDraft();
 }
 
 function headerHTML() {
-  const themeName = state.theme === 'terminal' ? 'Terminal' : 'Slate';
+  const themeName = THEME_LABEL[state.theme] || 'Auto';
   return `
     <div class="header">
       <div class="brand">Pre-Trade Checklist</div>
       <div class="header-actions">
-        <button class="theme-btn" onclick="cycleTheme()" title="Toggle theme">
+        <button class="theme-btn" onclick="cycleTheme()" title="Cycle theme (Auto → Slate → Terminal → Light)">
           <span class="theme-dot"></span>
           <span>${themeName}</span>
         </button>
+        <button class="btn ghost" onclick="showHistory()">History</button>
         ${state.strategy ? `<button class="btn ghost" onclick="showSnapshot()">Snapshot</button>` : ''}
         ${state.strategy ? `<button class="btn ghost" onclick="switchStrategy()">Switch</button>` : ''}
         <button class="btn" onclick="resetAll()">Reset</button>
@@ -769,15 +1012,16 @@ function subtypeString() {
 }
 
 function renderPicker() {
-  const themeName = state.theme === 'terminal' ? 'Terminal' : 'Slate';
+  const themeName = THEME_LABEL[state.theme] || 'Auto';
   $app.innerHTML = `
     <div class="header">
       <div class="brand">Pre-Trade Checklist</div>
       <div class="header-actions">
-        <button class="theme-btn" onclick="cycleTheme()" title="Toggle theme">
+        <button class="theme-btn" onclick="cycleTheme()" title="Cycle theme (Auto → Slate → Terminal → Light)">
           <span class="theme-dot"></span>
           <span>${themeName}</span>
         </button>
+        <button class="btn ghost" onclick="showHistory()">History</button>
       </div>
     </div>
     <div class="picker">
@@ -1106,12 +1350,12 @@ function renderChecklist() {
     const bind = (id, key) => {
       const el = document.getElementById(id);
       if (!el) return;
+      el.addEventListener('focus', () => { pushUndo(); cancelFullRender(); });
       el.addEventListener('input', e => {
         state[key] = e.target.value;
         updateVerdictsInPlace();
       });
       el.addEventListener('blur', () => scheduleFullRender());
-      el.addEventListener('focus', () => cancelFullRender());
     };
     bind('in-nav', 'nav');
     bind('in-ex', 'existingExposure');
@@ -1130,18 +1374,18 @@ function renderChecklist() {
     if (it.numeric) {
       const el = document.getElementById(`num-${it.id}`);
       if (el) {
+        el.addEventListener('focus', () => { pushUndo(); cancelFullRender(); });
         el.addEventListener('input', e => {
           state.items[it.id] = e.target.value;
           updateVerdictsInPlace();
         });
         el.addEventListener('blur', () => scheduleFullRender());
-        el.addEventListener('focus', () => cancelFullRender());
       }
     } else {
       const p = document.getElementById(`pass-${it.id}`);
       const f = document.getElementById(`fail-${it.id}`);
-      if (p) p.addEventListener('click', () => { state.items[it.id] = state.items[it.id] === 'pass' ? null : 'pass'; render(); });
-      if (f) f.addEventListener('click', () => { state.items[it.id] = state.items[it.id] === 'fail' ? null : 'fail'; render(); });
+      if (p) p.addEventListener('click', () => { pushUndo(); state.items[it.id] = state.items[it.id] === 'pass' ? null : 'pass'; render(); });
+      if (f) f.addEventListener('click', () => { pushUndo(); state.items[it.id] = state.items[it.id] === 'fail' ? null : 'fail'; render(); });
     }
   });
 }
@@ -1192,11 +1436,20 @@ function updateVerdictsInPlace() {
   // Tally counts
   const $tally = document.getElementById('status-tally');
   if ($tally) {
+    const newTally = `${v.pass}_${v.fail}_${v.pending}`;
+    const changed = window.__lastTally && window.__lastTally !== newTally;
     $tally.innerHTML = `
       <span class="tally-item"><span class="tally-dot pass"></span> ${v.pass} pass</span>
       <span class="tally-item"><span class="tally-dot fail"></span> ${v.fail} block</span>
       <span class="tally-item"><span class="tally-dot pending"></span> ${v.pending} pending</span>
     `;
+    if (changed) {
+      $tally.querySelectorAll('.tally-item').forEach(el => {
+        el.classList.add('bumped');
+        setTimeout(() => el.classList.remove('bumped'), 400);
+      });
+    }
+    window.__lastTally = newTally;
   }
 
   // Each item's class + numeric badge
@@ -1248,6 +1501,13 @@ function updateVerdictsInPlace() {
       $val.innerHTML = `${pctDisp} <span style="color:var(--text-faint); font-weight:400;"> / cap ${cap}%</span>`;
     }
   }
+
+  // R:R desc live update
+  const $rrDesc = document.getElementById('rr-desc');
+  if ($rrDesc) $rrDesc.textContent = rrCheckDesc();
+
+  // Save draft after any state change
+  scheduleSaveDraft();
 }
 
 function itemHTML(it) {
@@ -1255,11 +1515,26 @@ function itemHTML(it) {
   const hardBadge = it.hard ? `<span class="hard-badge">Hard block</span>` : '';
   const hardClass = it.hard && v === 'fail' ? 'hard-fail' : '';
 
+  // Special render for R:R computed check
+  if (it.id === 'rr_check') {
+    return `
+      <div class="item ${v}" id="item-${esc(it.id)}">
+        <div class="item-head">
+          <div class="item-text">
+            <div class="item-title">${esc(it.title)}</div>
+            <div class="item-desc" id="rr-desc">${esc(rrCheckDesc())}</div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
   if (it.numeric) {
     const val = state.items[it.id] ?? '';
     const n = it.numeric;
     let req = '';
-    if (n.range) req = `Required: ${n.range[0]} – ${n.range[1]} ${n.unit || ''}`;
+    if (n.priceField) req = '';  // No required label for price fields
+    else if (n.range) req = `Required: ${n.range[0]} – ${n.range[1]} ${n.unit || ''}`;
     else if (n.min != null) req = `Required: ${n.comparator} ${n.min}${n.unit ? ' ' + n.unit : ''}`;
     else if (n.max != null) req = `Required: ${n.comparator} ${n.max}${n.unit ? ' ' + n.unit : ''}`;
     if (n.optional) req += ' (可留空)';
@@ -1334,12 +1609,365 @@ function resetAll(silent) {
   state.cspIntent = null;
   state.pmccUnderlyingPurpose = null; state.pmccMode = 'standard';
   state.items = {};
+  clearDraft();
+  hideDraftBanner();
   render();
 }
 function clearItems() {
   if (!confirm('清空所有勾选 (保留策略配置和仓位输入)?')) return;
   state.items = {};
   render();
+}
+
+/* ==========================================================
+ * STORAGE AVAILABILITY
+ * ========================================================== */
+const STORAGE_OK = (() => {
+  try {
+    const t = '__pretrade_test__';
+    localStorage.setItem(t, t);
+    localStorage.removeItem(t);
+    return true;
+  } catch (e) { return false; }
+})();
+
+function showStorageWarningIfNeeded() {
+  if (STORAGE_OK) return;
+  const slot = document.getElementById('banner-slot');
+  if (!slot || slot.querySelector('.storage-warning')) return;
+  const warn = document.createElement('div');
+  warn.className = 'draft-banner storage-warning';
+  warn.style.background = 'var(--fail-bg)';
+  warn.style.borderColor = 'var(--fail)';
+  warn.innerHTML = `
+    <div class="draft-msg">
+      <div>⚠ 存储不可用 (隐私模式 / 存储禁用)</div>
+      <div class="draft-msg-sub">主题 / 历史 / 草稿本次会话结束后清空</div>
+    </div>
+  `;
+  slot.appendChild(warn);
+}
+
+/* ==========================================================
+ * UNDO SYSTEM (Ctrl/Cmd + Z)
+ * ========================================================== */
+const undoStack = [];
+const UNDO_LIMIT = 30;
+
+function pushUndo() {
+  if (!state.strategy) return;
+  try {
+    const snapshot = JSON.stringify(snapshotStateForStorage());
+    // Skip if identical to top of stack
+    if (undoStack.length && undoStack[undoStack.length - 1] === snapshot) return;
+    undoStack.push(snapshot);
+    if (undoStack.length > UNDO_LIMIT) undoStack.shift();
+  } catch (e) {}
+}
+function undo() {
+  if (undoStack.length === 0) {
+    showToast('无可撤销', 'info');
+    return;
+  }
+  try {
+    const prev = JSON.parse(undoStack.pop());
+    restoreStateFromStorage(prev);
+    render();
+    showToast('已撤销', 'info');
+  } catch (e) {
+    showToast('撤销失败', 'error');
+  }
+}
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !e.shiftKey) {
+    const tag = document.activeElement ? document.activeElement.tagName : '';
+    // Don't interfere with native text input undo
+    if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+    e.preventDefault();
+    undo();
+  }
+});
+
+/* ==========================================================
+ * DRAFT PERSISTENCE (auto-save current session to localStorage)
+ * ========================================================== */
+const DRAFT_KEY = 'pretrade_draft';
+const DRAFT_MAX_AGE_MS = 6 * 60 * 60 * 1000; // 6 hours
+
+function snapshotStateForStorage() {
+  return {
+    strategy: state.strategy,
+    leapsDirection: state.leapsDirection,
+    leapsPhase: state.leapsPhase,
+    leapsStyle: state.leapsStyle,
+    leapsBluechip: state.leapsBluechip,
+    leapsCloseType: state.leapsCloseType,
+    cspIntent: state.cspIntent,
+    pmccUnderlyingPurpose: state.pmccUnderlyingPurpose,
+    pmccMode: state.pmccMode,
+    nav: state.nav,
+    existingExposure: state.existingExposure,
+    budget: state.budget,
+    items: { ...state.items }
+  };
+}
+function restoreStateFromStorage(saved) {
+  if (!saved) return;
+  Object.assign(state, saved);
+  if (saved.items) state.items = { ...saved.items };
+}
+
+let __draftSaveTimer = null;
+function scheduleSaveDraft() {
+  clearTimeout(__draftSaveTimer);
+  __draftSaveTimer = setTimeout(saveDraft, 250);
+}
+function saveDraft() {
+  if (!state.strategy) return;
+  try {
+    localStorage.setItem(DRAFT_KEY, JSON.stringify({
+      timestamp: Date.now(),
+      state: snapshotStateForStorage()
+    }));
+  } catch (e) {}
+}
+function loadDraft() {
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY);
+    if (!raw) return null;
+    const draft = JSON.parse(raw);
+    if (!draft.state || !draft.state.strategy) return null;
+    if (Date.now() - draft.timestamp > DRAFT_MAX_AGE_MS) return null;
+    return draft;
+  } catch (e) { return null; }
+}
+function clearDraft() {
+  try { localStorage.removeItem(DRAFT_KEY); } catch (e) {}
+}
+
+function showDraftBanner() {
+  const draft = loadDraft();
+  if (!draft) return;
+  const stratLabel = STRAT_LABEL[draft.state.strategy] || '?';
+  const minsAgo = Math.round((Date.now() - draft.timestamp) / 60000);
+  const timeStr = minsAgo < 1 ? '刚才' :
+                  minsAgo < 60 ? `${minsAgo} 分钟前` :
+                  `${Math.round(minsAgo/60)} 小时前`;
+  const slot = document.getElementById('banner-slot');
+  if (!slot) return;
+  slot.innerHTML = `
+    <div class="draft-banner">
+      <div class="draft-msg">
+        <div>上次未完成的 <strong>${stratLabel}</strong> 检查</div>
+        <div class="draft-msg-sub">${timeStr}</div>
+      </div>
+      <div class="draft-actions">
+        <button class="btn ghost small" onclick="dismissDraft()">丢弃</button>
+        <button class="btn small" onclick="restoreDraft()">恢复</button>
+      </div>
+    </div>
+  `;
+}
+function hideDraftBanner() {
+  const slot = document.getElementById('banner-slot');
+  if (slot) slot.innerHTML = '';
+}
+function restoreDraft() {
+  const draft = loadDraft();
+  if (!draft) return;
+  restoreStateFromStorage(draft.state);
+  hideDraftBanner();
+  render();
+  showToast('已恢复未完成检查', 'info');
+}
+function dismissDraft() {
+  clearDraft();
+  hideDraftBanner();
+}
+
+/* ==========================================================
+ * HISTORY (persistent log of all snapshots)
+ * ========================================================== */
+const HISTORY_KEY = 'pretrade_history';
+const HISTORY_MAX = 50;
+
+function loadHistory() {
+  try {
+    const raw = localStorage.getItem(HISTORY_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) { return []; }
+}
+function saveToHistory() {
+  if (!state.strategy) return;
+  try {
+    const history = loadHistory();
+    const items = currentItems();
+    const v = overallVerdict();
+    const inputs = [];
+    items.forEach(it => {
+      if (it.numeric) {
+        const val = state.items[it.id];
+        if (val != null && val !== '') inputs.push(`${it.id}=${val}`);
+      }
+    });
+    let exposurePct = '', capPct = '';
+    if (state.strategy === 'leaps' && state.leapsDirection === 'open') {
+      const p = positionUsedPct();
+      if (p != null) exposurePct = p.toFixed(1);
+      capPct = positionCapPct();
+    }
+    const entry = {
+      id: 'snap_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+      timestamp: nowStamp(),
+      timestampSort: Date.now(),
+      strategy: STRAT_LABEL[state.strategy] || '',
+      subtype: subtypeString(),
+      verdict: v.status,
+      pass: v.pass, fail: v.fail, pending: v.pending,
+      hardFails: items.filter(it => it.hard && itemVerdict(it) === 'fail').map(it => it.title),
+      failed: items.filter(it => itemVerdict(it) === 'fail').map(it => it.title),
+      pendingItems: items.filter(it => itemVerdict(it) === 'pending').map(it => it.title),
+      inputs: inputs.join('; '),
+      nav: state.nav || '',
+      existing: state.existingExposure || '',
+      budget: state.budget || '',
+      exposurePct, capPct,
+      fullState: snapshotStateForStorage()
+    };
+    history.unshift(entry);
+    if (history.length > HISTORY_MAX) history.length = HISTORY_MAX;
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+  } catch (e) {}
+}
+function deleteHistoryEntry(id) {
+  const history = loadHistory().filter(e => e.id !== id);
+  try { localStorage.setItem(HISTORY_KEY, JSON.stringify(history)); } catch (e) {}
+  renderHistoryList();
+}
+function restoreFromHistory(id) {
+  const entry = loadHistory().find(e => e.id === id);
+  if (!entry || !entry.fullState) return;
+  restoreStateFromStorage(entry.fullState);
+  hideHistory();
+  hideDraftBanner();
+  render();
+  showToast('已还原快照', 'info', entry.timestamp);
+}
+function clearAllHistory() {
+  if (!confirm('清空所有历史? 无法恢复。')) return;
+  try { localStorage.removeItem(HISTORY_KEY); } catch (e) {}
+  renderHistoryList();
+  showToast('历史已清空', 'info');
+}
+function exportAllHistoryCSV() {
+  const history = loadHistory();
+  if (history.length === 0) { showToast('没有历史记录', 'error'); return; }
+  const headers = ['Timestamp', 'Strategy', 'Subtype', 'Verdict', 'Pass', 'Block', 'Pending', 'Hard_Fails', 'Failed_Items', 'Pending_Items', 'Inputs', 'NAV', 'Existing', 'Budget', 'Exposure_%', 'Cap_%'];
+  const rows = [headers];
+  const sorted = [...history].sort((a, b) => a.timestampSort - b.timestampSort);
+  sorted.forEach(e => {
+    rows.push([
+      e.timestamp, e.strategy, e.subtype, e.verdict,
+      e.pass, e.fail, e.pending,
+      (e.hardFails || []).join(' | '),
+      (e.failed || []).join(' | '),
+      (e.pendingItems || []).join(' | '),
+      e.inputs, e.nav, e.existing, e.budget, e.exposurePct, e.capPct
+    ]);
+  });
+  const csv = rows.map(r => r.map(csvCell).join(',')).join('\n');
+  const stamp = new Date().toISOString().slice(0, 10);
+  const filename = `checklist-history-${stamp}-${history.length}rows.csv`;
+  const ok = downloadFile(filename, 'text/csv', csv);
+  showToast(ok ? `已导出 ${history.length} 条历史` : '导出失败', ok ? 'success' : 'error', ok ? filename : '');
+}
+
+function ensureHistoryModal() {
+  if (document.getElementById('history-modal')) return;
+  const modal = document.createElement('div');
+  modal.id = 'history-modal';
+  modal.className = 'modal-overlay';
+  modal.style.display = 'none';
+  modal.innerHTML = `
+    <div class="modal-card">
+      <div class="modal-head">
+        <div class="modal-title">History</div>
+        <button class="modal-close" onclick="hideHistory()" aria-label="Close">×</button>
+      </div>
+      <div class="modal-body" id="history-list-container"></div>
+      <div class="modal-actions">
+        <button class="btn ghost" onclick="clearAllHistory()">清空</button>
+        <button class="btn ghost" onclick="hideHistory()">关闭</button>
+        <button class="btn primary" onclick="exportAllHistoryCSV()">导出全部 CSV</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e => { if (e.target === modal) hideHistory(); });
+}
+function showHistory() {
+  ensureHistoryModal();
+  renderHistoryList();
+  document.getElementById('history-modal').style.display = 'flex';
+}
+function hideHistory() {
+  const m = document.getElementById('history-modal');
+  if (m) m.style.display = 'none';
+}
+function renderHistoryList() {
+  const container = document.getElementById('history-list-container');
+  if (!container) return;
+  const history = loadHistory();
+  if (history.length === 0) {
+    container.innerHTML = `<div class="history-empty">还没有历史记录。<div class="history-empty-sub">每次打开 Snapshot 都会自动记录到这里。</div></div>`;
+    return;
+  }
+  container.innerHTML = history.map(e => {
+    const cls = e.verdict.startsWith('CLEAR') ? 'pass' : e.verdict === 'BLOCKED' ? 'fail' : 'pending';
+    return `
+      <div class="history-item">
+        <div class="history-main">
+          <div class="history-time">${esc(e.timestamp)}</div>
+          <div class="history-title">${esc(e.strategy)} · ${esc(e.subtype)}</div>
+          <div class="history-meta">
+            <span class="history-verdict ${cls}">${esc(e.verdict)}</span>
+            <span class="history-tally">${e.pass}/${e.fail}/${e.pending}</span>
+            ${e.hardFails && e.hardFails.length ? `<span class="history-hard">⚠ HARD</span>` : ''}
+          </div>
+        </div>
+        <div class="history-actions">
+          <button class="btn ghost small" onclick="restoreFromHistory('${e.id}')">还原</button>
+          <button class="btn ghost small" onclick="deleteHistoryEntry('${e.id}')">删</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+/* ==========================================================
+ * TOAST NOTIFICATIONS
+ * ========================================================== */
+function ensureToastContainer() {
+  let c = document.getElementById('toast-container');
+  if (!c) {
+    c = document.createElement('div');
+    c.id = 'toast-container';
+    c.className = 'toast-container';
+    document.body.appendChild(c);
+  }
+  return c;
+}
+function showToast(message, type = 'success', sub = '') {
+  const c = ensureToastContainer();
+  const t = document.createElement('div');
+  t.className = 'toast ' + type;
+  t.innerHTML = `<div>${message}</div>${sub ? `<div class="toast-sub">${sub}</div>` : ''}`;
+  c.appendChild(t);
+  requestAnimationFrame(() => t.classList.add('visible'));
+  setTimeout(() => {
+    t.classList.remove('visible');
+    setTimeout(() => t.remove(), 350);
+  }, 2600);
 }
 
 /* ==========================================================
@@ -1448,6 +2076,9 @@ function buildCSVSnapshot() {
     'dte_below_9m': 'DTE_months',
     'dte_6m': 'DTE_months',
     'new_leaps_dte': 'NewDTE',
+    'entry_price': 'Entry',
+    'stop_level': 'Stop',
+    'target_level': 'Target',
   };
 
   const failed = [];
@@ -1471,6 +2102,9 @@ function buildCSVSnapshot() {
       }
     }
   });
+  // Add computed R:R if available
+  const rrObj = (state.strategy === 'leaps' && state.leapsDirection === 'open') ? computeRR() : null;
+  if (rrObj && !rrObj.error) inputs.push(`RR=${rrObj.rr.toFixed(2)}`);
 
   // Position (LEAPS open only)
   let nav = '', existing = '', budget = '', exposurePct = '', capPct = '';
@@ -1546,6 +2180,7 @@ function downloadFile(filename, mime, content) {
 
 function ensureSnapshotModal() {
   if (document.getElementById('snapshot-modal')) return;
+  const canShare = !!(navigator.share);
   const modal = document.createElement('div');
   modal.id = 'snapshot-modal';
   modal.className = 'modal-overlay';
@@ -1561,6 +2196,7 @@ function ensureSnapshotModal() {
       </div>
       <div class="modal-actions">
         <button class="btn ghost" onclick="hideSnapshot()">关闭</button>
+        ${canShare ? '<button class="btn" id="snap-share">分享</button>' : ''}
         <button class="btn" id="snap-download">下载 CSV</button>
         <button class="btn primary" id="snap-copy">复制文本</button>
       </div>
@@ -1568,23 +2204,32 @@ function ensureSnapshotModal() {
   `;
   document.body.appendChild(modal);
   modal.addEventListener('click', e => { if (e.target === modal) hideSnapshot(); });
-  document.getElementById('snap-copy').addEventListener('click', async e => {
-    const btn = e.currentTarget;
+
+  document.getElementById('snap-copy').addEventListener('click', async () => {
     const ok = await copyToClipboard(buildTextSnapshot());
-    const original = btn.textContent;
-    btn.textContent = ok ? '✓ 已复制' : '复制失败';
-    setTimeout(() => { btn.textContent = original; }, 1500);
+    showToast(ok ? '已复制到剪贴板' : '复制失败', ok ? 'success' : 'error', ok ? '可粘贴到日志或 Notion' : '');
   });
-  document.getElementById('snap-download').addEventListener('click', e => {
-    const btn = e.currentTarget;
+
+  document.getElementById('snap-download').addEventListener('click', () => {
     const stamp = new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-');
     const strat = (state.strategy || 'check').toUpperCase();
     const filename = `checklist-${strat}-${stamp}.csv`;
     const ok = downloadFile(filename, 'text/csv', buildCSVSnapshot());
-    const original = btn.textContent;
-    btn.textContent = ok ? '✓ 已下载' : '下载失败';
-    setTimeout(() => { btn.textContent = original; }, 1500);
+    showToast(ok ? '已下载 CSV' : '下载失败', ok ? 'success' : 'error', ok ? filename : '');
   });
+
+  if (canShare) {
+    document.getElementById('snap-share').addEventListener('click', async () => {
+      try {
+        await navigator.share({
+          title: `Pre-Trade · ${STRAT_LABEL[state.strategy] || ''}`,
+          text: buildTextSnapshot()
+        });
+      } catch (e) {
+        // User cancelled — silent
+      }
+    });
+  }
 }
 
 function showSnapshot() {
@@ -1592,6 +2237,11 @@ function showSnapshot() {
   ensureSnapshotModal();
   document.getElementById('snapshot-preview').value = buildTextSnapshot();
   document.getElementById('snapshot-modal').style.display = 'flex';
+  // Auto-save this snapshot to history
+  saveToHistory();
+  // Clear draft since this is a "completed" moment
+  clearDraft();
+  hideDraftBanner();
 }
 function hideSnapshot() {
   const m = document.getElementById('snapshot-modal');
@@ -1601,23 +2251,42 @@ function hideSnapshot() {
 /* ==========================================================
  * THEME
  * ========================================================== */
+const THEME_CYCLE = ['auto', 'slate', 'terminal', 'light'];
+const THEME_LABEL = { auto: 'Auto', slate: 'Slate', terminal: 'Terminal', light: 'Light' };
+const THEME_COLORS = { slate: '#0F1419', terminal: '#000000', light: '#F9FAFB' };
+
+function resolveTheme(t) {
+  if (t !== 'auto') return t;
+  try {
+    return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'slate';
+  } catch (e) { return 'slate'; }
+}
 function setTheme(t) {
   state.theme = t;
-  document.body.className = 'theme-' + t;
+  const resolved = resolveTheme(t);
+  document.body.className = 'theme-' + resolved;
   const meta = document.querySelector('meta[name="theme-color"]');
-  if (meta) meta.setAttribute('content', t === 'terminal' ? '#000000' : '#0F1419');
+  if (meta) meta.setAttribute('content', THEME_COLORS[resolved]);
   try { localStorage.setItem('pretrade_theme', t); } catch (e) {}
 }
 function cycleTheme() {
-  setTheme(state.theme === 'slate' ? 'terminal' : 'slate');
+  const i = THEME_CYCLE.indexOf(state.theme);
+  setTheme(THEME_CYCLE[(i + 1) % THEME_CYCLE.length]);
   render();
 }
 function loadTheme() {
   try {
     const saved = localStorage.getItem('pretrade_theme');
-    if (saved === 'terminal' || saved === 'slate') state.theme = saved;
-  } catch (e) {}
+    if (THEME_CYCLE.indexOf(saved) >= 0) state.theme = saved;
+    else state.theme = 'auto';  // Default for new users
+  } catch (e) { state.theme = 'auto'; }
   setTheme(state.theme);
+  // Listen to system preference changes (for auto mode)
+  try {
+    window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', () => {
+      if (state.theme === 'auto') setTheme('auto');
+    });
+  } catch (e) {}
 }
 
 /* Expose */
@@ -1629,10 +2298,22 @@ window.toggleQref = toggleQref;
 window.cycleTheme = cycleTheme;
 window.showSnapshot = showSnapshot;
 window.hideSnapshot = hideSnapshot;
+window.showHistory = showHistory;
+window.hideHistory = hideHistory;
+window.restoreFromHistory = restoreFromHistory;
+window.deleteHistoryEntry = deleteHistoryEntry;
+window.clearAllHistory = clearAllHistory;
+window.exportAllHistoryCSV = exportAllHistoryCSV;
+window.restoreDraft = restoreDraft;
+window.dismissDraft = dismissDraft;
 
 /* Boot */
 loadTheme();
 render();
+// Show draft banner if any pending draft exists (< 6 hours old)
+showDraftBanner();
+// Warn user if localStorage is unavailable
+showStorageWarningIfNeeded();
 
 </script>
 </body>
