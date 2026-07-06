@@ -364,11 +364,15 @@
 <div id="banner-slot"></div>
 <div class="app" id="app"></div>
 <script>
-  // Service Worker registration (silent, no-op if sw.js not present)
+  // Auto-cleanup: if previous versions installed a service worker, unregister it now.
+  // Also clear any old caches so users always get the latest HTML from GitHub Pages.
   if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js').catch(() => {});
-    });
+    navigator.serviceWorker.getRegistrations().then(regs => {
+      regs.forEach(r => r.unregister());
+    }).catch(() => {});
+    if (window.caches) {
+      caches.keys().then(keys => keys.forEach(k => caches.delete(k))).catch(() => {});
+    }
   }
 </script>
 <script>
