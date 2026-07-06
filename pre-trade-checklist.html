@@ -108,9 +108,6 @@
   .segmented { display: flex; background: var(--bg); border: 1px solid var(--border); border-radius: 7px; padding: 3px; gap: 3px; flex-wrap: wrap; }
   .segmented button { flex: 1; min-width: 0; padding: 8px 6px; background: transparent; color: var(--text-dim); border: 0; border-radius: 5px; font-family: var(--sans); font-size: 12.5px; font-weight: 500; cursor: pointer; transition: all 0.12s ease; -webkit-appearance: none; appearance: none; min-height: 36px; white-space: nowrap; }
   .segmented button.active { background: var(--panel-2); color: var(--text); box-shadow: inset 0 0 0 1px var(--border-hi); }
-  .segmented.segmented-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; }
-  .segmented.segmented-grid button { white-space: normal; line-height: 1.25; padding: 10px 8px; min-height: 40px; }
-  @media (min-width: 640px) { .segmented.segmented-grid { grid-template-columns: repeat(5, 1fr); } }
 
   .num-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .num-field { display: flex; flex-direction: column; }
@@ -487,7 +484,7 @@ const SOP = {
       <li>非在突破当天卖 short call (动能最强, 短腿易被推爆)</li>
       <li>Short call Delta ≤ 15 (标准) 或 ≤ 10 (防守)</li>
       <li>标的位于 Bollinger 中轨之上 (右侧位置, 卖强)</li>
-      <li>日线 KDJ 的 J 值: Standard > 75 · Defensive > 90 (超买 = 权利金饱满)</li>
+      <li>日线 KDJ 的 J 值: Standard > 80 · Defensive > 70 (超买 = 权利金饱满)</li>
     </ul>
   `
 };
