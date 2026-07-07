@@ -140,6 +140,20 @@
   .strategy-winrate.fail { color: var(--fail); }
   .strategy-winrate.text-faint { color: var(--text-faint); }
 
+  /* 30-day verdict sparkline */
+  .spark-panel { margin-top: 12px; }
+  .spark-list { display: flex; flex-direction: column; gap: 6px; }
+  .spark-row { display: grid; grid-template-columns: 60px 1fr 30px 40px; gap: 10px; align-items: center; font-family: var(--mono); font-size: 11px; }
+  .spark-label { color: var(--text-dim); letter-spacing: 0.05em; }
+  .spark-track { height: 8px; background: var(--panel-2); border-radius: 4px; overflow: hidden; }
+  .spark-fill { height: 100%; border-radius: 4px; transition: width 0.3s ease; }
+  .spark-fill.pass { background: var(--pass); }
+  .spark-fill.pass-soft { background: var(--pass); opacity: 0.55; }
+  .spark-fill.fail { background: var(--fail); }
+  .spark-fill.pending { background: var(--pending); }
+  .spark-count { color: var(--text-dim); text-align: right; }
+  .spark-pct { color: var(--text); font-weight: 500; text-align: right; }
+
   /* Pre-mortem dialog */
   .premortem-warn { background: var(--fail-bg); color: var(--text); padding: 12px 14px; border-radius: 6px; font-size: 13px; margin-bottom: 16px; line-height: 1.65; border-left: 3px solid var(--fail); }
 
@@ -1473,6 +1487,53 @@ function formatTimeAgo(ts) {
   return `${Math.round(days / 30)} 月`;
 }
 
+function verdictSparklineHTML() {
+  const history = getActiveHistory();
+  const thirty = Date.now() - 30 * 86400000;
+  const recent = history.filter(e => e.timestampSort >= thirty);
+  if (recent.length < 3) return '';
+
+  let clear = 0, soft = 0, pend = 0, block = 0;
+  recent.forEach(e => {
+    const v = e.verdict || '';
+    if (v === 'BLOCKED') block++;
+    else if (v.includes('软执行')) soft++;
+    else if (v.startsWith('CLEAR')) clear++;
+    else pend++;
+  });
+  const total = recent.length;
+  const pct = n => total > 0 ? Math.round(n / total * 100) : 0;
+
+  const bar = (label, count, cls) => {
+    const p = pct(count);
+    return `
+      <div class="spark-row">
+        <span class="spark-label">${label}</span>
+        <div class="spark-track">
+          <div class="spark-fill ${cls}" style="width: ${p}%"></div>
+        </div>
+        <span class="spark-count">${count}</span>
+        <span class="spark-pct">${p}%</span>
+      </div>
+    `;
+  };
+
+  return `
+    <div class="picker-panel spark-panel">
+      <div class="picker-panel-head">
+        <span>过去 30 天 · Verdict 分布</span>
+        <span class="picker-panel-count">${total}</span>
+      </div>
+      <div class="spark-list">
+        ${bar('CLEAR', clear, 'pass')}
+        ${bar('SOFT', soft, 'pass-soft')}
+        ${bar('PEND', pend, 'pending')}
+        ${bar('BLOCK', block, 'fail')}
+      </div>
+    </div>
+  `;
+}
+
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
@@ -1651,7 +1712,8 @@ function pickerFooterHTML() {
         <span>Explore · 搜索历史</span>
       </div>
       <div class="explore-filters">
-        <input type="text" id="explore-ticker" placeholder="Ticker (e.g. MSFT)" autocomplete="off" spellcheck="false" oninput="updateExploreResults()">
+        <input type="text" id="explore-ticker" placeholder="Ticker (e.g. MSFT)" autocomplete="off" spellcheck="false" list="tickers-datalist-explore" oninput="updateExploreResults()">
+        ${renderTickerDatalist('tickers-datalist-explore')}
         <select id="explore-year" onchange="updateExploreResults()">
           <option value="">年份</option>
           ${years.map(y => `<option value="${y}">${y}</option>`).join('')}
@@ -1717,6 +1779,7 @@ function pickerFooterHTML() {
       <div class="picker-recent-list">${recentHTML}</div>
       <button class="picker-recent-action" onclick="showHistory()">Open History →</button>
     </div>
+    ${verdictSparklineHTML()}
     <div class="picker-stats">
       <div class="picker-stat">
         <div class="picker-stat-num">${weekTotal}</div>
@@ -2043,12 +2106,34 @@ function wireSegmented(id, cb) {
   });
 }
 
+function getAllTickers() {
+  const history = getActiveHistory();
+  const freq = {};
+  history.forEach(e => {
+    if (e.ticker) {
+      const t = e.ticker.toUpperCase();
+      freq[t] = (freq[t] || 0) + 1;
+    }
+  });
+  return Object.entries(freq)
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .map(([t]) => t);
+}
+
+function renderTickerDatalist(id) {
+  const tickers = getAllTickers();
+  if (tickers.length === 0) return '';
+  return `<datalist id="${id}">${tickers.map(t => `<option value="${esc(t)}">`).join('')}</datalist>`;
+}
+
 function tickerBarHTML() {
   return `
     <div class="ticker-bar">
       <label class="ticker-label">Ticker</label>
       <input class="ticker-input" id="in-ticker" type="text" autocomplete="off" autocorrect="off"
-             spellcheck="false" placeholder="e.g. MSFT / QQQ / AAPL" value="${esc(state.ticker || '')}">
+             spellcheck="false" list="tickers-datalist-main"
+             placeholder="e.g. MSFT / QQQ / AAPL" value="${esc(state.ticker || '')}">
+      ${renderTickerDatalist('tickers-datalist-main')}
     </div>
   `;
 }
@@ -2949,9 +3034,10 @@ function showEditModal(id) {
         <div class="sync-setup-input-group">
           <label>Ticker</label>
           <input type="text" class="sync-setup-input" id="edit-ticker"
-                 autocomplete="off" spellcheck="false"
+                 autocomplete="off" spellcheck="false" list="tickers-datalist-edit"
                  style="text-transform: uppercase;"
                  placeholder="e.g. MSFT" value="${esc(tickerDisp)}">
+          ${renderTickerDatalist('tickers-datalist-edit')}
         </div>
 
         ${positionHTML}
