@@ -117,6 +117,7 @@
   .override-notes-empty { font-size: 11.5px; color: var(--text-faint); font-style: italic; padding-left: 8px; }
 
   .edit-warning { background: var(--pending-bg); color: var(--pending); padding: 8px 12px; border-radius: 6px; font-size: 12px; margin-bottom: 16px; line-height: 1.5; border: 1px solid var(--pending); border-color: rgba(255, 176, 32, 0.4); }
+  .edit-status-section { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; margin-bottom: 20px; }
   .edit-section-header { font-family: var(--mono); font-size: 10.5px; color: var(--text-faint); letter-spacing: 0.12em; text-transform: uppercase; margin: 22px 0 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
   .edit-group { margin-bottom: 16px; }
   .edit-group-title { font-family: var(--mono); font-size: 10px; color: var(--text-faint); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 8px; padding: 4px 0; border-bottom: 1px dashed var(--border); }
@@ -1506,7 +1507,7 @@ function pickerFooterHTML() {
           <option value="PMCC">PMCC</option>
         </select>
         <select id="explore-outcome" onchange="updateExploreResults()">
-          <option value="">结果</option>
+          <option value="">状态</option>
           <option value="skipped">未交易</option>
           <option value="opted_out">自主放弃</option>
           <option value="open">持仓</option>
@@ -1661,7 +1662,7 @@ function renderPicker() {
     </div>
     <div class="picker">
       <div class="picker-title">选择要检查的策略</div>
-      <div class="picker-sub">全绿放行, 红灯不执行。</div>
+      <div class="picker-sub">Trading in the Zone</div>
       <div class="picker-choices">
         <button class="picker-card" onclick="pickStrategy('leaps')">
           <div class="picker-card-tag">Long-dated calls</div>
@@ -2720,10 +2721,38 @@ function showEditModal(id) {
         <button class="modal-close" onclick="hideEditModal()" aria-label="Close">×</button>
       </div>
       <div class="modal-body">
-        <div style="font-size: 11.5px; color: var(--text-faint); line-height: 1.5; margin-bottom: 10px;">
+        <div style="font-size: 11.5px; color: var(--text-faint); line-height: 1.5; margin-bottom: 14px;">
           ${esc(entry.timestamp)} · ${esc(entry.strategy)} · ${esc(entry.subtype)}
           <br>原 verdict: <b>${esc(entry.verdict)}</b> · ${entry.pass}/${entry.fail}/${entry.pending}
         </div>
+
+        <div class="edit-status-section">
+          <div class="edit-section-header" style="margin-top: 0;">状态 · 快速标记</div>
+          <div class="sync-setup-input-group">
+            <label>交易状态</label>
+            <div class="segmented" id="edit-outcome-seg">
+              <button data-v="skipped">未交易</button>
+              <button data-v="opted_out">自主放弃</button>
+              <button data-v="open">持仓</button>
+              <button data-v="win">盈</button>
+              <button data-v="loss">亏</button>
+            </div>
+            <div style="font-size: 11px; color: var(--text-faint); margin-top: 6px; line-height: 1.5;">
+              <b>未交易</b>: checklist 拦住了 · <b>自主放弃</b>: checklist 允许但你主动没做 (最有复盘价值)
+            </div>
+          </div>
+
+          <div class="sync-setup-input-group">
+            <label>复盘笔记 (选填, 最多 ${NOTES_MAX} 字)</label>
+            <textarea class="sync-setup-input" id="edit-notes" rows="3"
+                      style="font-family: var(--sans); resize: vertical;"
+                      maxlength="${NOTES_MAX}"
+                      placeholder="一行简短复盘">${esc(notes)}</textarea>
+            <div style="font-size: 10.5px; color: var(--text-faint); margin-top: 4px; text-align: right;" id="edit-notes-count">${notes.length} / ${NOTES_MAX}</div>
+          </div>
+        </div>
+
+        <div class="edit-section-header">编辑数据 · 会重算 verdict</div>
         <div class="edit-warning">⚠ 修改任何数值或选项都会重新计算 verdict, 结果可能变。</div>
 
         <div class="sync-setup-input-group">
@@ -2738,29 +2767,6 @@ function showEditModal(id) {
 
         <div class="edit-section-header">CHECKLIST 项目</div>
         ${itemsHTML || '<div style="color: var(--text-faint); font-size: 12px; padding: 10px 0;">无法加载 checklist 项目 (可能是旧数据格式)</div>'}
-
-        <div class="sync-setup-input-group" style="margin-top: 20px;">
-          <label>交易结果</label>
-          <div class="segmented" id="edit-outcome-seg">
-            <button data-v="skipped">未交易</button>
-            <button data-v="opted_out">自主放弃</button>
-            <button data-v="open">持仓</button>
-            <button data-v="win">盈</button>
-            <button data-v="loss">亏</button>
-          </div>
-          <div style="font-size: 11px; color: var(--text-faint); margin-top: 6px; line-height: 1.5;">
-            <b>未交易</b>: checklist 拦住了 · <b>自主放弃</b>: checklist 允许但你主动没做 (最有复盘价值)
-          </div>
-        </div>
-
-        <div class="sync-setup-input-group">
-          <label>复盘笔记 (选填, 最多 ${NOTES_MAX} 字)</label>
-          <textarea class="sync-setup-input" id="edit-notes" rows="3"
-                    style="font-family: var(--sans); resize: vertical;"
-                    maxlength="${NOTES_MAX}"
-                    placeholder="一行简短复盘">${esc(notes)}</textarea>
-          <div style="font-size: 10.5px; color: var(--text-faint); margin-top: 4px; text-align: right;" id="edit-notes-count">${notes.length} / ${NOTES_MAX}</div>
-        </div>
       </div>
       <div class="modal-actions">
         <button class="btn ghost" onclick="hideEditModal()">取消</button>
