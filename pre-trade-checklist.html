@@ -11,6 +11,9 @@
 <link rel="apple-touch-icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' rx='40' fill='%230F1419'/><path d='M50 90 L80 120 L135 60' stroke='%233FB950' stroke-width='18' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
 <link rel="icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' rx='40' fill='%230F1419'/><path d='M50 90 L80 120 L135 60' stroke='%233FB950' stroke-width='18' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
 <title>Pre-Trade Checklist</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap">
 <!--
   PRE-TRADE CHECKLIST · LEAPS / CSP / PMCC self-check
   Single-file, offline, no external deps, no storage.
@@ -25,8 +28,8 @@
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   :root {
-    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas, monospace;
-    --sans: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas, monospace;
+    --sans: "Inter", -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   }
   body.theme-slate {
     --bg: #0F1419; --panel: #171C22; --panel-2: #1E252D;
@@ -64,7 +67,7 @@
     --pending: #B8860B; --pending-bg: rgba(184, 134, 11, 0.10);
     --accent: #A0522D;
   }
-  html, body { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 16px; line-height: 1.55; min-height: 100vh; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; font-variant-numeric: tabular-nums; }
+  html, body { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 16px; line-height: 1.55; min-height: 100vh; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; font-variant-numeric: tabular-nums; font-feature-settings: "cv02", "cv11", "salt", "tnum"; }
   body { padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
   .app { max-width: 780px; margin: 0 auto; padding: 16px 16px 48px; }
 
@@ -125,8 +128,70 @@
   .override-notes { font-size: 12px; color: var(--text-dim); font-style: italic; line-height: 1.5; padding-left: 8px; border-left: 2px solid var(--pending); margin-top: 3px; }
   .override-notes-empty { font-size: 11.5px; color: var(--text-faint); font-style: italic; padding-left: 8px; }
 
+  .strategy-panel .strategy-list { display: flex; flex-direction: column; gap: 4px; }
+  .strategy-row { display: grid; grid-template-columns: 1fr auto auto auto; gap: 12px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 12.5px; }
+  .strategy-row:last-child { border-bottom: none; }
+  .strategy-name { font-family: var(--sans); color: var(--text); font-weight: 500; }
+  .strategy-count { font-family: var(--mono); font-size: 11.5px; color: var(--text-faint); }
+  .strategy-detail { font-family: var(--mono); font-size: 11px; color: var(--text-dim); }
+  .strategy-winrate { font-family: var(--mono); font-size: 13px; font-weight: 600; min-width: 40px; text-align: right; }
+  .strategy-winrate.pass { color: var(--pass); }
+  .strategy-winrate.pending { color: var(--pending); }
+  .strategy-winrate.fail { color: var(--fail); }
+  .strategy-winrate.text-faint { color: var(--text-faint); }
+
+  /* Pre-mortem dialog */
+  .premortem-warn { background: var(--fail-bg); color: var(--text); padding: 12px 14px; border-radius: 6px; font-size: 13px; margin-bottom: 16px; line-height: 1.65; border-left: 3px solid var(--fail); }
+
+  /* Forced trades panel */
+  .forced-panel { border-color: rgba(248, 81, 73, 0.35); }
+  .forced-row { padding: 8px 0; border-bottom: 1px solid var(--border); cursor: pointer; }
+  .forced-row:last-child { border-bottom: none; }
+  .forced-row:hover { color: var(--accent); }
+  .forced-header { display: flex; gap: 8px; align-items: baseline; margin-bottom: 4px; font-size: 12.5px; flex-wrap: wrap; }
+  .forced-ticker { font-family: var(--mono); font-weight: 600; color: var(--fail); }
+  .forced-strategy { color: var(--text-dim); font-size: 12px; flex: 1; }
+  .forced-outcome { font-family: var(--mono); font-size: 10px; letter-spacing: 0.06em; padding: 1px 6px; border-radius: 3px; }
+  .forced-outcome.pass { color: var(--pass); background: var(--pass-bg); }
+  .forced-outcome.fail { color: var(--fail); background: var(--fail-bg); }
+  .forced-outcome.pending { color: var(--pending); background: var(--pending-bg); }
+  .forced-outcome.text-faint { color: var(--text-faint); border: 1px solid var(--border); }
+  .forced-time { font-family: var(--mono); font-size: 11px; color: var(--text-faint); }
+  .forced-reason { font-size: 12px; color: var(--text-dim); font-style: italic; line-height: 1.5; padding-left: 8px; border-left: 2px solid var(--fail); margin-top: 3px; }
+
+  /* Forced trade reminder banner */
+  .forced-reminder-banner { display: flex; gap: 12px; align-items: center; background: var(--pending-bg); border: 1px solid var(--pending); border-color: rgba(210, 153, 34, 0.4); border-radius: 8px; padding: 12px 14px; margin: 16px 0; cursor: pointer; transition: all 0.15s ease; }
+  .forced-reminder-banner:hover { border-color: var(--pending); background: rgba(210, 153, 34, 0.15); }
+  .forced-reminder-icon { font-size: 20px; }
+  .forced-reminder-body { flex: 1; }
+  .forced-reminder-title { font-size: 13px; font-weight: 600; color: var(--pending); margin-bottom: 2px; }
+  .forced-reminder-sub { font-size: 11.5px; color: var(--text-dim); }
+
   .edit-warning { background: var(--pending-bg); color: var(--pending); padding: 8px 12px; border-radius: 6px; font-size: 12px; margin-bottom: 16px; line-height: 1.5; border: 1px solid var(--pending); border-color: rgba(255, 176, 32, 0.4); }
   .edit-status-section { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; margin-bottom: 20px; }
+
+  /* Snapshot stamp */
+  .snapshot-stamp-overlay { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; z-index: 300; }
+  .snapshot-stamp { transform: scale(0.4) rotate(-12deg); opacity: 0; animation: stampIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; padding: 24px 40px; border: 4px double currentColor; border-radius: 6px; font-family: var(--mono); text-align: center; background: rgba(255,255,255,0.02); backdrop-filter: blur(2px); }
+  .snapshot-stamp.stamp-fade { animation: stampOut 0.5s ease-in forwards; }
+  .snapshot-stamp.stamp-clear { color: var(--pass); box-shadow: 0 0 0 1px var(--pass), 0 8px 32px rgba(0,0,0,0.2); }
+  .snapshot-stamp.stamp-soft { color: var(--pass); opacity: 0.85; }
+  .snapshot-stamp.stamp-blocked { color: var(--fail); box-shadow: 0 0 0 1px var(--fail), 0 8px 32px rgba(0,0,0,0.2); }
+  .snapshot-stamp.stamp-pending { color: var(--pending); box-shadow: 0 0 0 1px var(--pending), 0 8px 32px rgba(0,0,0,0.2); }
+  .snapshot-stamp.stamp-neutral { color: var(--text-dim); }
+  .stamp-label { font-size: 10px; letter-spacing: 0.24em; font-weight: 500; opacity: 0.65; margin-bottom: 6px; }
+  .stamp-verdict { font-size: 22px; letter-spacing: 0.08em; font-weight: 700; line-height: 1.1; }
+  .stamp-meta { font-size: 10.5px; letter-spacing: 0.12em; margin-top: 8px; opacity: 0.7; text-transform: uppercase; }
+
+  @keyframes stampIn {
+    0% { transform: scale(1.8) rotate(-20deg); opacity: 0; }
+    50% { transform: scale(0.9) rotate(-8deg); opacity: 1; }
+    100% { transform: scale(1) rotate(-6deg); opacity: 0.92; }
+  }
+  @keyframes stampOut {
+    0% { opacity: 0.92; }
+    100% { opacity: 0; transform: scale(1.05) rotate(-6deg); }
+  }
   .edit-section-header { font-family: var(--mono); font-size: 10.5px; color: var(--text-faint); letter-spacing: 0.12em; text-transform: uppercase; margin: 22px 0 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
   .edit-group { margin-bottom: 16px; }
   .edit-group-title { font-family: var(--mono); font-size: 10px; color: var(--text-faint); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 8px; padding: 4px 0; border-bottom: 1px dashed var(--border); }
@@ -1442,6 +1507,88 @@ function pickerFooterHTML() {
     </div>
   ` : '';
 
+  // Strategy performance breakdown
+  const traded = history.filter(e => e.outcome === 'win' || e.outcome === 'loss' || e.outcome === 'open');
+  let strategyHTML = '';
+  if (traded.length >= 3) {
+    // Group by strategy (using subtype to distinguish LEAPS styles)
+    const groups = {};
+    traded.forEach(e => {
+      let key = e.strategy || 'Other';
+      // For LEAPS, break down by style if in subtype
+      if (key === 'LEAPS' && e.subtype) {
+        if (e.subtype.includes('股票替代')) key = 'LEAPS · 股票替代';
+        else if (e.subtype.includes('Balanced')) key = 'LEAPS · Balanced';
+        else if (e.subtype.includes('Swing')) key = 'LEAPS · Swing';
+      }
+      if (!groups[key]) groups[key] = { total: 0, win: 0, loss: 0, open: 0 };
+      groups[key].total++;
+      if (e.outcome === 'win') groups[key].win++;
+      else if (e.outcome === 'loss') groups[key].loss++;
+      else if (e.outcome === 'open') groups[key].open++;
+    });
+    const rows = Object.entries(groups)
+      .sort(([, a], [, b]) => b.total - a.total)
+      .filter(([, g]) => g.total >= 2)
+      .map(([key, g]) => {
+        const settled = g.win + g.loss;
+        const winRate = settled > 0 ? Math.round(g.win / settled * 100) : null;
+        const wrClass = winRate == null ? 'text-faint' : (winRate >= 60 ? 'pass' : winRate >= 40 ? 'pending' : 'fail');
+        return `
+          <div class="strategy-row">
+            <span class="strategy-name">${esc(key)}</span>
+            <span class="strategy-count">${g.total}</span>
+            <span class="strategy-detail">${g.win}胜 / ${g.loss}负${g.open > 0 ? ` / ${g.open}持` : ''}</span>
+            <span class="strategy-winrate ${wrClass}">${winRate == null ? '—' : winRate + '%'}</span>
+          </div>
+        `;
+      }).join('');
+    if (rows) {
+      strategyHTML = `
+        <div class="picker-panel strategy-panel">
+          <div class="picker-panel-head">
+            <span>策略表现 · Strategy Breakdown</span>
+            <span class="picker-panel-count">${traded.length}</span>
+          </div>
+          <div class="strategy-list">${rows}</div>
+        </div>
+      `;
+    }
+  }
+
+  // Forced trades (硬冲跟踪): entries with forcedReason
+  const forced = history.filter(e => e.forcedReason).slice(0, 8);
+  const forcedHTML = forced.length > 0 ? `
+    <div class="picker-panel forced-panel">
+      <div class="picker-panel-head">
+        <span>硬冲跟踪 · Forced Trades</span>
+        <span class="picker-panel-count">${forced.length}</span>
+      </div>
+      <div style="font-size: 11px; color: var(--text-faint); margin-bottom: 8px; line-height: 1.4;">BLOCKED 但你选择硬冲 · 复盘代价 vs 判断</div>
+      <div class="picker-panel-list">
+        ${forced.map(e => {
+          const outcomeLabel = e.outcome ? OUTCOME_LABEL[e.outcome] : '待跟踪';
+          const outcomeCls = e.outcome === 'win' ? 'pass'
+            : e.outcome === 'loss' ? 'fail'
+            : e.outcome === 'open' ? 'pending'
+            : e.outcome === 'skipped' ? 'text-faint'
+            : 'pending';
+          return `
+            <div class="forced-row" onclick="showEditModal('${e.id}')">
+              <div class="forced-header">
+                <span class="forced-ticker">${esc(e.ticker || '—')}</span>
+                <span class="forced-strategy">${esc(e.strategy)}</span>
+                <span class="forced-outcome ${outcomeCls}">${esc(outcomeLabel)}</span>
+                <span class="forced-time">${formatTimeAgo(e.timestampSort)}</span>
+              </div>
+              <div class="forced-reason">"${esc(e.forcedReason)}"</div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    </div>
+  ` : '';
+
   // Overrides (自主放弃) - shows where you disagreed with checklist
   const overrides = history.filter(e => e.outcome === 'opted_out').slice(0, 5);
   const overridesHTML = overrides.length > 0 ? `
@@ -1557,8 +1704,10 @@ function pickerFooterHTML() {
 
   return `
     ${openHTML}
+    ${forcedHTML}
     ${overridesHTML}
     ${lossesHTML}
+    ${strategyHTML}
     ${exploreHTML}
     <div class="picker-recent">
       <div class="picker-recent-head">
@@ -1655,6 +1804,28 @@ function mantraHTML() {
   return '';
 }
 
+function forcedTradeReminderHTML() {
+  const history = getActiveHistory();
+  const thirtyDaysAgo = Date.now() - 30 * 86400000;
+  // Find forced trades from 30+ days ago that still need outcome update
+  const needReview = history.filter(e => {
+    if (!e.forcedReason) return false;
+    if (e.timestampSort >= thirtyDaysAgo) return false;
+    return !e.outcome || e.outcome === 'open';
+  });
+  if (needReview.length === 0) return '';
+  const first = needReview[0];
+  return `
+    <div class="forced-reminder-banner" onclick="showEditModal('${first.id}')">
+      <div class="forced-reminder-icon">⏰</div>
+      <div class="forced-reminder-body">
+        <div class="forced-reminder-title">${needReview.length} 笔 30 天+ 前的硬冲需要跟踪</div>
+        <div class="forced-reminder-sub">最早的: ${esc(first.ticker || '—')} · ${esc(first.timestamp.slice(0, 10))} · 点这里查看/更新</div>
+      </div>
+    </div>
+  `;
+}
+
 function renderPicker() {
   const themeName = THEME_LABEL[state.theme] || 'Auto';
   $app.innerHTML = `
@@ -1672,6 +1843,7 @@ function renderPicker() {
     <div class="picker">
       <div class="picker-title">选择要检查的策略</div>
       <div class="picker-sub">Trading in the Zone</div>
+      ${forcedTradeReminderHTML()}
       <div class="picker-choices">
         <button class="picker-card" onclick="pickStrategy('leaps')">
           <div class="picker-card-tag">Long-dated calls</div>
@@ -2756,6 +2928,19 @@ function showEditModal(id) {
                       placeholder="一行简短复盘">${esc(notes)}</textarea>
             <div style="font-size: 10.5px; color: var(--text-faint); margin-top: 4px; text-align: right;" id="edit-notes-count">${notes.length} / ${NOTES_MAX}</div>
           </div>
+
+          ${entry.verdict === 'BLOCKED' ? `
+            <div class="sync-setup-input-group" style="border-top: 1px dashed var(--border); padding-top: 12px; margin-top: 8px;">
+              <label style="color: var(--fail);">硬冲理由 · Forced Reason ${entry.forcedReason ? '(已记录)' : '(未填, 你尊重了 BLOCKED)'}</label>
+              <textarea class="sync-setup-input" id="edit-forced-reason" rows="3"
+                        style="font-family: var(--sans); resize: vertical;"
+                        maxlength="500"
+                        placeholder="如果你选择硬冲, 写下理由 (会进入'硬冲跟踪'panel)">${esc(entry.forcedReason || '')}</textarea>
+              <div style="font-size: 11px; color: var(--text-faint); margin-top: 6px; line-height: 1.5;">
+                填写 = 你选择了硬冲, 需要跟踪。留空 = 你尊重了 BLOCKED, 无需跟踪。
+              </div>
+            </div>
+          ` : ''}
         </div>
 
         <div class="edit-section-header">编辑数据 · 会重算 verdict</div>
@@ -2895,6 +3080,7 @@ function showEditModal(id) {
       ticker: newTicker,
       outcome: newOutcome,
       notes: newNotes,
+      forcedReason: modal.querySelector('#edit-forced-reason')?.value.trim() || entry.forcedReason || '',
       nav: showPosition ? newNav : entry.nav,
       existing: showPosition ? newExisting : entry.existing,
       budget: showPosition ? newBudget : entry.budget,
@@ -3348,12 +3534,124 @@ function showSnapshot() {
   if (!state.strategy) return;
   ensureSnapshotModal();
   document.getElementById('snapshot-preview').value = buildTextSnapshot();
-  document.getElementById('snapshot-modal').style.display = 'flex';
   // Auto-save this snapshot to history
   saveToHistory();
-  // Clear draft since this is a "completed" moment
+  const history = loadHistory();
+  const latestEntry = history[0];
+  if (latestEntry) showSnapshotStamp(latestEntry);
+  // If BLOCKED, prompt pre-mortem dialog after stamp
+  const isBlocked = latestEntry && latestEntry.verdict === 'BLOCKED';
+  setTimeout(() => {
+    document.getElementById('snapshot-modal').style.display = 'flex';
+    if (isBlocked) {
+      setTimeout(() => showForcedTradeDialog(latestEntry.id), 400);
+    }
+  }, 550);
   clearDraft();
   hideDraftBanner();
+}
+
+function ensureForcedDialog() {
+  if (document.getElementById('forced-dialog')) return;
+  const modal = document.createElement('div');
+  modal.id = 'forced-dialog';
+  modal.className = 'modal-overlay';
+  modal.style.display = 'none';
+  modal.style.zIndex = '200';
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e => { if (e.target === modal) hideForcedDialog(); });
+}
+function hideForcedDialog() {
+  const m = document.getElementById('forced-dialog');
+  if (m) m.style.display = 'none';
+}
+
+function showForcedTradeDialog(id) {
+  const entry = loadHistory().find(e => e.id === id);
+  if (!entry) return;
+  ensureForcedDialog();
+  const modal = document.getElementById('forced-dialog');
+  const existing = entry.forcedReason || '';
+  const hardFails = entry.hardFails || [];
+
+  modal.innerHTML = `
+    <div class="modal-card" style="max-width: 500px;">
+      <div class="modal-head">
+        <div class="modal-title" style="color: var(--fail);">⚠ BLOCKED · Pre-mortem</div>
+        <button class="modal-close" onclick="hideForcedDialog()" aria-label="Close">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="premortem-warn">
+          Checklist 明确拦住了这笔交易。<br>
+          <b style="color: var(--fail);">如果你打算硬冲, 请先写下理由。</b><br>
+          这不是为了阻止你, 而是为了让你**看清自己的冲动**, 以及事后能复盘。
+        </div>
+        ${hardFails.length > 0 ? `
+          <div style="background: var(--fail-bg); border-left: 3px solid var(--fail); padding: 8px 12px; margin-bottom: 14px; font-size: 12px; line-height: 1.6;">
+            <div style="font-family: var(--mono); font-size: 10.5px; color: var(--fail); letter-spacing: 0.1em; margin-bottom: 4px;">HARD FAIL 原因</div>
+            ${hardFails.map(f => `<div>· ${esc(f)}</div>`).join('')}
+          </div>
+        ` : ''}
+
+        <div class="sync-setup-input-group">
+          <label>硬冲理由 · Forced Reason</label>
+          <textarea class="sync-setup-input" id="forced-reason" rows="4"
+                    style="font-family: var(--sans); resize: vertical;"
+                    maxlength="500"
+                    placeholder="例: 相信长期基本面, 愿意扛短期回调; 或: FOMO, 就是想赌一把; 或: 有内部信息...">${esc(existing)}</textarea>
+          <div style="font-size: 11px; color: var(--text-faint); margin-top: 6px; line-height: 1.5;">
+            诚实地写。这会帮未来的你识别自己的冲动模式。
+          </div>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn ghost" onclick="hideForcedDialog()">不硬冲, 我尊重 checklist</button>
+        <button class="btn primary" id="forced-save-btn" style="background: var(--fail); border-color: var(--fail);">保存理由</button>
+      </div>
+    </div>
+  `;
+  modal.style.display = 'flex';
+
+  modal.querySelector('#forced-save-btn').addEventListener('click', () => {
+    const reason = modal.querySelector('#forced-reason').value.trim();
+    if (!reason) {
+      showToast('请填写理由', 'error', '或者点"我尊重 checklist"取消');
+      return;
+    }
+    editHistoryEntry(id, { forcedReason: reason });
+    hideForcedDialog();
+    showToast('已记录硬冲理由', 'info', '这笔会进入"硬冲跟踪"panel');
+  });
+}
+
+function showSnapshotStamp(entry) {
+  const v = entry.verdict || '';
+  let stampClass = 'stamp-neutral';
+  let stampText = 'RECORDED';
+  if (v.startsWith('CLEAR TO OPEN · 软执行') || v.startsWith('CLEAR TO CLOSE · 软执行')) {
+    stampClass = 'stamp-soft'; stampText = 'SOFT · 软执行';
+  } else if (v.startsWith('CLEAR')) {
+    stampClass = 'stamp-clear'; stampText = 'CLEAR';
+  } else if (v === 'BLOCKED') {
+    stampClass = 'stamp-blocked'; stampText = 'BLOCKED';
+  } else if (v === 'PENDING') {
+    stampClass = 'stamp-pending'; stampText = 'PENDING';
+  }
+  const seqNo = loadHistory().filter(e => !e._deleted).length;
+  const el = document.createElement('div');
+  el.className = 'snapshot-stamp-overlay';
+  el.innerHTML = `
+    <div class="snapshot-stamp ${stampClass}">
+      <div class="stamp-inner">
+        <div class="stamp-label">SNAPSHOT #${seqNo}</div>
+        <div class="stamp-verdict">${esc(stampText)}</div>
+        <div class="stamp-meta">${esc(entry.ticker || '—')} · ${esc(entry.strategy || '')}</div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(el);
+  setTimeout(() => el.classList.add('stamp-fade'), 900);
+  setTimeout(() => el.remove(), 1500);
 }
 function hideSnapshot() {
   const m = document.getElementById('snapshot-modal');
