@@ -1667,17 +1667,14 @@ function renderPicker() {
         <button class="picker-card" onclick="pickStrategy('leaps')">
           <div class="picker-card-tag">Long-dated calls</div>
           <div class="picker-card-title">LEAPS</div>
-          <div class="picker-card-desc">开仓 / 加仓 / 关仓 全流程。</div>
         </button>
         <button class="picker-card" onclick="pickStrategy('csp')">
           <div class="picker-card-tag">Cash-secured put</div>
           <div class="picker-card-title">CSP</div>
-          <div class="picker-card-desc">意图定 Delta, 不过财报。</div>
         </button>
         <button class="picker-card" onclick="pickStrategy('pmcc')">
           <div class="picker-card-tag">Poor Man's CC</div>
           <div class="picker-card-title">PMCC</div>
-          <div class="picker-card-desc">已开 LEAPS 上卖 call, Δ ≤ 15/10。</div>
         </button>
       </div>
       ${pickerFooterHTML()}
