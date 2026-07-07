@@ -65,6 +65,7 @@
   @media (min-width: 640px) { .status-main { font-size: 34px; } }
   .status-main.pending { color: var(--pending); }
   .status-main.pass { color: var(--pass); }
+  .status-main.pass-soft { color: var(--pass); opacity: 0.75; }
   .status-main.fail { color: var(--fail); }
   .status-meta { font-family: var(--mono); font-size: 11px; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.08em; text-align: right; line-height: 1.4; }
   .status-meta strong { color: var(--text-dim); font-weight: 500; }
@@ -74,6 +75,53 @@
   .tally-dot.pass { background: var(--pass); }
   .tally-dot.fail { background: var(--fail); }
   .tally-dot.pending { background: var(--pending); }
+  .status-note { margin-top: 8px; font-family: var(--sans); font-size: 12.5px; color: var(--text-dim); line-height: 1.5; }
+
+  .bottom-summary { margin: 24px 0 12px; padding: 14px 16px; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; }
+  .bottom-status-main { font-family: var(--mono); font-size: 22px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.2; }
+  .bottom-status-main.pending { color: var(--pending); }
+  .bottom-status-main.pass { color: var(--pass); }
+  .bottom-status-main.pass-soft { color: var(--pass); opacity: 0.75; }
+  .bottom-status-main.fail { color: var(--fail); }
+  .bottom-status-note { margin-top: 6px; font-family: var(--sans); font-size: 12.5px; color: var(--text-dim); line-height: 1.5; }
+
+  .picker-panel { margin: 12px 0 16px; padding: 12px 14px; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; }
+  .picker-panel-head { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 11px; color: var(--text-faint); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 10px; }
+  .picker-panel-count { color: var(--text-dim); }
+  .picker-panel-list { display: flex; flex-direction: column; gap: 8px; }
+
+  .open-pos-row { display: grid; grid-template-columns: 60px 1fr auto; gap: 8px; align-items: center; padding: 6px 0; font-size: 13px; cursor: pointer; border-bottom: 1px solid var(--border); }
+  .open-pos-row:last-child { border-bottom: none; }
+  .open-pos-row:hover { color: var(--accent); }
+  .open-pos-ticker { font-family: var(--mono); font-weight: 600; color: var(--accent); }
+  .open-pos-strategy { color: var(--text-dim); font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .open-pos-time { font-family: var(--mono); font-size: 11px; color: var(--text-faint); }
+
+  .loss-row { padding: 8px 0; border-bottom: 1px solid var(--border); }
+  .loss-row:last-child { border-bottom: none; }
+  .loss-header { display: flex; gap: 8px; align-items: baseline; margin-bottom: 4px; font-size: 12.5px; }
+  .loss-ticker { font-family: var(--mono); font-weight: 600; color: var(--fail); }
+  .loss-strategy { color: var(--text-dim); font-size: 12px; flex: 1; }
+  .loss-time { font-family: var(--mono); font-size: 11px; color: var(--text-faint); }
+  .loss-notes { font-size: 12px; color: var(--text-dim); font-style: italic; line-height: 1.5; padding-left: 8px; border-left: 2px solid var(--fail); margin-top: 3px; }
+  .loss-notes-empty { font-size: 11.5px; color: var(--text-faint); font-style: italic; padding-left: 8px; }
+
+  .explore-filters { display: grid; grid-template-columns: 1fr auto auto; gap: 6px; margin-bottom: 10px; }
+  @media (max-width: 480px) { .explore-filters { grid-template-columns: 1fr; } }
+  .explore-filters input, .explore-filters select { font-family: var(--sans); font-size: 13px; padding: 6px 8px; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 5px; -webkit-appearance: none; appearance: none; }
+  .explore-filters input:focus, .explore-filters select:focus { outline: none; border-color: var(--accent); }
+  .explore-summary { font-family: var(--mono); font-size: 11.5px; color: var(--text-dim); padding: 4px 0 8px; display: flex; gap: 4px; flex-wrap: wrap; }
+  .explore-list { display: flex; flex-direction: column; gap: 4px; max-height: 300px; overflow-y: auto; }
+  .explore-row { display: grid; grid-template-columns: 70px 60px 1fr auto auto; gap: 6px; align-items: center; padding: 5px 6px; font-size: 12px; cursor: pointer; border-radius: 4px; }
+  .explore-row:hover { background: var(--bg); }
+  .explore-row-time { font-family: var(--mono); font-size: 11px; color: var(--text-faint); }
+  .explore-row-ticker { font-family: var(--mono); font-weight: 600; color: var(--accent); }
+  .explore-row-strategy { color: var(--text-dim); font-size: 11.5px; }
+  .explore-row-verdict { font-family: var(--mono); font-size: 10px; font-weight: 600; letter-spacing: 0.05em; padding: 1px 4px; border-radius: 3px; }
+  .explore-row-verdict.pass { color: var(--pass); background: var(--pass-bg); }
+  .explore-row-verdict.fail { color: var(--fail); background: var(--fail-bg); }
+  .explore-row-verdict.pending { color: var(--pending); background: var(--pending-bg); }
+  .explore-empty { text-align: center; padding: 20px 10px; font-size: 12.5px; color: var(--text-faint); font-style: italic; }
 
   .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; gap: 8px; flex-wrap: wrap; }
   .brand { font-family: var(--mono); font-size: 11px; letter-spacing: 0.14em; color: var(--text-faint); text-transform: uppercase; }
@@ -544,7 +592,7 @@ const LEAPS_PHASE_LABEL = {
   add_right: '加仓 · 右侧确认',
   add_macd: '加仓 · MACD 金叉'
 };
-const LEAPS_STYLE_LABEL = { stock_sub: '股票替代', swing: 'Swing 杠杆' };
+const LEAPS_STYLE_LABEL = { stock_sub: '股票替代', balanced: 'Balanced', swing: 'Swing 杠杆' };
 const LEAPS_CLOSE_TYPE_LABEL = {
   gradient: '分批止盈 (100/150/200)',
   profit200: '暴利平半 (≥200%)',
@@ -558,21 +606,29 @@ const OUTCOME_LABEL = { skipped: '未交易', open: '持仓', win: '盈', loss: 
 const NOTES_MAX = 200;
 
 // LEAPS Delta config by style:
-//   stock_sub: > 50 (DITM / ITM, 长持)
-//   swing: 35-50 (ATM 附近, 短持 leverage plays)
+//   股票替代 (≥ 75): DITM 底仓, 长持, 少受 IV 影响
+//   Balanced (50-74): 中杠杆, 类股加杠杆, 灵活持期
+//   Swing 杠杆 (35-49): 高杠杆 swing, ATM 附近, 短持
 function leapsDeltaSpec() {
   if (state.leapsStyle === 'stock_sub') {
     return {
-      title: 'Delta > 50',
-      numeric: { placeholder: 'Delta', unit: '', min: 51, comparator: '>', label: '> 50' },
-      desc: '> 50 (=0.5), 整数。DITM / ITM 底仓, 时间保护足。'
+      title: 'Delta ≥ 75',
+      numeric: { placeholder: 'Delta', unit: '', min: 75, comparator: '≥' },
+      desc: '≥ 75 (=0.75+). DITM 股票替代, 长持, 内在价值主导, 少受 IV crush 影响。'
+    };
+  }
+  if (state.leapsStyle === 'balanced') {
+    return {
+      title: 'Delta 50-74',
+      numeric: { placeholder: 'Delta', unit: '', range: [50, 74] },
+      desc: '50-74 (=0.50-0.74). 类股加杠杆, 灵活持期。介于股票替代与 Swing 之间, 时间价值与内在价值兼顾。'
     };
   }
   if (state.leapsStyle === 'swing') {
     return {
-      title: 'Delta 35-50',
-      numeric: { placeholder: 'Delta', unit: '', range: [35, 50] },
-      desc: '35-50 (=0.35-0.50), 整数。ATM 附近, 高杠杆 swing。'
+      title: 'Delta 35-49',
+      numeric: { placeholder: 'Delta', unit: '', range: [35, 49] },
+      desc: '35-49 (=0.35-0.49). 高杠杆 swing, ATM 附近, 短持, theta 大。'
     };
   }
   return null;
@@ -581,17 +637,20 @@ function cspDeltaMax() { return { assign: 30, neutral: 25, premium: 15 }[state.c
 function pmccDeltaMax() { return { standard: 15, defensive: 10 }[state.pmccMode] || null; }
 function pmccKdjMin() {
   // J threshold based on underlying LEAPS type (底仓珍贵 → 门槛越严)
-  //   股票替代 (Δ > 50, 长持底仓): 85 — 底仓珍贵, 卖飞代价大, 需极端超买
-  //   Swing 杠杆 (Δ 35-50 底仓): 70 — 底仓短期, 门槛可放宽
-  return { stock_sub: 85, swing: 70 }[state.pmccUnderlyingPurpose] || null;
+  //   股票替代 (Δ≥75, 底仓珍贵): 85 — assign 走底仓代价大, 需极端超买
+  //   Balanced (Δ 50-74): 78 — 中位
+  //   Swing 杠杆 (Δ 35-49): 70 — 底仓短期, 门槛可放宽
+  return { stock_sub: 85, balanced: 78, swing: 70 }[state.pmccUnderlyingPurpose] || null;
 }
 function positionCapPct() {
   // Style-aware cap:
-  //   股票替代 (低杠杆, 长持): QQQ 30% · 非蓝筹 15%
-  //   Swing 杠杆 (高杠杆, 短持): QQQ 10% · 非蓝筹 5%
+  //   股票替代 (Δ≥75, 低杠杆, 长持): QQQ 30% · 非蓝筹 15%
+  //   Balanced (Δ 50-74, 中杠杆): QQQ 20% · 非蓝筹 10%
+  //   Swing 杠杆 (Δ 35-49, 高杠杆, 短持): QQQ 10% · 非蓝筹 5%
   const isBluechip = state.leapsBluechip;
   const style = state.leapsStyle;
   if (style === 'swing') return isBluechip ? 10 : 5;
+  if (style === 'balanced') return isBluechip ? 20 : 10;
   return isBluechip ? 30 : 15;
 }
 function positionUsedPct() {
@@ -609,8 +668,10 @@ const SOP = {
   leaps: `
     <h4>准备</h4>
     <ul>
-      <li>Fear & Greed ≤ 30 (Extreme Fear / Fear 底部)</li>
-      <li>SPY 今日下跌 ≤ 2% <b>且</b> 近 5 日累计下跌 ≤ 5% (剔除下跌中继 / 系统性抛售中期)</li>
+      <li>Fear & Greed ≤ 45 (不追高; > 45 进入 Greed 区间, 慎入)</li>
+      <li>市场未在系统性大跌 (SPY 今日 > -3% 且 5D > -5%; 大跌当日别接飞刀)</li>
+      <li>距下次财报 ≥ 45 天 (给 LEAPS 时间站稳)</li>
+      <li>个股 IVP < 70 (避免 IV 高点买 LEAPS, 后续 IV crush 影响方向利润)</li>
       <li>选 QQQ (熊市筑底期必配, 占 LEAPS 仓位 20-30%) 或 周线向上、基本面健康、高 Beta 强资产个股</li>
       <li>价格回落至 200MA / 250MA 或历史核心支撑附近, 基本面体检</li>
       <li>价格处于 1Y 和 180D Volume Profile 的 HVN 或 VAL 附近</li>
@@ -618,8 +679,9 @@ const SOP = {
       <li>明确交易预期: 波段 (Swing) 还是长期配置拿到新高</li>
       <li>风格分类:
         <ul>
-          <li>股票替代: <code>Δ > 50</code>, DTE 400+, ITM/DITM, 长持, R:R ≥ 1.5</li>
-          <li>Swing 杠杆: <code>Δ 35-50</code>, DTE 400+, ATM 附近, 短持, R:R ≥ 2</li>
+          <li>股票替代: <code>Δ ≥ 75</code>, DTE 400+, DITM, 长持, R:R ≥ 1.5</li>
+          <li>Balanced: <code>Δ 50-74</code>, DTE 400+, ITM, 灵活持期, R:R ≥ 1.75</li>
+          <li>Swing 杠杆: <code>Δ 35-49</code>, DTE 400+, ATM 附近, 短持, R:R ≥ 2</li>
         </ul>
       </li>
     </ul>
@@ -628,6 +690,7 @@ const SOP = {
       <li>单标的 LEAPS 敞口:
         <ul>
           <li>股票替代: QQQ 蓝筹 30% · 非蓝筹 15%</li>
+          <li>Balanced: QQQ 蓝筹 20% · 非蓝筹 10%</li>
           <li>Swing 杠杆: QQQ 蓝筹 10% · 非蓝筹 5% (高杠杆 = 小仓位)</li>
         </ul>
       </li>
@@ -640,7 +703,7 @@ const SOP = {
     </ul>
     <h4>关仓 / 减仓 / 止损</h4>
     <ul>
-      <li>分批止盈: 股票替代 150%→平50% · Swing 50%可走 + 100%必走 ≥70%</li>
+      <li>分批止盈: 股票替代 150%→平50% · Balanced 100%可走 + 150%必走 60% · Swing 50%可走 + 100%必走 ≥70%</li>
       <li>暴利换约 (利润 ≥ 200%): 平仓 50% 锁利, 余仓移动止盈</li>
       <li>时间+浮亏止损: 仅当 DTE &lt; 9 个月 且 浮亏 ≥ 50%, 才考虑割肉/换约</li>
       <li>时间必须退出: DTE 剩 6 个月, 无条件平仓或滚动至更远 LEAPS</li>
@@ -650,7 +713,6 @@ const SOP = {
   csp: `
     <h4>准备</h4>
     <ul>
-      <li>VIX 升 且 信用利差不升 时入场</li>
       <li>财报前后 3-5 天不新开仓</li>
       <li>IVP > 30%</li>
       <li>行权价设在 1Y 和 180D Volume Profile 的 HVN 下沿或下方</li>
@@ -682,7 +744,7 @@ const SOP = {
       <li>非在突破当天卖 short call (动能最强, 短腿易被推爆)</li>
       <li>Short call Delta ≤ 15 (标准) 或 ≤ 10 (防守)</li>
       <li>标的位于 Bollinger 中轨之上 (右侧位置, 卖强)</li>
-      <li>日线 KDJ 的 J 值 (按底仓类型): 股票替代 > 85 · Swing 杠杆 > 70</li>
+      <li>日线 KDJ 的 J 值 (按底仓类型): 股票替代 > 85 · Balanced > 78 · Swing 杠杆 > 70</li>
     </ul>
   `
 };
@@ -722,19 +784,12 @@ function leapsOpenItems() {
     title: '本笔非临时起意 · 前一天已计划',
     desc: '非当天上班/盘中随机发现。动机非: 报复、FOMO、回本、无聊、证明自己。' });
   base.push({ group: 'Market environment', id: 'fg',
-    title: 'Fear & Greed ≤ 30  (Extreme Fear / Fear 底部)',
-    desc: '填当前 CNN Fear & Greed Index (0-100 分)。',
-    numeric: { placeholder: 'e.g. 22', unit: '', max: 30, comparator: '≤' } });
-  base.push({ group: 'Market environment', id: 'spy_today',
-    title: 'SPY 今日下跌 ≤ 2%',
-    desc: '填今日 SPY 收盘 vs 昨日收盘的跌幅 (正数, 上涨则填 0)。大跌当日进场 = 高概率抓下跌中继。',
-    hard: true,
-    numeric: { placeholder: 'e.g. 1.2', unit: '%', max: 2, comparator: '≤' } });
-  base.push({ group: 'Market environment', id: 'spy_5d',
-    title: 'SPY 近 5 交易日累计下跌 ≤ 5%',
-    desc: '填过去 5 个交易日 SPY 累计跌幅 (正数, 若走平或涨则填 0)。系统性抛售中期 = 不追。',
-    hard: true,
-    numeric: { placeholder: 'e.g. 3.5', unit: '%', max: 5, comparator: '≤' } });
+    title: 'Fear & Greed ≤ 45  (不追高)',
+    desc: '填当前 CNN Fear & Greed Index (0-100 分)。≤ 45 = Neutral / Fear 区间, 允许入场; > 45 (Greed) → 慎入, 避免追高。非 HARD, 只作 pending 提示。',
+    numeric: { placeholder: 'e.g. 40', unit: '', max: 45, comparator: '≤' } });
+  base.push({ group: 'Market environment', id: 'market_ok',
+    title: '市场未在系统性大跌',
+    desc: 'SPY 今日 > -3% 且 5D > -5% = ✓。大盘小跌可入 LEAPS; 大盘系统性下跌 (今日 -3%+ 或 5D -5%+) → ✕, 别接飞刀, 等 SPY 反弹或穿越 5MA/10MA 再考虑。' });
   base.push({ group: 'Market environment', id: 'macro',
     title: '未来 7 天无重大宏观事件冲击',
     desc: 'FOMC / CPI / PPI / NFP 已在日历核对。' });
@@ -752,8 +807,13 @@ function leapsOpenItems() {
     title: '价格受重要波段低点的 Anchored VWAP 支撑',
     desc: '锚点合适, 价格在其之上或刚触及。' });
   base.push({ group: 'Underlying & technicals', id: 'earnings',
-    title: '不在财报前后 3-5 天窗口',
-    desc: '在窗口内 = 慎重。' });
+    title: '距下次财报 ≥ 45 天',
+    desc: '给 LEAPS 时间站稳。距离 < 45 天 → pending, 提醒你财报事件风险, 需自己判断。非 HARD。',
+    numeric: { placeholder: 'e.g. 68', unit: '天', min: 45, comparator: '≥' } });
+  base.push({ group: 'Underlying & technicals', id: 'stock_ivp',
+    title: '个股 IVP < 70',
+    desc: '刚崩过的股 IV 通常 elevated (IVP 80+), 买 LEAPS 会被 IV 顶价, 未来 IV crush 影响方向利润。参考: 券商 IVP / IV Rank。你亦可看具体 option 的历史价格图。非 HARD, 只作 pending 提示。',
+    numeric: { placeholder: 'e.g. 55', unit: '', max: 70, comparator: '<' } });
 
   base.push({ group: 'Trade plan', id: 'expectation',
     title: '交易预期已明确',
@@ -796,6 +856,7 @@ function leapsOpenItems() {
   const cap = positionCapPct();
   const capDescParts = [];
   if (state.leapsStyle === 'swing') capDescParts.push('Swing 杠杆 = 小仓位');
+  else if (state.leapsStyle === 'balanced') capDescParts.push('Balanced = 中仓位');
   else if (state.leapsStyle === 'stock_sub') capDescParts.push('股票替代');
   if (state.leapsBluechip) capDescParts.push('QQQ 蓝筹');
   const capDesc = capDescParts.length ? `${capDescParts.join(' · ')}, 上限 ${cap}%。` : `上限 ${cap}%。`;
@@ -856,8 +917,9 @@ function leapsCloseItems() {
     const g = '分批止盈';
     // Style-based initial trigger threshold (% profit)
     //   股票替代: 150% (长持, 目标 new high, 首次走 50%)
-    //   Swing 杠杆: 50% (可走) + 100% 必走 ≥70% (拉高门槛给空间, 但到 100% 果断锁大部分)
-    const profitThresh = { stock_sub: 150, swing: 50 }[style] || 100;
+    //   Balanced: 100% (可走) + 150% 必走 60%
+    //   Swing 杠杆: 50% (可走) + 100% 必走 ≥ 70%
+    const profitThresh = { stock_sub: 150, balanced: 100, swing: 50 }[style] || 100;
 
     // 1. Contract count
     base.push({ group: g, id: 'contracts',
@@ -868,7 +930,7 @@ function leapsCloseItems() {
     // 2. Profit trigger (style-adaptive)
     base.push({ group: g, id: 'profit_gradient',
       title: `当前浮盈 ≥ ${profitThresh}%  (${styleLabel})`,
-      desc: `门槛: 股票替代 150%→平50% · Swing 50%可走 + 100%必走 ≥70%。`,
+      desc: `门槛: 股票替代 150%→平50% · Balanced 100%可走 + 150%必走 60% · Swing 50%可走 + 100%必走 ≥70%。`,
       numeric: { placeholder: 'Profit', unit: '%', min: profitThresh, comparator: '≥' } });
 
     const contracts = parseInt(state.items['contracts']) || 0;
@@ -889,7 +951,15 @@ function leapsCloseItems() {
       }
     }
 
-    // 4. Swing 杠杆 hard walk at profit >= 100
+    // 4. Balanced 150%+ → walk 60%
+    if (style === 'balanced' && profit >= 150) {
+      base.push({ group: g, id: 'balanced_walk',
+        title: 'Balanced + 利润 ≥ 150% → 已走仓位 ≥ 60%',
+        desc: '中杠杆达 150% 平掉 60% 的张数或价值。锁大部分, 留 40% 让它跑到新高。',
+        hard: true });
+    }
+
+    // 5. Swing 杠杆 hard walk at profit >= 100
     if (style === 'swing' && profit >= 100) {
       base.push({ group: g, id: 'swing_walk',
         title: 'Swing 杠杆 + 利润 ≥ 100% → 已走仓位 ≥ 70%',
@@ -1004,13 +1074,9 @@ function cspItems() {
   base.push({ group: 'Discipline · 交易前提', id: 'discipline',
     title: '本笔非临时起意 · 前一天已计划',
     desc: '非当天上班/盘中随机发现。动机非: 报复、FOMO、回本、无聊、证明自己。' });
-  base.push({ group: 'Market environment', id: 'vix',
-    title: 'VIX 上升 且 信用利差 未上升',
-    desc: '信用利差同步上升 = 市场结构性紧张, 放弃。',
-    hard: true });
   base.push({ group: 'Market environment', id: 'macro',
-    title: '合约存续期内无 FOMC / CPI / NFP 等重大数据',
-    desc: 'DTE 30-45 天大概率覆盖至少一次 Fed 会议。' });
+    title: '宏观事件已核对',
+    desc: 'CSP DTE 30-45 天通常覆盖至少一次 FOMC/CPI/NFP。此项打钩 = 你已在日历核对, 已知晓事件时点, 有心理准备。' });
   base.push({ group: 'Underlying', id: 'no_earnings',
     title: '合约存续期不覆盖财报',
     desc: '硬性禁令。前后 3-5 天也不新开。',
@@ -1020,7 +1086,7 @@ function cspItems() {
     desc: '密集区承接。' });
   base.push({ group: 'Underlying', id: 'strike_support',
     title: '行权价位于多次测试的关键支撑下方',
-    desc: '' });
+    desc: '过去 6-12 个月被 2 次以上触及的水平位。行权价设在支撑之下 = 双重保险。' });
 
   const dMax = cspDeltaMax();
   const intentLabel = CSP_INTENT_LABEL[state.cspIntent];
@@ -1059,11 +1125,15 @@ function pmccItems() {
     numeric: { placeholder: 'e.g. 23', unit: '%', min: 20, comparator: '≥' } });
 
   base.push({ group: 'Underlying context · 大周期', id: 'weekly_top_range',
-    title: '标的大周期 (周 K) 非底部或强势启动',
-    desc: '' });
+    title: '标的处于阻力区 / 横盘 / 高位滞涨',
+    desc: 'PMCC 卖 call 想抓横盘或高位钝化。不适用于底部启动 (会被推爆), 也不适用于疯狂上涨中期 (卖飞底仓)。看周 K 或日 K 的大周期。' });
 
   const dMax = pmccDeltaMax();
   const modeLabel = PMCC_MODE_LABEL[state.pmccMode];
+  base.push({ group: 'Short call selection', id: 'sc_no_earnings',
+    title: 'Short call 存续期不覆盖财报',
+    desc: '硬性禁令。short call DTE 内 (通常 30-45 天) 若覆盖财报 → 拒绝卖 call。财报 gap up = short call 深度 ITM = 底仓被 assign, 卖飞底仓。',
+    hard: true });
   base.push({ group: 'Short call selection', id: 'no_breakout_day',
     title: '非在突破当天卖 short call',
     desc: '今日不是突破关键位 (前高 / 关键压力 / 60 日高点 / 心理整数关口) 的当天。等次日冲高回落 (阴线 / doji) 再卖。突破当天动能最强, 短腿易被推爆。',
@@ -1079,8 +1149,9 @@ function pmccItems() {
     title: `日线 KDJ 的 J 值 > ${pmccKdjMin() != null ? pmccKdjMin() : '?'}  (底仓 ${LEAPS_STYLE_LABEL[state.pmccUnderlyingPurpose] || '未选'})`,
     desc: (() => {
       const p = state.pmccUnderlyingPurpose;
-      if (p === 'stock_sub') return '股票替代底仓 = 长期珍贵。Assign 走底仓代价大, 需极端超买 (J > 85) 才卖 call。';
-      if (p === 'swing') return 'Swing 杠杆底仓 = 短期。中低门槛 (J > 70), 底仓可 assign, 门槛放宽。';
+      if (p === 'stock_sub') return '股票替代底仓 (Δ≥75) = 长期珍贵。Assign 走底仓代价大, 需极端超买 (J > 85) 才卖 call。';
+      if (p === 'balanced') return 'Balanced 底仓 (Δ 50-74) = 中位。中位门槛 (J > 78)。';
+      if (p === 'swing') return 'Swing 杠杆底仓 (Δ 35-49) = 短期。低门槛 (J > 70), 底仓可 assign, 门槛放宽。';
       return '选底仓类型决定 J 门槛。';
     })(),
     numeric: { placeholder: 'J', unit: '', min: pmccKdjMin(), comparator: '>' } });
@@ -1103,9 +1174,10 @@ function currentItems() {
  * ========================================================== */
 function rrThreshold() {
   // Thresholds per style:
-  //   股票替代 (Δ > 50): 1.5 — 长持 + Delta 保护 → 门槛可低
-  //   Swing 杠杆 (Δ 35-50): 2.0 — 高杠杆 + theta 大 → 门槛需高
-  const t = { stock_sub: 1.5, swing: 2 }[state.leapsStyle];
+  //   股票替代 (Δ≥75): 1.5 — 长持 + Delta 高 → 门槛可低
+  //   Balanced (Δ 50-74): 1.75 — 中间
+  //   Swing 杠杆 (Δ 35-49): 2.0 — 高杠杆 + theta 大 → 门槛需高
+  const t = { stock_sub: 1.5, balanced: 1.75, swing: 2 }[state.leapsStyle];
   return t || 2;
 }
 function computeRR() {
@@ -1135,6 +1207,7 @@ function rrCheckDesc() {
   const thresh = rrThreshold();
   const styleReason = {
     stock_sub: '长持 + Δ 高 → 门槛可低',
+    balanced: '中杠杆 → 中位门槛',
     swing: '高杠杆 + theta 大 → 门槛需高',
   }[state.leapsStyle] || '';
   const rr = computeRR();
@@ -1185,18 +1258,44 @@ function itemVerdict(item) {
 
 function overallVerdict() {
   const items = currentItems();
-  let pass = 0, fail = 0, pending = 0;
+  let pass = 0, fail = 0, pending = 0, hardFail = 0;
   for (const it of items) {
     const v = itemVerdict(it);
     if (v === 'pass') pass++;
-    else if (v === 'fail') fail++;
+    else if (v === 'fail') {
+      fail++;
+      if (it.hard) hardFail++;
+    }
     else pending++;
   }
-  let status = 'PENDING';
+  const softFail = fail - hardFail;
   const isClose = state.strategy === 'leaps' && state.leapsDirection === 'close';
-  if (fail > 0) status = 'BLOCKED';
-  else if (pending === 0 && pass > 0) status = isClose ? 'CLEAR TO CLOSE' : 'CLEAR TO OPEN';
-  return { status, pass, fail, pending, total: items.length };
+  const clearLabel = isClose ? 'CLEAR TO CLOSE' : 'CLEAR TO OPEN';
+
+  let status, note;
+  if (hardFail > 0) {
+    status = 'BLOCKED';
+    note = `${hardFail} HARD 阻断, 拒绝执行`;
+  } else if (pass === 0) {
+    // Nothing filled yet
+    status = 'PENDING';
+    note = `${pending} 项未填, 请填 checklist`;
+  } else if (softFail === 0 && pending === 0) {
+    status = clearLabel;
+    note = '全部达标, 执行';
+  } else if (softFail <= 2) {
+    // ≤ 2 soft fails → 可软执行 (pending 数量在 note 里提醒, 不影响判决)
+    status = clearLabel + ' · 软执行';
+    const parts = [];
+    if (softFail > 0) parts.push(`${softFail} soft 未达标`);
+    if (pending > 0) parts.push(`${pending} 项未填`);
+    note = `可软执行 (${parts.join(', ')}), 由你自己判断补齐或跳过`;
+  } else {
+    status = 'PENDING';
+    note = `${softFail} soft 未达标 (超过 2)${pending > 0 ? ` + ${pending} 项未填` : ''}, 建议再确认`;
+  }
+
+  return { status, pass, fail, pending, hardFail, softFail, combined: softFail + pending, note, total: items.length };
 }
 
 /* ==========================================================
@@ -1283,6 +1382,75 @@ function pickerFooterHTML() {
     `;
   }
 
+  // Open positions
+  const openPos = history.filter(e => e.outcome === 'open');
+  const openHTML = openPos.length > 0 ? `
+    <div class="picker-panel open-positions">
+      <div class="picker-panel-head">
+        <span>当前持仓 · Open Positions</span>
+        <span class="picker-panel-count">${openPos.length}</span>
+      </div>
+      <div class="picker-panel-list">
+        ${openPos.slice(0, 8).map(e => `
+          <div class="open-pos-row" onclick="showEditModal('${e.id}')">
+            <span class="open-pos-ticker">${esc(e.ticker || '—')}</span>
+            <span class="open-pos-strategy">${esc(e.strategy)} · ${esc(e.subtype)}</span>
+            <span class="open-pos-time">${formatTimeAgo(e.timestampSort)}</span>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  ` : '';
+
+  // Losses learning
+  const losses = history.filter(e => e.outcome === 'loss').slice(0, 5);
+  const lossesHTML = losses.length > 0 ? `
+    <div class="picker-panel losses-learning">
+      <div class="picker-panel-head">
+        <span>最近亏损教训 · Losses Learning</span>
+        <span class="picker-panel-count">${losses.length}</span>
+      </div>
+      <div class="picker-panel-list">
+        ${losses.map(e => `
+          <div class="loss-row">
+            <div class="loss-header">
+              <span class="loss-ticker">${esc(e.ticker || '—')}</span>
+              <span class="loss-strategy">${esc(e.strategy)}</span>
+              <span class="loss-time">${formatTimeAgo(e.timestampSort)}</span>
+            </div>
+            ${e.notes ? `<div class="loss-notes">${esc(e.notes)}</div>` : '<div class="loss-notes-empty">未填复盘</div>'}
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  ` : '';
+
+  // Explore panel
+  const exploreHTML = `
+    <div class="picker-panel explore-panel">
+      <div class="picker-panel-head">
+        <span>Explore · 搜索历史</span>
+      </div>
+      <div class="explore-filters">
+        <input type="text" id="explore-ticker" placeholder="Ticker (e.g. MSFT)" autocomplete="off" spellcheck="false" oninput="updateExploreResults()">
+        <select id="explore-strategy" onchange="updateExploreResults()">
+          <option value="">全部策略</option>
+          <option value="LEAPS">LEAPS</option>
+          <option value="CSP">CSP</option>
+          <option value="PMCC">PMCC</option>
+        </select>
+        <select id="explore-outcome" onchange="updateExploreResults()">
+          <option value="">全部结果</option>
+          <option value="skipped">未交易</option>
+          <option value="open">持仓</option>
+          <option value="win">盈</option>
+          <option value="loss">亏</option>
+        </select>
+      </div>
+      <div id="explore-results"><div class="explore-empty">输入 ticker 或选筛选查看历史</div></div>
+    </div>
+  `;
+
   // Recent 3 snapshots
   const recent = history.slice(0, 3);
   const recentHTML = recent.map(e => {
@@ -1311,6 +1479,9 @@ function pickerFooterHTML() {
   const clearRate = weekTotal > 0 ? Math.round(weekClear / weekTotal * 100) : 0;
 
   return `
+    ${openHTML}
+    ${lossesHTML}
+    ${exploreHTML}
     <div class="picker-recent">
       <div class="picker-recent-head">
         <span>Recent</span>
@@ -1340,6 +1511,61 @@ function pickerFooterHTML() {
     ${mantraHTML()}
   `;
 }
+
+function updateExploreResults() {
+  const ticker = (document.getElementById('explore-ticker')?.value || '').trim().toUpperCase();
+  const strategy = document.getElementById('explore-strategy')?.value || '';
+  const outcome = document.getElementById('explore-outcome')?.value || '';
+  const container = document.getElementById('explore-results');
+  if (!container) return;
+
+  if (!ticker && !strategy && !outcome) {
+    container.innerHTML = '<div class="explore-empty">输入 ticker 或选筛选查看历史</div>';
+    return;
+  }
+
+  let matches = getActiveHistory();
+  if (ticker) matches = matches.filter(e => e.ticker && e.ticker.toUpperCase().includes(ticker));
+  if (strategy) matches = matches.filter(e => e.strategy && e.strategy.startsWith(strategy));
+  if (outcome) matches = matches.filter(e => e.outcome === outcome);
+
+  if (matches.length === 0) {
+    container.innerHTML = '<div class="explore-empty">无匹配</div>';
+    return;
+  }
+
+  // Summary stats
+  const totalMatches = matches.length;
+  const traded = matches.filter(e => e.outcome === 'win' || e.outcome === 'loss' || e.outcome === 'open');
+  const wins = matches.filter(e => e.outcome === 'win').length;
+  const losses = matches.filter(e => e.outcome === 'loss').length;
+  const winRate = (wins + losses) > 0 ? Math.round(wins / (wins + losses) * 100) : null;
+  const summaryHTML = `
+    <div class="explore-summary">
+      <span>共 ${totalMatches}</span>
+      ${traded.length > 0 ? `<span>· 已交易 ${traded.length}</span>` : ''}
+      ${wins > 0 || losses > 0 ? `<span>· 盈 ${wins} · 亏 ${losses}${winRate != null ? ` · 胜率 ${winRate}%` : ''}</span>` : ''}
+    </div>
+  `;
+
+  const rowsHTML = matches.slice(0, 20).map(e => {
+    const cls = e.verdict.startsWith('CLEAR') ? 'pass' : e.verdict === 'BLOCKED' ? 'fail' : 'pending';
+    const verdictShort = e.verdict.startsWith('CLEAR') ? 'CLEAR' : e.verdict === 'BLOCKED' ? 'BLOCK' : 'PEND';
+    const outcomeLabel = e.outcome ? OUTCOME_LABEL[e.outcome] : null;
+    return `
+      <div class="explore-row" onclick="showEditModal('${e.id}')">
+        <span class="explore-row-time">${esc(e.timestamp.slice(0, 10))}</span>
+        <span class="explore-row-ticker">${esc(e.ticker || '—')}</span>
+        <span class="explore-row-strategy">${esc(e.strategy)}</span>
+        <span class="explore-row-verdict ${cls}">${verdictShort}</span>
+        ${outcomeLabel ? `<span class="history-outcome ${e.outcome}">${esc(outcomeLabel)}</span>` : ''}
+      </div>
+    `;
+  }).join('');
+
+  container.innerHTML = summaryHTML + `<div class="explore-list">${rowsHTML}</div>`;
+}
+window.updateExploreResults = updateExploreResults;
 
 function mantraHTML() {
   return '';
@@ -1422,10 +1648,11 @@ function renderLeapsConfig() {
     <div class="config">
       <div class="config-title">Style · ${dir === 'open' ? '决定 Delta 门槛' : '决定止盈门槛'}</div>
       <div class="segmented" id="style-seg">
-        <button data-v="stock_sub">股票替代${dir === 'open' ? ' · Δ>50' : ''}</button>
-        <button data-v="swing">Swing 杠杆${dir === 'open' ? ' · Δ 35-50' : ''}</button>
+        <button data-v="stock_sub">股票替代${dir === 'open' ? ' · Δ≥75' : ''}</button>
+        <button data-v="balanced">Balanced${dir === 'open' ? ' · Δ 50-74' : ''}</button>
+        <button data-v="swing">Swing 杠杆${dir === 'open' ? ' · Δ 35-49' : ''}</button>
       </div>
-      ${dir === 'close' ? `<div style="font-size: 11.5px; color: var(--text-faint); margin-top: 8px; line-height: 1.5;">这笔当初是哪一类? 决定止盈门槛: 股票替代 150%+ · Swing 50%+ (100% 必走)。</div>` : ''}
+      ${dir === 'close' ? `<div style="font-size: 11.5px; color: var(--text-faint); margin-top: 8px; line-height: 1.5;">这笔当初是哪一类? 决定止盈门槛: 股票替代 150%+ · Balanced 100%+ (150% 必走 60%) · Swing 50%+ (100% 必走 70%)。</div>` : ''}
     </div>
   ` : '';
 
@@ -1529,6 +1756,7 @@ function renderPmccConfig() {
         <div class="config-title">底仓 LEAPS 原始目的</div>
         <div class="segmented" id="purpose-seg">
           <button data-v="stock_sub">股票替代</button>
+          <button data-v="balanced">Balanced</button>
           <button data-v="swing">Swing 杠杆</button>
         </div>
       </div>
@@ -1572,9 +1800,26 @@ function tickerBarHTML() {
   `;
 }
 
+function bottomSummaryHTML() {
+  const v = overallVerdict();
+  const cls = v.status === 'BLOCKED' ? 'fail'
+    : v.status.startsWith('CLEAR TO OPEN · 软执行') || v.status.startsWith('CLEAR TO CLOSE · 软执行') ? 'pass-soft'
+    : v.status.startsWith('CLEAR') ? 'pass'
+    : 'pending';
+  return `
+    <div class="bottom-summary">
+      <div class="bottom-status-main ${cls}" id="bottom-status-main">${esc(v.status)}</div>
+      <div class="bottom-status-note" id="bottom-status-note">${esc(v.note)}</div>
+    </div>
+  `;
+}
+
 function statusBarHTML() {
   const v = overallVerdict();
-  const cls = v.status.startsWith('CLEAR') ? 'pass' : v.status === 'BLOCKED' ? 'fail' : 'pending';
+  const cls = v.status === 'BLOCKED' ? 'fail'
+    : v.status.startsWith('CLEAR TO OPEN · 软执行') || v.status.startsWith('CLEAR TO CLOSE · 软执行') ? 'pass-soft'
+    : v.status.startsWith('CLEAR') ? 'pass'
+    : 'pending';
   return `
     <div class="status-bar">
       <div class="status-row">
@@ -1586,9 +1831,10 @@ function statusBarHTML() {
       </div>
       <div class="status-tally" id="status-tally">
         <span class="tally-item"><span class="tally-dot pass"></span> ${v.pass} pass</span>
-        <span class="tally-item"><span class="tally-dot fail"></span> ${v.fail} block</span>
+        <span class="tally-item"><span class="tally-dot fail"></span> ${v.hardFail} hard · ${v.softFail} soft</span>
         <span class="tally-item"><span class="tally-dot pending"></span> ${v.pending} pending</span>
       </div>
+      <div class="status-note" id="status-note">${esc(v.note)}</div>
     </div>
   `;
 }
@@ -1687,6 +1933,7 @@ function renderChecklist() {
     ${qrefHTML()}
     ${configHTML}
     ${checklistHTML}
+    ${bottomSummaryHTML()}
     <div class="footer">
       <button class="btn" onclick="clearItems()">Clear</button>
       <button class="btn primary" onclick="showSnapshot()">Snapshot</button>
@@ -1785,7 +2032,10 @@ function updateVerdictsInPlace() {
   // Status bar main text
   const $statusMain = document.getElementById('status-main');
   if ($statusMain) {
-    const cls = v.status.startsWith('CLEAR') ? 'pass' : v.status === 'BLOCKED' ? 'fail' : 'pending';
+    const cls = v.status === 'BLOCKED' ? 'fail'
+      : v.status.startsWith('CLEAR TO OPEN · 软执行') || v.status.startsWith('CLEAR TO CLOSE · 软执行') ? 'pass-soft'
+      : v.status.startsWith('CLEAR') ? 'pass'
+      : 'pending';
     $statusMain.className = 'status-main ' + cls;
     $statusMain.textContent = v.status;
   }
@@ -1802,14 +2052,14 @@ function updateVerdictsInPlace() {
     if ($fail) $fail.style.width = failPct + '%';
   }
 
-  // Tally counts
+  // Tally counts (top)
   const $tally = document.getElementById('status-tally');
   if ($tally) {
-    const newTally = `${v.pass}_${v.fail}_${v.pending}`;
+    const newTally = `${v.pass}_${v.hardFail}_${v.softFail}_${v.pending}`;
     const changed = window.__lastTally && window.__lastTally !== newTally;
     $tally.innerHTML = `
       <span class="tally-item"><span class="tally-dot pass"></span> ${v.pass} pass</span>
-      <span class="tally-item"><span class="tally-dot fail"></span> ${v.fail} block</span>
+      <span class="tally-item"><span class="tally-dot fail"></span> ${v.hardFail} hard · ${v.softFail} soft</span>
       <span class="tally-item"><span class="tally-dot pending"></span> ${v.pending} pending</span>
     `;
     if (changed) {
@@ -1820,6 +2070,23 @@ function updateVerdictsInPlace() {
     }
     window.__lastTally = newTally;
   }
+
+  // Status note (top)
+  const $note = document.getElementById('status-note');
+  if ($note) $note.textContent = v.note;
+
+  // Bottom summary bar (mirror of top)
+  const $bottomMain = document.getElementById('bottom-status-main');
+  if ($bottomMain) {
+    const cls = v.status === 'BLOCKED' ? 'fail'
+      : v.status.startsWith('CLEAR TO OPEN · 软执行') || v.status.startsWith('CLEAR TO CLOSE · 软执行') ? 'pass-soft'
+      : v.status.startsWith('CLEAR') ? 'pass'
+      : 'pending';
+    $bottomMain.className = 'bottom-status-main ' + cls;
+    $bottomMain.textContent = v.status;
+  }
+  const $bottomNote = document.getElementById('bottom-status-note');
+  if ($bottomNote) $bottomNote.textContent = v.note;
 
   // Each item's class + numeric badge
   items.forEach(it => {
@@ -2624,8 +2891,8 @@ function buildCSVSnapshot() {
     'target_level': 'Target',
     'leaps_profit': 'LEAPS_Profit%',
     'fg': 'F&G',
-    'spy_today': 'SPY_Today%',
-    'spy_5d': 'SPY_5D%',
+    'earnings': 'DaysToEarn',
+    'stock_ivp': 'IVP',
   };
 
   const failed = [];
