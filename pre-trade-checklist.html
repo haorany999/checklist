@@ -55,6 +55,15 @@
     --pending: #D97706; --pending-bg: rgba(217, 119, 6, 0.08);
     --accent: #2563EB;
   }
+  body.theme-warm {
+    --bg: #FBF6E9; --panel: #F5EEDA; --panel-2: #EDE5CC;
+    --border: #D8CDB0; --border-hi: #B8AA88;
+    --text: #3D3020; --text-dim: #6E5B45; --text-faint: #9C8B75;
+    --pass: #556B2F; --pass-bg: rgba(85, 107, 47, 0.10);
+    --fail: #B22222; --fail-bg: rgba(178, 34, 34, 0.08);
+    --pending: #B8860B; --pending-bg: rgba(184, 134, 11, 0.10);
+    --accent: #A0522D;
+  }
   html, body { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 16px; line-height: 1.55; min-height: 100vh; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; font-variant-numeric: tabular-nums; }
   body { padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
   .app { max-width: 780px; margin: 0 auto; padding: 16px 16px 48px; }
@@ -1358,7 +1367,7 @@ function headerHTML() {
     <div class="header">
       <div class="brand">Pre-Trade Checklist</div>
       <div class="header-actions">
-        <button class="theme-btn" onclick="cycleTheme()" title="Cycle theme (Auto → Slate → Terminal → Light)">
+        <button class="theme-btn" onclick="cycleTheme()" title="Cycle theme (Auto → Slate → Terminal → Light → Warm)">
           <span class="theme-dot"></span>
           <span>${themeName}</span>
         </button>
@@ -1652,7 +1661,7 @@ function renderPicker() {
     <div class="header">
       <div class="brand">Pre-Trade Checklist</div>
       <div class="header-actions">
-        <button class="theme-btn" onclick="cycleTheme()" title="Cycle theme (Auto → Slate → Terminal → Light)">
+        <button class="theme-btn" onclick="cycleTheme()" title="Cycle theme (Auto → Slate → Terminal → Light → Warm)">
           <span class="theme-dot"></span>
           <span>${themeName}</span>
         </button>
@@ -3673,9 +3682,9 @@ function wireSyncActions() {
 /* ==========================================================
  * THEME
  * ========================================================== */
-const THEME_CYCLE = ['auto', 'slate', 'terminal', 'light'];
-const THEME_LABEL = { auto: 'Auto', slate: 'Slate', terminal: 'Terminal', light: 'Light' };
-const THEME_COLORS = { slate: '#0F1419', terminal: '#000000', light: '#F9FAFB' };
+const THEME_CYCLE = ['auto', 'slate', 'terminal', 'light', 'warm'];
+const THEME_LABEL = { auto: 'Auto', slate: 'Slate', terminal: 'Terminal', light: 'Light', warm: 'Warm' };
+const THEME_COLORS = { slate: '#0F1419', terminal: '#000000', light: '#F9FAFB', warm: '#FBF6E9' };
 
 function resolveTheme(t) {
   if (t !== 'auto') return t;
