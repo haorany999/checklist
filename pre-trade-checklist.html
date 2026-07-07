@@ -116,6 +116,25 @@
   .override-notes { font-size: 12px; color: var(--text-dim); font-style: italic; line-height: 1.5; padding-left: 8px; border-left: 2px solid var(--pending); margin-top: 3px; }
   .override-notes-empty { font-size: 11.5px; color: var(--text-faint); font-style: italic; padding-left: 8px; }
 
+  .edit-warning { background: var(--pending-bg); color: var(--pending); padding: 8px 12px; border-radius: 6px; font-size: 12px; margin-bottom: 16px; line-height: 1.5; border: 1px solid var(--pending); border-color: rgba(255, 176, 32, 0.4); }
+  .edit-section-header { font-family: var(--mono); font-size: 10.5px; color: var(--text-faint); letter-spacing: 0.12em; text-transform: uppercase; margin: 22px 0 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+  .edit-group { margin-bottom: 16px; }
+  .edit-group-title { font-family: var(--mono); font-size: 10px; color: var(--text-faint); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 8px; padding: 4px 0; border-bottom: 1px dashed var(--border); }
+  .edit-item { padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .edit-item:last-child { border-bottom: none; }
+  .edit-item-title { font-size: 12.5px; color: var(--text); margin-bottom: 4px; line-height: 1.4; }
+  .edit-item-hard { display: inline-block; font-family: var(--mono); font-size: 9px; font-weight: 700; color: var(--fail); background: var(--fail-bg); padding: 1px 5px; border-radius: 3px; letter-spacing: 0.06em; margin-left: 4px; vertical-align: middle; }
+  .edit-item-desc { font-size: 11px; color: var(--text-faint); line-height: 1.5; margin-bottom: 6px; }
+  .edit-item-input-row { display: flex; align-items: center; gap: 6px; }
+  .edit-item-input { flex: 1; font-family: var(--mono); font-size: 13px; padding: 6px 8px; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 5px; -webkit-appearance: none; appearance: none; }
+  .edit-item-input:focus { outline: none; border-color: var(--accent); }
+  .edit-item-unit { font-family: var(--mono); font-size: 11px; color: var(--text-faint); }
+  .edit-item-seg { display: flex; gap: 4px; }
+  .edit-item-seg button { flex: 1; font-family: var(--mono); font-size: 11.5px; padding: 5px 6px; background: transparent; color: var(--text-dim); border: 1px solid var(--border); border-radius: 4px; cursor: pointer; -webkit-appearance: none; appearance: none; }
+  .edit-item-seg button.active { background: var(--accent); color: #0F1419; border-color: var(--accent); }
+  .edit-position-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  @media (max-width: 480px) { .edit-position-grid { grid-template-columns: 1fr; } }
+
   .explore-filters { display: grid; grid-template-columns: 1fr auto auto auto; gap: 6px; margin-bottom: 10px; }
   @media (max-width: 480px) { .explore-filters { grid-template-columns: 1fr 1fr; } }
   .explore-filters input, .explore-filters select { font-family: var(--sans); font-size: 13px; padding: 6px 8px; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 5px; -webkit-appearance: none; appearance: none; }
@@ -2564,6 +2583,21 @@ function deleteHistoryEntry(id) {
   renderHistoryList();
 }
 
+// Temporarily swap global state to a snapshot state, run fn, restore.
+// Used by edit modal to recompute verdict using a modified fullState.
+function withTempState(tempState, fn) {
+  const backup = JSON.parse(JSON.stringify(state));
+  const clone = JSON.parse(JSON.stringify(tempState || {}));
+  Object.keys(state).forEach(k => delete state[k]);
+  Object.assign(state, clone);
+  try {
+    return fn();
+  } finally {
+    Object.keys(state).forEach(k => delete state[k]);
+    Object.assign(state, backup);
+  }
+}
+
 function editHistoryEntry(id, updates) {
   const history = loadHistory();
   const idx = history.findIndex(e => e.id === id);
@@ -2585,6 +2619,44 @@ function ensureEditModal() {
   modal.addEventListener('click', e => { if (e.target === modal) hideEditModal(); });
 }
 
+function renderEditItem(item, itemsMap) {
+  const val = itemsMap[item.id];
+  const hardBadge = item.hard ? '<span class="edit-item-hard">HARD</span>' : '';
+  const desc = item.desc ? `<div class="edit-item-desc">${esc(item.desc)}</div>` : '';
+
+  if (item.numeric) {
+    const displayVal = (val != null && val !== '') ? val : '';
+    const ph = item.numeric.placeholder || '';
+    const unit = item.numeric.unit || '';
+    return `
+      <div class="edit-item">
+        <div class="edit-item-title">${esc(item.title)} ${hardBadge}</div>
+        ${desc}
+        <div class="edit-item-input-row">
+          <input type="number" class="edit-item-input" data-item-id="${item.id}"
+                 data-item-type="numeric" value="${esc(displayVal)}"
+                 placeholder="${esc(ph)}" inputmode="decimal" step="any">
+          ${unit ? `<span class="edit-item-unit">${esc(unit)}</span>` : ''}
+        </div>
+      </div>
+    `;
+  }
+
+  // Toggle item
+  const currentState = (val === 'pass' || val === 'fail') ? val : 'pending';
+  return `
+    <div class="edit-item">
+      <div class="edit-item-title">${esc(item.title)} ${hardBadge}</div>
+      ${desc}
+      <div class="segmented edit-item-seg" data-item-id="${item.id}" data-item-type="toggle">
+        <button data-v="pass"${currentState === 'pass' ? ' class="active"' : ''}>✓ Pass</button>
+        <button data-v="fail"${currentState === 'fail' ? ' class="active"' : ''}>✕ Fail</button>
+        <button data-v="pending"${currentState === 'pending' ? ' class="active"' : ''}>○ Clear</button>
+      </div>
+    </div>
+  `;
+}
+
 function showEditModal(id) {
   const entry = loadHistory().find(e => e.id === id);
   if (!entry || entry._deleted) return;
@@ -2593,6 +2665,53 @@ function showEditModal(id) {
   const outcome = entry.outcome || '';
   const notes = entry.notes || '';
   const tickerDisp = entry.ticker || '';
+  const fullState = entry.fullState || {};
+
+  // Get items list for this entry's state (using temp state swap)
+  let editItems = [];
+  try {
+    editItems = withTempState(fullState, () => currentItems());
+  } catch (err) {
+    console.error('Cannot load items for editing:', err);
+  }
+
+  // Group items by group name (preserving order)
+  const groupOrder = [];
+  const groups = {};
+  editItems.forEach(it => {
+    const g = it.group || 'Other';
+    if (!groups[g]) { groups[g] = []; groupOrder.push(g); }
+    groups[g].push(it);
+  });
+
+  const itemsHTML = groupOrder.map(gn => `
+    <div class="edit-group">
+      <div class="edit-group-title">${esc(gn)}</div>
+      ${groups[gn].map(it => renderEditItem(it, fullState.items || {})).join('')}
+    </div>
+  `).join('');
+
+  // Position sizing fields (LEAPS open only)
+  const showPosition = fullState.strategy === 'leaps' && fullState.leapsDirection === 'open';
+  const positionHTML = showPosition ? `
+    <div class="edit-group">
+      <div class="edit-group-title">仓位</div>
+      <div class="edit-position-grid">
+        <div>
+          <div class="edit-item-title" style="font-size: 11.5px;">Account NAV</div>
+          <input type="number" class="sync-setup-input" id="edit-nav" value="${esc(fullState.nav || '')}" placeholder="e.g. 100000" inputmode="decimal" step="any">
+        </div>
+        <div>
+          <div class="edit-item-title" style="font-size: 11.5px;">已有敞口 $</div>
+          <input type="number" class="sync-setup-input" id="edit-existing" value="${esc(fullState.existingExposure || '')}" placeholder="e.g. 5000" inputmode="decimal" step="any">
+        </div>
+        <div>
+          <div class="edit-item-title" style="font-size: 11.5px;">本次预算 $</div>
+          <input type="number" class="sync-setup-input" id="edit-budget" value="${esc(fullState.budget || '')}" placeholder="e.g. 10000" inputmode="decimal" step="any">
+        </div>
+      </div>
+    </div>
+  ` : '';
 
   modal.innerHTML = `
     <div class="modal-card">
@@ -2601,10 +2720,11 @@ function showEditModal(id) {
         <button class="modal-close" onclick="hideEditModal()" aria-label="Close">×</button>
       </div>
       <div class="modal-body">
-        <div style="font-size: 11.5px; color: var(--text-faint); line-height: 1.5; margin-bottom: 14px;">
+        <div style="font-size: 11.5px; color: var(--text-faint); line-height: 1.5; margin-bottom: 10px;">
           ${esc(entry.timestamp)} · ${esc(entry.strategy)} · ${esc(entry.subtype)}
-          <br>${esc(entry.verdict)} · ${entry.pass}/${entry.fail}/${entry.pending}
+          <br>原 verdict: <b>${esc(entry.verdict)}</b> · ${entry.pass}/${entry.fail}/${entry.pending}
         </div>
+        <div class="edit-warning">⚠ 修改任何数值或选项都会重新计算 verdict, 结果可能变。</div>
 
         <div class="sync-setup-input-group">
           <label>Ticker</label>
@@ -2614,7 +2734,12 @@ function showEditModal(id) {
                  placeholder="e.g. MSFT" value="${esc(tickerDisp)}">
         </div>
 
-        <div class="sync-setup-input-group">
+        ${positionHTML}
+
+        <div class="edit-section-header">CHECKLIST 项目</div>
+        ${itemsHTML || '<div style="color: var(--text-faint); font-size: 12px; padding: 10px 0;">无法加载 checklist 项目 (可能是旧数据格式)</div>'}
+
+        <div class="sync-setup-input-group" style="margin-top: 20px;">
           <label>交易结果</label>
           <div class="segmented" id="edit-outcome-seg">
             <button data-v="skipped">未交易</button>
@@ -2624,7 +2749,7 @@ function showEditModal(id) {
             <button data-v="loss">亏</button>
           </div>
           <div style="font-size: 11px; color: var(--text-faint); margin-top: 6px; line-height: 1.5;">
-            <b>未交易</b>: checklist BLOCK 或 PENDING, 系统拦住了 · <b>自主放弃</b>: checklist CLEAR / 软执行, 但你主动决定不做 (最有复盘价值)
+            <b>未交易</b>: checklist 拦住了 · <b>自主放弃</b>: checklist 允许但你主动没做 (最有复盘价值)
           </div>
         </div>
 
@@ -2633,7 +2758,7 @@ function showEditModal(id) {
           <textarea class="sync-setup-input" id="edit-notes" rows="3"
                     style="font-family: var(--sans); resize: vertical;"
                     maxlength="${NOTES_MAX}"
-                    placeholder="一行简短复盘 (自主放弃时: 写下为什么跟 checklist 意见不合)">${esc(notes)}</textarea>
+                    placeholder="一行简短复盘">${esc(notes)}</textarea>
           <div style="font-size: 10.5px; color: var(--text-faint); margin-top: 4px; text-align: right;" id="edit-notes-count">${notes.length} / ${NOTES_MAX}</div>
         </div>
       </div>
@@ -2649,12 +2774,22 @@ function showEditModal(id) {
   if (outcome) {
     modal.querySelector(`#edit-outcome-seg button[data-v="${outcome}"]`)?.classList.add('active');
   }
-  // Wire segmented
+  // Wire outcome segmented
   const seg = modal.querySelector('#edit-outcome-seg');
   seg.querySelectorAll('button').forEach(b => {
     b.addEventListener('click', () => {
       seg.querySelectorAll('button').forEach(x => x.classList.remove('active'));
       b.classList.add('active');
+    });
+  });
+
+  // Wire item toggle segmented buttons (per-item)
+  modal.querySelectorAll('.edit-item-seg').forEach(segEl => {
+    segEl.querySelectorAll('button').forEach(b => {
+      b.addEventListener('click', () => {
+        segEl.querySelectorAll('button').forEach(x => x.classList.remove('active'));
+        b.classList.add('active');
+      });
     });
   });
 
@@ -2682,13 +2817,84 @@ function showEditModal(id) {
     const activeBtn = seg.querySelector('button.active');
     const newOutcome = activeBtn ? activeBtn.dataset.v : null;
     const newNotes = notesEl.value.trim();
+
+    // Collect item values
+    const newItems = { ...(fullState.items || {}) };
+    modal.querySelectorAll('[data-item-id]').forEach(el => {
+      const iid = el.dataset.itemId;
+      const type = el.dataset.itemType;
+      if (type === 'numeric') {
+        newItems[iid] = el.value.trim();
+      } else if (type === 'toggle') {
+        const activeInner = el.querySelector('button.active');
+        const v = activeInner ? activeInner.dataset.v : 'pending';
+        if (v === 'pending') delete newItems[iid];
+        else newItems[iid] = v;
+      }
+    });
+
+    // Position sizing fields
+    const newNav = modal.querySelector('#edit-nav')?.value.trim() || '';
+    const newExisting = modal.querySelector('#edit-existing')?.value.trim() || '';
+    const newBudget = modal.querySelector('#edit-budget')?.value.trim() || '';
+
+    // Build new fullState
+    const newFullState = {
+      ...fullState,
+      ticker: newTicker,
+      nav: showPosition ? newNav : fullState.nav,
+      existingExposure: showPosition ? newExisting : fullState.existingExposure,
+      budget: showPosition ? newBudget : fullState.budget,
+      items: newItems
+    };
+
+    // Recompute verdict using new state
+    const recomputed = withTempState(newFullState, () => {
+      const items = currentItems();
+      const v = overallVerdict();
+      const inputs = [];
+      items.forEach(it => {
+        if (it.numeric) {
+          const val = state.items[it.id];
+          if (val != null && val !== '') inputs.push(`${it.id}=${val}`);
+        }
+      });
+      let exposurePct = '', capPct = '';
+      if (state.strategy === 'leaps' && state.leapsDirection === 'open') {
+        const p = positionUsedPct();
+        if (p != null) exposurePct = p.toFixed(1);
+        capPct = positionCapPct();
+      }
+      return {
+        verdict: v.status,
+        pass: v.pass, fail: v.fail, pending: v.pending,
+        hardFails: items.filter(it => it.hard && itemVerdict(it) === 'fail').map(it => it.title),
+        failed: items.filter(it => itemVerdict(it) === 'fail').map(it => it.title),
+        pendingItems: items.filter(it => itemVerdict(it) === 'pending').map(it => it.title),
+        inputs: inputs.join('; '),
+        exposurePct, capPct,
+        subtype: subtypeString()
+      };
+    });
+
+    const verdictChanged = recomputed.verdict !== entry.verdict;
+
     editHistoryEntry(id, {
       ticker: newTicker,
       outcome: newOutcome,
-      notes: newNotes
+      notes: newNotes,
+      nav: showPosition ? newNav : entry.nav,
+      existing: showPosition ? newExisting : entry.existing,
+      budget: showPosition ? newBudget : entry.budget,
+      ...recomputed,
+      fullState: newFullState
     });
     hideEditModal();
-    showToast('已保存', 'success', '记得 Sync 上传, 让另一端也更新');
+
+    const toastMsg = verdictChanged
+      ? `已保存 · verdict: ${entry.verdict} → ${recomputed.verdict}`
+      : '已保存';
+    showToast(toastMsg, 'success', '记得 Sync 上传, 让另一端也更新');
   });
 }
 
