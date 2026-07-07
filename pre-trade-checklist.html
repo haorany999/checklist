@@ -106,8 +106,18 @@
   .loss-notes { font-size: 12px; color: var(--text-dim); font-style: italic; line-height: 1.5; padding-left: 8px; border-left: 2px solid var(--fail); margin-top: 3px; }
   .loss-notes-empty { font-size: 11.5px; color: var(--text-faint); font-style: italic; padding-left: 8px; }
 
-  .explore-filters { display: grid; grid-template-columns: 1fr auto auto; gap: 6px; margin-bottom: 10px; }
-  @media (max-width: 480px) { .explore-filters { grid-template-columns: 1fr; } }
+  .override-row { padding: 8px 0; border-bottom: 1px solid var(--border); cursor: pointer; }
+  .override-row:last-child { border-bottom: none; }
+  .override-row:hover { color: var(--accent); }
+  .override-header { display: flex; gap: 8px; align-items: baseline; margin-bottom: 4px; font-size: 12.5px; }
+  .override-ticker { font-family: var(--mono); font-weight: 600; color: var(--pending); }
+  .override-strategy { color: var(--text-dim); font-size: 12px; flex: 1; }
+  .override-time { font-family: var(--mono); font-size: 11px; color: var(--text-faint); }
+  .override-notes { font-size: 12px; color: var(--text-dim); font-style: italic; line-height: 1.5; padding-left: 8px; border-left: 2px solid var(--pending); margin-top: 3px; }
+  .override-notes-empty { font-size: 11.5px; color: var(--text-faint); font-style: italic; padding-left: 8px; }
+
+  .explore-filters { display: grid; grid-template-columns: 1fr auto auto auto; gap: 6px; margin-bottom: 10px; }
+  @media (max-width: 480px) { .explore-filters { grid-template-columns: 1fr 1fr; } }
   .explore-filters input, .explore-filters select { font-family: var(--sans); font-size: 13px; padding: 6px 8px; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 5px; -webkit-appearance: none; appearance: none; }
   .explore-filters input:focus, .explore-filters select:focus { outline: none; border-color: var(--accent); }
   .explore-summary { font-family: var(--mono); font-size: 11.5px; color: var(--text-dim); padding: 4px 0 8px; display: flex; gap: 4px; flex-wrap: wrap; }
@@ -408,6 +418,7 @@
     font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
   }
   .history-outcome.skipped { color: var(--text-faint); border: 1px solid var(--border); }
+  .history-outcome.opted_out { color: var(--pending); border: 1px solid var(--pending); background: var(--pending-bg); }
   .history-outcome.open { background: var(--pending-bg); color: var(--pending); }
   .history-outcome.win { background: var(--pass-bg); color: var(--pass); }
   .history-outcome.loss { background: var(--fail-bg); color: var(--fail); }
@@ -602,7 +613,7 @@ const LEAPS_CLOSE_TYPE_LABEL = {
 };
 const CSP_INTENT_LABEL = { assign: '想接股', neutral: '一般', premium: '只赚权利金' };
 const PMCC_MODE_LABEL = { standard: '标准 (≤15)', defensive: '防守 (≤10)' };
-const OUTCOME_LABEL = { skipped: '未交易', open: '持仓', win: '盈', loss: '亏' };
+const OUTCOME_LABEL = { skipped: '未交易', opted_out: '自主放弃', open: '持仓', win: '盈', loss: '亏' };
 const NOTES_MAX = 200;
 
 // LEAPS Delta config by style:
@@ -1402,6 +1413,30 @@ function pickerFooterHTML() {
     </div>
   ` : '';
 
+  // Overrides (自主放弃) - shows where you disagreed with checklist
+  const overrides = history.filter(e => e.outcome === 'opted_out').slice(0, 5);
+  const overridesHTML = overrides.length > 0 ? `
+    <div class="picker-panel overrides-panel">
+      <div class="picker-panel-head">
+        <span>自主放弃 · Overrides</span>
+        <span class="picker-panel-count">${overrides.length}</span>
+      </div>
+      <div style="font-size: 11px; color: var(--text-faint); margin-bottom: 8px; line-height: 1.4;">Checklist 允许但你主动没做的机会 · 复盘对错</div>
+      <div class="picker-panel-list">
+        ${overrides.map(e => `
+          <div class="override-row" onclick="showEditModal('${e.id}')">
+            <div class="override-header">
+              <span class="override-ticker">${esc(e.ticker || '—')}</span>
+              <span class="override-strategy">${esc(e.strategy)} · ${esc(e.verdict)}</span>
+              <span class="override-time">${formatTimeAgo(e.timestampSort)}</span>
+            </div>
+            ${e.notes ? `<div class="override-notes">${esc(e.notes)}</div>` : '<div class="override-notes-empty">未填放弃原因</div>'}
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  ` : '';
+
   // Losses learning
   const losses = history.filter(e => e.outcome === 'loss').slice(0, 5);
   const lossesHTML = losses.length > 0 ? `
@@ -1425,6 +1460,14 @@ function pickerFooterHTML() {
     </div>
   ` : '';
 
+  // Available years from history (dynamic)
+  const years = [...new Set(history.map(e => {
+    // Parse year from timestamp string (e.g. "2026-07-06 09:15 ET") or timestampSort
+    if (e.timestamp && e.timestamp.length >= 4) return e.timestamp.slice(0, 4);
+    if (e.timestampSort) return new Date(e.timestampSort).getFullYear().toString();
+    return null;
+  }).filter(Boolean))].sort().reverse();
+
   // Explore panel
   const exploreHTML = `
     <div class="picker-panel explore-panel">
@@ -1433,15 +1476,20 @@ function pickerFooterHTML() {
       </div>
       <div class="explore-filters">
         <input type="text" id="explore-ticker" placeholder="Ticker (e.g. MSFT)" autocomplete="off" spellcheck="false" oninput="updateExploreResults()">
+        <select id="explore-year" onchange="updateExploreResults()">
+          <option value="">年份</option>
+          ${years.map(y => `<option value="${y}">${y}</option>`).join('')}
+        </select>
         <select id="explore-strategy" onchange="updateExploreResults()">
-          <option value="">全部策略</option>
+          <option value="">策略</option>
           <option value="LEAPS">LEAPS</option>
           <option value="CSP">CSP</option>
           <option value="PMCC">PMCC</option>
         </select>
         <select id="explore-outcome" onchange="updateExploreResults()">
-          <option value="">全部结果</option>
+          <option value="">结果</option>
           <option value="skipped">未交易</option>
+          <option value="opted_out">自主放弃</option>
           <option value="open">持仓</option>
           <option value="win">盈</option>
           <option value="loss">亏</option>
@@ -1480,6 +1528,7 @@ function pickerFooterHTML() {
 
   return `
     ${openHTML}
+    ${overridesHTML}
     ${lossesHTML}
     ${exploreHTML}
     <div class="picker-recent">
@@ -1514,18 +1563,24 @@ function pickerFooterHTML() {
 
 function updateExploreResults() {
   const ticker = (document.getElementById('explore-ticker')?.value || '').trim().toUpperCase();
+  const year = document.getElementById('explore-year')?.value || '';
   const strategy = document.getElementById('explore-strategy')?.value || '';
   const outcome = document.getElementById('explore-outcome')?.value || '';
   const container = document.getElementById('explore-results');
   if (!container) return;
 
-  if (!ticker && !strategy && !outcome) {
+  if (!ticker && !year && !strategy && !outcome) {
     container.innerHTML = '<div class="explore-empty">输入 ticker 或选筛选查看历史</div>';
     return;
   }
 
   let matches = getActiveHistory();
   if (ticker) matches = matches.filter(e => e.ticker && e.ticker.toUpperCase().includes(ticker));
+  if (year) matches = matches.filter(e => {
+    if (e.timestamp && e.timestamp.length >= 4) return e.timestamp.slice(0, 4) === year;
+    if (e.timestampSort) return new Date(e.timestampSort).getFullYear().toString() === year;
+    return false;
+  });
   if (strategy) matches = matches.filter(e => e.strategy && e.strategy.startsWith(strategy));
   if (outcome) matches = matches.filter(e => e.outcome === outcome);
 
@@ -2563,9 +2618,13 @@ function showEditModal(id) {
           <label>交易结果</label>
           <div class="segmented" id="edit-outcome-seg">
             <button data-v="skipped">未交易</button>
+            <button data-v="opted_out">自主放弃</button>
             <button data-v="open">持仓</button>
             <button data-v="win">盈</button>
             <button data-v="loss">亏</button>
+          </div>
+          <div style="font-size: 11px; color: var(--text-faint); margin-top: 6px; line-height: 1.5;">
+            <b>未交易</b>: checklist BLOCK 或 PENDING, 系统拦住了 · <b>自主放弃</b>: checklist CLEAR / 软执行, 但你主动决定不做 (最有复盘价值)
           </div>
         </div>
 
@@ -2574,7 +2633,7 @@ function showEditModal(id) {
           <textarea class="sync-setup-input" id="edit-notes" rows="3"
                     style="font-family: var(--sans); resize: vertical;"
                     maxlength="${NOTES_MAX}"
-                    placeholder="一行简短复盘 (细节记 Notion)">${esc(notes)}</textarea>
+                    placeholder="一行简短复盘 (自主放弃时: 写下为什么跟 checklist 意见不合)">${esc(notes)}</textarea>
           <div style="font-size: 10.5px; color: var(--text-faint); margin-top: 4px; text-align: right;" id="edit-notes-count">${notes.length} / ${NOTES_MAX}</div>
         </div>
       </div>
