@@ -1523,14 +1523,10 @@ function verdictSparklineHTML() {
   const currentYear = document.getElementById('spark-year')?.value || '';
   const currentStrategy = document.getElementById('spark-strategy')?.value || '';
 
-  // Determine base data (30 days if no year filter, else full year)
+  // Determine base data (all history if no filter, else full history filtered)
   let data = history;
   const activeFilter = currentTicker || currentYear || currentStrategy;
-  if (!activeFilter) {
-    // Default: last 30 days
-    const thirty = Date.now() - 30 * 86400000;
-    data = data.filter(e => e.timestampSort >= thirty);
-  } else {
+  if (activeFilter) {
     // Apply filters
     if (currentTicker) data = data.filter(e => e.ticker && e.ticker.toUpperCase().includes(currentTicker.trim().toUpperCase()));
     if (currentYear) data = data.filter(e => {
@@ -1568,7 +1564,7 @@ function verdictSparklineHTML() {
 
   const scopeText = activeFilter
     ? [currentTicker && `ticker: ${esc(currentTicker.toUpperCase())}`, currentYear, currentStrategy].filter(Boolean).join(' · ')
-    : '过去 30 天';
+    : '全部';
 
   return `
     <div class="picker-panel spark-panel">
@@ -1839,7 +1835,7 @@ function pickerFooterHTML() {
           <option value="loss">亏</option>
         </select>
       </div>
-      <div id="explore-results"><div class="explore-empty">输入 ticker 或选筛选查看历史</div></div>
+      <div id="explore-results">${renderExploreDefaultResults()}</div>
     </div>
   `;
 
@@ -1908,35 +1904,10 @@ function pickerFooterHTML() {
   `;
 }
 
-function updateExploreResults() {
-  const ticker = (document.getElementById('explore-ticker')?.value || '').trim().toUpperCase();
-  const year = document.getElementById('explore-year')?.value || '';
-  const strategy = document.getElementById('explore-strategy')?.value || '';
-  const outcome = document.getElementById('explore-outcome')?.value || '';
-  const container = document.getElementById('explore-results');
-  if (!container) return;
-
-  if (!ticker && !year && !strategy && !outcome) {
-    container.innerHTML = '<div class="explore-empty">输入 ticker 或选筛选查看历史</div>';
-    return;
-  }
-
-  let matches = getActiveHistory();
-  if (ticker) matches = matches.filter(e => e.ticker && e.ticker.toUpperCase().includes(ticker));
-  if (year) matches = matches.filter(e => {
-    if (e.timestamp && e.timestamp.length >= 4) return e.timestamp.slice(0, 4) === year;
-    if (e.timestampSort) return new Date(e.timestampSort).getFullYear().toString() === year;
-    return false;
-  });
-  if (strategy) matches = matches.filter(e => e.strategy && e.strategy.startsWith(strategy));
-  if (outcome) matches = matches.filter(e => e.outcome === outcome);
-
+function renderExploreResultsFor(matches) {
   if (matches.length === 0) {
-    container.innerHTML = '<div class="explore-empty">无匹配</div>';
-    return;
+    return '<div class="explore-empty">无匹配</div>';
   }
-
-  // Summary stats
   const totalMatches = matches.length;
   const traded = matches.filter(e => e.outcome === 'win' || e.outcome === 'loss' || e.outcome === 'open');
   const wins = matches.filter(e => e.outcome === 'win').length;
@@ -1949,7 +1920,6 @@ function updateExploreResults() {
       ${wins > 0 || losses > 0 ? `<span>· 盈 ${wins} · 亏 ${losses}${winRate != null ? ` · 胜率 ${winRate}%` : ''}</span>` : ''}
     </div>
   `;
-
   const rowsHTML = matches.slice(0, 20).map(e => {
     const cls = e.verdict.startsWith('CLEAR') ? 'pass' : e.verdict === 'BLOCKED' ? 'fail' : 'pending';
     const verdictShort = e.verdict.startsWith('CLEAR') ? 'CLEAR' : e.verdict === 'BLOCKED' ? 'BLOCK' : 'PEND';
@@ -1964,8 +1934,32 @@ function updateExploreResults() {
       </div>
     `;
   }).join('');
+  return summaryHTML + `<div class="explore-list">${rowsHTML}</div>`;
+}
 
-  container.innerHTML = summaryHTML + `<div class="explore-list">${rowsHTML}</div>`;
+function renderExploreDefaultResults() {
+  return renderExploreResultsFor(getActiveHistory());
+}
+
+function updateExploreResults() {
+  const ticker = (document.getElementById('explore-ticker')?.value || '').trim().toUpperCase();
+  const year = document.getElementById('explore-year')?.value || '';
+  const strategy = document.getElementById('explore-strategy')?.value || '';
+  const outcome = document.getElementById('explore-outcome')?.value || '';
+  const container = document.getElementById('explore-results');
+  if (!container) return;
+
+  let matches = getActiveHistory();
+  if (ticker) matches = matches.filter(e => e.ticker && e.ticker.toUpperCase().includes(ticker));
+  if (year) matches = matches.filter(e => {
+    if (e.timestamp && e.timestamp.length >= 4) return e.timestamp.slice(0, 4) === year;
+    if (e.timestampSort) return new Date(e.timestampSort).getFullYear().toString() === year;
+    return false;
+  });
+  if (strategy) matches = matches.filter(e => e.strategy && e.strategy.startsWith(strategy));
+  if (outcome) matches = matches.filter(e => e.outcome === outcome);
+
+  container.innerHTML = renderExploreResultsFor(matches);
 }
 window.updateExploreResults = updateExploreResults;
 
