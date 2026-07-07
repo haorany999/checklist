@@ -585,7 +585,15 @@ function pmccKdjMin() {
   //   Swing 杠杆 (Δ 35-50 底仓): 70 — 底仓短期, 门槛可放宽
   return { stock_sub: 85, swing: 70 }[state.pmccUnderlyingPurpose] || null;
 }
-function positionCapPct() { return state.leapsBluechip ? 30 : 15; }
+function positionCapPct() {
+  // Style-aware cap:
+  //   股票替代 (低杠杆, 长持): QQQ 30% · 非蓝筹 15%
+  //   Swing 杠杆 (高杠杆, 短持): QQQ 10% · 非蓝筹 5%
+  const isBluechip = state.leapsBluechip;
+  const style = state.leapsStyle;
+  if (style === 'swing') return isBluechip ? 10 : 5;
+  return isBluechip ? 30 : 15;
+}
 function positionUsedPct() {
   const nav = parseFloat(state.nav);
   const ex = parseFloat(state.existingExposure) || 0;
@@ -617,7 +625,12 @@ const SOP = {
     </ul>
     <h4>开仓 · 加仓信号类型</h4>
     <ul>
-      <li>单标的 LEAPS 总成本 ≤ 15% 账户净值 (大蓝筹极限 30%)</li>
+      <li>单标的 LEAPS 敞口:
+        <ul>
+          <li>股票替代: QQQ 蓝筹 30% · 非蓝筹 15%</li>
+          <li>Swing 杠杆: QQQ 蓝筹 10% · 非蓝筹 5% (高杠杆 = 小仓位)</li>
+        </ul>
+      </li>
       <li><b>首笔 · 左侧衰竭:</b> MJ2 信号 + 左侧动能衰竭 (RSI≤30 或 RSI≤50 触及布林下轨且斜率放缓, 或底背离, MACD 红柱缩短)</li>
       <li><b>加仓 · 右侧确认:</b> 日线收复 5/10/20MA 之一, 或放量反包/吞没/锤头, 站稳 EMA21 或 SMA50 之上</li>
       <li><b>加仓 · MACD 金叉:</b> 日线 MACD 低位金叉确立 (滞后指标, 严禁作为第一买点)</li>
@@ -780,9 +793,15 @@ function leapsOpenItems() {
       numeric: { placeholder: 'Delta', unit: '' } });
   }
 
+  const cap = positionCapPct();
+  const capDescParts = [];
+  if (state.leapsStyle === 'swing') capDescParts.push('Swing 杠杆 = 小仓位');
+  else if (state.leapsStyle === 'stock_sub') capDescParts.push('股票替代');
+  if (state.leapsBluechip) capDescParts.push('QQQ 蓝筹');
+  const capDesc = capDescParts.length ? `${capDescParts.join(' · ')}, 上限 ${cap}%。` : `上限 ${cap}%。`;
   base.push({ group: 'Position sizing', id: 'sizecap',
-    title: `单标的 LEAPS 敞口 ≤ ${positionCapPct()}% 账户净值`,
-    desc: state.leapsBluechip ? '已勾选大蓝筹 (上限 30%)。' : '常规 15%, 大蓝筹 30% (上方切换)。',
+    title: `单标的 LEAPS 敞口 ≤ ${cap}% 账户净值`,
+    desc: capDesc + ' 敞口 = 现有 + 本次预算。',
     hard: true, positionCheck: true });
 
   if (state.leapsPhase === 'entry') {
@@ -1608,6 +1627,13 @@ function renderChecklist() {
     const cap = positionCapPct();
     const pctCls = pctVal == null ? '' : (pctVal <= cap ? 'pass' : 'fail');
     const pctDisp = pctVal == null ? '—' : pctVal.toFixed(1) + '%';
+    // Compute caps for the two toggle labels (depends on style)
+    const savedBlue = state.leapsBluechip;
+    state.leapsBluechip = false;
+    const capNo = positionCapPct();
+    state.leapsBluechip = true;
+    const capYes = positionCapPct();
+    state.leapsBluechip = savedBlue;
     configHTML = `
       <div class="config">
         <div class="config-title">Position sizing · 仓位输入</div>
@@ -1620,8 +1646,8 @@ function renderChecklist() {
             <input inputmode="decimal" type="number" id="in-bg" placeholder="e.g. 8000" value="${esc(state.budget)}"></div>
           <div class="num-field"><label class="num-field-label">是否大蓝筹</label>
             <div class="segmented" id="bluechip-seg" style="margin-top: 0;">
-              <button data-v="no">否 (≤15%)</button>
-              <button data-v="yes">是 (≤30%)</button>
+              <button data-v="no">否 (≤${capNo}%)</button>
+              <button data-v="yes">是 (≤${capYes}%)</button>
             </div></div>
         </div>
         <div class="position-summary ${pctCls}" id="position-summary">
