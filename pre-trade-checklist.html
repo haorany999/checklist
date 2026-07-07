@@ -142,6 +142,13 @@
 
   /* 30-day verdict sparkline */
   .spark-panel { margin-top: 12px; }
+  .spark-filters { display: grid; grid-template-columns: 1fr auto auto auto; gap: 6px; margin-bottom: 12px; }
+  @media (max-width: 480px) { .spark-filters { grid-template-columns: 1fr 1fr; } }
+  .spark-filters input, .spark-filters select { font-family: var(--sans); font-size: 12px; padding: 5px 7px; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 4px; -webkit-appearance: none; appearance: none; }
+  .spark-filters input:focus, .spark-filters select:focus { outline: none; border-color: var(--accent); }
+  .spark-clear-btn { font-family: var(--mono); font-size: 10px; padding: 5px 8px; background: transparent; color: var(--text-faint); border: 1px solid var(--border); border-radius: 4px; cursor: pointer; text-transform: uppercase; letter-spacing: 0.08em; }
+  .spark-clear-btn:hover { color: var(--fail); border-color: var(--fail); }
+  .spark-empty { text-align: center; padding: 16px 10px; font-size: 12px; color: var(--text-faint); font-style: italic; }
   .spark-list { display: flex; flex-direction: column; gap: 6px; }
   .spark-row { display: grid; grid-template-columns: 60px 1fr 30px 40px; gap: 10px; align-items: center; font-family: var(--mono); font-size: 11px; }
   .spark-label { color: var(--text-dim); letter-spacing: 0.05em; }
@@ -465,25 +472,38 @@
   /* Ticker bar */
   .ticker-bar {
     display: flex; align-items: center; gap: 12px;
-    padding: 10px 14px; margin: 0 0 12px;
-    background: var(--panel); border: 1px solid var(--border);
-    border-radius: 8px;
+    padding: 14px 16px; margin: 0 0 12px;
+    background: var(--panel); border: 2px solid var(--border);
+    border-radius: 10px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+    transition: border-color 0.2s ease, background 0.2s ease;
+  }
+  /* Highlight state when ticker input is empty */
+  .ticker-bar.ticker-empty {
+    border-color: var(--pending);
+    background: linear-gradient(to right, var(--pending-bg), var(--panel) 40%);
+    animation: tickerPulse 2.5s ease-in-out infinite;
+  }
+  @keyframes tickerPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(210, 153, 34, 0.0); }
+    50% { box-shadow: 0 0 0 4px rgba(210, 153, 34, 0.18); }
   }
   body.theme-light .ticker-bar { box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05); }
   .ticker-label {
-    font-family: var(--mono); font-size: 10.5px;
+    font-family: var(--mono); font-size: 11.5px;
     letter-spacing: 0.14em; text-transform: uppercase;
-    color: var(--text-faint); flex-shrink: 0;
+    color: var(--text-faint); flex-shrink: 0; font-weight: 600;
   }
+  .ticker-bar.ticker-empty .ticker-label { color: var(--pending); }
   .ticker-input {
     flex: 1; background: transparent; border: none; outline: none;
-    color: var(--text); font-size: 17px; font-weight: 600;
+    color: var(--text); font-size: 19px; font-weight: 700;
     font-family: var(--mono); letter-spacing: 0.06em;
     text-transform: uppercase; padding: 4px 0;
     -webkit-appearance: none; appearance: none;
   }
   .ticker-input::placeholder { color: var(--text-faint); font-weight: 400; letter-spacing: 0.02em; text-transform: none; font-family: var(--sans); font-size: 14px; }
+  .ticker-bar.ticker-empty .ticker-input::placeholder { color: var(--pending); opacity: 0.85; }
   body.theme-terminal .ticker-input { text-shadow: 0 0 4px rgba(0, 255, 102, 0.4); }
 
   /* History ticker badge */
@@ -1489,19 +1509,47 @@ function formatTimeAgo(ts) {
 
 function verdictSparklineHTML() {
   const history = getActiveHistory();
-  const thirty = Date.now() - 30 * 86400000;
-  const recent = history.filter(e => e.timestampSort >= thirty);
-  if (recent.length < 3) return '';
+  if (history.length < 1) return '';
 
+  // Available years from history
+  const years = [...new Set(history.map(e => {
+    if (e.timestamp && e.timestamp.length >= 4) return e.timestamp.slice(0, 4);
+    if (e.timestampSort) return new Date(e.timestampSort).getFullYear().toString();
+    return null;
+  }).filter(Boolean))].sort().reverse();
+
+  // Read current filter state from DOM if exists, else default
+  const currentTicker = document.getElementById('spark-ticker')?.value || '';
+  const currentYear = document.getElementById('spark-year')?.value || '';
+  const currentStrategy = document.getElementById('spark-strategy')?.value || '';
+
+  // Determine base data (30 days if no year filter, else full year)
+  let data = history;
+  const activeFilter = currentTicker || currentYear || currentStrategy;
+  if (!activeFilter) {
+    // Default: last 30 days
+    const thirty = Date.now() - 30 * 86400000;
+    data = data.filter(e => e.timestampSort >= thirty);
+  } else {
+    // Apply filters
+    if (currentTicker) data = data.filter(e => e.ticker && e.ticker.toUpperCase().includes(currentTicker.trim().toUpperCase()));
+    if (currentYear) data = data.filter(e => {
+      const t = e.timestamp && e.timestamp.length >= 4 ? e.timestamp.slice(0, 4)
+        : (e.timestampSort ? new Date(e.timestampSort).getFullYear().toString() : '');
+      return t === currentYear;
+    });
+    if (currentStrategy) data = data.filter(e => e.strategy && e.strategy.startsWith(currentStrategy));
+  }
+
+  const total = data.length;
   let clear = 0, soft = 0, pend = 0, block = 0;
-  recent.forEach(e => {
+  data.forEach(e => {
     const v = e.verdict || '';
     if (v === 'BLOCKED') block++;
     else if (v.includes('软执行')) soft++;
     else if (v.startsWith('CLEAR')) clear++;
     else pend++;
   });
-  const total = recent.length;
   const pct = n => total > 0 ? Math.round(n / total * 100) : 0;
 
   const bar = (label, count, cls) => {
@@ -1518,21 +1566,79 @@ function verdictSparklineHTML() {
     `;
   };
 
+  const scopeText = activeFilter
+    ? [currentTicker && `ticker: ${esc(currentTicker.toUpperCase())}`, currentYear, currentStrategy].filter(Boolean).join(' · ')
+    : '过去 30 天';
+
   return `
     <div class="picker-panel spark-panel">
       <div class="picker-panel-head">
-        <span>过去 30 天 · Verdict 分布</span>
+        <span>Verdict 分布 · ${scopeText}</span>
         <span class="picker-panel-count">${total}</span>
       </div>
-      <div class="spark-list">
-        ${bar('CLEAR', clear, 'pass')}
-        ${bar('SOFT', soft, 'pass-soft')}
-        ${bar('PEND', pend, 'pending')}
-        ${bar('BLOCK', block, 'fail')}
+      <div class="spark-filters">
+        <input type="text" id="spark-ticker" placeholder="ticker" autocomplete="off" spellcheck="false"
+               list="tickers-datalist-spark" value="${esc(currentTicker)}" oninput="updateSparklinePanel()">
+        ${renderTickerDatalist('tickers-datalist-spark')}
+        <select id="spark-year" onchange="updateSparklinePanel()">
+          <option value="">年份</option>
+          ${years.map(y => `<option value="${y}"${y === currentYear ? ' selected' : ''}>${y}</option>`).join('')}
+        </select>
+        <select id="spark-strategy" onchange="updateSparklinePanel()">
+          <option value="">策略</option>
+          <option value="LEAPS"${currentStrategy === 'LEAPS' ? ' selected' : ''}>LEAPS</option>
+          <option value="CSP"${currentStrategy === 'CSP' ? ' selected' : ''}>CSP</option>
+          <option value="PMCC"${currentStrategy === 'PMCC' ? ' selected' : ''}>PMCC</option>
+        </select>
+        ${activeFilter ? '<button class="spark-clear-btn" onclick="clearSparklineFilters()">清除</button>' : ''}
       </div>
+      ${total === 0 ? '<div class="spark-empty">无匹配</div>' : `
+        <div class="spark-list">
+          ${bar('CLEAR', clear, 'pass')}
+          ${bar('SOFT', soft, 'pass-soft')}
+          ${bar('PEND', pend, 'pending')}
+          ${bar('BLOCK', block, 'fail')}
+        </div>
+      `}
     </div>
   `;
 }
+
+function updateSparklinePanel() {
+  const panel = document.querySelector('.spark-panel');
+  if (!panel) return;
+  // Preserve focus + value
+  const activeId = document.activeElement?.id;
+  const cursorPos = document.activeElement?.selectionStart;
+  const wrapper = document.createElement('div');
+  wrapper.innerHTML = verdictSparklineHTML();
+  const newPanel = wrapper.firstElementChild;
+  if (newPanel) {
+    panel.replaceWith(newPanel);
+    // Restore focus
+    if (activeId) {
+      const el = document.getElementById(activeId);
+      if (el) {
+        el.focus();
+        if (cursorPos != null && el.setSelectionRange) {
+          try { el.setSelectionRange(cursorPos, cursorPos); } catch (e) {}
+        }
+      }
+    }
+  }
+}
+window.updateSparklinePanel = updateSparklinePanel;
+
+function clearSparklineFilters() {
+  const t = document.getElementById('spark-ticker');
+  const y = document.getElementById('spark-year');
+  const s = document.getElementById('spark-strategy');
+  if (t) t.value = '';
+  if (y) y.value = '';
+  if (s) s.value = '';
+  updateSparklinePanel();
+}
+window.clearSparklineFilters = clearSparklineFilters;
 
 function pickerFooterHTML() {
   const history = getActiveHistory();
@@ -2127,9 +2233,10 @@ function renderTickerDatalist(id) {
 }
 
 function tickerBarHTML() {
+  const isEmpty = !state.ticker;
   return `
-    <div class="ticker-bar">
-      <label class="ticker-label">Ticker</label>
+    <div class="ticker-bar ${isEmpty ? 'ticker-empty' : ''}" id="ticker-bar">
+      <label class="ticker-label">Ticker ${isEmpty ? '· 请填写' : ''}</label>
       <input class="ticker-input" id="in-ticker" type="text" autocomplete="off" autocorrect="off"
              spellcheck="false" list="tickers-datalist-main"
              placeholder="e.g. MSFT / QQQ / AAPL" value="${esc(state.ticker || '')}">
@@ -2318,6 +2425,14 @@ function renderChecklist() {
         try { e.target.setSelectionRange(pos, pos); } catch (err) {}
       }
       state.ticker = v;
+      // Live toggle empty highlight state without full re-render
+      const bar = document.getElementById('ticker-bar');
+      if (bar) {
+        if (v) bar.classList.remove('ticker-empty');
+        else bar.classList.add('ticker-empty');
+        const label = bar.querySelector('.ticker-label');
+        if (label) label.textContent = v ? 'Ticker' : 'Ticker · 请填写';
+      }
       scheduleSaveDraft();
     });
     tickerEl.addEventListener('blur', () => scheduleFullRender());
