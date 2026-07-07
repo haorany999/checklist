@@ -354,6 +354,20 @@
   .history-verdict.pending { background: var(--pending-bg); color: var(--pending); }
   .history-tally { color: var(--text-dim); font-family: var(--mono); font-size: 10.5px; }
   .history-hard { color: var(--fail); font-size: 10px; font-family: var(--mono); font-weight: 600; letter-spacing: 0.06em; }
+  .history-outcome {
+    padding: 2px 6px; border-radius: 3px;
+    font-family: var(--mono); font-size: 10px;
+    font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  .history-outcome.skipped { color: var(--text-faint); border: 1px solid var(--border); }
+  .history-outcome.open { background: var(--pending-bg); color: var(--pending); }
+  .history-outcome.win { background: var(--pass-bg); color: var(--pass); }
+  .history-outcome.loss { background: var(--fail-bg); color: var(--fail); }
+  .history-notes {
+    font-size: 12px; color: var(--text-dim); margin-top: 6px;
+    font-style: italic; line-height: 1.45;
+    padding-left: 10px; border-left: 2px solid var(--border);
+  }
   .history-actions { display: flex; gap: 6px; flex-shrink: 0; }
   .history-empty { padding: 60px 20px; text-align: center; color: var(--text-dim); font-size: 13px; line-height: 1.6; }
   .history-empty-sub { font-size: 11px; color: var(--text-faint); margin-top: 8px; }
@@ -530,7 +544,7 @@ const LEAPS_PHASE_LABEL = {
   add_right: '加仓 · 右侧确认',
   add_macd: '加仓 · MACD 金叉'
 };
-const LEAPS_STYLE_LABEL = { stock_sub: '股票替代', standard: '标准 Swing', aggressive: '激进 Swing' };
+const LEAPS_STYLE_LABEL = { stock_sub: '股票替代', swing: 'Swing 杠杆' };
 const LEAPS_CLOSE_TYPE_LABEL = {
   gradient: '分批止盈 (100/150/200)',
   profit200: '暴利平半 (≥200%)',
@@ -540,16 +554,36 @@ const LEAPS_CLOSE_TYPE_LABEL = {
 };
 const CSP_INTENT_LABEL = { assign: '想接股', neutral: '一般', premium: '只赚权利金' };
 const PMCC_MODE_LABEL = { standard: '标准 (≤15)', defensive: '防守 (≤10)' };
+const OUTCOME_LABEL = { skipped: '未交易', open: '持仓', win: '盈', loss: '亏' };
+const NOTES_MAX = 200;
 
-function leapsDeltaMin() { return { stock_sub: 70, standard: 60, aggressive: 40 }[state.leapsStyle] || null; }
+// LEAPS Delta config by style:
+//   stock_sub: > 50 (DITM / ITM, 长持)
+//   swing: 35-50 (ATM 附近, 短持 leverage plays)
+function leapsDeltaSpec() {
+  if (state.leapsStyle === 'stock_sub') {
+    return {
+      title: 'Delta > 50',
+      numeric: { placeholder: 'Delta', unit: '', min: 51, comparator: '>', label: '> 50' },
+      desc: '> 50 (=0.5), 整数。DITM / ITM 底仓, 时间保护足。'
+    };
+  }
+  if (state.leapsStyle === 'swing') {
+    return {
+      title: 'Delta 35-50',
+      numeric: { placeholder: 'Delta', unit: '', range: [35, 50] },
+      desc: '35-50 (=0.35-0.50), 整数。ATM 附近, 高杠杆 swing。'
+    };
+  }
+  return null;
+}
 function cspDeltaMax() { return { assign: 30, neutral: 25, premium: 15 }[state.cspIntent] || null; }
 function pmccDeltaMax() { return { standard: 15, defensive: 10 }[state.pmccMode] || null; }
 function pmccKdjMin() {
   // J threshold based on underlying LEAPS type (底仓珍贵 → 门槛越严)
-  //   股票替代 (Δ 70+, 长持底仓): 85 — 底仓珍贵, 卖飞代价大, 需极端超买
-  //   标准 Swing (Δ 60 底仓): 75 — 中位
-  //   激进 Swing (Δ 40 底仓): 65 — 底仓本身短期, 门槛放宽
-  return { stock_sub: 85, standard: 75, aggressive: 65 }[state.pmccUnderlyingPurpose] || null;
+  //   股票替代 (Δ > 50, 长持底仓): 85 — 底仓珍贵, 卖飞代价大, 需极端超买
+  //   Swing 杠杆 (Δ 35-50 底仓): 70 — 底仓短期, 门槛可放宽
+  return { stock_sub: 85, swing: 70 }[state.pmccUnderlyingPurpose] || null;
 }
 function positionCapPct() { return state.leapsBluechip ? 30 : 15; }
 function positionUsedPct() {
@@ -576,9 +610,8 @@ const SOP = {
       <li>明确交易预期: 波段 (Swing) 还是长期配置拿到新高</li>
       <li>风格分类:
         <ul>
-          <li>股票替代: <code>Δ ≥ 70</code>, DTE 400+, DITM, 长持, R:R ≥ 1.5</li>
-          <li>标准 Swing: <code>Δ ≥ 60</code>, DTE 400+, ITM/ATM, 短持, R:R ≥ 2</li>
-          <li>激进 Swing: <code>Δ ≥ 40</code>, DTE 400+, ATM, 短持, R:R ≥ 2.5</li>
+          <li>股票替代: <code>Δ > 50</code>, DTE 400+, ITM/DITM, 长持, R:R ≥ 1.5</li>
+          <li>Swing 杠杆: <code>Δ 35-50</code>, DTE 400+, ATM 附近, 短持, R:R ≥ 2</li>
         </ul>
       </li>
     </ul>
@@ -594,7 +627,7 @@ const SOP = {
     </ul>
     <h4>关仓 / 减仓 / 止损</h4>
     <ul>
-      <li>分批止盈: 100% / 150% / 200% 梯度 GTC, 向上趋势用移动止盈防卖飞</li>
+      <li>分批止盈: 股票替代 150%→平50% · Swing 50%可走 + 100%必走 ≥70%</li>
       <li>暴利换约 (利润 ≥ 200%): 平仓 50% 锁利, 余仓移动止盈</li>
       <li>时间+浮亏止损: 仅当 DTE &lt; 9 个月 且 浮亏 ≥ 50%, 才考虑割肉/换约</li>
       <li>时间必须退出: DTE 剩 6 个月, 无条件平仓或滚动至更远 LEAPS</li>
@@ -636,7 +669,7 @@ const SOP = {
       <li>非在突破当天卖 short call (动能最强, 短腿易被推爆)</li>
       <li>Short call Delta ≤ 15 (标准) 或 ≤ 10 (防守)</li>
       <li>标的位于 Bollinger 中轨之上 (右侧位置, 卖强)</li>
-      <li>日线 KDJ 的 J 值 (按底仓类型): 股票替代 > 85 · 标准 Swing > 75 · 激进 Swing > 65</li>
+      <li>日线 KDJ 的 J 值 (按底仓类型): 股票替代 > 85 · Swing 杠杆 > 70</li>
     </ul>
   `
 };
@@ -733,12 +766,19 @@ function leapsOpenItems() {
     desc: '',
     numeric: { placeholder: 'DTE', unit: 'days', min: 400, comparator: '≥' } });
 
-  const dMin = leapsDeltaMin();
+  const dSpec = leapsDeltaSpec();
   const styleName = LEAPS_STYLE_LABEL[state.leapsStyle];
-  base.push({ group: 'Trade plan', id: 'delta',
-    title: `Delta ≥ ${dMin != null ? dMin : '?'}  (${styleName || '未选'})`,
-    desc: dMin != null ? `≥ ${dMin} (=0.${dMin < 10 ? '0' + dMin : dMin}), 整数。` : '先选风格。',
-    numeric: { placeholder: 'Delta', unit: '', min: dMin, comparator: '≥' } });
+  if (dSpec) {
+    base.push({ group: 'Trade plan', id: 'delta',
+      title: `${dSpec.title}  (${styleName})`,
+      desc: dSpec.desc,
+      numeric: dSpec.numeric });
+  } else {
+    base.push({ group: 'Trade plan', id: 'delta',
+      title: 'Delta ?  (未选)',
+      desc: '先选风格。',
+      numeric: { placeholder: 'Delta', unit: '' } });
+  }
 
   base.push({ group: 'Position sizing', id: 'sizecap',
     title: `单标的 LEAPS 敞口 ≤ ${positionCapPct()}% 账户净值`,
@@ -797,9 +837,8 @@ function leapsCloseItems() {
     const g = '分批止盈';
     // Style-based initial trigger threshold (% profit)
     //   股票替代: 150% (长持, 目标 new high, 首次走 50%)
-    //   标准 Swing: 50% (触发早, 强制走在 100%)
-    //   激进 Swing: 30% (快进快出, 强制走在 50%)
-    const profitThresh = { stock_sub: 150, standard: 50, aggressive: 30 }[style] || 100;
+    //   Swing 杠杆: 50% (可走) + 100% 必走 ≥70% (拉高门槛给空间, 但到 100% 果断锁大部分)
+    const profitThresh = { stock_sub: 150, swing: 50 }[style] || 100;
 
     // 1. Contract count
     base.push({ group: g, id: 'contracts',
@@ -810,7 +849,7 @@ function leapsCloseItems() {
     // 2. Profit trigger (style-adaptive)
     base.push({ group: g, id: 'profit_gradient',
       title: `当前浮盈 ≥ ${profitThresh}%  (${styleLabel})`,
-      desc: `门槛: 股票替代 150%→平50% · 标准 50%可走 + 100%必走 ≥70% · 激进 30%可走 + 50%必走 ≥70%。`,
+      desc: `门槛: 股票替代 150%→平50% · Swing 50%可走 + 100%必走 ≥70%。`,
       numeric: { placeholder: 'Profit', unit: '%', min: profitThresh, comparator: '≥' } });
 
     const contracts = parseInt(state.items['contracts']) || 0;
@@ -831,25 +870,11 @@ function leapsCloseItems() {
       }
     }
 
-    // 4. Multi-contract half-close at 100% (standard/aggressive fallback)
-    if (style !== 'stock_sub' && contracts >= 2 && profit >= 100) {
-      const half = Math.floor(contracts / 2);
-      base.push({ group: g, id: 'half_close',
-        title: `多张 + 利润 ≥ 100% → 已平掉 ${half} 张`,
-        desc: `剩余 ${contracts} 张, 本次平 ${half} 张锁利, 余仓继续。`,
-        hard: true });
-    }
-
-    // 5. Swing must-walk (aggressive @ 50%+, standard @ 100%+)
-    if (style === 'aggressive' && profit >= 50) {
-      base.push({ group: g, id: 'swing_walk_agg',
-        title: '激进 Swing + 利润 ≥ 50% → 已走仓位 ≥ 70%',
-        desc: '达 50% 平掉 70-100% 的张数或价值。NFLX 教训: 防利润回吐。',
-        hard: true });
-    } else if (style === 'standard' && profit >= 100) {
-      base.push({ group: g, id: 'swing_walk_std',
-        title: '标准 Swing + 利润 ≥ 100% → 已走仓位 ≥ 70%',
-        desc: '达 100% 平掉 70-100% 的张数或价值。防利润回吐。',
+    // 4. Swing 杠杆 hard walk at profit >= 100
+    if (style === 'swing' && profit >= 100) {
+      base.push({ group: g, id: 'swing_walk',
+        title: 'Swing 杠杆 + 利润 ≥ 100% → 已走仓位 ≥ 70%',
+        desc: '达 100% 平掉 70-100% 的张数或价值。给 swing 空间跑到 100%, 到点果断锁大部分, 留少量试探更高目标。',
         hard: true });
     }
 
@@ -1036,8 +1061,7 @@ function pmccItems() {
     desc: (() => {
       const p = state.pmccUnderlyingPurpose;
       if (p === 'stock_sub') return '股票替代底仓 = 长期珍贵。Assign 走底仓代价大, 需极端超买 (J > 85) 才卖 call。';
-      if (p === 'standard') return '标准 Swing 底仓 = 中期。中位门槛 (J > 75)。';
-      if (p === 'aggressive') return '激进 Swing 底仓 = 短期。底仓无所谓, 门槛放宽 (J > 65) 获取更多机会。';
+      if (p === 'swing') return 'Swing 杠杆底仓 = 短期。中低门槛 (J > 70), 底仓可 assign, 门槛放宽。';
       return '选底仓类型决定 J 门槛。';
     })(),
     numeric: { placeholder: 'J', unit: '', min: pmccKdjMin(), comparator: '>' } });
@@ -1059,11 +1083,10 @@ function currentItems() {
  * R:R (Risk : Reward) auto-computation for LEAPS
  * ========================================================== */
 function rrThreshold() {
-  // Different thresholds per LEAPS style:
-  //   股票替代 (Δ 70+): 1.5 — long hold + delta protection = lower threshold OK
-  //   标准 Swing (Δ 60): 2.0 — classic swing standard
-  //   激进 Swing (Δ 40): 2.5 — low delta = theta drain, needs bigger reward
-  const t = { stock_sub: 1.5, standard: 2, aggressive: 2.5 }[state.leapsStyle];
+  // Thresholds per style:
+  //   股票替代 (Δ > 50): 1.5 — 长持 + Delta 保护 → 门槛可低
+  //   Swing 杠杆 (Δ 35-50): 2.0 — 高杠杆 + theta 大 → 门槛需高
+  const t = { stock_sub: 1.5, swing: 2 }[state.leapsStyle];
   return t || 2;
 }
 function computeRR() {
@@ -1093,8 +1116,7 @@ function rrCheckDesc() {
   const thresh = rrThreshold();
   const styleReason = {
     stock_sub: '长持 + Δ 高 → 门槛可低',
-    standard: '经典 swing 门槛',
-    aggressive: '低 Δ, theta 大 → 门槛需高',
+    swing: '高杠杆 + theta 大 → 门槛需高',
   }[state.leapsStyle] || '';
   const rr = computeRR();
   if (!rr) return `${LEAPS_STYLE_LABEL[state.leapsStyle] || ''}: 门槛 R:R ≥ ${thresh} : 1  (${styleReason})。填入三个价位自动计算。`;
@@ -1379,13 +1401,12 @@ function renderLeapsConfig() {
 
   const styleConfigHTML = dir ? `
     <div class="config">
-      <div class="config-title">底仓 style · ${dir === 'open' ? '决定 Delta 门槛' : '决定止盈门槛'}</div>
+      <div class="config-title">Style · ${dir === 'open' ? '决定 Delta 门槛' : '决定止盈门槛'}</div>
       <div class="segmented" id="style-seg">
-        <button data-v="stock_sub">股票替代${dir === 'open' ? ' · Δ≥70' : ''}</button>
-        <button data-v="standard">标准 Swing${dir === 'open' ? ' · Δ≥60' : ''}</button>
-        <button data-v="aggressive">激进 Swing${dir === 'open' ? ' · Δ≥40' : ''}</button>
+        <button data-v="stock_sub">股票替代${dir === 'open' ? ' · Δ>50' : ''}</button>
+        <button data-v="swing">Swing 杠杆${dir === 'open' ? ' · Δ 35-50' : ''}</button>
       </div>
-      ${dir === 'close' ? `<div style="font-size: 11.5px; color: var(--text-faint); margin-top: 8px; line-height: 1.5;">这笔当初是哪一类? 决定止盈门槛: 长期 100%+, 标准 50-100%, 激进 30-50%。</div>` : ''}
+      ${dir === 'close' ? `<div style="font-size: 11.5px; color: var(--text-faint); margin-top: 8px; line-height: 1.5;">这笔当初是哪一类? 决定止盈门槛: 股票替代 150%+ · Swing 50%+ (100% 必走)。</div>` : ''}
     </div>
   ` : '';
 
@@ -1489,8 +1510,7 @@ function renderPmccConfig() {
         <div class="config-title">底仓 LEAPS 原始目的</div>
         <div class="segmented" id="purpose-seg">
           <button data-v="stock_sub">股票替代</button>
-          <button data-v="standard">标准 Swing</button>
-          <button data-v="aggressive">激进 Swing</button>
+          <button data-v="swing">Swing 杠杆</button>
         </div>
       </div>
       <div class="config">
@@ -1857,6 +1877,7 @@ function itemHTML(it) {
     const n = it.numeric;
     let req = '';
     if (n.priceField) req = '';  // No required label for price fields
+    else if (n.label) req = `Required: ${n.label}${n.unit ? ' ' + n.unit : ''}`;
     else if (n.range) req = `Required: ${n.range[0]} – ${n.range[1]} ${n.unit || ''}`;
     else if (n.min != null) req = `Required: ${n.comparator} ${n.min}${n.unit ? ' ' + n.unit : ''}`;
     else if (n.max != null) req = `Required: ${n.comparator} ${n.max}${n.unit ? ' ' + n.unit : ''}`;
@@ -2038,6 +2059,13 @@ function snapshotStateForStorage() {
 }
 function restoreStateFromStorage(saved) {
   if (!saved) return;
+  // Migrate old LEAPS style keys ('standard' / 'aggressive' → 'swing')
+  if (saved.leapsStyle === 'standard' || saved.leapsStyle === 'aggressive') {
+    saved.leapsStyle = 'swing';
+  }
+  if (saved.pmccUnderlyingPurpose === 'standard' || saved.pmccUnderlyingPurpose === 'aggressive') {
+    saved.pmccUnderlyingPurpose = 'swing';
+  }
   Object.assign(state, saved);
   if (saved.items) state.items = { ...saved.items };
 }
@@ -2149,6 +2177,7 @@ function saveToHistory() {
       id: 'snap_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
       timestamp: nowStamp(),
       timestampSort: Date.now(),
+      updatedAt: Date.now(),
       ticker: state.ticker || '',
       strategy: STRAT_LABEL[state.strategy] || '',
       subtype: subtypeString(),
@@ -2162,6 +2191,8 @@ function saveToHistory() {
       existing: state.existingExposure || '',
       budget: state.budget || '',
       exposurePct, capPct,
+      outcome: null,
+      notes: '',
       fullState: snapshotStateForStorage()
     };
     history.unshift(entry);
@@ -2183,6 +2214,135 @@ function deleteHistoryEntry(id) {
   };
   try { localStorage.setItem(HISTORY_KEY, JSON.stringify(history)); } catch (e) {}
   renderHistoryList();
+}
+
+function editHistoryEntry(id, updates) {
+  const history = loadHistory();
+  const idx = history.findIndex(e => e.id === id);
+  if (idx === -1) return;
+  if (history[idx]._deleted) return;  // Don't edit tombstones
+  history[idx] = { ...history[idx], ...updates, updatedAt: Date.now() };
+  try { localStorage.setItem(HISTORY_KEY, JSON.stringify(history)); } catch (e) {}
+  renderHistoryList();
+}
+
+function ensureEditModal() {
+  if (document.getElementById('edit-modal')) return;
+  const modal = document.createElement('div');
+  modal.id = 'edit-modal';
+  modal.className = 'modal-overlay';
+  modal.style.display = 'none';
+  modal.style.zIndex = '150';  // above history modal (z-index: 100)
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e => { if (e.target === modal) hideEditModal(); });
+}
+
+function showEditModal(id) {
+  const entry = loadHistory().find(e => e.id === id);
+  if (!entry || entry._deleted) return;
+  ensureEditModal();
+  const modal = document.getElementById('edit-modal');
+  const outcome = entry.outcome || '';
+  const notes = entry.notes || '';
+  const tickerDisp = entry.ticker || '';
+
+  modal.innerHTML = `
+    <div class="modal-card">
+      <div class="modal-head">
+        <div class="modal-title">编辑记录${tickerDisp ? ' · ' + esc(tickerDisp) : ''}</div>
+        <button class="modal-close" onclick="hideEditModal()" aria-label="Close">×</button>
+      </div>
+      <div class="modal-body">
+        <div style="font-size: 11.5px; color: var(--text-faint); line-height: 1.5; margin-bottom: 14px;">
+          ${esc(entry.timestamp)} · ${esc(entry.strategy)} · ${esc(entry.subtype)}
+          <br>${esc(entry.verdict)} · ${entry.pass}/${entry.fail}/${entry.pending}
+        </div>
+
+        <div class="sync-setup-input-group">
+          <label>Ticker</label>
+          <input type="text" class="sync-setup-input" id="edit-ticker"
+                 autocomplete="off" spellcheck="false"
+                 style="text-transform: uppercase;"
+                 placeholder="e.g. MSFT" value="${esc(tickerDisp)}">
+        </div>
+
+        <div class="sync-setup-input-group">
+          <label>交易结果</label>
+          <div class="segmented" id="edit-outcome-seg">
+            <button data-v="skipped">未交易</button>
+            <button data-v="open">持仓</button>
+            <button data-v="win">盈</button>
+            <button data-v="loss">亏</button>
+          </div>
+        </div>
+
+        <div class="sync-setup-input-group">
+          <label>复盘笔记 (选填, 最多 ${NOTES_MAX} 字)</label>
+          <textarea class="sync-setup-input" id="edit-notes" rows="3"
+                    style="font-family: var(--sans); resize: vertical;"
+                    maxlength="${NOTES_MAX}"
+                    placeholder="一行简短复盘 (细节记 Notion)">${esc(notes)}</textarea>
+          <div style="font-size: 10.5px; color: var(--text-faint); margin-top: 4px; text-align: right;" id="edit-notes-count">${notes.length} / ${NOTES_MAX}</div>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn ghost" onclick="hideEditModal()">取消</button>
+        <button class="btn primary" id="edit-save-btn">保存</button>
+      </div>
+    </div>
+  `;
+  modal.style.display = 'flex';
+
+  // Pre-select outcome
+  if (outcome) {
+    modal.querySelector(`#edit-outcome-seg button[data-v="${outcome}"]`)?.classList.add('active');
+  }
+  // Wire segmented
+  const seg = modal.querySelector('#edit-outcome-seg');
+  seg.querySelectorAll('button').forEach(b => {
+    b.addEventListener('click', () => {
+      seg.querySelectorAll('button').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+    });
+  });
+
+  // Ticker auto-uppercase
+  const tickerEl = modal.querySelector('#edit-ticker');
+  tickerEl.addEventListener('input', e => {
+    const v = e.target.value.toUpperCase();
+    if (v !== e.target.value) {
+      const pos = e.target.selectionStart;
+      e.target.value = v;
+      try { e.target.setSelectionRange(pos, pos); } catch (err) {}
+    }
+  });
+
+  // Notes counter
+  const notesEl = modal.querySelector('#edit-notes');
+  const counterEl = modal.querySelector('#edit-notes-count');
+  notesEl.addEventListener('input', () => {
+    counterEl.textContent = `${notesEl.value.length} / ${NOTES_MAX}`;
+  });
+
+  // Save
+  modal.querySelector('#edit-save-btn').addEventListener('click', () => {
+    const newTicker = tickerEl.value.trim().toUpperCase();
+    const activeBtn = seg.querySelector('button.active');
+    const newOutcome = activeBtn ? activeBtn.dataset.v : null;
+    const newNotes = notesEl.value.trim();
+    editHistoryEntry(id, {
+      ticker: newTicker,
+      outcome: newOutcome,
+      notes: newNotes
+    });
+    hideEditModal();
+    showToast('已保存', 'success', '记得 Sync 上传, 让另一端也更新');
+  });
+}
+
+function hideEditModal() {
+  const m = document.getElementById('edit-modal');
+  if (m) m.style.display = 'none';
 }
 function restoreFromHistory(id) {
   const entry = loadHistory().find(e => e.id === id);
@@ -2211,13 +2371,15 @@ function clearAllHistory() {
 function exportAllHistoryCSV() {
   const history = getActiveHistory();
   if (history.length === 0) { showToast('没有历史记录', 'error'); return; }
-  const headers = ['Timestamp', 'Ticker', 'Strategy', 'Subtype', 'Verdict', 'Pass', 'Block', 'Pending', 'Hard_Fails', 'Failed_Items', 'Pending_Items', 'Inputs', 'NAV', 'Existing', 'Budget', 'Exposure_%', 'Cap_%'];
+  const headers = ['Timestamp', 'Ticker', 'Strategy', 'Subtype', 'Verdict', 'Pass', 'Block', 'Pending', 'Outcome', 'Notes', 'Hard_Fails', 'Failed_Items', 'Pending_Items', 'Inputs', 'NAV', 'Existing', 'Budget', 'Exposure_%', 'Cap_%'];
   const rows = [headers];
   const sorted = [...history].sort((a, b) => a.timestampSort - b.timestampSort);
   sorted.forEach(e => {
     rows.push([
       e.timestamp, e.ticker || '', e.strategy, e.subtype, e.verdict,
       e.pass, e.fail, e.pending,
+      e.outcome ? OUTCOME_LABEL[e.outcome] || e.outcome : '',
+      e.notes || '',
       (e.hardFails || []).join(' | '),
       (e.failed || []).join(' | '),
       (e.pendingItems || []).join(' | '),
@@ -2273,6 +2435,8 @@ function renderHistoryList() {
   }
   container.innerHTML = history.map(e => {
     const cls = e.verdict.startsWith('CLEAR') ? 'pass' : e.verdict === 'BLOCKED' ? 'fail' : 'pending';
+    const outcomeLabel = e.outcome ? OUTCOME_LABEL[e.outcome] : null;
+    const outcomeCls = e.outcome || '';
     return `
       <div class="history-item">
         <div class="history-main">
@@ -2282,9 +2446,12 @@ function renderHistoryList() {
             <span class="history-verdict ${cls}">${esc(e.verdict)}</span>
             <span class="history-tally">${e.pass}/${e.fail}/${e.pending}</span>
             ${e.hardFails && e.hardFails.length ? `<span class="history-hard">⚠ HARD</span>` : ''}
+            ${outcomeLabel ? `<span class="history-outcome ${outcomeCls}">${esc(outcomeLabel)}</span>` : ''}
           </div>
+          ${e.notes ? `<div class="history-notes">${esc(e.notes)}</div>` : ''}
         </div>
         <div class="history-actions">
+          <button class="btn ghost small" onclick="showEditModal('${e.id}')">编辑</button>
           <button class="btn ghost small" onclick="restoreFromHistory('${e.id}')">还原</button>
           <button class="btn ghost small" onclick="deleteHistoryEntry('${e.id}')">删</button>
         </div>
@@ -2730,9 +2897,10 @@ async function syncMergeCore() {
   const remoteActiveIds = new Set(remoteHistory.filter(e => !e._deleted).map(e => e.id));
 
   // Merge by id with tombstone-aware conflict resolution:
-  //   both normal  → keep newer by timestampSort
+  //   both normal  → keep newer by updatedAt (fallback timestampSort)
   //   one normal, one tombstone → tombstone wins (deletion propagates)
   //   both tombstone → keep the one with later _deletedAt
+  const versionKey = (e) => e.updatedAt || e.timestampSort || 0;
   const map = new Map();
   [...local, ...remoteHistory].forEach(e => {
     const cur = map.get(e.id);
@@ -2743,7 +2911,7 @@ async function syncMergeCore() {
       if ((e._deletedAt || 0) > (cur._deletedAt || 0)) map.set(e.id, e);
       return;
     }
-    if ((e.timestampSort || 0) > (cur.timestampSort || 0)) map.set(e.id, e);
+    if (versionKey(e) > versionKey(cur)) map.set(e.id, e);
   });
 
   const merged = Array.from(map.values())
@@ -2995,6 +3163,8 @@ window.showHistory = showHistory;
 window.hideHistory = hideHistory;
 window.restoreFromHistory = restoreFromHistory;
 window.deleteHistoryEntry = deleteHistoryEntry;
+window.showEditModal = showEditModal;
+window.hideEditModal = hideEditModal;
 window.clearAllHistory = clearAllHistory;
 window.exportAllHistoryCSV = exportAllHistoryCSV;
 window.restoreDraft = restoreDraft;
