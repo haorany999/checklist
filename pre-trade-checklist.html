@@ -67,11 +67,68 @@
     --pending: #B8860B; --pending-bg: rgba(184, 134, 11, 0.10);
     --accent: #A0522D;
   }
-  html, body { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 16px; line-height: 1.55; min-height: 100vh; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; font-variant-numeric: tabular-nums; font-feature-settings: "cv02", "cv11", "salt", "tnum"; }
+  html, body { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 16px; line-height: 1.55; min-height: 100vh; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; font-variant-numeric: tabular-nums slashed-zero; font-feature-settings: "cv02", "cv11", "salt", "ss01", "ss02", "tnum", "zero"; letter-spacing: 0.008em; text-rendering: optimizeLegibility; }
+  /* Numbers everywhere: tabular + slashed-zero for professional finance look */
+  .tally-num, .picker-stat-num, .strategy-count, .strategy-winrate, .spark-count, .spark-pct,
+  .status-main, .bottom-status-main, .stamp-verdict, .item-check-label, .picker-recent-count,
+  .picker-panel-count, .explore-summary, .forced-time, .loss-time, .open-pos-time, .override-time { font-variant-numeric: tabular-nums slashed-zero; font-feature-settings: "tnum", "zero"; }
+  /* Headers use stylistic alt for cleaner glyphs */
+  h1, h2, .picker-title, .modal-title, .status-main, .bottom-status-main { font-feature-settings: "salt", "ss01", "ss02", "cv02", "tnum"; letter-spacing: -0.011em; }
+
+  /* E3 · Ambient background - subtle drifting radial gradients */
+  body::before {
+    content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+    background:
+      radial-gradient(700px 500px at 15% 25%, rgba(63, 185, 80, 0.035), transparent 70%),
+      radial-gradient(600px 600px at 85% 75%, rgba(37, 99, 235, 0.035), transparent 70%),
+      radial-gradient(500px 400px at 50% 100%, rgba(210, 153, 34, 0.025), transparent 70%);
+    animation: ambientDrift 40s ease-in-out infinite;
+  }
+  body.theme-warm::before {
+    background:
+      radial-gradient(700px 500px at 15% 25%, rgba(184, 134, 11, 0.05), transparent 70%),
+      radial-gradient(600px 600px at 85% 75%, rgba(160, 82, 45, 0.04), transparent 70%);
+  }
+  body.theme-terminal::before {
+    background: radial-gradient(700px 700px at 50% 50%, rgba(0, 255, 102, 0.04), transparent 70%);
+  }
+  body.theme-slate::before {
+    background:
+      radial-gradient(700px 500px at 20% 20%, rgba(88, 166, 255, 0.05), transparent 70%),
+      radial-gradient(600px 600px at 80% 80%, rgba(63, 185, 80, 0.04), transparent 70%);
+  }
+  @keyframes ambientDrift {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    33% { transform: translate(30px, -20px) scale(1.05); }
+    66% { transform: translate(-20px, 30px) scale(0.95); }
+  }
+  @media (prefers-reduced-motion: reduce) { body::before { animation: none; } }
   body { padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
   .app { max-width: 780px; margin: 0 auto; padding: 16px 16px 48px; }
 
-  .status-bar { position: sticky; top: 0; z-index: 20; background: var(--bg); padding: 12px 0 16px; border-bottom: 1px solid var(--border); margin: 0 -16px 16px; padding-left: 16px; padding-right: 16px; }
+  .status-bar {
+    position: sticky; top: 0; z-index: 20;
+    background: color-mix(in srgb, var(--bg) 82%, transparent);
+    backdrop-filter: blur(14px) saturate(180%);
+    -webkit-backdrop-filter: blur(14px) saturate(180%);
+    padding: 12px 16px 16px; margin: 0 -16px 16px;
+    border-bottom: 1px solid var(--border);
+    box-shadow: 0 1px 0 0 var(--border), 0 4px 20px -8px rgba(0,0,0,0.06);
+    transition: padding 0.2s ease;
+  }
+  .status-bar.scrolled { padding-top: 8px; padding-bottom: 10px; }
+  /* B1 · Gradient accent line at bottom of status bar */
+  .status-bar::after {
+    content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--pass) 30%, var(--accent) 70%, transparent);
+    opacity: 0.6;
+  }
+  .status-bar.verdict-blocked::after {
+    background: linear-gradient(90deg, transparent, var(--fail) 40%, #E85D2C 70%, transparent);
+  }
+  .status-bar.verdict-pending::after {
+    background: linear-gradient(90deg, transparent, var(--pending) 50%, transparent);
+  }
   .status-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
   .status-main { font-family: var(--mono); font-size: 28px; font-weight: 700; letter-spacing: -0.02em; line-height: 1; }
   @media (min-width: 640px) { .status-main { font-size: 34px; } }
@@ -212,6 +269,93 @@
   @keyframes stampOut {
     0% { opacity: 0.92; }
     100% { opacity: 0; transform: scale(1.05) rotate(-6deg); }
+  }
+
+  /* B4 · Micro shadow + lift on hover for interactive elements */
+  .picker-card { transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease; }
+  .picker-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px -8px rgba(0,0,0,0.12), 0 2px 4px rgba(0,0,0,0.04); border-color: var(--border-hi); }
+  .picker-card:active { transform: translateY(0); transition: transform 0.05s ease; }
+  .open-pos-row, .override-row, .forced-row, .loss-row, .explore-row, .strategy-row { transition: transform 0.12s ease, background 0.12s ease; }
+  .open-pos-row:hover, .override-row:hover, .forced-row:hover, .explore-row:hover { transform: translateX(2px); background: color-mix(in srgb, var(--panel-2) 60%, transparent); }
+  .btn { transition: transform 0.1s ease, box-shadow 0.15s ease, background 0.15s ease, border-color 0.15s ease; }
+  .btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 3px 8px -2px rgba(0,0,0,0.08); }
+  .btn:active { transform: translateY(0); transition: transform 0.05s ease; }
+  .btn.primary:hover { box-shadow: 0 4px 12px -2px color-mix(in srgb, var(--accent) 40%, transparent); }
+
+  /* Focus rings — premium subtle */
+  *:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: inherit; transition: outline-offset 0.12s ease; }
+
+  /* A2 · Button ripple */
+  .btn, .picker-card, .segmented button, .item-check, .item-toggle button, .theme-btn { position: relative; overflow: hidden; }
+  .ripple-fx { position: absolute; border-radius: 50%; background: currentColor; opacity: 0.22; pointer-events: none; transform: translate(-50%, -50%) scale(0); animation: rippleExpand 0.55s cubic-bezier(0.2, 0.9, 0.3, 1) forwards; will-change: transform, opacity; }
+  @keyframes rippleExpand {
+    from { transform: translate(-50%, -50%) scale(0); opacity: 0.35; }
+    to { transform: translate(-50%, -50%) scale(60); opacity: 0; }
+  }
+  @media (prefers-reduced-motion: reduce) { .ripple-fx { display: none; } }
+
+  /* A4 · Stagger fade-in for list items */
+  .picker-panel-list > *, .strategy-list > *, .spark-list > *, .explore-list > * {
+    animation: rowFadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+    animation-delay: calc(var(--i, 0) * 40ms);
+  }
+  @keyframes rowFadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .picker-panel { animation: panelFadeIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) backwards; animation-delay: calc(var(--panel-i, 0) * 60ms); }
+  @keyframes panelFadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .picker-panel-list > *, .strategy-list > *, .spark-list > *, .explore-list > *, .picker-panel { animation: none; }
+  }
+
+  .confetti-canvas { position: fixed; inset: 0; pointer-events: none; z-index: 250; }
+
+  /* D1 · Hover preview panel */
+  .hover-preview {
+    position: fixed; z-index: 900; width: 280px;
+    background: var(--panel); border: 1px solid var(--border-hi); border-radius: 10px;
+    padding: 12px 14px; box-shadow: 0 12px 32px -8px rgba(0,0,0,0.20), 0 4px 12px rgba(0,0,0,0.06);
+    font-size: 12px; line-height: 1.55; pointer-events: none;
+    opacity: 0; transform: translateX(-6px) scale(0.97); transform-origin: left center;
+    transition: opacity 0.18s ease, transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+    backdrop-filter: blur(8px);
+  }
+  .hover-preview.hp-show { opacity: 1; transform: translateX(0) scale(1); }
+  .hp-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
+  .hp-ticker { font-family: var(--mono); font-weight: 700; font-size: 14px; color: var(--accent); letter-spacing: 0.04em; }
+  .hp-time { font-family: var(--mono); font-size: 10.5px; color: var(--text-faint); }
+  .hp-verdict { font-family: var(--mono); font-size: 11.5px; font-weight: 600; letter-spacing: 0.04em; margin-bottom: 6px; }
+  .hp-verdict.pass { color: var(--pass); }
+  .hp-verdict.pass-soft { color: var(--pass); opacity: 0.75; }
+  .hp-verdict.fail { color: var(--fail); }
+  .hp-verdict.pending { color: var(--pending); }
+  .hp-meta { font-size: 11.5px; color: var(--text-dim); margin-bottom: 6px; }
+  .hp-stats { font-family: var(--mono); font-size: 10.5px; color: var(--text-faint); margin-bottom: 6px; }
+  .hp-hard { font-size: 11px; color: var(--fail); background: var(--fail-bg); padding: 4px 6px; border-radius: 4px; margin-bottom: 6px; }
+  .hp-forced { font-size: 11px; color: var(--text-dim); border-left: 2px solid var(--fail); padding: 3px 6px; margin-bottom: 6px; font-style: italic; }
+  .hp-outcome { display: inline-block; font-family: var(--mono); font-size: 10px; padding: 2px 6px; border-radius: 3px; letter-spacing: 0.06em; margin-bottom: 6px; }
+  .hp-outcome.pass { color: var(--pass); background: var(--pass-bg); }
+  .hp-outcome.fail { color: var(--fail); background: var(--fail-bg); }
+  .hp-outcome.pending { color: var(--pending); background: var(--pending-bg); }
+  .hp-notes { font-size: 11.5px; color: var(--text-dim); font-style: italic; line-height: 1.5; border-top: 1px dashed var(--border); padding-top: 6px; margin-top: 4px; }
+  @media (hover: none) { .hover-preview { display: none; } }
+  @media (prefers-reduced-motion: reduce) { .hover-preview { transition: opacity 0.1s; transform: none !important; } }
+  @keyframes screenShake {
+    0%, 100% { transform: translate(0, 0); }
+    15% { transform: translate(-4px, 2px); }
+    30% { transform: translate(5px, -3px); }
+    45% { transform: translate(-3px, 3px); }
+    60% { transform: translate(3px, -2px); }
+    80% { transform: translate(-1px, 1px); }
+  }
+  body.screen-shake { animation: screenShake 0.35s ease-in-out; }
+  @media (prefers-reduced-motion: reduce) {
+    .confetti-canvas { display: none; }
+    body.screen-shake { animation: none; }
   }
   .edit-section-header { font-family: var(--mono); font-size: 10.5px; color: var(--text-faint); letter-spacing: 0.12em; text-transform: uppercase; margin: 22px 0 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
   .edit-group { margin-bottom: 16px; }
@@ -1347,6 +1491,97 @@ function itemVerdict(item) {
   return s === 'pass' || s === 'fail' ? s : 'pending';
 }
 
+/* D1 · Hover preview panel for history rows (desktop only) */
+let __previewTimer = null;
+function showHoverPreview(row) {
+  const id = row.dataset.previewId;
+  if (!id) return;
+  const entry = loadHistory().find(e => e.id === id);
+  if (!entry || entry._deleted) return;
+
+  // Skip on touch devices
+  if (window.matchMedia && window.matchMedia('(hover: none)').matches) return;
+
+  hideHoverPreview();
+
+  const outcomeLabel = entry.outcome ? OUTCOME_LABEL[entry.outcome] : '';
+  const outcomeCls = entry.outcome === 'win' ? 'pass' : entry.outcome === 'loss' ? 'fail' : (entry.outcome === 'open' ? 'pending' : '');
+  const verdictCls = entry.verdict === 'BLOCKED' ? 'fail' : entry.verdict.startsWith('CLEAR TO OPEN · 软执行') || entry.verdict.startsWith('CLEAR TO CLOSE · 软执行') ? 'pass-soft' : entry.verdict.startsWith('CLEAR') ? 'pass' : 'pending';
+
+  const preview = document.createElement('div');
+  preview.className = 'hover-preview';
+  preview.innerHTML = `
+    <div class="hp-head">
+      <span class="hp-ticker">${esc(entry.ticker || '—')}</span>
+      <span class="hp-time">${esc(entry.timestamp)}</span>
+    </div>
+    <div class="hp-verdict ${verdictCls}">${esc(entry.verdict)}</div>
+    <div class="hp-meta">${esc(entry.strategy)} · ${esc(entry.subtype)}</div>
+    <div class="hp-stats">${entry.pass} pass · ${entry.fail} fail · ${entry.pending} pending</div>
+    ${entry.hardFails && entry.hardFails.length ? `<div class="hp-hard">HARD: ${entry.hardFails.map(esc).join(' · ')}</div>` : ''}
+    ${entry.forcedReason ? `<div class="hp-forced">硬冲: "${esc(entry.forcedReason)}"</div>` : ''}
+    ${outcomeLabel ? `<div class="hp-outcome ${outcomeCls}">${esc(outcomeLabel)}</div>` : ''}
+    ${entry.notes ? `<div class="hp-notes">"${esc(entry.notes)}"</div>` : ''}
+  `;
+  document.body.appendChild(preview);
+
+  const rect = row.getBoundingClientRect();
+  const pw = 280;
+  const ph = preview.offsetHeight;
+  const margin = 16;
+  let left = rect.right + 12;
+  let top = rect.top;
+  // If no room on right, show on left
+  if (left + pw > window.innerWidth - margin) {
+    left = rect.left - pw - 12;
+  }
+  // If still off-screen (row too wide or narrow window), center it
+  if (left < margin) {
+    left = Math.max(margin, Math.min(window.innerWidth - pw - margin, rect.left));
+    // Place below row instead
+    top = rect.bottom + 8;
+  }
+  // Clamp vertical
+  if (top + ph > window.innerHeight - margin) top = window.innerHeight - ph - margin;
+  if (top < margin) top = margin;
+  preview.style.left = left + 'px';
+  preview.style.top = top + 'px';
+  // Trigger fade-in
+  requestAnimationFrame(() => preview.classList.add('hp-show'));
+}
+function hideHoverPreview() {
+  document.querySelectorAll('.hover-preview').forEach(el => el.remove());
+}
+document.addEventListener('mouseover', (e) => {
+  const row = e.target.closest('[data-preview-id]');
+  if (!row) return;
+  clearTimeout(__previewTimer);
+  __previewTimer = setTimeout(() => showHoverPreview(row), 400);
+});
+document.addEventListener('mouseout', (e) => {
+  const row = e.target.closest('[data-preview-id]');
+  if (!row) return;
+  clearTimeout(__previewTimer);
+  hideHoverPreview();
+});
+window.addEventListener('scroll', hideHoverPreview, { passive: true });
+
+/* A1 · Roll a number from 'from' to 'to' with ease-out cubic */
+function animateNumber(el, from, to, duration = 400) {
+  if (el.__animId) cancelAnimationFrame(el.__animId);
+  const startT = performance.now();
+  const diff = to - from;
+  const step = (now) => {
+    const t = Math.min(1, (now - startT) / duration);
+    const eased = 1 - Math.pow(1 - t, 3);
+    const cur = Math.round(from + diff * eased);
+    el.textContent = cur;
+    if (t < 1) el.__animId = requestAnimationFrame(step);
+    else el.__animId = null;
+  };
+  el.__animId = requestAnimationFrame(step);
+}
+
 function overallVerdict() {
   const items = currentItems();
   let pass = 0, fail = 0, pending = 0, hardFail = 0;
@@ -1612,7 +1847,7 @@ function pickerFooterHTML() {
       </div>
       <div class="picker-panel-list">
         ${openPos.slice(0, 8).map(e => `
-          <div class="open-pos-row" onclick="showEditModal('${e.id}')">
+          <div class="open-pos-row" onclick="showEditModal('${e.id}')" data-preview-id="${e.id}">
             <span class="open-pos-ticker">${esc(e.ticker || '—')}</span>
             <span class="open-pos-strategy">${esc(e.strategy)} · ${esc(e.subtype)}</span>
             <span class="open-pos-time">${formatTimeAgo(e.timestampSort)}</span>
@@ -1689,7 +1924,7 @@ function pickerFooterHTML() {
             : e.outcome === 'skipped' ? 'text-faint'
             : 'pending';
           return `
-            <div class="forced-row" onclick="showEditModal('${e.id}')">
+            <div class="forced-row" onclick="showEditModal('${e.id}')" data-preview-id="${e.id}">
               <div class="forced-header">
                 <span class="forced-ticker">${esc(e.ticker || '—')}</span>
                 <span class="forced-strategy">${esc(e.strategy)}</span>
@@ -1715,7 +1950,7 @@ function pickerFooterHTML() {
       <div style="font-size: 11px; color: var(--text-faint); margin-bottom: 8px; line-height: 1.4;">Checklist 允许但你主动没做的机会 · 复盘对错</div>
       <div class="picker-panel-list">
         ${overrides.map(e => `
-          <div class="override-row" onclick="showEditModal('${e.id}')">
+          <div class="override-row" onclick="showEditModal('${e.id}')" data-preview-id="${e.id}">
             <div class="override-header">
               <span class="override-ticker">${esc(e.ticker || '—')}</span>
               <span class="override-strategy">${esc(e.strategy)} · ${esc(e.verdict)}</span>
@@ -1851,7 +2086,7 @@ function renderExploreResultsFor(matches) {
     const verdictShort = e.verdict.startsWith('CLEAR') ? 'CLEAR' : e.verdict === 'BLOCKED' ? 'BLOCK' : 'PEND';
     const outcomeLabel = e.outcome ? OUTCOME_LABEL[e.outcome] : null;
     return `
-      <div class="explore-row" onclick="showEditModal('${e.id}')">
+      <div class="explore-row" onclick="showEditModal('${e.id}')" data-preview-id="${e.id}">
         <span class="explore-row-time">${esc(e.timestamp.slice(0, 10))}</span>
         <span class="explore-row-ticker">${esc(e.ticker || '—')}</span>
         <span class="explore-row-strategy">${esc(e.strategy)}</span>
@@ -1950,6 +2185,13 @@ function renderPicker() {
       ${pickerFooterHTML()}
     </div>
   `;
+  // Assign stagger indexes to panels and list rows
+  requestAnimationFrame(() => {
+    document.querySelectorAll('.picker-panel').forEach((el, i) => el.style.setProperty('--panel-i', i));
+    document.querySelectorAll('.picker-panel-list > *, .strategy-list > *, .spark-list > *, .explore-list > *').forEach((el, i) => {
+      if (!el.style.getPropertyValue('--i')) el.style.setProperty('--i', (i % 8));
+    });
+  });
 }
 
 function renderLeapsConfig() {
@@ -2185,8 +2427,11 @@ function statusBarHTML() {
     : v.status.startsWith('CLEAR TO OPEN · 软执行') || v.status.startsWith('CLEAR TO CLOSE · 软执行') ? 'pass-soft'
     : v.status.startsWith('CLEAR') ? 'pass'
     : 'pending';
+  const barCls = v.status === 'BLOCKED' ? 'verdict-blocked'
+    : v.status === 'PENDING' ? 'verdict-pending'
+    : 'verdict-clear';
   return `
-    <div class="status-bar">
+    <div class="status-bar ${barCls}">
       <div class="status-row">
         <div class="status-main ${cls}" id="status-main">${esc(v.status)}</div>
         <div class="status-meta">
@@ -2195,9 +2440,9 @@ function statusBarHTML() {
         </div>
       </div>
       <div class="status-tally" id="status-tally">
-        <span class="tally-item"><span class="tally-dot pass"></span> ${v.pass} pass</span>
-        <span class="tally-item"><span class="tally-dot fail"></span> ${v.hardFail} hard · ${v.softFail} soft</span>
-        <span class="tally-item"><span class="tally-dot pending"></span> ${v.pending} pending</span>
+        <span class="tally-item"><span class="tally-dot pass"></span> <span class="tally-num" data-key="pass">${v.pass}</span> pass</span>
+        <span class="tally-item"><span class="tally-dot fail"></span> <span class="tally-num" data-key="hard">${v.hardFail}</span> hard · <span class="tally-num" data-key="soft">${v.softFail}</span> soft</span>
+        <span class="tally-item"><span class="tally-dot pending"></span> <span class="tally-num" data-key="pending">${v.pending}</span> pending</span>
       </div>
       <div class="status-note" id="status-note">${esc(v.note)}</div>
     </div>
@@ -2425,23 +2670,25 @@ function updateVerdictsInPlace() {
     if ($fail) $fail.style.width = failPct + '%';
   }
 
-  // Tally counts (top)
+  // Update status-bar verdict class (for gradient line color)
+  const $bar = document.querySelector('.status-bar');
+  if ($bar) {
+    $bar.classList.remove('verdict-blocked', 'verdict-pending', 'verdict-clear');
+    if (v.status === 'BLOCKED') $bar.classList.add('verdict-blocked');
+    else if (v.status === 'PENDING') $bar.classList.add('verdict-pending');
+    else $bar.classList.add('verdict-clear');
+  }
+
+  // Tally counts (top) — A1 number rolling animation
   const $tally = document.getElementById('status-tally');
   if ($tally) {
-    const newTally = `${v.pass}_${v.hardFail}_${v.softFail}_${v.pending}`;
-    const changed = window.__lastTally && window.__lastTally !== newTally;
-    $tally.innerHTML = `
-      <span class="tally-item"><span class="tally-dot pass"></span> ${v.pass} pass</span>
-      <span class="tally-item"><span class="tally-dot fail"></span> ${v.hardFail} hard · ${v.softFail} soft</span>
-      <span class="tally-item"><span class="tally-dot pending"></span> ${v.pending} pending</span>
-    `;
-    if (changed) {
-      $tally.querySelectorAll('.tally-item').forEach(el => {
-        el.classList.add('bumped');
-        setTimeout(() => el.classList.remove('bumped'), 400);
-      });
-    }
-    window.__lastTally = newTally;
+    const targets = { pass: v.pass, hard: v.hardFail, soft: v.softFail, pending: v.pending };
+    $tally.querySelectorAll('.tally-num').forEach(el => {
+      const key = el.dataset.key;
+      const from = parseInt(el.textContent) || 0;
+      const to = targets[key] ?? 0;
+      if (from !== to) animateNumber(el, from, to, 350);
+    });
   }
 
   // Status note (top)
@@ -3328,7 +3575,7 @@ function renderHistoryList() {
           ${e.notes ? `<div class="history-notes">${esc(e.notes)}</div>` : ''}
         </div>
         <div class="history-actions">
-          <button class="btn ghost small" onclick="showEditModal('${e.id}')">编辑</button>
+          <button class="btn ghost small" onclick="showEditModal('${e.id}')" data-preview-id="${e.id}">编辑</button>
           <button class="btn ghost small" onclick="restoreFromHistory('${e.id}')">还原</button>
           <button class="btn ghost small" onclick="deleteHistoryEntry('${e.id}')">删</button>
         </div>
@@ -3655,12 +3902,13 @@ function showSnapshot() {
   if (!state.strategy) return;
   ensureSnapshotModal();
   document.getElementById('snapshot-preview').value = buildTextSnapshot();
-  // Auto-save this snapshot to history
   saveToHistory();
   const history = loadHistory();
   const latestEntry = history[0];
-  if (latestEntry) showSnapshotStamp(latestEntry);
-  // If BLOCKED, prompt pre-mortem dialog after stamp
+  if (latestEntry) {
+    spawnVerdictParticles(latestEntry.verdict);
+    showSnapshotStamp(latestEntry);
+  }
   const isBlocked = latestEntry && latestEntry.verdict === 'BLOCKED';
   setTimeout(() => {
     document.getElementById('snapshot-modal').style.display = 'flex';
@@ -3670,6 +3918,224 @@ function showSnapshot() {
   }, 550);
   clearDraft();
   hideDraftBanner();
+}
+
+function spawnVerdictParticles(verdict) {
+  if (!verdict) return;
+  // Respect reduced motion preference
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    if (verdict === 'BLOCKED') {
+      document.body.classList.add('screen-shake');
+      setTimeout(() => document.body.classList.remove('screen-shake'), 350);
+    }
+    return;
+  }
+
+  const isClear = verdict.startsWith('CLEAR');
+  const isBlocked = verdict === 'BLOCKED';
+  const isSoft = verdict.includes('软执行');
+
+  if (isClear) launchConfetti(isSoft ? 'soft' : 'clear');
+  else if (isBlocked) {
+    launchConfetti('blocked');
+    document.body.classList.add('screen-shake');
+    setTimeout(() => document.body.classList.remove('screen-shake'), 350);
+  }
+}
+
+function launchConfetti(type) {
+  const canvas = document.createElement('canvas');
+  canvas.className = 'confetti-canvas';
+  document.body.appendChild(canvas);
+
+  const dpr = window.devicePixelRatio || 1;
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  canvas.width = w * dpr;
+  canvas.height = h * dpr;
+  canvas.style.width = w + 'px';
+  canvas.style.height = h + 'px';
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  const particles = createConfettiParticles(type, w, h);
+
+  // For CLEAR (not soft), fire secondary wave after 180ms for a fuller celebration
+  if (type === 'clear') {
+    setTimeout(() => {
+      const wave2 = createConfettiParticles('clear', w, h, 0.55);
+      particles.push(...wave2);
+    }, 180);
+    setTimeout(() => {
+      const wave3 = createConfettiParticles('clear', w, h, 0.35);
+      particles.push(...wave3);
+    }, 380);
+  }
+
+  animateConfetti(particles, ctx, canvas, w, h);
+}
+
+function createConfettiParticles(type, w, h, intensity = 1) {
+  const particles = [];
+
+  if (type === 'clear') {
+    // Celebratory: green + gold + white confetti, launched from bottom-left, bottom-center, bottom-right
+    const count = Math.floor(70 * intensity);
+    const colors = ['#3FB950', '#4EC167', '#22C55E', '#E4B84A', '#F5D06B', '#FFFFFF', '#DBEAFE'];
+    const launchers = [w * 0.15, w * 0.5, w * 0.85];
+
+    for (let i = 0; i < count; i++) {
+      const lx = launchers[i % launchers.length];
+      // Aim generally upward with spread — like a cannon
+      const angle = -Math.PI / 2 + (Math.random() - 0.5) * (Math.PI * 0.55);
+      const speed = 550 + Math.random() * 550;
+      particles.push({
+        x: lx + (Math.random() - 0.5) * 30,
+        y: h + 10,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        gravity: 900,
+        drag: 0.992,
+        rotation: Math.random() * Math.PI * 2,
+        rotSpeed: (Math.random() - 0.5) * 10,
+        size: 5 + Math.random() * 7,
+        aspect: 0.3 + Math.random() * 1.4,
+        shape: pickShape(),
+        color: colors[Math.floor(Math.random() * colors.length)],
+        life: 1,
+        fadeStart: 1.4 + Math.random() * 0.6,
+        age: 0,
+      });
+    }
+  } else if (type === 'soft') {
+    // Gentler: fewer, subtler, only greens
+    const count = 28;
+    const colors = ['#3FB950', '#5AB374', '#7EC898', '#4EC167'];
+    for (let i = 0; i < count; i++) {
+      const angle = -Math.PI / 2 + (Math.random() - 0.5) * (Math.PI * 0.45);
+      const speed = 350 + Math.random() * 320;
+      particles.push({
+        x: w * (0.2 + Math.random() * 0.6),
+        y: h + 10,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        gravity: 700,
+        drag: 0.99,
+        rotation: Math.random() * Math.PI * 2,
+        rotSpeed: (Math.random() - 0.5) * 6,
+        size: 4 + Math.random() * 5,
+        aspect: 0.4 + Math.random() * 1.2,
+        shape: pickShape(),
+        color: colors[Math.floor(Math.random() * colors.length)],
+        life: 0.75,  // more subtle base opacity
+        fadeStart: 1.3 + Math.random() * 0.5,
+        age: 0,
+        maxAlpha: 0.75,
+      });
+    }
+  } else if (type === 'blocked') {
+    // Explosion + debris fall with gravity
+    const count = 55;
+    const colors = ['#F85149', '#DC3545', '#B22222', '#8B1A1A', '#E85D2C', '#FF6B4A', '#FFD700'];
+    const cx = w / 2;
+    const cy = h * 0.42;
+
+    for (let i = 0; i < count; i++) {
+      const angle = (i / count) * Math.PI * 2 + (Math.random() - 0.5) * 0.3;
+      const speed = 220 + Math.random() * 380;
+      particles.push({
+        x: cx + (Math.random() - 0.5) * 20,
+        y: cy + (Math.random() - 0.5) * 20,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        gravity: 700,
+        drag: 0.978,
+        rotation: Math.random() * Math.PI * 2,
+        rotSpeed: (Math.random() - 0.5) * 16,
+        size: 3 + Math.random() * 6,
+        aspect: 0.3 + Math.random() * 1.5,
+        shape: pickShape(),
+        color: colors[Math.floor(Math.random() * colors.length)],
+        life: 1,
+        fadeStart: 0.9 + Math.random() * 0.5,
+        age: 0,
+      });
+    }
+  }
+
+  return particles;
+}
+
+function pickShape() {
+  const r = Math.random();
+  if (r < 0.5) return 'rect';       // confetti flake (most common)
+  if (r < 0.75) return 'ribbon';    // long thin ribbon
+  return 'circle';                  // circle dot
+}
+
+function animateConfetti(particles, ctx, canvas, w, h) {
+  let lastT = performance.now();
+  const maxT = 3500;
+  const startT = lastT;
+
+  const step = (now) => {
+    const dt = Math.min(0.033, (now - lastT) / 1000);
+    lastT = now;
+    const elapsed = now - startT;
+
+    ctx.clearRect(0, 0, w, h);
+    let alive = 0;
+
+    for (const p of particles) {
+      if (p.life <= 0) continue;
+      p.age += dt;
+      p.vx *= p.drag;
+      p.vy = p.vy * p.drag + p.gravity * dt;
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.rotation += p.rotSpeed * dt;
+
+      if (p.age > p.fadeStart) {
+        const fadeLen = 0.7;
+        const t = Math.max(0, 1 - (p.age - p.fadeStart) / fadeLen);
+        p.life = (p.maxAlpha || 1) * t;
+      }
+
+      // Skip off-screen
+      if (p.y > h + 60 || p.x < -60 || p.x > w + 60) { p.life = 0; continue; }
+      if (p.life <= 0.01) continue;
+      alive++;
+
+      ctx.save();
+      ctx.globalAlpha = p.life;
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rotation);
+      ctx.fillStyle = p.color;
+
+      if (p.shape === 'rect') {
+        const wide = p.size;
+        const tall = p.size * p.aspect;
+        ctx.fillRect(-wide / 2, -tall / 2, wide, tall);
+      } else if (p.shape === 'circle') {
+        ctx.beginPath();
+        ctx.arc(0, 0, p.size / 2, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (p.shape === 'ribbon') {
+        const wide = p.size * 2;
+        const tall = p.size / 4;
+        ctx.fillRect(-wide / 2, -tall / 2, wide, tall);
+      }
+      ctx.restore();
+    }
+
+    if (alive > 0 && elapsed < maxT) {
+      requestAnimationFrame(step);
+    } else {
+      canvas.remove();
+    }
+  };
+
+  requestAnimationFrame(step);
 }
 
 function ensureForcedDialog() {
@@ -4168,6 +4634,33 @@ render();
 showDraftBanner();
 // Warn user if localStorage is unavailable
 showStorageWarningIfNeeded();
+
+/* Global click → button ripple (A2) */
+document.addEventListener('click', (e) => {
+  const target = e.target.closest('.btn, .picker-card, .segmented button, .item-check, .item-toggle button, .theme-btn');
+  if (!target) return;
+  if (target.__rippleActive) return;
+  const rect = target.getBoundingClientRect();
+  const ripple = document.createElement('span');
+  ripple.className = 'ripple-fx';
+  const size = Math.max(rect.width, rect.height) / 30;
+  ripple.style.left = (e.clientX - rect.left) + 'px';
+  ripple.style.top = (e.clientY - rect.top) + 'px';
+  ripple.style.width = size + 'px';
+  ripple.style.height = size + 'px';
+  target.appendChild(ripple);
+  target.__rippleActive = true;
+  setTimeout(() => { ripple.remove(); target.__rippleActive = false; }, 580);
+});
+
+/* Scroll → sticky header 'scrolled' state (F2) + verdict class */
+function updateScrolledState() {
+  const bar = document.querySelector('.status-bar');
+  if (!bar) return;
+  const scrolled = window.scrollY > 20;
+  bar.classList.toggle('scrolled', scrolled);
+}
+window.addEventListener('scroll', updateScrolledState, { passive: true });
 
 // Auto-sync on boot if Gist Sync is configured (Q2 = a: every launch)
 (function bootAutoSync() {
