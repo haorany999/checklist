@@ -560,54 +560,6 @@
   .history-empty-sub { font-size: 11px; color: var(--text-faint); margin-top: 8px; }
 
   /* Picker footer (recent activity + stats + mantra) */
-  .picker-recent {
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 14px 16px;
-    margin-top: 20px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
-  }
-  body.theme-light .picker-recent { box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05); }
-  .picker-recent-head {
-    display: flex; justify-content: space-between; align-items: baseline;
-    margin-bottom: 10px;
-    font-family: var(--mono); font-size: 10.5px;
-    letter-spacing: 0.14em; text-transform: uppercase;
-    color: var(--text-faint);
-  }
-  .picker-recent-count { color: var(--text-dim); }
-  .picker-recent-list { display: flex; flex-direction: column; }
-  .picker-recent-row {
-    display: flex; align-items: center; gap: 10px;
-    padding: 8px 0; border-bottom: 1px solid var(--border);
-    font-size: 13px;
-  }
-  .picker-recent-row:last-child { border-bottom: none; }
-  .picker-recent-ticker {
-    font-family: var(--mono); font-weight: 700; color: var(--accent);
-    min-width: 52px; letter-spacing: 0.04em; font-size: 12px;
-  }
-  .picker-recent-ticker.no-ticker { color: var(--text-faint); font-weight: 400; }
-  .picker-recent-title { flex: 1; color: var(--text-dim); font-size: 12.5px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .picker-recent-verdict {
-    font-family: var(--mono); font-size: 9.5px; padding: 2px 5px;
-    border-radius: 3px; letter-spacing: 0.06em; font-weight: 600;
-    text-transform: uppercase; flex-shrink: 0;
-  }
-  .picker-recent-verdict.pass { background: var(--pass-bg); color: var(--pass); }
-  .picker-recent-verdict.fail { background: var(--fail-bg); color: var(--fail); }
-  .picker-recent-verdict.pending { background: var(--pending-bg); color: var(--pending); }
-  .picker-recent-time { font-family: var(--mono); font-size: 10.5px; color: var(--text-faint); flex-shrink: 0; }
-  .picker-recent-action {
-    display: block; margin-top: 10px; padding-top: 8px;
-    border-top: 1px dashed var(--border);
-    color: var(--accent); font-size: 12px; cursor: pointer;
-    text-align: right; -webkit-appearance: none; appearance: none;
-    background: transparent; border-left: 0; border-right: 0; border-bottom: 0;
-    width: 100%;
-  }
-
   .picker-stats {
     display: flex; justify-content: space-around; gap: 12px;
     margin-top: 12px; padding: 12px 8px;
@@ -1839,24 +1791,6 @@ function pickerFooterHTML() {
     </div>
   `;
 
-  // Recent 3 snapshots
-  const recent = history.slice(0, 3);
-  const recentHTML = recent.map(e => {
-    const cls = e.verdict.startsWith('CLEAR') ? 'pass' : e.verdict === 'BLOCKED' ? 'fail' : 'pending';
-    const verdictShort = e.verdict.startsWith('CLEAR') ? 'CLEAR' : e.verdict === 'BLOCKED' ? 'BLOCK' : 'PEND';
-    const timeAgo = formatTimeAgo(e.timestampSort);
-    const tickerCls = e.ticker ? '' : ' no-ticker';
-    const tickerDisp = e.ticker || '—';
-    return `
-      <div class="picker-recent-row">
-        <div class="picker-recent-ticker${tickerCls}">${esc(tickerDisp)}</div>
-        <div class="picker-recent-title">${esc(e.strategy)} · ${esc(e.subtype)}</div>
-        <div class="picker-recent-verdict ${cls}">${verdictShort}</div>
-        <div class="picker-recent-time">${timeAgo}</div>
-      </div>
-    `;
-  }).join('');
-
   // Stats: last 7 days
   const weekMs = 7 * 24 * 60 * 60 * 1000;
   const weekAgo = Date.now() - weekMs;
@@ -1873,14 +1807,6 @@ function pickerFooterHTML() {
     ${lossesHTML}
     ${strategyHTML}
     ${exploreHTML}
-    <div class="picker-recent">
-      <div class="picker-recent-head">
-        <span>Recent</span>
-        <span class="picker-recent-count">${history.length} total</span>
-      </div>
-      <div class="picker-recent-list">${recentHTML}</div>
-      <button class="picker-recent-action" onclick="showHistory()">Open History →</button>
-    </div>
     ${verdictSparklineHTML()}
     <div class="picker-stats">
       <div class="picker-stat">
