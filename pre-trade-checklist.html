@@ -178,7 +178,6 @@
     box-shadow: 0 3px 10px -2px color-mix(in srgb, var(--pass) 55%, transparent) !important;
   }
   .sab-btn-snapshot:hover:not(:disabled) { transform: translateY(-1px) !important; box-shadow: 0 6px 16px -4px color-mix(in srgb, var(--pass) 60%, transparent) !important; }
-  .sab-snap-icon { font-size: 14px; }
   @media (max-width: 520px) {
     .sticky-action-bar { grid-template-columns: auto 1fr; gap: 10px; padding: 10px 12px; }
     .sab-actions { grid-column: 1 / -1; justify-content: flex-end; margin-top: 6px; }
@@ -1023,8 +1022,7 @@ const SOP = {
       <li><b>首笔 · 左侧衰竭:</b> MJ2 信号 + 左侧动能衰竭 (RSI≤30 或 RSI≤50 触及布林下轨且斜率放缓, 或底背离, MACD 红柱缩短)</li>
       <li><b>加仓 · 右侧确认:</b> 日线收复 5/10/20MA 之一, 或放量反包/吞没/锤头, 站稳 EMA21 或 SMA50 之上</li>
       <li><b>加仓 · MACD 金叉:</b> 日线 MACD 低位金叉确立 (滞后指标, 严禁作为第一买点)</li>
-      <li>同一张 LEAPS 每周最多加 1-2 手, 需冷却</li>
-      <li>加仓次数可以多次, 按信号类型触发, 不限于三次</li>
+      <li><b>加仓节奏 (硬性):</b> 同一张 LEAPS 每周最多加 1 次, 无论什么信号。LEAPS DTE 长, 没紧迫感; 一周多加几乎都是情绪。</li>
       <li>熊市筑底建仓: Δ 70-80, DTE 12-18 个月, 预留 50% 预算给后续 MACD 金叉阶段</li>
     </ul>
     <h4>关仓 / 减仓 / 止损</h4>
@@ -1206,7 +1204,9 @@ function leapsOpenItems() {
   if (state.leapsPhase === 'add_right') {
     const g = 'Add signals (加仓 · 右侧确认)';
     base.push({ group: g, id: 'cooldown_right',
-      title: '本周同一张 LEAPS 加仓次数 ≤ 2', desc: '' });
+      title: '本周同一张 LEAPS 加仓次数 ≤ 1',
+      desc: '每周最多 1 次, 无论信号类型. 一周内二次加仓几乎都是情绪.',
+      hard: true });
     base.push({ group: g, id: 'right_ma',
       title: '日线收复 5MA、10MA 或 20MA 之一', desc: '任一即可。' });
     base.push({ group: g, id: 'pattern',
@@ -1215,7 +1215,9 @@ function leapsOpenItems() {
   if (state.leapsPhase === 'add_macd') {
     const g = 'Add signals (加仓 · MACD 金叉)';
     base.push({ group: g, id: 'cooldown_macd',
-      title: '本周同一张 LEAPS 加仓次数 ≤ 2', desc: '' });
+      title: '本周同一张 LEAPS 加仓次数 ≤ 1',
+      desc: '每周最多 1 次, 无论信号类型. 一周内二次加仓几乎都是情绪.',
+      hard: true });
     base.push({ group: g, id: 'macd_golden',
       title: '日线 MACD 低位金叉确立',
       desc: '滞后指标, 严禁作为第一买点。' });
@@ -1416,7 +1418,8 @@ function cspItems() {
     desc: '过去 6-12 个月被 2 次以上触及的水平位。行权价设在支撑之下 = 双重保险。' });
   base.push({ group: 'Underlying', id: 'gex_put_wall',
     title: 'GEX Put Wall 已查看 · 行权价 < Put Wall',
-    desc: '手动查看 GEX 图 (SpotGamma / MenthorQ 等). Put Wall 是 dealer 集中卖 put 的位置, 短期支撑。行权价设在 Put Wall 下方 = 支撑先失守才轮到你被 assign。Wall 每天变, 看当天数据。' });
+    desc: 'Put Wall = dealer 集中卖 put 处, 短期支撑. 行权价设在 Wall 下方 = 支撑先失守才轮到 assign.',
+    hard: true });
 
   const dMax = cspDeltaMax();
   const intentLabel = CSP_INTENT_LABEL[state.cspIntent];
@@ -1456,21 +1459,21 @@ function pmccItems() {
 
   base.push({ group: 'Underlying context · 大周期', id: 'weekly_top_range',
     title: '标的处于阻力区 / 横盘 / 高位滞涨',
-    desc: 'PMCC 卖 call 想抓横盘或高位钝化。不适用于底部启动 (会被推爆), 也不适用于疯狂上涨中期 (卖飞底仓)。看周 K 或日 K 的大周期。' });
+    desc: '适用: 阻力位 / 横盘 / 高位钝化. 不适用: 底部启动 (被推爆), 单边急涨 (卖飞底仓).' });
 
   const dMax = pmccDeltaMax();
   const modeLabel = PMCC_MODE_LABEL[state.pmccMode];
   base.push({ group: 'Short call selection', id: 'sc_no_earnings',
     title: 'Short call 存续期不覆盖财报',
-    desc: '硬性禁令。short call DTE 内 (通常 30-45 天) 若覆盖财报 → 拒绝卖 call。财报 gap up = short call 深度 ITM = 底仓被 assign, 卖飞底仓。',
+    desc: '财报 gap up = short call 深度 ITM = 卖飞底仓.',
     hard: true });
   base.push({ group: 'Short call selection', id: 'no_breakout_day',
     title: '非在突破当天卖 short call',
-    desc: '今日不是突破关键位 (前高 / 关键压力 / 60 日高点 / 心理整数关口) 的当天。等次日冲高回落 (阴线 / doji) 再卖。突破当天动能最强, 短腿易被推爆。',
+    desc: '突破当天动能最强, 短腿易被推爆. 等次日冲高回落再卖.',
     hard: true });
   base.push({ group: 'Short call selection', id: 'ivp',
     title: 'IVP > 30%',
-    desc: 'IVP < 30 = 卖 call 权利金差, 优势小, 不如等 IV 升高再卖或直接不做。',
+    desc: 'IVP < 30 = 权利金差, 不划算.',
     numeric: { placeholder: 'IVP', unit: '%', min: 30, comparator: '>' } });
   base.push({ group: 'Short call selection', id: 'delta',
     title: `Short call Delta ≤ ${dMax != null ? dMax : '?'}  (${modeLabel || '未选'})`,
@@ -1478,7 +1481,8 @@ function pmccItems() {
     numeric: { placeholder: 'Delta', unit: '', max: dMax, comparator: '≤' } });
   base.push({ group: 'Short call selection', id: 'gex_call_wall',
     title: 'GEX Call Wall 已查看 · Short Call 行权价 > Call Wall',
-    desc: '手动查看 GEX 图 (SpotGamma / MenthorQ 等). Call Wall 是 dealer 集中卖 call 的位置, 短期阻力。Short call 行权价设在 Call Wall 上方 = 阻力先起作用, 卖飞底仓风险降低。Wall 每天变, 看当天数据。' });
+    desc: 'Call Wall = dealer 集中卖 call 处, 短期阻力. Short call 设在 Wall 上方 = 阻力先起作用, 卖飞底仓概率降低.',
+    hard: true });
   base.push({ group: 'Short call selection', id: 'bb_mid',
     title: '标的位于 Bollinger 中轨之上',
     desc: '右侧卖强。中轨下方 = 趋势弱, 意义不大。' });
@@ -1503,32 +1507,32 @@ function ccItems() {
 
   base.push({ group: 'Underlying context · 大周期', id: 'weekly_top_range',
     title: '标的处于阻力区 / 横盘 / 高位滞涨',
-    desc: 'CC 卖 call 想抓横盘或高位钝化。不适用于底部启动 (会被推爆), 也不适用于疯狂上涨中期 (你想留股就别做, 想 assign 直接卖股或用 limit)。' });
+    desc: '适用: 阻力位 / 横盘 / 高位钝化. 不适用: 底部启动 (被推爆), 单边急涨 (会 assign).' });
 
   base.push({ group: 'Position · 底仓', id: 'cost_basis',
     title: '底仓成本价 (每股)',
-    desc: '填股票每股成本。用于自动检查 short call strike 是否高于成本 (锁盈门槛)。',
+    desc: '填成本, 用于校验 short call strike 高于成本.',
     numeric: { placeholder: 'Cost/share', unit: '$', min: 0.01, comparator: '>' } });
 
   base.push({ group: 'Short call selection', id: 'sc_no_earnings',
     title: 'Short call 存续期不覆盖财报',
-    desc: '硬性禁令。short call DTE 内 (通常 30-45 天) 若覆盖财报 → 拒绝卖 call。财报 gap up = short call 深度 ITM = 股票被 assign 或需 roll.',
+    desc: '财报 gap up = short call 深度 ITM = 被 assign.',
     hard: true });
   base.push({ group: 'Short call selection', id: 'no_breakout_day',
     title: '非在突破当天卖 short call',
-    desc: '今日不是突破关键位 (前高 / 关键压力 / 60 日高点 / 心理整数关口) 的当天。等次日冲高回落 (阴线 / doji) 再卖。突破当天动能最强, 短腿易被推爆。',
+    desc: '突破当天动能最强, 短腿易被推爆. 等次日冲高回落再卖.',
     hard: true });
 
   const costBasis = parseFloat(state.items['cost_basis']) || 0;
   base.push({ group: 'Short call selection', id: 'strike_above_cost',
     title: `Short call 行权价 > 底仓成本${costBasis > 0 ? ' ($' + costBasis.toFixed(2) + ')' : ''} · 锁盈`,
-    desc: '硬性: strike 必须高于成本, 保证 assign 不亏损。假设 assign, 你的股票以 strike 卖出 + 你收的 premium = 盈利。',
+    desc: 'strike > 成本 → assign 也盈. strike ≤ 成本 → assign 就亏.',
     hard: true,
     numeric: { placeholder: 'Strike', unit: '$', min: costBasis > 0 ? costBasis : 0.01, comparator: '>' } });
 
   base.push({ group: 'Short call selection', id: 'ivp',
     title: 'IVP > 30%',
-    desc: 'IVP < 30 = 卖 call 权利金差, 优势小, 不如等 IV 升高再卖。',
+    desc: 'IVP < 30 = 权利金差, 不划算.',
     numeric: { placeholder: 'IVP', unit: '%', min: 30, comparator: '>' } });
 
   const ccDelta = ccDeltaSpec();
@@ -1542,7 +1546,8 @@ function ccItems() {
 
   base.push({ group: 'Short call selection', id: 'gex_call_wall',
     title: 'GEX Call Wall 已查看 · Short Call 行权价 > Call Wall',
-    desc: '手动查看 GEX 图 (SpotGamma / MenthorQ 等). Call Wall 是 dealer 集中卖 call 的位置, 短期阻力。Short call 行权价设在 Call Wall 上方 = 阻力先起作用。Wall 每天变, 看当天数据。' });
+    desc: 'Call Wall = dealer 集中卖 call 处, 短期阻力. Short call 设在 Wall 上方 = 阻力先起作用.',
+    hard: true });
   base.push({ group: 'Short call selection', id: 'bb_mid',
     title: '标的位于 Bollinger 中轨之上',
     desc: '右侧卖强。中轨下方 = 趋势弱, 意义不大。' });
@@ -2667,10 +2672,7 @@ function bottomSummaryHTML() {
       </div>
       <div class="sab-actions">
         <button class="btn ghost sab-btn-small" onclick="clearItems()" title="清空">Clear</button>
-        <button class="btn primary sab-btn-snapshot" onclick="showSnapshot()">
-          <span class="sab-snap-icon">📸</span>
-          <span>Snapshot</span>
-        </button>
+        <button class="btn primary sab-btn-snapshot" onclick="showSnapshot()">Snapshot</button>
       </div>
     </div>
   `;
