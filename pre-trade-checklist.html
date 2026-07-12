@@ -986,6 +986,30 @@ function positionUsedPct() {
   return ((ex + bg) / nav) * 100;
 }
 
+// CSP position sizing helpers (nominal-based)
+function cspTotalPct() {
+  const nav = parseFloat(state.nav);
+  if (!nav || nav <= 0) return null;
+  const existing = parseFloat(state.cspExistingTotal) || 0;
+  const thisTrade = parseFloat(state.cspThisNominal) || 0;
+  if (thisTrade === 0 && existing === 0) return null;
+  return ((existing + thisTrade) / nav) * 100;
+}
+function cspTickerPct() {
+  const nav = parseFloat(state.nav);
+  if (!nav || nav <= 0) return null;
+  const tickerExisting = parseFloat(state.cspTickerExisting) || 0;
+  const thisTrade = parseFloat(state.cspThisNominal) || 0;
+  if (thisTrade === 0) return null;
+  return ((tickerExisting + thisTrade) / nav) * 100;
+}
+function cspTickerCap() {
+  return { medium: 12, high: 8 }[state.cspVolTier] || null;
+}
+function cspTickerSoftTarget() {
+  return { medium: 10, high: 6 }[state.cspVolTier] || null;
+}
+
 /* ==========================================================
  * SOP QUICK REFERENCE
  * ========================================================== */
@@ -1067,7 +1091,7 @@ const SOP = {
       <li>标的大周期 (周 K) 非底部或强势启动, 只在高位整理时开</li>
       <li>非在突破当天卖 short call (动能最强, 短腿易被推爆)</li>
       <li>Short call Delta ≤ 15 (标准) 或 ≤ 10 (防守)</li>
-      <li>标的位于 Bollinger 中轨之上 (右侧位置, 卖强)</li>
+      <li>价格位于 BB 中轨与上轨的中点之上 (超买区, 底仓珍贵不想 assign)</li>
       <li>日线 KDJ 的 J 值 (按底仓类型): 股票替代 > 85 · Balanced > 78 · Swing 杠杆 > 70</li>
     </ul>
   `
@@ -1091,6 +1115,11 @@ const state = {
   pmccUnderlyingPurpose: null,
   pmccMode: 'standard',
   ccMode: null,
+  // CSP position sizing (using state.nav shared with LEAPS)
+  cspVolTier: null,  // 'medium' or 'high'
+  cspExistingTotal: '',  // 现有 CSP 总敞口 nominal
+  cspThisNominal: '',    // 本笔 CSP nominal (strike × 100 × 张数)
+  cspTickerExisting: '', // 本 ticker 现有 CSP nominal
   // Checklist item state
   items: {},
   // Session context
@@ -1108,58 +1137,58 @@ function leapsOpenItems() {
   base.push({ group: 'Discipline · 交易前提', id: 'discipline',
     title: '本笔非临时起意 · 前一天已计划',
     desc: '非当天上班/盘中随机发现。动机非: 报复、FOMO、回本、无聊、证明自己。' });
-  base.push({ group: 'Market environment', id: 'fg',
+  base.push({ group: 'Market environment · 宏观环境', id: 'fg',
     title: 'Fear & Greed ≤ 45  (不追高)',
     desc: '填当前 CNN Fear & Greed Index (0-100 分)。≤ 45 = Neutral / Fear 区间, 允许入场; > 45 (Greed) → 慎入, 避免追高。非 HARD, 只作 pending 提示。',
     numeric: { placeholder: 'e.g. 40', unit: '', max: 45, comparator: '≤' } });
-  base.push({ group: 'Market environment', id: 'market_ok',
+  base.push({ group: 'Market environment · 宏观环境', id: 'market_ok',
     title: '市场未在系统性大跌',
     desc: 'SPY 今日 > -3% 且 5D > -5% = ✓。大盘小跌可入 LEAPS; 大盘系统性下跌 (今日 -3%+ 或 5D -5%+) → ✕, 别接飞刀, 等 SPY 反弹或穿越 5MA/10MA 再考虑。' });
-  base.push({ group: 'Market environment', id: 'macro',
+  base.push({ group: 'Market environment · 宏观环境', id: 'macro',
     title: '未来 7 天无重大宏观事件冲击',
     desc: 'FOMC / CPI / PPI / NFP 已在日历核对。' });
 
-  base.push({ group: 'Underlying & technicals', id: 'ticker',
+  base.push({ group: 'Underlying & technicals · 标的与技术面', id: 'ticker',
     title: '标的选择合规',
     desc: 'QQQ (熊市筑底期必配, 20-30%) 或 周线向上、基本面健康、高 Beta 个股。' });
-  base.push({ group: 'Underlying & technicals', id: 'support',
+  base.push({ group: 'Underlying & technicals · 标的与技术面', id: 'support',
     title: '价格回落至 200MA / 250MA 或历史核心支撑附近',
     desc: '基本面体检通过。' });
-  base.push({ group: 'Underlying & technicals', id: 'volprofile',
+  base.push({ group: 'Underlying & technicals · 标的与技术面', id: 'volprofile',
     title: '价格位于 1Y 与 180D Volume Profile 的 HVN 或 VAL 附近',
     desc: '' });
-  base.push({ group: 'Underlying & technicals', id: 'avwap',
+  base.push({ group: 'Underlying & technicals · 标的与技术面', id: 'avwap',
     title: '价格受重要波段低点的 Anchored VWAP 支撑',
     desc: '锚点合适, 价格在其之上或刚触及。' });
-  base.push({ group: 'Underlying & technicals', id: 'earnings',
+  base.push({ group: 'Underlying & technicals · 标的与技术面', id: 'earnings',
     title: '距下次财报 ≥ 45 天',
     desc: '给 LEAPS 时间站稳。距离 < 45 天 → pending, 提醒你财报事件风险, 需自己判断。非 HARD。',
     numeric: { placeholder: 'e.g. 68', unit: '天', min: 45, comparator: '≥' } });
-  base.push({ group: 'Underlying & technicals', id: 'stock_ivp',
+  base.push({ group: 'Underlying & technicals · 标的与技术面', id: 'stock_ivp',
     title: '个股 IVP < 70',
     desc: '刚崩过的股 IV 通常 elevated (IVP 80+), 买 LEAPS 会被 IV 顶价, 未来 IV crush 影响方向利润。参考: 券商 IVP / IV Rank。你亦可看具体 option 的历史价格图。非 HARD, 只作 pending 提示。',
     numeric: { placeholder: 'e.g. 55', unit: '', max: 70, comparator: '<' } });
 
-  base.push({ group: 'Trade plan', id: 'expectation',
+  base.push({ group: 'Trade plan · 交易计划', id: 'expectation',
     title: '交易预期已明确',
     desc: '波段 vs 长期 → 止盈思路不同。' });
-  base.push({ group: 'Trade plan', id: 'entry_price',
+  base.push({ group: 'Trade plan · 交易计划', id: 'entry_price',
     title: '正股当前价',
     desc: '本次开仓时正股价格。用于自动计算 R:R。',
     numeric: { placeholder: 'e.g. 180.50', unit: '$', priceField: true } });
-  base.push({ group: 'Trade plan', id: 'stop_level',
+  base.push({ group: 'Trade plan · 交易计划', id: 'stop_level',
     title: '正股止损位',
     desc: '跌到此价 → 平 LEAPS。例如 "跌破 200MA" / 前低 / 关键支撑。必须 < 当前价。',
     numeric: { placeholder: 'e.g. 170', unit: '$', priceField: true } });
-  base.push({ group: 'Trade plan', id: 'target_level',
+  base.push({ group: 'Trade plan · 交易计划', id: 'target_level',
     title: '正股止盈位',
     desc: '涨到此价 → 平 LEAPS。例如 前高 / 阻力 / Fib 1.618。必须 > 当前价。',
     numeric: { placeholder: 'e.g. 220', unit: '$', priceField: true } });
-  base.push({ group: 'Trade plan', id: 'rr_check',
+  base.push({ group: 'Trade plan · 交易计划', id: 'rr_check',
     title: `R:R ≥ ${rrThreshold()} : 1  (${LEAPS_STYLE_LABEL[state.leapsStyle] || ''} · 自动计算)`,
     desc: rrCheckDesc(),
     positionCheck: true });
-  base.push({ group: 'Trade plan', id: 'dte',
+  base.push({ group: 'Trade plan · 交易计划', id: 'dte',
     title: 'DTE ≥ 400 天',
     desc: '',
     numeric: { placeholder: 'DTE', unit: 'days', min: 400, comparator: '≥' } });
@@ -1167,12 +1196,12 @@ function leapsOpenItems() {
   const dSpec = leapsDeltaSpec();
   const styleName = LEAPS_STYLE_LABEL[state.leapsStyle];
   if (dSpec) {
-    base.push({ group: 'Trade plan', id: 'delta',
+    base.push({ group: 'Trade plan · 交易计划', id: 'delta',
       title: `${dSpec.title}  (${styleName})`,
       desc: dSpec.desc,
       numeric: dSpec.numeric });
   } else {
-    base.push({ group: 'Trade plan', id: 'delta',
+    base.push({ group: 'Trade plan · 交易计划', id: 'delta',
       title: 'Delta ?  (未选)',
       desc: '先选风格。',
       numeric: { placeholder: 'Delta', unit: '' } });
@@ -1185,7 +1214,7 @@ function leapsOpenItems() {
   else if (state.leapsStyle === 'stock_sub') capDescParts.push('股票替代');
   if (state.leapsBluechip) capDescParts.push('QQQ 蓝筹');
   const capDesc = capDescParts.length ? `${capDescParts.join(' · ')}, 上限 ${cap}%。` : `上限 ${cap}%。`;
-  base.push({ group: 'Position sizing', id: 'sizecap',
+  base.push({ group: 'Position sizing · 仓位控制', id: 'sizecap',
     title: `单标的 LEAPS 敞口 ≤ ${cap}% 账户净值`,
     desc: capDesc + ' 敞口 = 现有 + 本次预算。',
     hard: true, positionCheck: true });
@@ -1403,43 +1432,68 @@ function cspItems() {
   base.push({ group: 'Discipline · 交易前提', id: 'discipline',
     title: '本笔非临时起意 · 前一天已计划',
     desc: '非当天上班/盘中随机发现。动机非: 报复、FOMO、回本、无聊、证明自己。' });
-  base.push({ group: 'Market environment', id: 'macro',
+  base.push({ group: 'Market environment · 宏观环境', id: 'macro',
     title: '宏观事件已核对',
     desc: 'CSP DTE 30-45 天通常覆盖至少一次 FOMC/CPI/NFP。此项打钩 = 你已在日历核对, 已知晓事件时点, 有心理准备。' });
-  base.push({ group: 'Underlying', id: 'no_earnings',
+  base.push({ group: 'Underlying · 标的', id: 'no_earnings',
     title: '合约存续期不覆盖财报',
     desc: '硬性禁令。前后 3-5 天也不新开。',
     hard: true });
-  base.push({ group: 'Underlying', id: 'strike_hvn',
+  base.push({ group: 'Underlying · 标的', id: 'strike_hvn',
     title: '行权价位于 1Y 与 180D Volume Profile 的 HVN 下沿或下方',
     desc: '密集区承接。' });
-  base.push({ group: 'Underlying', id: 'strike_support',
+  base.push({ group: 'Underlying · 标的', id: 'strike_support',
     title: '行权价位于多次测试的关键支撑下方',
     desc: '过去 6-12 个月被 2 次以上触及的水平位。行权价设在支撑之下 = 双重保险。' });
-  base.push({ group: 'Underlying', id: 'gex_put_wall',
+  base.push({ group: 'Underlying · 标的', id: 'bb_below_mid',
+    title: '价格位于 BB 中轨之下',
+    desc: '中轨之下 = 已在回调, 不在情绪高点. 卖 put 靠支撑 + GEX 双 HARD 保护, BB 只需粗筛.' });
+  base.push({ group: 'Underlying · 标的', id: 'gex_put_wall',
     title: 'GEX Put Wall 已查看 · 行权价 < Put Wall',
     desc: 'Put Wall = dealer 集中卖 put 处, 短期支撑. 行权价设在 Wall 下方 = 支撑先失守才轮到 assign.',
     hard: true });
 
   const dMax = cspDeltaMax();
   const intentLabel = CSP_INTENT_LABEL[state.cspIntent];
-  base.push({ group: 'Contract structure', id: 'ivp',
+  base.push({ group: 'Contract structure · 合约结构', id: 'ivp',
     title: 'IVP > 30%',
     desc: 'IVP 低 = 权利金差。',
     numeric: { placeholder: 'IVP', unit: '%', min: 30, comparator: '>' } });
-  base.push({ group: 'Contract structure', id: 'dte',
-    title: 'DTE 合适 (建议 30-45 天)',
-    desc: '非硬性。综合 IV / 支撑位 / 宏观事件判断。' });
-  base.push({ group: 'Contract structure', id: 'oi',
+  base.push({ group: 'Contract structure · 合约结构', id: 'dte',
+    title: 'DTE 30-45 天',
+    desc: '30-45 = 甜蜜点. < 30 = 时间衰减快但 delta 陡; > 45 = 资金占用久, ROC 低.',
+    numeric: { placeholder: 'DTE', unit: 'days', range: [30, 45] } });
+  base.push({ group: 'Contract structure · 合约结构', id: 'oi',
     title: '合约 OI 足够大 (流动性)', desc: '避免宽 bid-ask / 难 roll。' });
-  base.push({ group: 'Contract structure', id: 'delta',
+  base.push({ group: 'Contract structure · 合约结构', id: 'delta',
     title: `Delta ≤ ${dMax != null ? dMax : '?'}  (${intentLabel || '未选'})`,
     desc: dMax != null ? `≤ ${dMax} (=0.${dMax < 10 ? '0' + dMax : dMax}), 整数。` : '先选意图。',
     numeric: { placeholder: 'Delta', unit: '', max: dMax, comparator: '≤' } });
-  base.push({ group: 'Contract structure', id: 'roc',
+  base.push({ group: 'Contract structure · 合约结构', id: 'roc',
     title: '30 天 ROC ≥ 2-3%',
     desc: '低 ROC = 机会成本不划算。',
     numeric: { placeholder: 'ROC', unit: '%', min: 2, comparator: '≥', step: 0.1 } });
+
+  // Position sizing checks (auto-computed from inputs above)
+  const psGroup = 'Position sizing · 仓位控制';
+  base.push({ group: psGroup, id: 'csp_total_check',
+    title: 'CSP 总敞口 ≤ 50% NAV',
+    desc: '目标 40% · 硬顶 50%. 总 = 现有 CSP + 本笔 nominal.',
+    hard: true, positionCheck: true });
+  if (state.cspVolTier) {
+    const cap = cspTickerCap();
+    const target = cspTickerSoftTarget();
+    const tierLabel = state.cspVolTier === 'medium' ? '中波动 (如 SOFI/HIMS)' : '高波动 (如 IREN/ASTS)';
+    base.push({ group: psGroup, id: 'csp_ticker_check',
+      title: `单标的 CSP ≤ ${cap}% NAV  (${tierLabel})`,
+      desc: `目标 ${target}% · 硬顶 ${cap}%. 单标的 = 本 ticker 现有 CSP + 本笔.`,
+      hard: true, positionCheck: true });
+  } else {
+    base.push({ group: psGroup, id: 'csp_ticker_check',
+      title: '⚠ 先选波动性类型 → 才能校验单标的敞口',
+      desc: '未选波动性类型 (中/高). 此 HARD 项无法校验.',
+      hard: true, locked: true });
+  }
   return base;
 }
 
@@ -1451,11 +1505,15 @@ function pmccItems() {
   base.push({ group: 'Discipline · 交易前提', id: 'discipline',
     title: '本笔非临时起意 · 前一天已计划',
     desc: '非当天上班/盘中随机发现。动机非: 报复、FOMO、回本、无聊、证明自己。' });
-  base.push({ group: 'Underlying LEAPS health', id: 'leaps_profit',
+  base.push({ group: 'Underlying LEAPS health · 底仓健康度', id: 'leaps_profit',
     title: '底仓 LEAPS 当前盈利 ≥ 20%',
     desc: '填当前盈利百分比 (如 23 表示 +23%)。< 20% = 底仓不够健康, 禁止卖 call (assign 走底仓代价大)。',
     hard: true,
     numeric: { placeholder: 'e.g. 23', unit: '%', min: 20, comparator: '≥' } });
+
+  base.push({ group: 'Market environment · 宏观环境', id: 'macro',
+    title: '未来 short call DTE 内无重大宏观事件',
+    desc: 'FOMC / CPI / PPI / NFP 已核对. 大跌时 IV spike, short call 暴涨拿不到好点位卖.' });
 
   base.push({ group: 'Underlying context · 大周期', id: 'weekly_top_range',
     title: '标的处于阻力区 / 横盘 / 高位滞涨',
@@ -1463,30 +1521,30 @@ function pmccItems() {
 
   const dMax = pmccDeltaMax();
   const modeLabel = PMCC_MODE_LABEL[state.pmccMode];
-  base.push({ group: 'Short call selection', id: 'sc_no_earnings',
+  base.push({ group: 'Short call selection · 短 call 选择', id: 'sc_no_earnings',
     title: 'Short call 存续期不覆盖财报',
     desc: '财报 gap up = short call 深度 ITM = 卖飞底仓.',
     hard: true });
-  base.push({ group: 'Short call selection', id: 'no_breakout_day',
+  base.push({ group: 'Short call selection · 短 call 选择', id: 'no_breakout_day',
     title: '非在突破当天卖 short call',
     desc: '突破当天动能最强, 短腿易被推爆. 等次日冲高回落再卖.',
     hard: true });
-  base.push({ group: 'Short call selection', id: 'ivp',
+  base.push({ group: 'Short call selection · 短 call 选择', id: 'ivp',
     title: 'IVP > 30%',
     desc: 'IVP < 30 = 权利金差, 不划算.',
     numeric: { placeholder: 'IVP', unit: '%', min: 30, comparator: '>' } });
-  base.push({ group: 'Short call selection', id: 'delta',
+  base.push({ group: 'Short call selection · 短 call 选择', id: 'delta',
     title: `Short call Delta ≤ ${dMax != null ? dMax : '?'}  (${modeLabel || '未选'})`,
     desc: `≤ ${dMax != null ? dMax : '?'} (=0.${dMax < 10 ? '0' + dMax : dMax}), 整数。`,
     numeric: { placeholder: 'Delta', unit: '', max: dMax, comparator: '≤' } });
-  base.push({ group: 'Short call selection', id: 'gex_call_wall',
+  base.push({ group: 'Short call selection · 短 call 选择', id: 'gex_call_wall',
     title: 'GEX Call Wall 已查看 · Short Call 行权价 > Call Wall',
     desc: 'Call Wall = dealer 集中卖 call 处, 短期阻力. Short call 设在 Wall 上方 = 阻力先起作用, 卖飞底仓概率降低.',
     hard: true });
-  base.push({ group: 'Short call selection', id: 'bb_mid',
-    title: '标的位于 Bollinger 中轨之上',
-    desc: '右侧卖强。中轨下方 = 趋势弱, 意义不大。' });
-  base.push({ group: 'Short call selection', id: 'kdj_j',
+  base.push({ group: 'Short call selection · 短 call 选择', id: 'bb_upper_zone',
+    title: '价格位于 BB 中轨与上轨的中点之上 (至少)',
+    desc: '底仓 LEAPS 珍贵, 不想 assign. 严格要求超买区卖 call, 回落概率高.' });
+  base.push({ group: 'Short call selection · 短 call 选择', id: 'kdj_j',
     title: `日线 KDJ 的 J 值 > ${pmccKdjMin() != null ? pmccKdjMin() : '?'}  (底仓 ${LEAPS_STYLE_LABEL[state.pmccUnderlyingPurpose] || '未选'})`,
     desc: (() => {
       const p = state.pmccUnderlyingPurpose;
@@ -1505,6 +1563,10 @@ function ccItems() {
     title: '本笔非临时起意 · 前一天已计划',
     desc: '非当天上班/盘中随机发现。动机非: 报复、FOMO、回本、无聊、证明自己。' });
 
+  base.push({ group: 'Market environment · 宏观环境', id: 'macro',
+    title: '未来 short call DTE 内无重大宏观事件',
+    desc: 'FOMC / CPI / PPI / NFP 已核对. 大跌时 IV spike, short call 暴涨拿不到好点位卖.' });
+
   base.push({ group: 'Underlying context · 大周期', id: 'weekly_top_range',
     title: '标的处于阻力区 / 横盘 / 高位滞涨',
     desc: '适用: 阻力位 / 横盘 / 高位钝化. 不适用: 底部启动 (被推爆), 单边急涨 (会 assign).' });
@@ -1514,23 +1576,32 @@ function ccItems() {
     desc: '填成本, 用于校验 short call strike 高于成本.',
     numeric: { placeholder: 'Cost/share', unit: '$', min: 0.01, comparator: '>' } });
 
-  base.push({ group: 'Short call selection', id: 'sc_no_earnings',
+  base.push({ group: 'Short call selection · 短 call 选择', id: 'sc_no_earnings',
     title: 'Short call 存续期不覆盖财报',
     desc: '财报 gap up = short call 深度 ITM = 被 assign.',
     hard: true });
-  base.push({ group: 'Short call selection', id: 'no_breakout_day',
+  base.push({ group: 'Short call selection · 短 call 选择', id: 'no_breakout_day',
     title: '非在突破当天卖 short call',
     desc: '突破当天动能最强, 短腿易被推爆. 等次日冲高回落再卖.',
     hard: true });
 
   const costBasis = parseFloat(state.items['cost_basis']) || 0;
-  base.push({ group: 'Short call selection', id: 'strike_above_cost',
-    title: `Short call 行权价 > 底仓成本${costBasis > 0 ? ' ($' + costBasis.toFixed(2) + ')' : ''} · 锁盈`,
-    desc: 'strike > 成本 → assign 也盈. strike ≤ 成本 → assign 就亏.',
-    hard: true,
-    numeric: { placeholder: 'Strike', unit: '$', min: costBasis > 0 ? costBasis : 0.01, comparator: '>' } });
+  if (costBasis > 0) {
+    base.push({ group: 'Short call selection · 短 call 选择', id: 'strike_above_cost',
+      title: `Short call 行权价 > 底仓成本 ($${costBasis.toFixed(2)}) · 锁盈`,
+      desc: 'strike > 成本 → assign 也盈. strike ≤ 成本 → assign 就亏.',
+      hard: true,
+      numeric: { placeholder: 'Strike', unit: '$', min: costBasis, comparator: '>' } });
+  } else {
+    // No cost basis yet → item shows locked, verdict forced to pending
+    base.push({ group: 'Short call selection · 短 call 选择', id: 'strike_above_cost',
+      title: '⚠ 先填底仓成本 → 才能校验 strike > 成本',
+      desc: '未填底仓成本. 此 HARD 项无法校验 = 本次 checklist 保持 PENDING.',
+      hard: true,
+      locked: true });
+  }
 
-  base.push({ group: 'Short call selection', id: 'ivp',
+  base.push({ group: 'Short call selection · 短 call 选择', id: 'ivp',
     title: 'IVP > 30%',
     desc: 'IVP < 30 = 权利金差, 不划算.',
     numeric: { placeholder: 'IVP', unit: '%', min: 30, comparator: '>' } });
@@ -1538,20 +1609,20 @@ function ccItems() {
   const ccDelta = ccDeltaSpec();
   const ccModeLabel = CC_MODE_LABEL[state.ccMode];
   if (ccDelta) {
-    base.push({ group: 'Short call selection', id: 'delta',
+    base.push({ group: 'Short call selection · 短 call 选择', id: 'delta',
       title: `Short call ${ccDelta.title}  (${ccModeLabel || '未选'})`,
       desc: ccDelta.desc,
       numeric: ccDelta.numeric });
   }
 
-  base.push({ group: 'Short call selection', id: 'gex_call_wall',
+  base.push({ group: 'Short call selection · 短 call 选择', id: 'gex_call_wall',
     title: 'GEX Call Wall 已查看 · Short Call 行权价 > Call Wall',
     desc: 'Call Wall = dealer 集中卖 call 处, 短期阻力. Short call 设在 Wall 上方 = 阻力先起作用.',
     hard: true });
-  base.push({ group: 'Short call selection', id: 'bb_mid',
-    title: '标的位于 Bollinger 中轨之上',
-    desc: '右侧卖强。中轨下方 = 趋势弱, 意义不大。' });
-  base.push({ group: 'Short call selection', id: 'kdj_j',
+  base.push({ group: 'Short call selection · 短 call 选择', id: 'bb_above_mid',
+    title: '价格位于 BB 中轨之上',
+    desc: '中轨之上 = 已在右侧, 有阻力筛选. 底仓是股票, assign 也 OK, 不需要极端超买.' });
+  base.push({ group: 'Short call selection · 短 call 选择', id: 'kdj_j',
     title: `日线 KDJ 的 J 值 > ${ccKdjMin() != null ? ccKdjMin() : '?'}  (${ccModeLabel || '未选'})`,
     desc: (() => {
       const m = state.ccMode;
@@ -1631,7 +1702,24 @@ function itemVerdict(item) {
   // R:R computed item
   if (item.id === 'rr_check') return rrCheckVerdict();
 
+  // Locked items (dependency not met) → always pending
+  if (item.locked) return 'pending';
+
   if (item.positionCheck) {
+    // CSP-specific position checks
+    if (item.id === 'csp_total_check') {
+      const pct = cspTotalPct();
+      if (pct == null) return 'pending';
+      if (pct > 50) return 'fail';
+      return 'pass';  // Note: 40-50% is still pass but shows as warning in UI
+    }
+    if (item.id === 'csp_ticker_check') {
+      const pct = cspTickerPct();
+      const cap = cspTickerCap();
+      if (pct == null || cap == null) return 'pending';
+      return pct <= cap ? 'pass' : 'fail';
+    }
+    // LEAPS position check (default)
     const pct = positionUsedPct();
     if (pct == null) return 'pending';
     return pct <= positionCapPct() ? 'pass' : 'fail';
@@ -2770,6 +2858,44 @@ function renderChecklist() {
       </div>
     `;
   }
+  // Position sizing for CSP
+  if (state.strategy === 'csp') {
+    const totalPct = cspTotalPct();
+    const tickerPct = cspTickerPct();
+    const tickerCap = cspTickerCap();
+    const totalPctDisp = totalPct == null ? '—' : totalPct.toFixed(1) + '%';
+    const tickerPctDisp = tickerPct == null ? '—' : tickerPct.toFixed(1) + '%';
+    const totalCls = totalPct == null ? '' : (totalPct > 50 ? 'fail' : totalPct > 40 ? 'pending' : 'pass');
+    const tickerCls = (tickerPct == null || tickerCap == null) ? '' : (tickerPct > tickerCap ? 'fail' : tickerPct > cspTickerSoftTarget() ? 'pending' : 'pass');
+    configHTML = `
+      <div class="config">
+        <div class="config-title">CSP 仓位控制 · 名义敞口 (nominal = strike × 100 × 张数)</div>
+        <div class="num-row">
+          <div class="num-field"><label class="num-field-label">Account NAV</label>
+            <input inputmode="decimal" type="number" id="in-nav" placeholder="e.g. 250000" value="${esc(state.nav)}"></div>
+          <div class="num-field"><label class="num-field-label">现有 CSP 总名义</label>
+            <input inputmode="decimal" type="number" id="in-csp-ex-total" placeholder="0" value="${esc(state.cspExistingTotal)}"></div>
+          <div class="num-field"><label class="num-field-label">本笔 CSP 名义</label>
+            <input inputmode="decimal" type="number" id="in-csp-nominal" placeholder="e.g. 5000" value="${esc(state.cspThisNominal)}"></div>
+          <div class="num-field"><label class="num-field-label">本 ticker 现有 CSP</label>
+            <input inputmode="decimal" type="number" id="in-csp-ticker-ex" placeholder="0" value="${esc(state.cspTickerExisting)}"></div>
+          <div class="num-field"><label class="num-field-label">波动性类型</label>
+            <div class="segmented" id="csp-vol-seg" style="margin-top: 0;">
+              <button data-v="medium">中波动 (≤12%)</button>
+              <button data-v="high">高波动 (≤8%)</button>
+            </div></div>
+        </div>
+        <div class="position-summary ${totalCls}">
+          <span class="position-summary-label">CSP 总敞口 / NAV</span>
+          <span class="position-summary-val ${totalCls}">${totalPctDisp} <span style="color:var(--text-faint); font-weight:400;"> / 目标 40% · 硬顶 50%</span></span>
+        </div>
+        <div class="position-summary ${tickerCls}" style="margin-top: 8px;">
+          <span class="position-summary-label">单 ticker 敞口 / NAV</span>
+          <span class="position-summary-val ${tickerCls}">${tickerPctDisp} <span style="color:var(--text-faint); font-weight:400;"> ${tickerCap ? '/ 目标 ' + cspTickerSoftTarget() + '% · 硬顶 ' + tickerCap + '%' : '/ 先选波动性'}</span></span>
+        </div>
+      </div>
+    `;
+  }
 
   let checklistHTML = '';
   const groupKey = (name) => {
@@ -2839,6 +2965,31 @@ function renderChecklist() {
       bcSeg.querySelector(`button[data-v="${state.leapsBluechip ? 'yes' : 'no'}"]`)?.classList.add('active');
       bcSeg.querySelectorAll('button').forEach(b => {
         b.addEventListener('click', () => { pushUndo(); state.leapsBluechip = b.dataset.v === 'yes'; render(); });
+      });
+    }
+  }
+
+  // CSP position sizing wiring
+  if (state.strategy === 'csp') {
+    const bind = (id, key) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener('focus', () => { pushUndo(); cancelFullRender(); });
+      el.addEventListener('input', e => {
+        state[key] = e.target.value;
+        updateVerdictsInPlace();
+      });
+      el.addEventListener('blur', () => scheduleFullRender());
+    };
+    bind('in-nav', 'nav');
+    bind('in-csp-ex-total', 'cspExistingTotal');
+    bind('in-csp-nominal', 'cspThisNominal');
+    bind('in-csp-ticker-ex', 'cspTickerExisting');
+    const vSeg = document.getElementById('csp-vol-seg');
+    if (vSeg) {
+      if (state.cspVolTier) vSeg.querySelector(`button[data-v="${state.cspVolTier}"]`)?.classList.add('active');
+      vSeg.querySelectorAll('button').forEach(b => {
+        b.addEventListener('click', () => { pushUndo(); state.cspVolTier = b.dataset.v; render(); });
       });
     }
   }
@@ -3126,6 +3277,18 @@ function itemHTML(it) {
       </div>
     `;
   }
+  if (it.locked) {
+    return `
+      <div class="item ${v} ${hardClass} item-locked" id="item-${esc(it.id)}">
+        <div class="item-head">
+          <div class="item-text">
+            <div class="item-title">${esc(it.title)} ${hardBadge}</div>
+            ${it.desc ? `<div class="item-desc">${esc(it.desc)}</div>` : ''}
+          </div>
+        </div>
+      </div>
+    `;
+  }
   const s = state.items[it.id];
   return `
     <div class="item ${v} ${hardClass}" id="item-${esc(it.id)}">
@@ -3163,6 +3326,8 @@ function resetAll(silent) {
   state.leapsCloseType = null;
   state.nav = ''; state.existingExposure = ''; state.budget = '';
   state.cspIntent = null;
+  state.cspVolTier = null;
+  state.cspExistingTotal = ''; state.cspThisNominal = ''; state.cspTickerExisting = '';
   state.pmccUnderlyingPurpose = null; state.pmccMode = 'standard';
   state.ccMode = null;
   state.ticker = '';
@@ -3261,6 +3426,10 @@ function snapshotStateForStorage() {
     leapsBluechip: state.leapsBluechip,
     leapsCloseType: state.leapsCloseType,
     cspIntent: state.cspIntent,
+    cspVolTier: state.cspVolTier,
+    cspExistingTotal: state.cspExistingTotal,
+    cspThisNominal: state.cspThisNominal,
+    cspTickerExisting: state.cspTickerExisting,
     pmccUnderlyingPurpose: state.pmccUnderlyingPurpose,
     pmccMode: state.pmccMode,
     ccMode: state.ccMode,
