@@ -30,24 +30,25 @@
   :root {
     --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas, monospace;
     --sans: "Inter", -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --radius: 6px;  /* User-customizable base radius */
   }
   body.theme-slate {
     --bg: #0F1419; --panel: #171C22; --panel-2: #1E252D;
-    --border: #2A323C; --border-hi: #3A4552;
-    --text: #E6E8EB; --text-dim: #A0AAB6; --text-faint: #7A8590;
-    --pass: #3FB950; --pass-bg: rgba(63, 185, 80, 0.10);
-    --fail: #F85149; --fail-bg: rgba(248, 81, 73, 0.10);
-    --pending: #D29922; --pending-bg: rgba(210, 153, 34, 0.08);
-    --accent: #58A6FF;
+    --border: #333B47; --border-hi: #4A5462;
+    --text: #F0F2F5; --text-dim: #B8C2CE; --text-faint: #9AA5B0;
+    --pass: #4CC162; --pass-bg: rgba(63, 185, 80, 0.14);
+    --fail: #FF6259; --fail-bg: rgba(248, 81, 73, 0.14);
+    --pending: #E5A62E; --pending-bg: rgba(210, 153, 34, 0.14);
+    --accent: #6BB4FF;
   }
   body.theme-terminal {
     --bg: #000000; --panel: #0A0F0A; --panel-2: #101810;
-    --border: #1A2E1A; --border-hi: #2E5E2E;
-    --text: #E0F5E0; --text-dim: #8FBF8F; --text-faint: #567856;
-    --pass: #00FF66; --pass-bg: rgba(0, 255, 102, 0.10);
-    --fail: #FF4444; --fail-bg: rgba(255, 68, 68, 0.10);
-    --pending: #F0C000; --pending-bg: rgba(240, 192, 0, 0.10);
-    --accent: #00CC66;
+    --border: #2E4A2E; --border-hi: #4A7A4A;
+    --text: #E8FAE8; --text-dim: #A6CFA6; --text-faint: #7CA57C;
+    --pass: #00FF66; --pass-bg: rgba(0, 255, 102, 0.14);
+    --fail: #FF6666; --fail-bg: rgba(255, 68, 68, 0.14);
+    --pending: #F5CB3D; --pending-bg: rgba(240, 192, 0, 0.14);
+    --accent: #33E680;
   }
   body.theme-light {
     --bg: #F9FAFB; --panel: #FFFFFF; --panel-2: #F3F4F6;
@@ -68,6 +69,16 @@
     --accent: #A0522D;
   }
   html, body { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 16px; line-height: 1.55; min-height: 100vh; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; font-variant-numeric: tabular-nums slashed-zero; font-feature-settings: "cv02", "cv11", "salt", "ss01", "ss02", "tnum", "zero"; letter-spacing: 0.008em; text-rendering: optimizeLegibility; }
+
+  /* Page transition (subtle fade-slide on view change) */
+  @keyframes pageEnter {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .app.view-entering { animation: pageEnter 240ms cubic-bezier(0.16, 1, 0.3, 1); }
+  @media (prefers-reduced-motion: reduce) {
+    .app.view-entering { animation: none; }
+  }
   /* Numbers everywhere: tabular + slashed-zero for professional finance look */
   .tally-num, .picker-stat-num, .strategy-count, .strategy-winrate, .spark-count, .spark-pct,
   .status-main, .bottom-status-main, .stamp-verdict, .item-check-label, .picker-recent-count,
@@ -198,7 +209,119 @@
   .group[data-group-key="shortcall"]::before { background: linear-gradient(180deg, #A855F7, #7E22CE); }
   .group[data-group-key="close"]::before { background: linear-gradient(180deg, #EF4444, #DC2626); }
 
-  /* Continue draft banner (main picker) */
+  /* Time-series trend chart */
+  .trend-chart-wrap { padding: 6px 0 0; overflow-x: auto; }
+  .trend-chart { width: 100%; height: 180px; display: block; }
+  .trend-legend { display: inline-flex; align-items: center; gap: 5px; font-family: var(--mono); font-size: 11px; color: var(--text-dim); margin-right: 14px; }
+  .trend-dot { display: inline-block; width: 10px; height: 2px; border-radius: 1px; }
+
+  /* Backtest panel */
+  .backtest-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 10px; margin: 4px 0 12px;
+  }
+  @media (max-width: 720px) { .backtest-grid { grid-template-columns: 1fr 1fr; } }
+  .backtest-cell {
+    padding: 12px 14px;
+    background: var(--panel-2);
+    border-radius: var(--radius, 6px);
+    border-left: 3px solid var(--border);
+  }
+  .backtest-cell.strict { border-left-color: var(--pass); background: color-mix(in srgb, var(--pass-bg) 40%, var(--panel-2)); }
+  .backtest-cell.delta { border-left-color: var(--accent); }
+  .backtest-cell.forced { border-left-color: var(--fail); background: color-mix(in srgb, var(--fail-bg) 30%, var(--panel-2)); }
+  .backtest-label { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-faint); margin-bottom: 6px; }
+  .backtest-value { font-family: var(--mono); font-size: 22px; font-weight: 700; color: var(--text); line-height: 1.2; }
+  .backtest-value.pass { color: var(--pass); }
+  .backtest-value.fail { color: var(--fail); }
+  .backtest-detail { font-family: var(--mono); font-size: 10.5px; color: var(--text-dim); margin-top: 4px; }
+  .backtest-conclusion {
+    padding: 10px 14px;
+    background: color-mix(in srgb, var(--accent) 8%, var(--panel));
+    border-left: 3px solid var(--accent);
+    border-radius: var(--radius, 6px);
+    font-size: 12.5px; line-height: 1.5; color: var(--text-dim);
+  }
+  .backtest-conclusion b { color: var(--text); }
+
+  .verdict-winrate-row {
+    display: grid; grid-template-columns: 90px 60px 1fr 70px;
+    gap: 12px; align-items: center;
+    padding: 8px 12px; background: var(--panel-2); border-radius: 6px;
+    font-size: 12px;
+  }
+  .vwr-tag { font-family: var(--mono); font-size: 10.5px; font-weight: 700; letter-spacing: 0.06em; padding: 3px 7px; border-radius: 3px; text-align: center; }
+  .vwr-tag.pass { background: var(--pass-bg); color: var(--pass); }
+  .vwr-tag.fail { background: var(--fail-bg); color: var(--fail); }
+  .vwr-tag.pending { background: var(--pending-bg); color: var(--pending); }
+  .vwr-total { color: var(--text-dim); font-family: var(--mono); }
+  .vwr-outcome { font-size: 11.5px; color: var(--text-dim); }
+  .vwr-rate { font-family: var(--mono); font-size: 15px; font-weight: 700; text-align: right; }
+  .vwr-rate.pass { color: var(--pass); }
+  .vwr-rate.pending { color: var(--pending); }
+  .vwr-rate.fail { color: var(--fail); }
+  .vwr-rate.text-faint { color: var(--text-faint); }
+
+  .ticker-winrate-list { display: flex; flex-direction: column; gap: 6px; padding: 4px 0; }
+  .ticker-winrate-row { display: grid; grid-template-columns: 70px 1fr; gap: 12px; align-items: center; }
+  .twr-ticker { font-family: var(--mono); font-size: 13px; font-weight: 700; color: var(--accent); letter-spacing: 0.04em; }
+  .twr-bar { position: relative; height: 20px; background: var(--panel-2); border-radius: 4px; overflow: hidden; }
+  .twr-bar-fill { position: absolute; top: 0; left: 0; height: 100%; border-radius: 4px; transition: width 0.4s ease-out; }
+  .twr-bar-fill.pass { background: linear-gradient(90deg, color-mix(in srgb, var(--pass) 60%, transparent), var(--pass)); }
+  .twr-bar-fill.pending { background: linear-gradient(90deg, color-mix(in srgb, var(--pending) 60%, transparent), var(--pending)); }
+  .twr-bar-fill.fail { background: linear-gradient(90deg, color-mix(in srgb, var(--fail) 60%, transparent), var(--fail)); }
+  .twr-bar-label { position: absolute; inset: 0; display: flex; align-items: center; justify-content: flex-end; padding-right: 8px; font-family: var(--mono); font-size: 10.5px; font-weight: 600; color: white; text-shadow: 0 0 3px rgba(0,0,0,0.5); }
+
+  /* Desktop 2-col grid for picker analytics panels */
+  @media (min-width: 900px) {
+    .picker-analytics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .picker-analytics-grid > .picker-panel { margin: 0 !important; }
+  }
+  .autofill-btn {
+    background: color-mix(in srgb, var(--accent) 15%, transparent);
+    border: 1px solid color-mix(in srgb, var(--accent) 40%, var(--border));
+    color: var(--accent);
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+    padding: 2px 8px; border-radius: 3px;
+    margin-left: 6px; cursor: pointer;
+    transition: all 0.15s;
+    vertical-align: middle;
+  }
+  .autofill-btn:hover { background: color-mix(in srgb, var(--accent) 25%, transparent); }
+
+  /* Customize modal */
+  .customize-btn { font-size: 11.5px !important; padding: 6px 10px !important; }
+  .customize-row { margin-bottom: 18px; }
+  .customize-label { display: block; font-size: 12px; color: var(--text-dim); margin-bottom: 8px; font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.06em; }
+  .customize-controls { display: flex; align-items: center; gap: 10px; }
+  .customize-controls input[type="color"] { width: 44px; height: 32px; border: 1px solid var(--border); border-radius: var(--radius, 4px); background: var(--panel); cursor: pointer; padding: 2px; }
+  .customize-controls input[type="range"] { -webkit-appearance: none; appearance: none; height: 5px; background: var(--panel-2); border-radius: 3px; outline: none; }
+  .customize-controls input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 18px; height: 18px; border-radius: 50%; background: var(--accent); cursor: pointer; border: 2px solid var(--bg); box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+  .customize-controls input[type="range"]::-moz-range-thumb { width: 18px; height: 18px; border-radius: 50%; background: var(--accent); cursor: pointer; border: 2px solid var(--bg); }
+  .customize-hint { font-size: 11px; color: var(--text-faint); margin-top: 6px; line-height: 1.4; }
+  .customize-preview { padding: 14px; background: var(--panel-2); border-radius: var(--radius, 6px); border: 1px solid var(--border); margin-top: 10px; }
+  .customize-preview-title { font-family: var(--mono); font-size: 10.5px; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; }
+  .customize-preview-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .customize-preview-card { padding: 10px 14px; background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius, 6px); font-family: var(--mono); font-size: 12px; color: var(--text); }
+
+  /* Last-snap indicator on picker */
+  .last-snap-bar {
+    font-family: var(--mono);
+    font-size: 11.5px; color: var(--text-dim);
+    padding: 8px 12px; margin: 10px 0;
+    background: var(--panel);
+    border-left: 3px solid var(--text-faint);
+    border-radius: 4px;
+    letter-spacing: 0.02em;
+  }
+  .last-snap-bar b { color: var(--text); }
+  .last-snap-bar.today { border-left-color: var(--pass); }
+  .last-snap-bar.aging { border-left-color: var(--pending); }
+  .last-snap-bar.stale { border-left-color: var(--fail); background: color-mix(in srgb, var(--fail-bg) 40%, var(--panel)); }
+
+  /* Locked edit item */
+  .edit-item-locked { background: color-mix(in srgb, var(--pending-bg) 20%, var(--panel)); border-left: 3px solid var(--pending); }
   .draft-continue-banner {
     display: flex; gap: 12px; align-items: center;
     background: color-mix(in srgb, var(--accent) 8%, var(--panel));
@@ -217,7 +340,7 @@
   .draft-dismiss-btn { background: transparent; border: none; color: var(--text-faint); font-size: 18px; width: 28px; height: 28px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; flex-shrink: 0; }
   .draft-dismiss-btn:hover { background: var(--fail-bg); color: var(--fail); }
 
-  .picker-panel { margin: 12px 0 16px; padding: 12px 14px; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; }
+  .picker-panel { margin: 12px 0 16px; padding: 12px 14px; background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius, 10px); }
   .picker-panel-head { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 11px; color: var(--text-faint); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 10px; }
   .picker-panel-count { color: var(--text-dim); }
   .picker-panel-list { display: flex; flex-direction: column; gap: 8px; }
@@ -458,7 +581,7 @@
   .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; gap: 8px; flex-wrap: wrap; }
   .brand { font-family: var(--mono); font-size: 11px; letter-spacing: 0.14em; color: var(--text-faint); text-transform: uppercase; }
   .header-actions { display: flex; gap: 6px; flex-wrap: wrap; }
-  .btn { font-family: var(--sans); font-size: 13px; padding: 8px 14px; background: transparent; color: var(--text-dim); border: 1px solid var(--border); border-radius: 6px; cursor: pointer; transition: all 0.12s ease; min-height: 36px; -webkit-appearance: none; appearance: none; }
+  .btn { font-family: var(--sans); font-size: 13px; padding: 8px 14px; background: transparent; color: var(--text-dim); border: 1px solid var(--border); border-radius: var(--radius, 6px); cursor: pointer; transition: all 0.12s ease; min-height: 36px; -webkit-appearance: none; appearance: none; }
   .btn:hover { border-color: var(--border-hi); color: var(--text); }
   .btn:active { transform: scale(0.98); }
   .btn.primary { background: var(--accent); color: #0F1419; border-color: var(--accent); font-weight: 600; }
@@ -476,14 +599,14 @@
   .picker-sub { color: var(--text-dim); font-size: 14px; margin-bottom: 28px; }
   .picker-choices { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   @media (min-width: 720px) { .picker-choices { grid-template-columns: 1fr 1fr 1fr 1fr; } }
-  .picker-card { background: var(--panel); border: 1px solid var(--border); padding: 20px 18px; border-radius: 10px; cursor: pointer; text-align: left; color: var(--text); font-family: var(--sans); transition: all 0.15s ease; -webkit-appearance: none; appearance: none; }
+  .picker-card { background: var(--panel); border: 1px solid var(--border); padding: 20px 18px; border-radius: var(--radius, 8px); cursor: pointer; text-align: left; color: var(--text); font-family: var(--sans); transition: all 0.15s ease; -webkit-appearance: none; appearance: none; }
   .picker-card:hover { border-color: var(--accent); background: var(--panel-2); }
   .picker-card:active { transform: scale(0.99); }
   .picker-card-tag { font-family: var(--mono); font-size: 10px; letter-spacing: 0.14em; color: var(--accent); text-transform: uppercase; margin-bottom: 8px; }
   .picker-card-title { font-size: 20px; font-weight: 600; margin-bottom: 6px; }
   .picker-card-desc { color: var(--text-dim); font-size: 13px; line-height: 1.5; }
 
-  .config { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+  .config { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius, 8px); padding: 16px; margin-bottom: 16px; }
   .config-title { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-faint); margin-bottom: 12px; }
   .segmented { display: flex; background: var(--bg); border: 1px solid var(--border); border-radius: 7px; padding: 3px; gap: 3px; flex-wrap: wrap; }
   .segmented button { flex: 1; min-width: 0; padding: 8px 6px; background: transparent; color: var(--text-dim); border: 0; border-radius: 5px; font-family: var(--sans); font-size: 12.5px; font-weight: 500; cursor: pointer; transition: all 0.12s ease; -webkit-appearance: none; appearance: none; min-height: 36px; white-space: nowrap; }
@@ -496,7 +619,7 @@
   .num-field input:focus { border-color: var(--accent); }
   .num-field input::placeholder { color: var(--text-faint); }
 
-  .position-summary { margin-top: 10px; padding: 10px 12px; background: var(--bg); border-radius: 6px; font-family: var(--mono); font-size: 12.5px; display: flex; justify-content: space-between; align-items: center; border-left: 3px solid var(--border); }
+  .position-summary { margin-top: 10px; padding: 10px 12px; background: var(--bg); border-radius: var(--radius, 6px); font-family: var(--mono); font-size: 12.5px; display: flex; justify-content: space-between; align-items: center; border-left: 3px solid var(--border); }
   .position-summary.pass { border-left-color: var(--pass); }
   .position-summary.fail { border-left-color: var(--fail); }
   .position-summary-label { color: var(--text-dim); }
@@ -522,7 +645,7 @@
   .group-title { font-family: var(--mono); font-size: 11px; letter-spacing: 0.14em; color: var(--text-dim); text-transform: uppercase; }
   .group-count { font-family: var(--mono); font-size: 11px; color: var(--text-faint); }
   .items { display: flex; flex-direction: column; gap: 8px; }
-  .item { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; transition: border-color 0.15s, background 0.15s; border-left-width: 3px; }
+  .item { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius, 6px); padding: 12px 14px; transition: border-color 0.15s, background 0.15s; border-left-width: 3px; }
   .item.pass { border-left-color: var(--pass); background: linear-gradient(90deg, var(--pass-bg) 0%, var(--panel) 45%); }
   .item.fail { border-left-color: var(--fail); background: linear-gradient(90deg, var(--fail-bg) 0%, var(--panel) 45%); }
   .item.pending { border-left-color: var(--border); }
@@ -555,7 +678,7 @@
   .progress-fill-fail { height: 100%; background: var(--fail); transition: width 0.25s ease; }
 
   .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 100; display: flex; align-items: center; justify-content: center; padding: 16px; }
-  .modal-card { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; max-width: 720px; width: 100%; max-height: 90vh; display: flex; flex-direction: column; }
+  .modal-card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius, 12px); max-width: 720px; width: 100%; max-height: 90vh; display: flex; flex-direction: column; }
   .modal-head { padding: 14px 18px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
   .modal-title { font-family: var(--mono); font-size: 12px; color: var(--text-dim); letter-spacing: 0.1em; text-transform: uppercase; }
   .modal-close { background: transparent; border: none; color: var(--text-dim); font-size: 24px; cursor: pointer; padding: 0 8px; line-height: 1; }
@@ -772,12 +895,13 @@
   .history-page-sub { font-family: var(--mono); font-size: 12.5px; color: var(--text-dim); letter-spacing: 0.02em; }
   .history-page-sub b { color: var(--text); }
   .history-filters {
-    display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr auto;
+    display: grid; grid-template-columns: 2fr 1.2fr 1fr 1fr 1fr auto;
     gap: 8px; align-items: center;
     background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
     padding: 12px 14px; margin-bottom: 16px;
   }
-  @media (max-width: 720px) { .history-filters { grid-template-columns: 1fr 1fr; } .history-clear-filters { grid-column: 1 / -1; } }
+  @media (max-width: 900px) { .history-filters { grid-template-columns: 1fr 1fr 1fr; } .history-clear-filters { grid-column: 1 / -1; } }
+  @media (max-width: 500px) { .history-filters { grid-template-columns: 1fr 1fr; } }
   .history-filters input, .history-filters select {
     font-family: var(--sans); font-size: 12.5px;
     padding: 7px 9px; background: var(--bg); color: var(--text);
@@ -787,6 +911,25 @@
   .history-filters input:focus, .history-filters select:focus { outline: none; border-color: var(--accent); }
   .history-clear-filters { font-size: 11.5px !important; padding: 7px 12px !important; color: var(--text-faint) !important; }
   .history-clear-filters:hover { color: var(--fail) !important; }
+  .history-custom-range {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px; margin: -8px 0 16px;
+    background: color-mix(in srgb, var(--accent) 6%, var(--panel));
+    border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--border));
+    border-top: none;
+    border-radius: 0 0 10px 10px;
+  }
+  .hcr-label { font-family: var(--mono); font-size: 11px; color: var(--text-dim); letter-spacing: 0.06em; text-transform: uppercase; }
+  .hcr-sep { color: var(--text-faint); font-family: var(--mono); }
+  .history-custom-range input[type="date"] {
+    font-family: var(--sans); font-size: 12.5px;
+    padding: 6px 9px; background: var(--bg); color: var(--text);
+    border: 1px solid var(--border); border-radius: 5px;
+  }
+  .history-custom-range input[type="date"]:focus { outline: none; border-color: var(--accent); }
+  .hcr-reset { font-size: 11px !important; padding: 4px 10px !important; color: var(--text-faint) !important; }
+  .hcr-reset:hover { color: var(--fail) !important; }
+  @media (max-width: 500px) { .history-custom-range { flex-wrap: wrap; } }
   .history-del-btn { color: var(--fail) !important; }
   .history-del-btn:hover { background: var(--fail-bg) !important; border-color: var(--fail) !important; }
   .history-bottom-actions {
@@ -1037,6 +1180,65 @@ function cspTickerCap() {
 }
 function cspTickerSoftTarget() {
   return { medium: 10, high: 6 }[state.cspVolTier] || null;
+}
+
+// Auto-compute existing CSP nominal from history (all `open` outcome CSP snapshots)
+function autoComputeCspExistingTotal() {
+  const history = getActiveHistory();
+  let total = 0;
+  history.forEach(e => {
+    if (!e.strategy || !e.strategy.startsWith('CSP')) return;
+    if (e.outcome !== 'open') return;  // Only open positions
+    // Try to extract strike & contracts from inputs field
+    const inp = e.inputs || '';
+    const strikeMatch = inp.match(/strike=(\d+\.?\d*)/);
+    const contractsMatch = inp.match(/contracts=(\d+)/) || inp.match(/cn=(\d+)/);
+    if (strikeMatch) {
+      const strike = parseFloat(strikeMatch[1]);
+      const contracts = contractsMatch ? parseFloat(contractsMatch[1]) : 1;
+      total += strike * 100 * contracts;
+    } else if (e.fullState && e.fullState.cspThisNominal) {
+      // Fallback: use the stored nominal
+      total += parseFloat(e.fullState.cspThisNominal) || 0;
+    }
+  });
+  return total;
+}
+// Same for one ticker
+function autoComputeCspTickerExisting(ticker) {
+  if (!ticker) return 0;
+  const history = getActiveHistory();
+  let total = 0;
+  history.forEach(e => {
+    if (!e.strategy || !e.strategy.startsWith('CSP')) return;
+    if (e.outcome !== 'open') return;
+    if ((e.ticker || '').toUpperCase() !== ticker.toUpperCase()) return;
+    const inp = e.inputs || '';
+    const strikeMatch = inp.match(/strike=(\d+\.?\d*)/);
+    const contractsMatch = inp.match(/contracts=(\d+)/) || inp.match(/cn=(\d+)/);
+    if (strikeMatch) {
+      const strike = parseFloat(strikeMatch[1]);
+      const contracts = contractsMatch ? parseFloat(contractsMatch[1]) : 1;
+      total += strike * 100 * contracts;
+    } else if (e.fullState && e.fullState.cspThisNominal) {
+      total += parseFloat(e.fullState.cspThisNominal) || 0;
+    }
+  });
+  return total;
+}
+// LEAPS: total budget across open positions
+function autoComputeLeapsExistingExposure() {
+  const history = getActiveHistory();
+  let total = 0;
+  history.forEach(e => {
+    if (!e.strategy || !e.strategy.startsWith('LEAPS')) return;
+    if (e.outcome !== 'open') return;
+    // Try to use budget from fullState
+    if (e.fullState && e.fullState.budget) {
+      total += parseFloat(e.fullState.budget) || 0;
+    }
+  });
+  return total;
 }
 
 /* ==========================================================
@@ -1529,7 +1731,7 @@ function cspItems() {
       hard: true, positionCheck: true });
   } else {
     base.push({ group: psGroup, id: 'csp_ticker_check',
-      title: '⚠ 先选波动性类型 → 才能校验单标的敞口',
+      title: '先选波动性类型 → 才能校验单标的敞口',
       desc: '未选波动性类型 (中/高). 此 HARD 项无法校验.',
       hard: true, locked: true });
   }
@@ -1634,7 +1836,7 @@ function ccItems() {
   } else {
     // No cost basis yet → item shows locked, verdict forced to pending
     base.push({ group: 'Short call selection · 短 call 选择', id: 'strike_above_cost',
-      title: '⚠ 先填底仓成本 → 才能校验 strike > 成本',
+      title: '先填底仓成本 → 才能校验 strike > 成本',
       desc: '未填底仓成本. 此 HARD 项无法校验 = 本次 checklist 保持 PENDING.',
       hard: true,
       locked: true });
@@ -1729,7 +1931,7 @@ function rrCheckDesc() {
   }[state.leapsStyle] || '';
   const rr = computeRR();
   if (!rr) return `${LEAPS_STYLE_LABEL[state.leapsStyle] || ''}: 门槛 R:R ≥ ${thresh} : 1  (${styleReason})。填入三个价位自动计算。`;
-  if (rr.error) return `⚠ ${rr.error}`;
+  if (rr.error) return `${rr.error}`;
   const rating = rr.rr >= thresh ? '✓ 好' : rr.rr >= thresh - 0.5 ? '~ 可接受' : '✗ 不足, 慎重';
   return `下跌 -${rr.downsidePct.toFixed(1)}% ($${rr.downsideDollar.toFixed(2)})  ·  上涨 +${rr.upsidePct.toFixed(1)}% ($${rr.upsideDollar.toFixed(2)})  ·  R:R = ${rr.rr.toFixed(2)} : 1  · ${rating}`;
 }
@@ -1884,6 +2086,7 @@ function animateNumber(el, from, to, duration = 400) {
 function overallVerdict() {
   const items = currentItems();
   let pass = 0, fail = 0, pending = 0, hardFail = 0;
+  const pendingItems = [];
   for (const it of items) {
     const v = itemVerdict(it);
     if (v === 'pass') pass++;
@@ -1891,7 +2094,10 @@ function overallVerdict() {
       fail++;
       if (it.hard) hardFail++;
     }
-    else pending++;
+    else {
+      pending++;
+      pendingItems.push(it);
+    }
   }
   const softFail = fail - hardFail;
   const isClose = state.strategy === 'leaps' && state.leapsDirection === 'close';
@@ -1905,19 +2111,31 @@ function overallVerdict() {
     // Nothing filled yet
     status = 'PENDING';
     note = `${pending} 项未填, 请填 checklist`;
-  } else if (softFail === 0 && pending === 0) {
+  } else if (pending === 0 && softFail === 0) {
+    // All done, no fails
     status = clearLabel;
     note = '全部达标, 执行';
-  } else if (softFail <= 2) {
-    // ≤ 2 soft fails → 可软执行 (pending 数量在 note 里提醒, 不影响判决)
+  } else if (pending === 0 && softFail <= 2) {
+    // All items filled, ≤ 2 soft fails
     status = clearLabel + ' · 软执行';
-    const parts = [];
-    if (softFail > 0) parts.push(`${softFail} soft 未达标`);
-    if (pending > 0) parts.push(`${pending} 项未填`);
-    note = `可软执行 (${parts.join(', ')}), 由你自己判断补齐或跳过`;
-  } else {
+    note = `${softFail} soft 未达标 (≤ 2), 可自主判断执行或跳过`;
+  } else if (pending === 0 && softFail > 2) {
+    // All items filled, too many soft fails
     status = 'PENDING';
-    note = `${softFail} soft 未达标 (超过 2)${pending > 0 ? ` + ${pending} 项未填` : ''}, 建议再确认`;
+    note = `${softFail} soft 未达标 (超过 2), 建议再确认`;
+  } else if (pending === 1 && softFail === 0) {
+    // Only 1 pending item → helpful hint
+    const remaining = pendingItems[0];
+    const shortTitle = remaining.title.length > 30 ? remaining.title.slice(0, 30) + '…' : remaining.title;
+    status = 'PENDING';
+    note = `差 1 项即 CLEAR → "${shortTitle}"`;
+  } else {
+    // Multiple pending items (may or may not have soft fails)
+    status = 'PENDING';
+    const parts = [];
+    if (pending > 0) parts.push(`${pending} 项未填`);
+    if (softFail > 0) parts.push(`${softFail} soft 未达标`);
+    note = parts.join(' · ') + ', 未完成';
   }
 
   return { status, pass, fail, pending, hardFail, softFail, combined: softFail + pending, note, total: items.length };
@@ -1929,7 +2147,35 @@ function overallVerdict() {
 const $app = document.getElementById('app');
 function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
 
+let __prevViewKey = null;
+function _viewKey() {
+  if (state._view === 'history') return 'history';
+  if (!state.strategy) return 'picker';
+  if (state.strategy === 'leaps') {
+    if (!state.leapsDirection || !state.leapsStyle) return 'leaps-config';
+    if (state.leapsDirection === 'open' && !state.leapsPhase) return 'leaps-config';
+    if (state.leapsDirection === 'close' && !state.leapsCloseType) return 'leaps-config';
+    return 'checklist';
+  }
+  if (state.strategy === 'csp' && !state.cspIntent) return 'csp-config';
+  if (state.strategy === 'pmcc' && !state.pmccUnderlyingPurpose) return 'pmcc-config';
+  if (state.strategy === 'cc' && !state.ccMode) return 'cc-config';
+  return 'checklist';
+}
+function _triggerViewTransition() {
+  const currentKey = _viewKey();
+  if (currentKey !== __prevViewKey && $app) {
+    // Trigger CSS animation via class toggle
+    $app.classList.remove('view-entering');
+    // Force reflow
+    void $app.offsetWidth;
+    $app.classList.add('view-entering');
+    __prevViewKey = currentKey;
+  }
+}
+
 function render() {
+  _triggerViewTransition();
   if (state._view === 'history') { renderHistoryPage(); return; }
   if (!state.strategy) { renderPicker(); return; }
   if (state.strategy === 'leaps') {
@@ -1958,6 +2204,7 @@ function headerHTML() {
           <span class="theme-dot"></span>
           <span>${themeName}</span>
         </button>
+        <button class="btn ghost customize-btn" onclick="showCustomizeModal()" title="自定义主题色 + 圆角">自定义</button>
         <button class="btn ghost" onclick="showSyncModal()">Sync</button>
         <button class="btn ghost" onclick="showHistory()">History</button>
         ${state.strategy ? `<button class="btn ghost" onclick="showSnapshot()">Snapshot</button>` : ''}
@@ -2337,7 +2584,17 @@ function pickerFooterHTML() {
   const weekTotal = weekEntries.length;
   const weekClear = weekEntries.filter(e => e.verdict.startsWith('CLEAR')).length;
   const weekBlocked = weekEntries.filter(e => e.verdict === 'BLOCKED').length;
-  const clearRate = weekTotal > 0 ? Math.round(weekClear / weekTotal * 100) : 0;
+  const clearRateWk = weekTotal > 0 ? Math.round(weekClear / weekTotal * 100) : 0;
+
+  // Rolling 30-day win rate (settled only)
+  const monthMs = 30 * 24 * 60 * 60 * 1000;
+  const monthAgo = Date.now() - monthMs;
+  const monthEntries = history.filter(e => e.timestampSort >= monthAgo);
+  const monthWins = monthEntries.filter(e => e.outcome === 'win').length;
+  const monthLosses = monthEntries.filter(e => e.outcome === 'loss').length;
+  const monthSettled = monthWins + monthLosses;
+  const winRate30d = monthSettled > 0 ? Math.round(monthWins / monthSettled * 100) : null;
+  const winRateCls = winRate30d == null ? '' : winRate30d >= 60 ? 'pass' : winRate30d >= 40 ? 'pending' : 'fail';
 
   return `
     ${openHTML}
@@ -2345,24 +2602,34 @@ function pickerFooterHTML() {
     ${overridesHTML}
     ${lossesHTML}
     ${strategyHTML}
+    ${winRateTrendHTML()}
+    ${checklistBacktestPanelHTML()}
+    <div class="picker-analytics-grid">
+      ${verdictWinRatePanelHTML()}
+      ${tickerWinRatePanelHTML()}
+    </div>
     ${exploreHTML}
     ${verdictSparklineHTML()}
     <div class="picker-stats">
-      <div class="picker-stat">
+      <div class="picker-stat" title="过去 7 天 snapshot 总数">
         <div class="picker-stat-num">${weekTotal}</div>
-        <div class="picker-stat-label">This Week</div>
+        <div class="picker-stat-label">本周 Snapshot</div>
       </div>
-      <div class="picker-stat">
+      <div class="picker-stat" title="过去 7 天 CLEAR verdict 数">
         <div class="picker-stat-num pass">${weekClear}</div>
-        <div class="picker-stat-label">Clear</div>
+        <div class="picker-stat-label">CLEAR</div>
       </div>
-      <div class="picker-stat">
+      <div class="picker-stat" title="过去 7 天 BLOCKED verdict 数">
         <div class="picker-stat-num fail">${weekBlocked}</div>
-        <div class="picker-stat-label">Blocked</div>
+        <div class="picker-stat-label">BLOCKED</div>
       </div>
-      <div class="picker-stat">
-        <div class="picker-stat-num">${clearRate}%</div>
-        <div class="picker-stat-label">Rate</div>
+      <div class="picker-stat" title="本周 CLEAR / 总数">
+        <div class="picker-stat-num">${clearRateWk}%</div>
+        <div class="picker-stat-label">本周 CLEAR 率</div>
+      </div>
+      <div class="picker-stat" title="过去 30 天已结算 (盈+亏) 的胜率">
+        <div class="picker-stat-num ${winRateCls}">${winRate30d != null ? winRate30d + '%' : '—'}</div>
+        <div class="picker-stat-label">30 天胜率</div>
       </div>
     </div>
     ${mantraHTML()}
@@ -2432,6 +2699,316 @@ function mantraHTML() {
   return '';
 }
 
+function verdictWinRatePanelHTML() {
+  const history = getActiveHistory();
+  if (history.length === 0) return '';
+  // Group by verdict class
+  const buckets = { CLEAR: [], SOFT: [], PENDING: [], BLOCKED: [] };
+  history.forEach(e => {
+    const v = e.verdict || '';
+    let bucket = null;
+    if (v === 'BLOCKED') bucket = 'BLOCKED';
+    else if (v.includes('软执行')) bucket = 'SOFT';
+    else if (v.startsWith('CLEAR')) bucket = 'CLEAR';
+    else if (v === 'PENDING') bucket = 'PENDING';
+    if (bucket) buckets[bucket].push(e);
+  });
+  // Compute win rate for each bucket (only settled)
+  const rows = Object.entries(buckets).map(([k, arr]) => {
+    const wins = arr.filter(e => e.outcome === 'win').length;
+    const losses = arr.filter(e => e.outcome === 'loss').length;
+    const settled = wins + losses;
+    const wr = settled > 0 ? Math.round(wins / settled * 100) : null;
+    return { verdict: k, total: arr.length, wins, losses, settled, wr };
+  });
+  const anySettled = rows.some(r => r.settled > 0);
+  if (!anySettled) return '';  // Skip if no data
+  return `
+    <div class="picker-panel">
+      <div class="picker-panel-header">
+        <div class="picker-panel-title">Verdict 胜率对比</div>
+        <div class="picker-panel-sub">按 verdict 类型看你的实际胜率 · 用你自己的历史验证工具价值</div>
+      </div>
+      <div class="verdict-winrate-grid">
+        ${rows.map(r => {
+          const wrCls = r.wr == null ? 'text-faint' : r.wr >= 60 ? 'pass' : r.wr >= 40 ? 'pending' : 'fail';
+          const vCls = r.verdict === 'BLOCKED' ? 'fail' : r.verdict === 'PENDING' ? 'pending' : 'pass';
+          return `
+            <div class="verdict-winrate-row">
+              <div class="vwr-tag ${vCls}">${r.verdict}</div>
+              <div class="vwr-total">${r.total} 笔</div>
+              <div class="vwr-outcome">${r.settled > 0 ? `盈 ${r.wins} · 亏 ${r.losses}` : '无结算'}</div>
+              <div class="vwr-rate ${wrCls}">${r.wr != null ? r.wr + '%' : '—'}</div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function winRateTrendHTML() {
+  const history = getActiveHistory();
+  if (history.length < 3) return '';  // Need at least 3 for meaningful trend
+
+  // Determine bucket size: weekly if all history within 6 months, otherwise monthly
+  const oldestTs = Math.min(...history.map(e => e.timestampSort || Date.parse(e.timestamp) || Date.now()));
+  const now = Date.now();
+  const spanDays = (now - oldestTs) / 86400000;
+  const useWeekly = spanDays <= 180;
+  const bucketMs = useWeekly ? 7 * 86400000 : 30 * 86400000;
+  const numBuckets = useWeekly ? 12 : 12;  // 12 weeks or 12 months
+  const bucketLabel = useWeekly ? '周' : '月';
+
+  // Build buckets
+  const buckets = [];
+  for (let i = numBuckets - 1; i >= 0; i--) {
+    const end = now - i * bucketMs;
+    const start = end - bucketMs;
+    buckets.push({ start, end, snapshots: [], settled: [] });
+  }
+
+  history.forEach(e => {
+    const ts = e.timestampSort || Date.parse(e.timestamp);
+    if (!ts) return;
+    for (const b of buckets) {
+      if (ts >= b.start && ts < b.end) {
+        b.snapshots.push(e);
+        if (e.outcome === 'win' || e.outcome === 'loss') b.settled.push(e);
+        break;
+      }
+    }
+  });
+
+  // Compute rates
+  const points = buckets.map(b => {
+    const total = b.snapshots.length;
+    const clearCount = b.snapshots.filter(e => (e.verdict || '').startsWith('CLEAR')).length;
+    const clearRate = total > 0 ? clearCount / total * 100 : null;
+    const wins = b.settled.filter(e => e.outcome === 'win').length;
+    const settledCount = b.settled.length;
+    const winRate = settledCount > 0 ? wins / settledCount * 100 : null;
+    return { total, clearRate, winRate, settledCount };
+  });
+
+  // If all rates are null, show helpful hint instead of hiding
+  if (points.every(p => p.clearRate == null && p.winRate == null)) {
+    return `
+      <div class="picker-panel">
+        <div class="picker-panel-header">
+          <div class="picker-panel-title">胜率 & CLEAR 率随时间</div>
+          <div class="picker-panel-sub">你的历史都在过去 ${numBuckets} ${bucketLabel}之外, 折线图暂无数据. 有新 snapshot 后自动出现.</div>
+        </div>
+      </div>
+    `;
+  }
+
+  // SVG dimensions
+  const W = 640, H = 180, padL = 36, padR = 20, padT = 20, padB = 30;
+  const chartW = W - padL - padR;
+  const chartH = H - padT - padB;
+  const xStep = points.length > 1 ? chartW / (points.length - 1) : chartW;
+
+  // Build path strings (skip null points)
+  const buildPath = (getValue) => {
+    let path = '';
+    let started = false;
+    points.forEach((p, i) => {
+      const val = getValue(p);
+      if (val == null) { started = false; return; }
+      const x = padL + i * xStep;
+      const y = padT + chartH - (val / 100) * chartH;
+      path += (started ? ' L ' : 'M ') + x.toFixed(1) + ' ' + y.toFixed(1);
+      started = true;
+    });
+    return path;
+  };
+  const clearPath = buildPath(p => p.clearRate);
+  const winPath = buildPath(p => p.winRate);
+
+  // Y-axis labels
+  const yLabels = [0, 25, 50, 75, 100];
+  const yGridLines = yLabels.map(v => {
+    const y = padT + chartH - (v / 100) * chartH;
+    return `<line x1="${padL}" y1="${y}" x2="${W - padR}" y2="${y}" stroke="var(--border)" stroke-width="0.5" stroke-dasharray="2 3"/>
+            <text x="${padL - 6}" y="${y + 3}" font-size="9" fill="var(--text-faint)" text-anchor="end" font-family="var(--mono)">${v}</text>`;
+  }).join('');
+
+  // X-axis labels (first, middle, last)
+  const xLabels = [0, Math.floor(points.length / 2), points.length - 1];
+  const xTicks = xLabels.map(idx => {
+    const x = padL + idx * xStep;
+    const bucketDate = new Date(buckets[idx].end);
+    const label = useWeekly
+      ? (bucketDate.getMonth() + 1) + '/' + bucketDate.getDate()
+      : (bucketDate.getMonth() + 1) + '月';
+    return `<text x="${x}" y="${H - 10}" font-size="9" fill="var(--text-faint)" text-anchor="middle" font-family="var(--mono)">${label}</text>`;
+  }).join('');
+
+  // Point circles (only where data exists)
+  const clearDots = points.map((p, i) => p.clearRate == null ? '' : {
+    x: padL + i * xStep, y: padT + chartH - (p.clearRate / 100) * chartH, v: p.clearRate
+  }).filter(x => x).map(d => `<circle cx="${d.x.toFixed(1)}" cy="${d.y.toFixed(1)}" r="2.5" fill="var(--accent)" stroke="var(--bg)" stroke-width="1"><title>CLEAR 率: ${d.v.toFixed(0)}%</title></circle>`).join('');
+  const winDots = points.map((p, i) => p.winRate == null ? '' : {
+    x: padL + i * xStep, y: padT + chartH - (p.winRate / 100) * chartH, v: p.winRate
+  }).filter(x => x).map(d => `<circle cx="${d.x.toFixed(1)}" cy="${d.y.toFixed(1)}" r="2.5" fill="var(--pass)" stroke="var(--bg)" stroke-width="1"><title>胜率: ${d.v.toFixed(0)}%</title></circle>`).join('');
+
+  return `
+    <div class="picker-panel">
+      <div class="picker-panel-header">
+        <div class="picker-panel-title">胜率 & CLEAR 率随时间 · 过去 ${numBuckets} ${bucketLabel}</div>
+        <div class="picker-panel-sub">
+          <span class="trend-legend"><span class="trend-dot" style="background: var(--accent)"></span>CLEAR 率</span>
+          <span class="trend-legend"><span class="trend-dot" style="background: var(--pass)"></span>胜率 (盈/已结算)</span>
+        </div>
+      </div>
+      <div class="trend-chart-wrap">
+        <svg class="trend-chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+          ${yGridLines}
+          <path d="${clearPath}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>
+          <path d="${winPath}" fill="none" stroke="var(--pass)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>
+          ${clearDots}
+          ${winDots}
+          ${xTicks}
+        </svg>
+      </div>
+    </div>
+  `;
+}
+
+function checklistBacktestPanelHTML() {
+  const history = getActiveHistory();
+  const settled = history.filter(e => (e.outcome === 'win' || e.outcome === 'loss'));
+  if (settled.length < 3) return '';  // Need meaningful data
+
+  // Actual: all settled trades
+  const actualWins = settled.filter(e => e.outcome === 'win').length;
+  const actualLosses = settled.filter(e => e.outcome === 'loss').length;
+  const actualTotal = actualWins + actualLosses;
+  const actualRate = Math.round(actualWins / actualTotal * 100);
+
+  // Strict: only CLEAR (including 软执行) settled trades
+  const strict = settled.filter(e => (e.verdict || '').startsWith('CLEAR'));
+  const strictWins = strict.filter(e => e.outcome === 'win').length;
+  const strictLosses = strict.filter(e => e.outcome === 'loss').length;
+  const strictTotal = strictWins + strictLosses;
+  const strictRate = strictTotal > 0 ? Math.round(strictWins / strictTotal * 100) : null;
+
+  // 硬冲: PENDING or BLOCKED that were still traded (had outcome)
+  const forced = settled.filter(e => {
+    const v = e.verdict || '';
+    return v === 'PENDING' || v === 'BLOCKED';
+  });
+  const forcedWins = forced.filter(e => e.outcome === 'win').length;
+  const forcedLosses = forced.filter(e => e.outcome === 'loss').length;
+  const forcedTotal = forcedWins + forcedLosses;
+  const forcedRate = forcedTotal > 0 ? Math.round(forcedWins / forcedTotal * 100) : null;
+
+  // Delta calc
+  let deltaLabel = '', deltaCls = '';
+  if (strictRate != null) {
+    const d = strictRate - actualRate;
+    if (d > 0) { deltaLabel = `+${d}%`; deltaCls = 'pass'; }
+    else if (d < 0) { deltaLabel = `${d}%`; deltaCls = 'fail'; }
+    else deltaLabel = '±0%';
+  }
+
+  // Conclusion
+  let conclusion = '';
+  if (strictRate != null && actualTotal > 0) {
+    if (strictRate > actualRate + 5) {
+      conclusion = `<b>严格 CLEAR 策略比你现在做法胜率高 ${strictRate - actualRate} 个百分点</b> · 硬冲拖累了你的整体表现. 建议未来跳过 PENDING/BLOCKED.`;
+    } else if (strictRate < actualRate - 5) {
+      conclusion = `硬冲反而给你带来了额外的赢面? 可能是你 checklist 太严, 或者硬冲样本极小 (${forcedTotal} 笔). 谨慎解读.`;
+    } else {
+      conclusion = `严格 CLEAR 与实际做法胜率接近 · checklist 大致合理, 硬冲影响不大 (但样本 ${forcedTotal} 笔).`;
+    }
+  }
+
+  return `
+    <div class="picker-panel">
+      <div class="picker-panel-header">
+        <div class="picker-panel-title">Checklist 回测 · 假设严格执行</div>
+        <div class="picker-panel-sub">用你自己历史数据验证: 只做 CLEAR 会如何?</div>
+      </div>
+      <div class="backtest-grid">
+        <div class="backtest-cell">
+          <div class="backtest-label">实际胜率 (所有交易)</div>
+          <div class="backtest-value">${actualRate}%</div>
+          <div class="backtest-detail">${actualWins} 胜 · ${actualLosses} 负 · ${actualTotal} 笔</div>
+        </div>
+        <div class="backtest-cell strict">
+          <div class="backtest-label">严格 CLEAR 胜率</div>
+          <div class="backtest-value">${strictRate != null ? strictRate + '%' : '—'}</div>
+          <div class="backtest-detail">${strictWins} 胜 · ${strictLosses} 负 · ${strictTotal} 笔</div>
+        </div>
+        <div class="backtest-cell delta">
+          <div class="backtest-label">差异</div>
+          <div class="backtest-value ${deltaCls}">${deltaLabel}</div>
+          <div class="backtest-detail">${strictRate != null && strictRate > actualRate ? '严格 > 实际' : strictRate != null && strictRate < actualRate ? '严格 < 实际' : '持平'}</div>
+        </div>
+        <div class="backtest-cell forced">
+          <div class="backtest-label">硬冲表现 (PENDING/BLOCKED)</div>
+          <div class="backtest-value ${forcedRate != null && forcedRate < 40 ? 'fail' : ''}">${forcedRate != null ? forcedRate + '%' : '—'}</div>
+          <div class="backtest-detail">${forcedWins} 胜 · ${forcedLosses} 负 · ${forcedTotal} 笔</div>
+        </div>
+      </div>
+      ${conclusion ? `<div class="backtest-conclusion">${conclusion}</div>` : ''}
+    </div>
+  `;
+}
+
+function tickerWinRatePanelHTML() {  const history = getActiveHistory();
+  const settled = history.filter(e => e.outcome === 'win' || e.outcome === 'loss');
+  if (settled.length < 3) return '';  // Need meaningful data
+  // Group by ticker
+  const byTicker = {};
+  settled.forEach(e => {
+    const t = (e.ticker || '').toUpperCase();
+    if (!t) return;
+    if (!byTicker[t]) byTicker[t] = { wins: 0, losses: 0, total: 0 };
+    byTicker[t].total++;
+    if (e.outcome === 'win') byTicker[t].wins++;
+    else if (e.outcome === 'loss') byTicker[t].losses++;
+  });
+  // Only tickers with ≥ 2 settled trades
+  const rows = Object.entries(byTicker)
+    .filter(([, v]) => v.total >= 2)
+    .map(([ticker, v]) => ({
+      ticker,
+      total: v.total,
+      wins: v.wins,
+      losses: v.losses,
+      wr: Math.round(v.wins / v.total * 100)
+    }))
+    .sort((a, b) => b.wr - a.wr || b.total - a.total)
+    .slice(0, 10);  // Top 10
+  if (rows.length === 0) return '';
+  return `
+    <div class="picker-panel">
+      <div class="picker-panel-header">
+        <div class="picker-panel-title">Ticker 胜率排行 (Top ${rows.length})</div>
+        <div class="picker-panel-sub">≥ 2 次已结算的 ticker · 你的舒适圈 vs 韭菜圈</div>
+      </div>
+      <div class="ticker-winrate-list">
+        ${rows.map(r => {
+          const wrCls = r.wr >= 60 ? 'pass' : r.wr >= 40 ? 'pending' : 'fail';
+          const barPct = Math.min(100, r.wr);
+          return `
+            <div class="ticker-winrate-row">
+              <div class="twr-ticker">${esc(r.ticker)}</div>
+              <div class="twr-bar">
+                <div class="twr-bar-fill ${wrCls}" style="width: ${barPct}%"></div>
+                <div class="twr-bar-label ${wrCls}">${r.wr}% · ${r.wins}胜/${r.losses}负</div>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    </div>
+  `;
+}
+
 function forcedTradeReminderHTML() {
   const history = getActiveHistory();
   const thirtyDaysAgo = Date.now() - 30 * 86400000;
@@ -2445,7 +3022,7 @@ function forcedTradeReminderHTML() {
   const first = needReview[0];
   return `
     <div class="forced-reminder-banner" onclick="showEditModal('${first.id}')">
-      <div class="forced-reminder-icon">⏰</div>
+      <div class="forced-reminder-icon"></div>
       <div class="forced-reminder-body">
         <div class="forced-reminder-title">${needReview.length} 笔 30 天+ 前的硬冲需要跟踪</div>
         <div class="forced-reminder-sub">最早的: ${esc(first.ticker || '—')} · ${esc(first.timestamp.slice(0, 10))} · 点这里查看/更新</div>
@@ -2467,7 +3044,7 @@ function draftContinueBannerHTML() {
   const filledCount = Object.values(draft.state.items || {}).filter(v => v != null && v !== '').length;
   return `
     <div class="draft-continue-banner" onclick="restoreDraft()">
-      <div class="draft-continue-icon">✎</div>
+      <div class="draft-continue-icon"></div>
       <div class="draft-continue-body">
         <div class="draft-continue-title">继续未完成的 <strong>${stratLabel}${ticker ? ' · ' + esc(ticker) : ''}</strong> 检查</div>
         <div class="draft-continue-sub">${timeStr} · 已填 ${filledCount} 项 · 点这里继续</div>
@@ -2475,6 +3052,19 @@ function draftContinueBannerHTML() {
       <button class="draft-dismiss-btn" onclick="event.stopPropagation(); dismissDraft(); render();" title="丢弃 draft">×</button>
     </div>
   `;
+}
+
+function daysSinceLastSnapshotHTML() {
+  const history = getActiveHistory();
+  if (history.length === 0) return '';
+  const latest = history[0];  // history is sorted newest first
+  const ts = latest.timestampSort || Date.parse(latest.timestamp);
+  if (!ts) return '';
+  const days = Math.floor((Date.now() - ts) / 86400000);
+  if (days === 0) return `<div class="last-snap-bar today">今日已 snapshot · ${esc(latest.ticker || '')} ${esc(latest.strategy || '')}</div>`;
+  if (days === 1) return `<div class="last-snap-bar">距上次 snapshot: <b>1 天前</b> · ${esc(latest.ticker || '—')} ${esc(latest.strategy || '')}</div>`;
+  const cls = days > 14 ? 'stale' : days > 7 ? 'aging' : '';
+  return `<div class="last-snap-bar ${cls}">距上次 snapshot: <b>${days} 天前</b>${days > 14 ? ' · 长时间未自查, 记得每笔单前用 checklist' : ''} · 最新: ${esc(latest.ticker || '—')} ${esc(latest.strategy || '')}</div>`;
 }
 
 function renderPicker() {
@@ -2487,6 +3077,7 @@ function renderPicker() {
           <span class="theme-dot"></span>
           <span>${themeName}</span>
         </button>
+        <button class="btn ghost customize-btn" onclick="showCustomizeModal()" title="自定义主题色 + 圆角">自定义</button>
         <button class="btn ghost" onclick="showSyncModal()">Sync</button>
         <button class="btn ghost" onclick="showHistory()">History</button>
       </div>
@@ -2494,6 +3085,7 @@ function renderPicker() {
     <div class="picker">
       <div class="picker-title">选择要检查的策略</div>
       <div class="picker-sub">Trading in the Zone</div>
+      ${daysSinceLastSnapshotHTML()}
       ${draftContinueBannerHTML()}
       ${forcedTradeReminderHTML()}
       <div class="picker-choices">
@@ -2881,7 +3473,9 @@ function renderChecklist() {
         <div class="num-row">
           <div class="num-field"><label class="num-field-label">Account NAV</label>
             <input inputmode="decimal" type="number" id="in-nav" placeholder="e.g. 250000" value="${esc(state.nav)}"></div>
-          <div class="num-field"><label class="num-field-label">已有敞口</label>
+          <div class="num-field"><label class="num-field-label">已有敞口
+            <button class="autofill-btn" onclick="autoFillLeapsExisting()" title="从 history 里 outcome=持仓 的 LEAPS 快照自动汇总 budget">Auto</button>
+          </label>
             <input inputmode="decimal" type="number" id="in-ex" placeholder="0" value="${esc(state.existingExposure)}"></div>
           <div class="num-field"><label class="num-field-label">本次预算</label>
             <input inputmode="decimal" type="number" id="in-bg" placeholder="e.g. 8000" value="${esc(state.budget)}"></div>
@@ -2913,11 +3507,15 @@ function renderChecklist() {
         <div class="num-row">
           <div class="num-field"><label class="num-field-label">Account NAV</label>
             <input inputmode="decimal" type="number" id="in-nav" placeholder="e.g. 250000" value="${esc(state.nav)}"></div>
-          <div class="num-field"><label class="num-field-label">现有 CSP 总名义</label>
+          <div class="num-field"><label class="num-field-label">现有 CSP 总名义
+            <button class="autofill-btn" onclick="autoFillCspExisting()" title="从 history 里 outcome=持仓 的 CSP 快照自动汇总">Auto</button>
+          </label>
             <input inputmode="decimal" type="number" id="in-csp-ex-total" placeholder="0" value="${esc(state.cspExistingTotal)}"></div>
           <div class="num-field"><label class="num-field-label">本笔 CSP 名义</label>
             <input inputmode="decimal" type="number" id="in-csp-nominal" placeholder="e.g. 5000" value="${esc(state.cspThisNominal)}"></div>
-          <div class="num-field"><label class="num-field-label">本 ticker 现有 CSP</label>
+          <div class="num-field"><label class="num-field-label">本 ticker 现有 CSP
+            <button class="autofill-btn" onclick="autoFillCspTicker()" title="从 history 里 outcome=持仓 且相同 ticker 的 CSP 快照自动汇总">Auto</button>
+          </label>
             <input inputmode="decimal" type="number" id="in-csp-ticker-ex" placeholder="0" value="${esc(state.cspTickerExisting)}"></div>
           <div class="num-field"><label class="num-field-label">波动性类型</label>
             <div class="segmented" id="csp-vol-seg" style="margin-top: 0;">
@@ -3404,7 +4002,7 @@ function showStorageWarningIfNeeded() {
   warn.style.borderColor = 'var(--fail)';
   warn.innerHTML = `
     <div class="draft-msg">
-      <div>⚠ 存储不可用 (隐私模式 / 存储禁用)</div>
+      <div>存储不可用 (隐私模式 / 存储禁用)</div>
       <div class="draft-msg-sub">主题 / 历史 / 草稿本次会话结束后清空</div>
     </div>
   `;
@@ -3664,6 +4262,16 @@ function editHistoryEntry(id, updates) {
   renderHistoryList();
 }
 
+// Update only the fullState inside an entry (used for live re-render in edit modal)
+function editHistoryEntryFullState(id, newFullState) {
+  const history = loadHistory();
+  const idx = history.findIndex(e => e.id === id);
+  if (idx === -1) return;
+  if (history[idx]._deleted) return;
+  history[idx] = { ...history[idx], fullState: newFullState };
+  try { localStorage.setItem(HISTORY_KEY, JSON.stringify(history)); } catch (e) {}
+}
+
 function ensureEditModal() {
   if (document.getElementById('edit-modal')) return;
   const modal = document.createElement('div');
@@ -3679,6 +4287,19 @@ function renderEditItem(item, itemsMap) {
   const val = itemsMap[item.id];
   const hardBadge = item.hard ? '<span class="edit-item-hard">HARD</span>' : '';
   const desc = item.desc ? `<div class="edit-item-desc">${esc(item.desc)}</div>` : '';
+
+  // Locked items (dependency not met) — show notice, no input
+  if (item.locked) {
+    return `
+      <div class="edit-item edit-item-locked">
+        <div class="edit-item-title">${esc(item.title)} ${hardBadge}</div>
+        ${desc}
+        <div style="font-size: 11px; color: var(--text-faint); font-style: italic; margin-top: 4px;">
+           依赖项未填, 保存后本项自动 PENDING. 先填依赖项再重新打开编辑.
+        </div>
+      </div>
+    `;
+  }
 
   if (item.numeric) {
     const displayVal = (val != null && val !== '') ? val : '';
@@ -3821,7 +4442,7 @@ function showEditModal(id) {
         </div>
 
         <div class="edit-section-header">编辑数据 · 会重算 verdict</div>
-        <div class="edit-warning">⚠ 修改任何数值或选项都会重新计算 verdict, 结果可能变。</div>
+        <div class="edit-warning">修改任何数值或选项都会重新计算 verdict, 结果可能变。</div>
 
         <div class="sync-setup-input-group">
           <label>Ticker</label>
@@ -3885,6 +4506,37 @@ function showEditModal(id) {
   notesEl.addEventListener('input', () => {
     counterEl.textContent = `${notesEl.value.length} / ${NOTES_MAX}`;
   });
+
+  // Live re-render: if user fills a dependency field (cost_basis), re-open modal with updated fullState
+  // so dependent items (like strike_above_cost) unlock and become editable
+  const costBasisInput = modal.querySelector('[data-item-id="cost_basis"]');
+  if (costBasisInput) {
+    costBasisInput.addEventListener('blur', () => {
+      const newVal = costBasisInput.value.trim();
+      const oldVal = (fullState.items || {}).cost_basis || '';
+      // Only re-render if cost_basis went from empty → filled (unlocks strike)
+      if (oldVal === '' && newVal !== '') {
+        // Collect all current form values before reopening
+        const currentItems = {};
+        modal.querySelectorAll('[data-item-id]').forEach(el => {
+          const iid = el.dataset.itemId;
+          const type = el.dataset.itemType;
+          if (type === 'numeric') currentItems[iid] = el.value.trim();
+          else if (type === 'toggle') {
+            const inner = el.querySelector('button.active');
+            const v = inner ? inner.dataset.v : 'pending';
+            if (v !== 'pending') currentItems[iid] = v;
+          }
+        });
+        // Persist temporarily to fullState so reopen picks it up
+        const updatedFullState = { ...fullState, items: { ...(fullState.items || {}), ...currentItems, cost_basis: newVal } };
+        // Update history entry inline (not saved yet, but the reopen needs it)
+        editHistoryEntryFullState(id, updatedFullState);
+        hideEditModal();
+        setTimeout(() => showEditModal(id), 100);
+      }
+    });
+  }
 
   // Save
   modal.querySelector('#edit-save-btn').addEventListener('click', () => {
@@ -4027,7 +4679,7 @@ function exportAllHistoryCSV() {
   showToast(ok ? `已导出 ${history.length} 条历史` : '导出失败', ok ? 'success' : 'error', ok ? filename : '');
 }
 
-let historyFilters = { ticker: '', year: '', strategy: '', verdict: '', outcome: '' };
+let historyFilters = { ticker: '', period: '', dateFrom: '', dateTo: '', strategy: '', verdict: '', outcome: '' };
 
 function showHistory() {
   state._view = 'history';
@@ -4038,12 +4690,24 @@ function hideHistory() {
   render();
 }
 function clearHistoryFilters() {
-  historyFilters = { ticker: '', year: '', strategy: '', verdict: '', outcome: '' };
+  historyFilters = { ticker: '', period: '', dateFrom: '', dateTo: '', strategy: '', verdict: '', outcome: '' };
   renderHistoryPage();
 }
+function clearCustomDates() {
+  historyFilters.dateFrom = '';
+  historyFilters.dateTo = '';
+  renderHistoryPage();
+}
+window.clearCustomDates = clearCustomDates;
 function updateHistoryFilter(key, val) {
   historyFilters[key] = val;
-  renderHistoryList();
+  // If toggling period between custom and non-custom, need full page re-render to show/hide date inputs
+  if (key === 'period') {
+    if (val !== 'custom') { historyFilters.dateFrom = ''; historyFilters.dateTo = ''; }
+    renderHistoryPage();
+  } else {
+    renderHistoryList();
+  }
 }
 window.hideHistory = hideHistory;
 window.clearHistoryFilters = clearHistoryFilters;
@@ -4051,11 +4715,6 @@ window.updateHistoryFilter = updateHistoryFilter;
 
 function renderHistoryPage() {
   const history = getActiveHistory();
-  const years = [...new Set(history.map(e => {
-    if (e.timestamp && e.timestamp.length >= 4) return e.timestamp.slice(0, 4);
-    if (e.timestampSort) return new Date(e.timestampSort).getFullYear().toString();
-    return null;
-  }).filter(Boolean))].sort().reverse();
 
   $app.innerHTML = `
     <div class="header">
@@ -4075,9 +4734,17 @@ function renderHistoryPage() {
                list="tickers-datalist-hist" value="${esc(historyFilters.ticker)}"
                oninput="updateHistoryFilter('ticker', this.value)">
         ${renderTickerDatalist('tickers-datalist-hist')}
-        <select id="hf-year" onchange="updateHistoryFilter('year', this.value)">
-          <option value="">年份</option>
-          ${years.map(y => `<option value="${y}"${historyFilters.year === y ? ' selected' : ''}>${y}</option>`).join('')}
+        <select id="hf-period" onchange="updateHistoryFilter('period', this.value)">
+          <option value="">时间段</option>
+          <option value="today"${historyFilters.period === 'today' ? ' selected' : ''}>今天</option>
+          <option value="7d"${historyFilters.period === '7d' ? ' selected' : ''}>本周 (7 天内)</option>
+          <option value="30d"${historyFilters.period === '30d' ? ' selected' : ''}>本月 (30 天内)</option>
+          <option value="90d"${historyFilters.period === '90d' ? ' selected' : ''}>3 个月内</option>
+          <option value="180d"${historyFilters.period === '180d' ? ' selected' : ''}>半年内</option>
+          <option value="ytd"${historyFilters.period === 'ytd' ? ' selected' : ''}>今年</option>
+          <option value="lasty"${historyFilters.period === 'lasty' ? ' selected' : ''}>去年</option>
+          <option value="older"${historyFilters.period === 'older' ? ' selected' : ''}>更早 (去年之前)</option>
+          <option value="custom"${historyFilters.period === 'custom' ? ' selected' : ''}>自定义…</option>
         </select>
         <select id="hf-strategy" onchange="updateHistoryFilter('strategy', this.value)">
           <option value="">策略</option>
@@ -4104,6 +4771,17 @@ function renderHistoryPage() {
         </select>
         <button class="btn ghost history-clear-filters" onclick="clearHistoryFilters()">清除筛选</button>
       </div>
+      ${historyFilters.period === 'custom' ? `
+        <div class="history-custom-range">
+          <label class="hcr-label">自定义范围</label>
+          <input type="date" id="hf-date-from" title="起始日期" value="${esc(historyFilters.dateFrom)}"
+                 onchange="updateHistoryFilter('dateFrom', this.value)">
+          <span class="hcr-sep">→</span>
+          <input type="date" id="hf-date-to" title="截止日期" value="${esc(historyFilters.dateTo)}"
+                 onchange="updateHistoryFilter('dateTo', this.value)">
+          ${(historyFilters.dateFrom || historyFilters.dateTo) ? `<button class="btn ghost small hcr-reset" onclick="clearCustomDates()">重置</button>` : ''}
+        </div>
+      ` : ''}
 
       <div id="history-list-container"></div>
 
@@ -4126,11 +4804,42 @@ function renderHistoryList() {
     const t = historyFilters.ticker.trim().toUpperCase();
     matches = matches.filter(e => e.ticker && e.ticker.toUpperCase().includes(t));
   }
-  if (historyFilters.year) {
+  if (historyFilters.period) {
+    const now = Date.now();
+    const dayMs = 86400000;
+    const currYear = new Date().getFullYear();
+    const startOfYear = new Date(currYear, 0, 1).getTime();
+    const startOfLastYear = new Date(currYear - 1, 0, 1).getTime();
     matches = matches.filter(e => {
-      if (e.timestamp && e.timestamp.length >= 4) return e.timestamp.slice(0, 4) === historyFilters.year;
-      if (e.timestampSort) return new Date(e.timestampSort).getFullYear().toString() === historyFilters.year;
-      return false;
+      const ts = e.timestampSort || Date.parse(e.timestamp);
+      if (!ts) return false;
+      switch (historyFilters.period) {
+        case 'today': {
+          const startOfToday = new Date(); startOfToday.setHours(0, 0, 0, 0);
+          return ts >= startOfToday.getTime();
+        }
+        case '7d': return ts >= now - 7 * dayMs;
+        case '30d': return ts >= now - 30 * dayMs;
+        case '90d': return ts >= now - 90 * dayMs;
+        case '180d': return ts >= now - 180 * dayMs;
+        case 'ytd': return ts >= startOfYear;
+        case 'lasty': return ts >= startOfLastYear && ts < startOfYear;
+        case 'older': return ts < startOfLastYear;
+        case 'custom': {
+          // Both dates optional. If neither, pass through.
+          let ok = true;
+          if (historyFilters.dateFrom) {
+            const fromTs = Date.parse(historyFilters.dateFrom + 'T00:00:00');
+            if (!isNaN(fromTs) && ts < fromTs) ok = false;
+          }
+          if (ok && historyFilters.dateTo) {
+            const toTs = Date.parse(historyFilters.dateTo + 'T23:59:59');
+            if (!isNaN(toTs) && ts > toTs) ok = false;
+          }
+          return ok;
+        }
+        default: return true;
+      }
     });
   }
   if (historyFilters.strategy) {
@@ -4176,7 +4885,7 @@ function renderHistoryList() {
           <div class="history-meta">
             <span class="history-verdict ${cls}">${esc(e.verdict)}</span>
             <span class="history-tally">${e.pass}/${e.fail}/${e.pending}</span>
-            ${e.hardFails && e.hardFails.length ? `<span class="history-hard">⚠ HARD</span>` : ''}
+            ${e.hardFails && e.hardFails.length ? `<span class="history-hard">HARD</span>` : ''}
             ${outcomeLabel ? `<span class="history-outcome ${outcomeCls}">${esc(outcomeLabel)}</span>` : ''}
           </div>
           ${e.notes ? `<div class="history-notes">${esc(e.notes)}</div>` : ''}
@@ -4451,7 +5160,7 @@ function ensureSnapshotModal() {
         ${canShare ? '<button class="btn" id="snap-share">分享</button>' : ''}
         <button class="btn" id="snap-download">下载 CSV</button>
         <button class="btn" id="snap-copy">复制文本</button>
-        <button class="btn primary" id="snap-upload">☁ 上传到云端</button>
+        <button class="btn primary" id="snap-upload"> 上传到云端</button>
       </div>
     </div>
   `;
@@ -4771,7 +5480,7 @@ function showForcedTradeDialog(id) {
   modal.innerHTML = `
     <div class="modal-card" style="max-width: 500px;">
       <div class="modal-head">
-        <div class="modal-title" style="color: var(--fail);">⚠ BLOCKED · Pre-mortem</div>
+        <div class="modal-title" style="color: var(--fail);">BLOCKED · Pre-mortem</div>
         <button class="modal-close" onclick="hideForcedDialog()" aria-label="Close">×</button>
       </div>
       <div class="modal-body">
@@ -5071,7 +5780,7 @@ function renderSyncSetup() {
           <li>访问 <code>github.com/settings/tokens</code></li>
           <li>Generate new token (classic)</li>
           <li>Note 填 <code>Pre-Trade Checklist</code>, Expiration 选 No expiration</li>
-          <li>Scopes 只勾 <b style="color: var(--text);">☑ gist</b> (其他一律不勾)</li>
+          <li>Scopes 只勾 <b style="color: var(--text);"> gist</b> (其他一律不勾)</li>
           <li>Generate → 复制 token → 粘贴到下方</li>
         </ol>
         <div class="sync-setup-input-group">
@@ -5139,21 +5848,21 @@ function renderSyncActions() {
         </div>
         <div style="display: flex; flex-direction: column; gap: 10px;">
           <button class="sync-action-btn" id="sync-merge-btn">
-            <div class="sync-action-title">⟳  双向合并  (推荐)</div>
+            <div class="sync-action-title">  双向合并  (推荐)</div>
             <div class="sync-action-desc">按 ID 去重合并本地与云端全部历史, 结果保存到两边。日常同步用这个。</div>
           </button>
           <button class="sync-action-btn" id="sync-upload-btn">
-            <div class="sync-action-title">⬆  上传本地 → 云端</div>
+            <div class="sync-action-title">Up  上传本地 → 云端</div>
             <div class="sync-action-desc">${localCount} 条本地历史覆盖云端。用于本地是权威版本。</div>
           </button>
           <button class="sync-action-btn" id="sync-download-btn">
-            <div class="sync-action-title">⬇  下载云端 → 本地</div>
+            <div class="sync-action-title">Down  下载云端 → 本地</div>
             <div class="sync-action-desc">云端历史覆盖本地。用于本设备刚配置或需要恢复。</div>
           </button>
         </div>
       </div>
       <div class="modal-actions">
-        <button class="btn ghost" id="sync-config-btn">⚙ 重新设置 Token</button>
+        <button class="btn ghost" id="sync-config-btn"> 重新设置 Token</button>
         <button class="btn ghost" onclick="hideSyncModal()">关闭</button>
       </div>
     </div>
@@ -5178,6 +5887,234 @@ const THEME_CYCLE = ['auto', 'slate', 'terminal', 'light', 'warm'];
 const THEME_LABEL = { auto: 'Auto', slate: 'Slate', terminal: 'Terminal', light: 'Light', warm: 'Warm' };
 const THEME_COLORS = { slate: '#0F1419', terminal: '#000000', light: '#F9FAFB', warm: '#FBF6E9' };
 
+// User theme customization (persisted separately)
+const THEME_CUSTOM_KEY = 'pretrade_theme_custom';
+let themeCustom = { accent: null, radius: null, bg: null };  // null = use theme default
+
+function loadThemeCustom() {
+  try {
+    const raw = localStorage.getItem(THEME_CUSTOM_KEY);
+    if (raw) themeCustom = { ...themeCustom, ...JSON.parse(raw) };
+  } catch (e) {}
+}
+function saveThemeCustom() {
+  try { localStorage.setItem(THEME_CUSTOM_KEY, JSON.stringify(themeCustom)); } catch (e) {}
+}
+
+// Color utility functions for auto-derivation
+function _hexToRgb(hex) {
+  const m = /^#?([0-9a-fA-F]{6})$/.exec(hex || '');
+  if (!m) return null;
+  const n = parseInt(m[1], 16);
+  return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+}
+function _rgbToHex(r, g, b) {
+  const to = x => Math.max(0, Math.min(255, Math.round(x))).toString(16).padStart(2, '0');
+  return '#' + to(r) + to(g) + to(b);
+}
+function _luminance(hex) {
+  const c = _hexToRgb(hex);
+  if (!c) return 0.5;
+  return (0.299 * c.r + 0.587 * c.g + 0.114 * c.b) / 255;
+}
+function _lighten(hex, pct) {
+  const c = _hexToRgb(hex);
+  if (!c) return hex;
+  return _rgbToHex(c.r + (255 - c.r) * pct, c.g + (255 - c.g) * pct, c.b + (255 - c.b) * pct);
+}
+function _darken(hex, pct) {
+  const c = _hexToRgb(hex);
+  if (!c) return hex;
+  return _rgbToHex(c.r * (1 - pct), c.g * (1 - pct), c.b * (1 - pct));
+}
+
+function applyThemeCustom() {
+  const root = document.body;  // Use body since theme classes are on body — same specificity
+
+  // Accent
+  if (themeCustom.accent) root.style.setProperty('--accent', themeCustom.accent);
+  else root.style.removeProperty('--accent');
+
+  // Radius (radius is safe on documentElement too)
+  if (themeCustom.radius != null) document.documentElement.style.setProperty('--radius', themeCustom.radius + 'px');
+  else document.documentElement.style.removeProperty('--radius');
+
+  // Background — derives panel, text, border from base color
+  if (themeCustom.bg && _hexToRgb(themeCustom.bg)) {
+    const lum = _luminance(themeCustom.bg);
+    const isDark = lum < 0.5;
+    root.style.setProperty('--bg', themeCustom.bg);
+    root.style.setProperty('--panel', isDark ? _lighten(themeCustom.bg, 0.06) : _darken(themeCustom.bg, 0.03));
+    root.style.setProperty('--panel-2', isDark ? _lighten(themeCustom.bg, 0.11) : _darken(themeCustom.bg, 0.06));
+    root.style.setProperty('--border', isDark ? _lighten(themeCustom.bg, 0.16) : _darken(themeCustom.bg, 0.10));
+    root.style.setProperty('--border-hi', isDark ? _lighten(themeCustom.bg, 0.24) : _darken(themeCustom.bg, 0.16));
+    root.style.setProperty('--text', isDark ? '#F0F2F5' : '#111827');
+    root.style.setProperty('--text-dim', isDark ? '#B8C2CE' : '#6B7280');
+    root.style.setProperty('--text-faint', isDark ? '#9AA5B0' : '#9CA3AF');
+    // Update meta theme-color for mobile
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', themeCustom.bg);
+  } else {
+    ['--bg', '--panel', '--panel-2', '--border', '--border-hi', '--text', '--text-dim', '--text-faint'].forEach(v => root.style.removeProperty(v));
+  }
+}
+
+function ensureCustomizeModal() {
+  if (document.getElementById('customize-modal')) return;
+  const modal = document.createElement('div');
+  modal.id = 'customize-modal';
+  modal.className = 'modal-overlay';
+  modal.style.display = 'none';
+  modal.innerHTML = `
+    <div class="modal-card" style="max-width: 480px;">
+      <div class="modal-head">
+        <div class="modal-title">自定义主题</div>
+        <button class="modal-close" onclick="hideCustomizeModal()" aria-label="Close">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="customize-row">
+          <label class="customize-label">背景色 · 影响整体色调</label>
+          <div class="customize-controls">
+            <input type="color" id="cm-bg-picker" value="#0F1419">
+            <input type="text" id="cm-bg-text" placeholder="#0F1419" maxlength="7" class="sync-setup-input" style="width: 100px; font-family: var(--mono);">
+            <button class="btn ghost small" onclick="resetCustomBg()">默认</button>
+          </div>
+          <div class="customize-hint">选一个背景色 → 面板 / 文字 / 边框 会自动派生 (深色/浅色文字智能切换).</div>
+        </div>
+        <div class="customize-row">
+          <label class="customize-label">强调色 · 按钮和高亮</label>
+          <div class="customize-controls">
+            <input type="color" id="cm-accent-picker" value="#58A6FF">
+            <input type="text" id="cm-accent-text" placeholder="#58A6FF" maxlength="7" class="sync-setup-input" style="width: 100px; font-family: var(--mono);">
+            <button class="btn ghost small" onclick="resetCustomAccent()">默认</button>
+          </div>
+          <div class="customize-hint">按钮、链接、聚焦高亮的颜色 (不影响大背景).</div>
+        </div>
+        <div class="customize-row">
+          <label class="customize-label">圆角 · Border Radius</label>
+          <div class="customize-controls">
+            <input type="range" id="cm-radius-slider" min="0" max="16" step="1" value="6" style="flex: 1;">
+            <span id="cm-radius-value" style="font-family: var(--mono); font-size: 12px; min-width: 38px; text-align: right;">6px</span>
+            <button class="btn ghost small" onclick="resetCustomRadius()">默认</button>
+          </div>
+          <div class="customize-hint">0 = 方角 · 6 = 默认 · 16 = 圆润</div>
+        </div>
+        <div class="customize-preview">
+          <div class="customize-preview-title">预览</div>
+          <div class="customize-preview-row">
+            <button class="btn primary" style="pointer-events: none;">Primary</button>
+            <button class="btn ghost" style="pointer-events: none;">Ghost</button>
+            <div class="customize-preview-card">Sample Card</div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn ghost" onclick="resetAllCustom()">全部重置</button>
+        <button class="btn primary" onclick="hideCustomizeModal()">完成</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e => { if (e.target === modal) hideCustomizeModal(); });
+}
+
+function showCustomizeModal() {
+  ensureCustomizeModal();
+  const modal = document.getElementById('customize-modal');
+  const accentPicker = modal.querySelector('#cm-accent-picker');
+  const accentText = modal.querySelector('#cm-accent-text');
+  const bgPicker = modal.querySelector('#cm-bg-picker');
+  const bgText = modal.querySelector('#cm-bg-text');
+  const radiusSlider = modal.querySelector('#cm-radius-slider');
+  const radiusValue = modal.querySelector('#cm-radius-value');
+  // Load current values
+  const currentAccent = themeCustom.accent || getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#58A6FF';
+  const currentBg = themeCustom.bg || getComputedStyle(document.documentElement).getPropertyValue('--bg').trim() || '#0F1419';
+  const currentRadius = themeCustom.radius != null ? themeCustom.radius : 6;
+  accentPicker.value = currentAccent;
+  accentText.value = currentAccent;
+  bgPicker.value = currentBg;
+  bgText.value = currentBg;
+  radiusSlider.value = currentRadius;
+  radiusValue.textContent = currentRadius + 'px';
+  // Wire live updates
+  accentPicker.addEventListener('input', e => {
+    themeCustom.accent = e.target.value;
+    accentText.value = e.target.value;
+    applyThemeCustom();
+    saveThemeCustom();
+  });
+  accentText.addEventListener('input', e => {
+    const v = e.target.value.trim();
+    if (/^#[0-9a-fA-F]{6}$/.test(v)) {
+      themeCustom.accent = v;
+      accentPicker.value = v;
+      applyThemeCustom();
+      saveThemeCustom();
+    }
+  });
+  bgPicker.addEventListener('input', e => {
+    themeCustom.bg = e.target.value;
+    bgText.value = e.target.value;
+    applyThemeCustom();
+    saveThemeCustom();
+  });
+  bgText.addEventListener('input', e => {
+    const v = e.target.value.trim();
+    if (/^#[0-9a-fA-F]{6}$/.test(v)) {
+      themeCustom.bg = v;
+      bgPicker.value = v;
+      applyThemeCustom();
+      saveThemeCustom();
+    }
+  });
+  radiusSlider.addEventListener('input', e => {
+    themeCustom.radius = parseInt(e.target.value, 10);
+    radiusValue.textContent = themeCustom.radius + 'px';
+    applyThemeCustom();
+    saveThemeCustom();
+  });
+  modal.style.display = 'flex';
+}
+function hideCustomizeModal() {
+  const m = document.getElementById('customize-modal');
+  if (m) m.style.display = 'none';
+}
+function resetCustomAccent() {
+  themeCustom.accent = null;
+  applyThemeCustom();
+  saveThemeCustom();
+  hideCustomizeModal();
+  setTimeout(() => showCustomizeModal(), 60);
+}
+function resetCustomBg() {
+  themeCustom.bg = null;
+  applyThemeCustom();
+  saveThemeCustom();
+  hideCustomizeModal();
+  setTimeout(() => showCustomizeModal(), 60);
+}
+function resetCustomRadius() {
+  themeCustom.radius = null;
+  applyThemeCustom();
+  saveThemeCustom();
+  hideCustomizeModal();
+  setTimeout(() => showCustomizeModal(), 60);
+}
+function resetAllCustom() {
+  themeCustom = { accent: null, radius: null, bg: null };
+  applyThemeCustom();
+  saveThemeCustom();
+  hideCustomizeModal();
+  setTimeout(() => showCustomizeModal(), 60);
+}
+window.showCustomizeModal = showCustomizeModal;
+window.hideCustomizeModal = hideCustomizeModal;
+window.resetCustomAccent = resetCustomAccent;
+window.resetCustomBg = resetCustomBg;
+window.resetCustomRadius = resetCustomRadius;
+window.resetAllCustom = resetAllCustom;
+
 function resolveTheme(t) {
   if (t !== 'auto') return t;
   try {
@@ -5191,6 +6128,8 @@ function setTheme(t) {
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.setAttribute('content', THEME_COLORS[resolved]);
   try { localStorage.setItem('pretrade_theme', t); } catch (e) {}
+  // Re-apply custom overrides after theme change
+  applyThemeCustom();
 }
 function cycleTheme() {
   const i = THEME_CYCLE.indexOf(state.theme);
@@ -5203,6 +6142,7 @@ function loadTheme() {
     if (THEME_CYCLE.indexOf(saved) >= 0) state.theme = saved;
     else state.theme = 'auto';  // Default for new users
   } catch (e) { state.theme = 'auto'; }
+  loadThemeCustom();
   setTheme(state.theme);
   // Listen to system preference changes (for auto mode)
   try {
@@ -5233,6 +6173,27 @@ window.restoreDraft = restoreDraft;
 window.dismissDraft = dismissDraft;
 window.showSyncModal = showSyncModal;
 window.hideSyncModal = hideSyncModal;
+
+// Auto-fill from history helpers
+window.autoFillCspExisting = () => {
+  const total = autoComputeCspExistingTotal();
+  state.cspExistingTotal = total > 0 ? String(Math.round(total)) : '';
+  render();
+  showToast(total > 0 ? `已从 history 汇总: $${Math.round(total).toLocaleString()}` : '无 outcome=持仓 的 CSP 快照', total > 0 ? 'success' : 'info');
+};
+window.autoFillCspTicker = () => {
+  const total = autoComputeCspTickerExisting(state.ticker);
+  state.cspTickerExisting = total > 0 ? String(Math.round(total)) : '';
+  render();
+  if (!state.ticker) showToast('先填 ticker', 'error');
+  else showToast(total > 0 ? `已从 history 汇总 ${state.ticker}: $${Math.round(total).toLocaleString()}` : `${state.ticker} 无 outcome=持仓 的 CSP`, total > 0 ? 'success' : 'info');
+};
+window.autoFillLeapsExisting = () => {
+  const total = autoComputeLeapsExistingExposure();
+  state.existingExposure = total > 0 ? String(Math.round(total)) : '';
+  render();
+  showToast(total > 0 ? `已从 history 汇总: $${Math.round(total).toLocaleString()}` : '无 outcome=持仓 的 LEAPS 快照', total > 0 ? 'success' : 'info');
+};
 
 /* Boot */
 loadTheme();
