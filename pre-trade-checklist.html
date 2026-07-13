@@ -1072,9 +1072,9 @@ const SOP = {
           <li>Swing 杠杆: QQQ 蓝筹 10% · 非蓝筹 5% (高杠杆 = 小仓位)</li>
         </ul>
       </li>
-      <li><b>首笔 · 左侧衰竭:</b> MJ2 信号 + 左侧动能衰竭 (RSI≤30 或 RSI≤50 触及布林下轨且斜率放缓, 或底背离, MACD 红柱缩短)</li>
-      <li><b>加仓 · 右侧确认:</b> 日线收复 5/10/20MA 之一, 或放量反包/吞没/锤头, 站稳 EMA21 或 SMA50 之上</li>
-      <li><b>加仓 · MACD 金叉:</b> 日线 MACD 低位金叉确立 (滞后指标, 严禁作为第一买点)</li>
+      <li><b>首笔 · 左侧衰竭:</b> MJ2 信号 + 左侧动能衰竭 (RSI≤30 或 RSI≤50 触及布林下轨且斜率放缓, 或底背离, MACD 红柱缩短) + 止跌 K 线形态 + 放量确认</li>
+      <li><b>加仓 · 右侧确认:</b> 日线收复 5/10/20MA + 右侧 K 线形态 (反包/吞没/锤头) + 放量确认 + 站稳 EMA21/SMA50</li>
+      <li><b>加仓 · MACD 金叉:</b> 日线 MACD 低位金叉 (滞后指标, 严禁作为第一买点) + 金叉当日 K 线形态 + 放量确认 + 价格站稳短周期均线</li>
       <li><b>加仓节奏 (硬性):</b> 同一张 LEAPS 每周最多加 1 次, 无论什么信号。LEAPS DTE 长, 没紧迫感; 一周多加几乎都是情绪。</li>
       <li>熊市筑底建仓: Δ 70-80, DTE 12-18 个月, 预留 50% 预算给后续 MACD 金叉阶段</li>
     </ul>
@@ -1255,6 +1255,9 @@ function leapsOpenItems() {
     base.push({ group: g, id: 'exhaustion',
       title: '左侧动能衰竭已确认',
       desc: 'RSI ≤ 30；或 RSI ≤ 50 触及布林下轨且斜率放缓；或底背离；或 MACD 红柱缩短。' });
+    base.push({ group: g, id: 'reversal_confirm',
+      title: '止跌 K 线 + 放量确认',
+      desc: '止跌形态 (锤头 / 十字星 / 吞没 / 长下影 pin bar / 早晨之星) 且当日成交量 > 5 日均量 × 1.2. 光指标超卖不够, 必须 K 线 + 量能确认反转.' });
     base.push({ group: g, id: 'budget50pct',
       title: '若熊市筑底建仓: 已预留 50% 预算给 MACD 金叉阶段',
       desc: 'Δ 70-80, DTE 12-18 个月。' });
@@ -1267,8 +1270,12 @@ function leapsOpenItems() {
       hard: true });
     base.push({ group: g, id: 'right_ma',
       title: '日线收复 5MA、10MA 或 20MA 之一', desc: '任一即可。' });
-    base.push({ group: g, id: 'pattern',
-      title: '出现放量反包 / 吞没 / 锤头形态 或 站稳 EMA21/SMA50 之上', desc: '' });
+    base.push({ group: g, id: 'reversal_confirm_right',
+      title: '右侧 K 线形态 + 放量确认',
+      desc: '反包 / 吞没 / 锤头 / 十字星等右侧确认形态 且 当日成交量 > 5 日均量 × 1.2. 缩量右侧 = 空头没了但多头也没进.' });
+    base.push({ group: g, id: 'above_ema21_sma50',
+      title: '站稳 EMA21 或 SMA50 之上',
+      desc: '更长周期均线之上, 趋势更可靠。' });
   }
   if (state.leapsPhase === 'add_macd') {
     const g = 'Add signals (加仓 · MACD 金叉)';
@@ -1279,9 +1286,12 @@ function leapsOpenItems() {
     base.push({ group: g, id: 'macd_golden',
       title: '日线 MACD 低位金叉确立',
       desc: '滞后指标, 严禁作为第一买点。' });
-    base.push({ group: g, id: 'momentum_right',
-      title: '动能完全右侧化 (价格 + 均线 + 成交量协同)',
-      desc: '' });
+    base.push({ group: g, id: 'reversal_confirm_macd',
+      title: '金叉当日 K 线 + 放量确认',
+      desc: '金叉当日或前一日出现反包 / 吞没 / 锤头等右侧 K 线 且 当日成交量 > 5 日均量 × 1.2. 缩量金叉 = 假信号.' });
+    base.push({ group: g, id: 'price_above_ma',
+      title: '价格站稳短周期均线之上 (5/10/20MA)',
+      desc: '价格 + 均线协同, 非光靠 MACD 指标。' });
   }
   return base;
 }
