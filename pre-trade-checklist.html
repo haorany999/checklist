@@ -765,6 +765,35 @@
   .history-empty { padding: 60px 20px; text-align: center; color: var(--text-dim); font-size: 13px; line-height: 1.6; }
   .history-empty-sub { font-size: 11px; color: var(--text-faint); margin-top: 8px; }
 
+  /* History full page */
+  .history-page { padding: 8px 0 40px; }
+  .history-page-header { margin: 20px 0 12px; }
+  .history-page-title { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; color: var(--text); margin-bottom: 4px; }
+  .history-page-sub { font-family: var(--mono); font-size: 12.5px; color: var(--text-dim); letter-spacing: 0.02em; }
+  .history-page-sub b { color: var(--text); }
+  .history-filters {
+    display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr auto;
+    gap: 8px; align-items: center;
+    background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+    padding: 12px 14px; margin-bottom: 16px;
+  }
+  @media (max-width: 720px) { .history-filters { grid-template-columns: 1fr 1fr; } .history-clear-filters { grid-column: 1 / -1; } }
+  .history-filters input, .history-filters select {
+    font-family: var(--sans); font-size: 12.5px;
+    padding: 7px 9px; background: var(--bg); color: var(--text);
+    border: 1px solid var(--border); border-radius: 5px;
+    -webkit-appearance: none; appearance: none;
+  }
+  .history-filters input:focus, .history-filters select:focus { outline: none; border-color: var(--accent); }
+  .history-clear-filters { font-size: 11.5px !important; padding: 7px 12px !important; color: var(--text-faint) !important; }
+  .history-clear-filters:hover { color: var(--fail) !important; }
+  .history-del-btn { color: var(--fail) !important; }
+  .history-del-btn:hover { background: var(--fail-bg) !important; border-color: var(--fail) !important; }
+  .history-bottom-actions {
+    display: flex; justify-content: space-between; gap: 10px;
+    padding-top: 20px; margin-top: 16px; border-top: 1px solid var(--border);
+  }
+
   /* Picker footer (recent activity + stats + mantra) */
   .picker-stats {
     display: flex; justify-content: space-around; gap: 12px;
@@ -1891,6 +1920,7 @@ const $app = document.getElementById('app');
 function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
 
 function render() {
+  if (state._view === 'history') { renderHistoryPage(); return; }
   if (!state.strategy) { renderPicker(); return; }
   if (state.strategy === 'leaps') {
     if (!state.leapsDirection) { renderLeapsConfig(); return; }
@@ -3987,47 +4017,144 @@ function exportAllHistoryCSV() {
   showToast(ok ? `已导出 ${history.length} 条历史` : '导出失败', ok ? 'success' : 'error', ok ? filename : '');
 }
 
-function ensureHistoryModal() {
-  if (document.getElementById('history-modal')) return;
-  const modal = document.createElement('div');
-  modal.id = 'history-modal';
-  modal.className = 'modal-overlay';
-  modal.style.display = 'none';
-  modal.innerHTML = `
-    <div class="modal-card">
-      <div class="modal-head">
-        <div class="modal-title">History</div>
-        <button class="modal-close" onclick="hideHistory()" aria-label="Close">×</button>
+let historyFilters = { ticker: '', year: '', strategy: '', verdict: '', outcome: '' };
+
+function showHistory() {
+  state._view = 'history';
+  renderHistoryPage();
+}
+function hideHistory() {
+  state._view = null;
+  render();
+}
+function clearHistoryFilters() {
+  historyFilters = { ticker: '', year: '', strategy: '', verdict: '', outcome: '' };
+  renderHistoryPage();
+}
+function updateHistoryFilter(key, val) {
+  historyFilters[key] = val;
+  renderHistoryList();
+}
+window.hideHistory = hideHistory;
+window.clearHistoryFilters = clearHistoryFilters;
+window.updateHistoryFilter = updateHistoryFilter;
+
+function renderHistoryPage() {
+  const history = getActiveHistory();
+  const years = [...new Set(history.map(e => {
+    if (e.timestamp && e.timestamp.length >= 4) return e.timestamp.slice(0, 4);
+    if (e.timestampSort) return new Date(e.timestampSort).getFullYear().toString();
+    return null;
+  }).filter(Boolean))].sort().reverse();
+
+  $app.innerHTML = `
+    <div class="header">
+      <div class="brand">Pre-Trade Checklist</div>
+      <div class="header-actions">
+        <button class="btn ghost" onclick="hideHistory()">← 返回</button>
+        <button class="btn ghost" onclick="showSyncModal()">Sync</button>
       </div>
-      <div class="modal-body" id="history-list-container"></div>
-      <div class="modal-actions">
-        <button class="btn ghost" onclick="clearAllHistory()">清空</button>
-        <button class="btn ghost" onclick="hideHistory()">关闭</button>
+    </div>
+    <div class="history-page">
+      <div class="history-page-header">
+        <div class="history-page-title">History</div>
+        <div class="history-page-sub" id="hf-summary">共 ${history.length} 条</div>
+      </div>
+      <div class="history-filters">
+        <input type="text" id="hf-ticker" placeholder="Ticker" autocomplete="off" spellcheck="false"
+               list="tickers-datalist-hist" value="${esc(historyFilters.ticker)}"
+               oninput="updateHistoryFilter('ticker', this.value)">
+        ${renderTickerDatalist('tickers-datalist-hist')}
+        <select id="hf-year" onchange="updateHistoryFilter('year', this.value)">
+          <option value="">年份</option>
+          ${years.map(y => `<option value="${y}"${historyFilters.year === y ? ' selected' : ''}>${y}</option>`).join('')}
+        </select>
+        <select id="hf-strategy" onchange="updateHistoryFilter('strategy', this.value)">
+          <option value="">策略</option>
+          <option value="LEAPS"${historyFilters.strategy === 'LEAPS' ? ' selected' : ''}>LEAPS</option>
+          <option value="PMCC"${historyFilters.strategy === 'PMCC' ? ' selected' : ''}>PMCC</option>
+          <option value="CSP"${historyFilters.strategy === 'CSP' ? ' selected' : ''}>CSP</option>
+          <option value="CC"${historyFilters.strategy === 'CC' ? ' selected' : ''}>CC</option>
+        </select>
+        <select id="hf-verdict" onchange="updateHistoryFilter('verdict', this.value)">
+          <option value="">Verdict</option>
+          <option value="CLEAR"${historyFilters.verdict === 'CLEAR' ? ' selected' : ''}>CLEAR</option>
+          <option value="SOFT"${historyFilters.verdict === 'SOFT' ? ' selected' : ''}>软执行</option>
+          <option value="PENDING"${historyFilters.verdict === 'PENDING' ? ' selected' : ''}>PENDING</option>
+          <option value="BLOCKED"${historyFilters.verdict === 'BLOCKED' ? ' selected' : ''}>BLOCKED</option>
+        </select>
+        <select id="hf-outcome" onchange="updateHistoryFilter('outcome', this.value)">
+          <option value="">Outcome</option>
+          <option value="_unset"${historyFilters.outcome === '_unset' ? ' selected' : ''}>未标</option>
+          <option value="skipped"${historyFilters.outcome === 'skipped' ? ' selected' : ''}>未交易</option>
+          <option value="opted_out"${historyFilters.outcome === 'opted_out' ? ' selected' : ''}>自主放弃</option>
+          <option value="open"${historyFilters.outcome === 'open' ? ' selected' : ''}>持仓</option>
+          <option value="win"${historyFilters.outcome === 'win' ? ' selected' : ''}>盈</option>
+          <option value="loss"${historyFilters.outcome === 'loss' ? ' selected' : ''}>亏</option>
+        </select>
+        <button class="btn ghost history-clear-filters" onclick="clearHistoryFilters()">清除筛选</button>
+      </div>
+
+      <div id="history-list-container"></div>
+
+      <div class="history-bottom-actions">
+        <button class="btn ghost" onclick="clearAllHistory()">清空全部</button>
         <button class="btn primary" onclick="exportAllHistoryCSV()">导出全部 CSV</button>
       </div>
     </div>
   `;
-  document.body.appendChild(modal);
-  modal.addEventListener('click', e => { if (e.target === modal) hideHistory(); });
-}
-function showHistory() {
-  ensureHistoryModal();
   renderHistoryList();
-  document.getElementById('history-modal').style.display = 'flex';
 }
-function hideHistory() {
-  const m = document.getElementById('history-modal');
-  if (m) m.style.display = 'none';
-}
+
 function renderHistoryList() {
   const container = document.getElementById('history-list-container');
+  const summary = document.getElementById('hf-summary');
   if (!container) return;
-  const history = getActiveHistory();
-  if (history.length === 0) {
-    container.innerHTML = `<div class="history-empty">还没有历史记录。<div class="history-empty-sub">每次打开 Snapshot 都会自动记录到这里。</div></div>`;
+
+  let matches = getActiveHistory();
+  if (historyFilters.ticker) {
+    const t = historyFilters.ticker.trim().toUpperCase();
+    matches = matches.filter(e => e.ticker && e.ticker.toUpperCase().includes(t));
+  }
+  if (historyFilters.year) {
+    matches = matches.filter(e => {
+      if (e.timestamp && e.timestamp.length >= 4) return e.timestamp.slice(0, 4) === historyFilters.year;
+      if (e.timestampSort) return new Date(e.timestampSort).getFullYear().toString() === historyFilters.year;
+      return false;
+    });
+  }
+  if (historyFilters.strategy) {
+    matches = matches.filter(e => e.strategy && e.strategy.startsWith(historyFilters.strategy));
+  }
+  if (historyFilters.verdict) {
+    matches = matches.filter(e => {
+      const v = e.verdict || '';
+      if (historyFilters.verdict === 'CLEAR') return v.startsWith('CLEAR') && !v.includes('软执行');
+      if (historyFilters.verdict === 'SOFT') return v.includes('软执行');
+      if (historyFilters.verdict === 'PENDING') return v === 'PENDING';
+      if (historyFilters.verdict === 'BLOCKED') return v === 'BLOCKED';
+      return false;
+    });
+  }
+  if (historyFilters.outcome) {
+    if (historyFilters.outcome === '_unset') matches = matches.filter(e => !e.outcome);
+    else matches = matches.filter(e => e.outcome === historyFilters.outcome);
+  }
+
+  if (summary) {
+    const wins = matches.filter(e => e.outcome === 'win').length;
+    const losses = matches.filter(e => e.outcome === 'loss').length;
+    const total = matches.length;
+    const wr = (wins + losses > 0) ? Math.round(wins / (wins + losses) * 100) : null;
+    summary.innerHTML = `共 <b>${total}</b> 条${wins > 0 || losses > 0 ? ` · 盈 ${wins} · 亏 ${losses}${wr !== null ? ` · 胜率 ${wr}%` : ''}` : ''}`;
+  }
+
+  if (matches.length === 0) {
+    container.innerHTML = `<div class="history-empty">无匹配</div>`;
     return;
   }
-  container.innerHTML = history.map(e => {
+
+  container.innerHTML = matches.map(e => {
     const cls = e.verdict.startsWith('CLEAR') ? 'pass' : e.verdict === 'BLOCKED' ? 'fail' : 'pending';
     const outcomeLabel = e.outcome ? OUTCOME_LABEL[e.outcome] : null;
     const outcomeCls = e.outcome || '';
@@ -4047,7 +4174,7 @@ function renderHistoryList() {
         <div class="history-actions">
           <button class="btn ghost small" onclick="showEditModal('${e.id}')" data-preview-id="${e.id}">编辑</button>
           <button class="btn ghost small" onclick="restoreFromHistory('${e.id}')">还原</button>
-          <button class="btn ghost small" onclick="deleteHistoryEntry('${e.id}')">删</button>
+          <button class="btn ghost small history-del-btn" onclick="deleteHistoryEntry('${e.id}')">删</button>
         </div>
       </div>
     `;
