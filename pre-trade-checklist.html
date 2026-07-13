@@ -2604,10 +2604,8 @@ function pickerFooterHTML() {
     ${strategyHTML}
     ${winRateTrendHTML()}
     ${checklistBacktestPanelHTML()}
-    <div class="picker-analytics-grid">
-      ${verdictWinRatePanelHTML()}
-      ${tickerWinRatePanelHTML()}
-    </div>
+    ${verdictWinRatePanelHTML()}
+    ${tickerWinRatePanelHTML()}
     ${exploreHTML}
     ${verdictSparklineHTML()}
     <div class="picker-stats">
@@ -2727,7 +2725,7 @@ function verdictWinRatePanelHTML() {
     <div class="picker-panel">
       <div class="picker-panel-header">
         <div class="picker-panel-title">Verdict 胜率对比</div>
-        <div class="picker-panel-sub">按 verdict 类型看你的实际胜率 · 用你自己的历史验证工具价值</div>
+        <div class="picker-panel-sub">CLEAR / 软执行 / 硬冲 各自的实际胜率</div>
       </div>
       <div class="verdict-winrate-grid">
         ${rows.map(r => {
@@ -2929,7 +2927,7 @@ function checklistBacktestPanelHTML() {
     <div class="picker-panel">
       <div class="picker-panel-header">
         <div class="picker-panel-title">Checklist 回测 · 假设严格执行</div>
-        <div class="picker-panel-sub">用你自己历史数据验证: 只做 CLEAR 会如何?</div>
+        <div class="picker-panel-sub">如果只做 CLEAR, 你的胜率会是多少?</div>
       </div>
       <div class="backtest-grid">
         <div class="backtest-cell">
@@ -2988,7 +2986,7 @@ function tickerWinRatePanelHTML() {  const history = getActiveHistory();
     <div class="picker-panel">
       <div class="picker-panel-header">
         <div class="picker-panel-title">Ticker 胜率排行 (Top ${rows.length})</div>
-        <div class="picker-panel-sub">≥ 2 次已结算的 ticker · 你的舒适圈 vs 韭菜圈</div>
+        <div class="picker-panel-sub">≥ 2 次已结算的 ticker · 谁是你的舒适圈</div>
       </div>
       <div class="ticker-winrate-list">
         ${rows.map(r => {
