@@ -968,6 +968,20 @@
   }
   .toast-close:hover { color: var(--text); }
 
+  /* Sync storage usage bar */
+  .sync-usage-bar { padding: 10px 12px; background: var(--panel-2); border-radius: var(--radius, 6px); margin: 8px 0 12px; }
+  .sync-usage-label { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 11px; color: var(--text-dim); margin-bottom: 6px; }
+  .sync-usage-tag { font-family: var(--mono); font-size: 9.5px; font-weight: 700; letter-spacing: 0.06em; padding: 1px 6px; border-radius: 3px; }
+  .sync-usage-tag.pass { background: var(--pass-bg); color: var(--pass); }
+  .sync-usage-tag.pending { background: var(--pending-bg); color: var(--pending); }
+  .sync-usage-tag.fail { background: var(--fail-bg); color: var(--fail); }
+  .sync-usage-track { height: 6px; background: var(--bg); border: 1px solid var(--border); border-radius: 3px; overflow: hidden; }
+  .sync-usage-fill { height: 100%; transition: width 0.5s ease-out, background 0.3s; }
+  .sync-usage-fill.pass { background: var(--pass); }
+  .sync-usage-fill.pending { background: var(--pending); }
+  .sync-usage-fill.fail { background: var(--fail); }
+  .sync-usage-hint { font-family: var(--mono); font-size: 10px; color: var(--text-faint); margin-top: 6px; line-height: 1.5; }
+
   /* MB2 · Swipe gestures for history rows (mobile) */
   .history-item.swipeable { position: relative; overflow: hidden; }
   .history-item.swipeable .history-main {
@@ -1272,7 +1286,7 @@ const CSP_INTENT_LABEL = { assign: '想接股', neutral: '一般', premium: '只
 const PMCC_MODE_LABEL = { standard: '标准 (≤15)', defensive: '防守 (≤10)' };
 const CC_MODE_LABEL = { income: '收租 · Δ≤15', balanced: '平衡 · Δ 15-25', aggressive: '愿放 · Δ 25-30' };
 const OUTCOME_LABEL = { skipped: '未交易', opted_out: '自主放弃', open: '持仓', win: '盈', loss: '亏' };
-const NOTES_MAX = 200;
+const NOTES_MAX = 2000;
 
 // LEAPS Delta config by style:
 //   股票替代 (≥ 75): DITM 底仓, 长持, 少受 IV 影响
@@ -2938,7 +2952,7 @@ function renderExploreResultsFor(matches) {
       ${wins > 0 || losses > 0 ? `<span>· 盈 ${wins} · 亏 ${losses}${winRate != null ? ` · 胜率 ${winRate}%` : ''}</span>` : ''}
     </div>
   `;
-  const rowsHTML = matches.slice(0, 20).map(e => {
+  const rowsHTML = matches.slice(0, 500).map(e => {
     const cls = e.verdict.startsWith('CLEAR') ? 'pass' : e.verdict === 'BLOCKED' ? 'fail' : 'pending';
     const verdictShort = e.verdict.startsWith('CLEAR') ? 'CLEAR' : e.verdict === 'BLOCKED' ? 'BLOCK' : 'PEND';
     const outcomeLabel = e.outcome ? OUTCOME_LABEL[e.outcome] : null;
@@ -4357,11 +4371,48 @@ function showStorageWarningIfNeeded() {
   slot.appendChild(warn);
 }
 
+// Safe localStorage save that handles quota exceeded errors + warns user
+function safeSetItem(key, value) {
+  try {
+    localStorage.setItem(key, value);
+    return true;
+  } catch (e) {
+    const isQuota = e.name === 'QuotaExceededError' || e.code === 22 || e.code === 1014 || /quota/i.test(e.message || '');
+    if (isQuota) {
+      // Try to warn user prominently, but showToast may not be defined yet if called early
+      if (typeof showToast === 'function') {
+        showToast('存储空间已满', 'error', '立即 Sync 上传到 Gist, 然后清理本地历史');
+      } else {
+        console.error('localStorage quota exceeded');
+      }
+    } else {
+      if (typeof showToast === 'function') {
+        showToast('保存失败', 'error', e.message || String(e));
+      }
+    }
+    return false;
+  }
+}
+window.safeSetItem = safeSetItem;
+
+// Estimate localStorage usage (approximate — returns { used: bytes, ratio: 0-1 })
+function estimateStorageUsage() {
+  try {
+    let total = 0;
+    for (const k of Object.keys(localStorage)) {
+      const v = localStorage.getItem(k) || '';
+      total += (k.length + v.length) * 2;  // UTF-16 = 2 bytes per char
+    }
+    return { used: total, ratio: total / (5 * 1024 * 1024) };  // Chrome/Safari default ~5-10 MB
+  } catch (e) { return { used: 0, ratio: 0 }; }
+}
+window.estimateStorageUsage = estimateStorageUsage;
+
 /* ==========================================================
  * UNDO SYSTEM (Ctrl/Cmd + Z)
  * ========================================================== */
 const undoStack = [];
-const UNDO_LIMIT = 30;
+const UNDO_LIMIT = 500;
 
 function pushUndo() {
   if (!state.strategy) return;
@@ -4401,7 +4452,7 @@ document.addEventListener('keydown', e => {
  * DRAFT PERSISTENCE (auto-save current session to localStorage)
  * ========================================================== */
 const DRAFT_KEY = 'pretrade_draft';
-const DRAFT_MAX_AGE_MS = 6 * 60 * 60 * 1000; // 6 hours
+const DRAFT_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 days (was 6 hours)
 
 function snapshotStateForStorage() {
   return {
@@ -4511,7 +4562,7 @@ function dismissDraft() {
  * HISTORY (persistent log of all snapshots)
  * ========================================================== */
 const HISTORY_KEY = 'pretrade_history';
-const HISTORY_MAX = 100;  // increased from 50 to accommodate tombstones
+const HISTORY_MAX = 100000;  // effectively unlimited — was 100, caused truncation on merge
 
 function loadHistory() {
   try {
@@ -4566,7 +4617,7 @@ function saveToHistory() {
     };
     history.unshift(entry);
     if (history.length > HISTORY_MAX) history.length = HISTORY_MAX;
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+    safeSetItem(HISTORY_KEY, JSON.stringify(history));
   } catch (e) {}
 }
 function deleteHistoryEntry(id) {
@@ -4582,7 +4633,7 @@ function deleteHistoryEntry(id) {
     _deletedAt: Date.now(),
     timestampSort: originalEntry.timestampSort || Date.now()
   };
-  try { localStorage.setItem(HISTORY_KEY, JSON.stringify(history)); } catch (e) {}
+  try { safeSetItem(HISTORY_KEY, JSON.stringify(history)); } catch (e) {}
   if (state._view === 'history') renderHistoryList();
   else render();
   // V2 · Toast with undo
@@ -4594,7 +4645,7 @@ function deleteHistoryEntry(id) {
       const i = h.findIndex(e => e.id === id);
       if (i !== -1) {
         h[i] = originalEntry;
-        try { localStorage.setItem(HISTORY_KEY, JSON.stringify(h)); } catch (e) {}
+        try { safeSetItem(HISTORY_KEY, JSON.stringify(h)); } catch (e) {}
         if (state._view === 'history') renderHistoryList();
         else render();
         showToast('已恢复', 'success', originalEntry.ticker || '');
@@ -4624,7 +4675,7 @@ function editHistoryEntry(id, updates) {
   if (idx === -1) return;
   if (history[idx]._deleted) return;  // Don't edit tombstones
   history[idx] = { ...history[idx], ...updates, updatedAt: Date.now() };
-  try { localStorage.setItem(HISTORY_KEY, JSON.stringify(history)); } catch (e) {}
+  try { safeSetItem(HISTORY_KEY, JSON.stringify(history)); } catch (e) {}
   // Refresh whatever view user is on: history page → renderHistoryList; main page → render
   if (state._view === 'history') renderHistoryList();
   else render();
@@ -4637,7 +4688,7 @@ function editHistoryEntryFullState(id, newFullState) {
   if (idx === -1) return;
   if (history[idx]._deleted) return;
   history[idx] = { ...history[idx], fullState: newFullState };
-  try { localStorage.setItem(HISTORY_KEY, JSON.stringify(history)); } catch (e) {}
+  try { safeSetItem(HISTORY_KEY, JSON.stringify(history)); } catch (e) {}
 }
 
 function ensureEditModal() {
@@ -5231,7 +5282,7 @@ function clearAllHistory() {
     _deletedAt: now,
     timestampSort: e.timestampSort || now
   });
-  try { localStorage.setItem(HISTORY_KEY, JSON.stringify(tombstoned)); } catch (e) {}
+  try { safeSetItem(HISTORY_KEY, JSON.stringify(tombstoned)); } catch (e) {}
   renderHistoryList();
   showToast('本地已清空', 'info', '记得 Sync → 双向合并, 云端也会清空');
 }
@@ -6276,7 +6327,23 @@ async function pullFromGist() {
   const result = await githubFetch(`https://api.github.com/gists/${cfg.gistId}`);
   const file = result.files && result.files[GIST_FILENAME];
   if (!file) throw new Error(`Gist 中未找到 ${GIST_FILENAME}`);
-  return JSON.parse(file.content);
+  // GitHub API truncates file.content at 1 MB and sets truncated=true.
+  // Full content (up to 10 MB per file) is available at file.raw_url without auth.
+  // Files > 10 MB require git clone; we don't handle that (localStorage caps at ~5-10 MB anyway).
+  let contentStr;
+  if (file.truncated || (file.size && file.size > 1000000)) {
+    if (!file.raw_url) throw new Error(`Gist 文件超过 1 MB 且无 raw_url · 联系维护者`);
+    const rawResp = await fetch(file.raw_url);
+    if (!rawResp.ok) throw new Error(`获取 raw_url 失败 (${rawResp.status})`);
+    contentStr = await rawResp.text();
+  } else {
+    contentStr = file.content;
+  }
+  try {
+    return JSON.parse(contentStr);
+  } catch (e) {
+    throw new Error(`Gist 内容解析失败: ${e.message}`);
+  }
 }
 
 async function syncUpload() {
@@ -6298,7 +6365,7 @@ async function syncDownload() {
     showToast('下载中...', 'info');
     const remote = await pullFromGist();
     if (!Array.isArray(remote.history)) throw new Error('Gist 数据格式错误');
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(remote.history));
+    safeSetItem(HISTORY_KEY, JSON.stringify(remote.history));
     const cfg = loadSyncConfig();
     saveSyncConfig({ ...cfg, lastSyncAt: new Date().toISOString() });
     const activeCount = remote.history.filter(e => !e._deleted).length;
@@ -6349,7 +6416,7 @@ async function syncMergeCore() {
     })
     .slice(0, HISTORY_MAX);
 
-  localStorage.setItem(HISTORY_KEY, JSON.stringify(merged));
+  safeSetItem(HISTORY_KEY, JSON.stringify(merged));
   const payload = { version: 2, syncedAt: new Date().toISOString(), history: merged };
   await pushToGist(payload);
   const cfg = loadSyncConfig();
@@ -6491,6 +6558,10 @@ function renderSyncActions() {
   const localCount = getActiveHistory().length;
   const lastSync = cfg.lastSyncAt ? formatTimeAgo(new Date(cfg.lastSyncAt).getTime()) + '前' : '从未';
   const gistShort = cfg.gistId ? cfg.gistId.slice(0, 8) + '…' : '未创建';
+  const usage = estimateStorageUsage();
+  const usagePct = Math.round(usage.ratio * 100);
+  const usageMB = (usage.used / (1024 * 1024)).toFixed(2);
+  const usageCls = usage.ratio > 0.8 ? 'fail' : usage.ratio > 0.5 ? 'pending' : 'pass';
   return `
     <div class="modal-card">
       <div class="modal-head">
@@ -6501,6 +6572,16 @@ function renderSyncActions() {
         <div class="sync-status-bar">
           <span style="color: var(--text-dim);">本地 ${localCount} 条 · Gist ${esc(gistShort)}</span>
           <span style="color: var(--text-faint);">上次: ${esc(lastSync)}</span>
+        </div>
+        <div class="sync-usage-bar">
+          <div class="sync-usage-label">
+            <span>本地存储 · ${usageMB} MB (${usagePct}%)</span>
+            <span class="sync-usage-tag ${usageCls}">${usage.ratio > 0.8 ? '接近上限' : usage.ratio > 0.5 ? '中等' : '充裕'}</span>
+          </div>
+          <div class="sync-usage-track">
+            <div class="sync-usage-fill ${usageCls}" style="width: ${Math.min(100, usagePct)}%"></div>
+          </div>
+          <div class="sync-usage-hint">≈ 5 MB 上限 (浏览器) · Gist 单文件上限 10 MB (API 通过 raw_url 读取)</div>
         </div>
         <div style="display: flex; flex-direction: column; gap: 10px;">
           <button class="sync-action-btn" id="sync-merge-btn">
