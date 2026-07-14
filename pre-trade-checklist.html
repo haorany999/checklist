@@ -1002,6 +1002,35 @@
   .auto-push-indicator.visible { opacity: 1; transform: translateY(0); }
   .auto-push-indicator.fail { color: var(--fail); border-color: var(--fail); }
 
+  /* Offline banner (persistent, above header when navigator.onLine = false) */
+  .offline-banner {
+    position: sticky; top: 0; z-index: 300;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    padding: 10px 16px;
+    background: color-mix(in srgb, var(--pending) 18%, var(--panel));
+    border-bottom: 2px solid var(--pending);
+    color: var(--pending);
+    font-family: var(--mono);
+    font-size: 12px; font-weight: 700;
+    letter-spacing: 0.04em;
+    animation: offlineSlideDown 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .offline-banner-hiding {
+    animation: offlineSlideUp 0.35s ease-in forwards;
+  }
+  .offline-icon { font-size: 14px; }
+  @keyframes offlineSlideDown {
+    from { transform: translateY(-100%); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  @keyframes offlineSlideUp {
+    from { transform: translateY(0); opacity: 1; }
+    to { transform: translateY(-100%); opacity: 0; }
+  }
+  @media (max-width: 480px) {
+    .offline-banner { font-size: 10.5px; padding: 8px 10px; }
+  }
+
   /* Persistent Sync status mini widget on main page */
   .sync-mini {
     display: flex; align-items: center; gap: 12px;
@@ -4534,7 +4563,18 @@ function safeSetItem(key, value) {
 }
 window.safeSetItem = safeSetItem;
 
-// Estimate localStorage usage (approximate — returns { used: bytes, ratio: 0-1 })
+// Detect localStorage quota per browser (best-effort, cached).
+// Chrome/Edge/Firefox: ~10 MB · Safari (Mac + iOS): ~5 MB
+let _cachedStorageQuota = null;
+function detectStorageQuota() {
+  if (_cachedStorageQuota) return _cachedStorageQuota;
+  const ua = navigator.userAgent || '';
+  const isSafari = /Safari/.test(ua) && !/Chrome|Chromium|CriOS|FxiOS|Edg/.test(ua);
+  _cachedStorageQuota = isSafari ? 5 * 1024 * 1024 : 10 * 1024 * 1024;
+  return _cachedStorageQuota;
+}
+
+// Estimate localStorage usage (approximate — returns { used: bytes, ratio: 0-1, quota: bytes })
 function estimateStorageUsage() {
   try {
     let total = 0;
@@ -4542,8 +4582,9 @@ function estimateStorageUsage() {
       const v = localStorage.getItem(k) || '';
       total += (k.length + v.length) * 2;  // UTF-16 = 2 bytes per char
     }
-    return { used: total, ratio: total / (5 * 1024 * 1024) };  // Chrome/Safari default ~5-10 MB
-  } catch (e) { return { used: 0, ratio: 0 }; }
+    const quota = detectStorageQuota();
+    return { used: total, ratio: total / quota, quota };
+  } catch (e) { return { used: 0, ratio: 0, quota: 5 * 1024 * 1024 }; }
 }
 window.estimateStorageUsage = estimateStorageUsage;
 
@@ -6611,6 +6652,10 @@ let _autoPushIndicator = null;
 function scheduleAutoPushToGist(delayMs = 3000) {
   const cfg = loadSyncConfig();
   if (!cfg || !cfg.token || !cfg.gistId) return;  // Not configured, skip
+  if (!navigator.onLine) {
+    _showAutoPushIndicator('离线 · 待联网同步', 4000);
+    return;  // Skip when offline; will auto-fire on 'online' event
+  }
   if (_autoPushTimer) clearTimeout(_autoPushTimer);
   _showAutoPushIndicator('待同步...');
   _autoPushTimer = setTimeout(async () => {
@@ -6644,6 +6689,36 @@ function _showAutoPushIndicator(text, hideAfterMs = 0, cls = '') {
   }
 }
 window.scheduleAutoPushToGist = scheduleAutoPushToGist;
+
+// Offline detection · shows banner at top when offline, auto-syncs on reconnect
+function _updateOfflineBanner() {
+  const existing = document.getElementById('offline-banner');
+  const isOffline = !navigator.onLine;
+  if (isOffline) {
+    if (existing) return;
+    const banner = document.createElement('div');
+    banner.id = 'offline-banner';
+    banner.className = 'offline-banner';
+    banner.innerHTML = `
+      <span class="offline-icon">⚠</span>
+      <span class="offline-text">离线中 · 数据仅保存本地 · 联网后自动同步到 Gist</span>
+    `;
+    document.body.insertBefore(banner, document.body.firstChild);
+  } else if (existing) {
+    existing.classList.add('offline-banner-hiding');
+    setTimeout(() => existing.remove(), 350);
+  }
+}
+window.addEventListener('online', () => {
+  _updateOfflineBanner();
+  showToast('已联网', 'success', '正在补同步到 Gist...');
+  // Fire silent merge to reconcile any local changes while offline
+  setTimeout(() => syncMergeSilent(), 300);
+});
+window.addEventListener('offline', () => {
+  _updateOfflineBanner();
+  showToast('离线中', 'warning', '数据仍会保存到本地, 联网后自动同步');
+});
 
 function ensureSyncModal() {
   if (document.getElementById('sync-modal')) return;
@@ -6766,7 +6841,7 @@ function renderSyncActions() {
           <div class="sync-usage-track">
             <div class="sync-usage-fill ${usageCls}" style="width: ${Math.min(100, usagePct)}%"></div>
           </div>
-          <div class="sync-usage-hint">≈ 5 MB 上限 (浏览器) · Gist 单文件上限 10 MB (API 通过 raw_url 读取)</div>
+          <div class="sync-usage-hint">≈ ${(usage.quota / (1024*1024)).toFixed(0)} MB 上限 (${/Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent) ? 'Safari' : '本浏览器'}) · Gist 单文件 10 MB (API 通过 raw_url 读取)</div>
         </div>
         <div style="display: flex; flex-direction: column; gap: 10px;">
           <button class="sync-action-btn" id="sync-merge-btn">
@@ -7123,6 +7198,8 @@ loadTrendRange();
 render();
 // Warn user if localStorage is unavailable
 showStorageWarningIfNeeded();
+// Show offline banner if starting offline
+_updateOfflineBanner();
 
 /* Global click → button ripple (A2) + haptic (MB4) */
 document.addEventListener('click', (e) => {
