@@ -982,6 +982,90 @@
   .sync-usage-fill.fail { background: var(--fail); }
   .sync-usage-hint { font-family: var(--mono); font-size: 10px; color: var(--text-faint); margin-top: 6px; line-height: 1.5; }
 
+  /* Auto-push to Gist indicator (top-right corner, subtle) */
+  .auto-push-indicator {
+    position: fixed;
+    top: 12px; right: 12px;
+    padding: 4px 10px;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    font-family: var(--mono);
+    font-size: 10.5px; letter-spacing: 0.04em;
+    color: var(--text-dim);
+    opacity: 0; transform: translateY(-8px);
+    transition: opacity 0.25s, transform 0.25s;
+    pointer-events: none;
+    z-index: 500;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+  .auto-push-indicator.visible { opacity: 1; transform: translateY(0); }
+  .auto-push-indicator.fail { color: var(--fail); border-color: var(--fail); }
+
+  /* Persistent Sync status mini widget on main page */
+  .sync-mini {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 14px;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius, 6px);
+    margin: 12px 0;
+    cursor: pointer;
+    transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .sync-mini:hover { transform: translateY(-1px); border-color: var(--border-hi); box-shadow: 0 3px 10px -4px rgba(0,0,0,0.10); }
+  .sync-mini:active { transform: translateY(0); }
+  .sync-mini.unconfigured { border-color: var(--pending); background: color-mix(in srgb, var(--pending-bg) 40%, var(--panel-2)); }
+  .sync-mini.never { border-color: var(--pending); }
+  .sync-mini.stale { border-color: var(--pending); }
+  .sync-mini.ok { border-color: var(--border); }
+  .sync-mini-icon {
+    flex-shrink: 0;
+    width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    font-size: 15px;
+    color: var(--accent);
+  }
+  .sync-mini.unconfigured .sync-mini-icon { color: var(--pending); }
+  .sync-mini-main { flex: 1; min-width: 0; }
+  .sync-mini-title { font-size: 12.5px; font-weight: 600; color: var(--text); }
+  .sync-mini-sub { font-size: 10.5px; color: var(--text-dim); margin-top: 2px; font-family: var(--mono); letter-spacing: 0.02em; }
+  .sync-mini-row {
+    display: flex; justify-content: space-between; align-items: baseline;
+    gap: 6px; line-height: 1.5;
+  }
+  .sync-mini-label { font-family: var(--mono); font-size: 10px; color: var(--text-faint); letter-spacing: 0.04em; }
+  .sync-mini-value { font-family: var(--mono); font-size: 11px; font-weight: 600; color: var(--text); }
+  .sync-mini-usage {
+    flex-shrink: 0;
+    width: 90px;
+    display: flex; flex-direction: column; gap: 3px;
+  }
+  .sync-mini-usage-label {
+    display: flex; justify-content: space-between; align-items: center;
+    font-family: var(--mono); font-size: 10px; color: var(--text-faint);
+  }
+  .sync-mini-usage-pct { font-weight: 700; }
+  .sync-mini-usage-pct.pass { color: var(--pass); }
+  .sync-mini-usage-pct.pending { color: var(--pending); }
+  .sync-mini-usage-pct.fail { color: var(--fail); }
+  .sync-mini-usage-track { height: 4px; background: var(--bg); border: 1px solid var(--border); border-radius: 2px; overflow: hidden; }
+  .sync-mini-usage-fill { height: 100%; transition: width 0.5s ease-out; }
+  .sync-mini-usage-fill.pass { background: var(--pass); }
+  .sync-mini-usage-fill.pending { background: var(--pending); }
+  .sync-mini-usage-fill.fail { background: var(--fail); }
+
+  /* Mobile: stack usage bar under main info to save horizontal space */
+  @media (max-width: 480px) {
+    .sync-mini { flex-wrap: wrap; }
+    .sync-mini-usage { width: 100%; margin-top: 6px; }
+    .sync-mini-usage-label { font-size: 9.5px; }
+  }
+
   /* MB2 · Swipe gestures for history rows (mobile) */
   .history-item.swipeable { position: relative; overflow: hidden; }
   .history-item.swipeable .history-main {
@@ -3428,6 +3512,60 @@ function daysSinceLastSnapshotHTML() {
   return `<div class="last-snap-bar ${cls}">距上次 snapshot: <b>${days} 天前</b>${days > 14 ? ' · 长时间未自查, 记得每笔单前用 checklist' : ''} · 最新: ${esc(latest.ticker || '—')} ${esc(latest.strategy || '')}</div>`;
 }
 
+// Persistent sync status widget (mobile + desktop) — always visible on main page
+function syncStatusMiniHTML() {
+  const cfg = loadSyncConfig();
+  const usage = estimateStorageUsage();
+  const usagePct = Math.round(usage.ratio * 100);
+  const usageMB = (usage.used / (1024 * 1024)).toFixed(2);
+  const usageCls = usage.ratio > 0.8 ? 'fail' : usage.ratio > 0.5 ? 'pending' : 'pass';
+  const localCount = getActiveHistory().length;
+
+  // State 1: Not configured
+  if (!cfg || !cfg.token || !cfg.gistId) {
+    return `
+      <div class="sync-mini unconfigured" onclick="showSyncModal()" role="button" title="点击设置 Sync 云端备份">
+        <div class="sync-mini-icon">☁</div>
+        <div class="sync-mini-main">
+          <div class="sync-mini-title">未启用云端备份</div>
+          <div class="sync-mini-sub">本地 ${localCount} 条 · 数据仅存这台设备 → 点击配置 Gist</div>
+        </div>
+      </div>
+    `;
+  }
+
+  // State 2 & 3: Configured
+  const lastSyncMs = cfg.lastSyncAt ? new Date(cfg.lastSyncAt).getTime() : null;
+  const neverSynced = !lastSyncMs;
+  const lastSyncStr = neverSynced ? '从未同步' : formatTimeAgo(lastSyncMs) + '前';
+  const isStale = lastSyncMs && (Date.now() - lastSyncMs) > 7 * 86400000;  // > 7 days = stale
+
+  return `
+    <div class="sync-mini ${neverSynced ? 'never' : isStale ? 'stale' : 'ok'}" onclick="showSyncModal()" role="button" title="点击打开 Sync 详情">
+      <div class="sync-mini-icon">☁</div>
+      <div class="sync-mini-main">
+        <div class="sync-mini-row">
+          <span class="sync-mini-label">上次同步</span>
+          <span class="sync-mini-value">${esc(lastSyncStr)}</span>
+        </div>
+        <div class="sync-mini-row">
+          <span class="sync-mini-label">本地 / Gist</span>
+          <span class="sync-mini-value">${localCount} 条</span>
+        </div>
+      </div>
+      <div class="sync-mini-usage">
+        <div class="sync-mini-usage-label">
+          <span>${usageMB} MB</span>
+          <span class="sync-mini-usage-pct ${usageCls}">${usagePct}%</span>
+        </div>
+        <div class="sync-mini-usage-track">
+          <div class="sync-mini-usage-fill ${usageCls}" style="width: ${Math.min(100, usagePct)}%"></div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
 function renderPicker() {
   const themeName = THEME_LABEL[state.theme] || 'Auto';
   $app.innerHTML = `
@@ -3446,6 +3584,7 @@ function renderPicker() {
     <div class="picker">
       <div class="picker-title">选择要检查的策略</div>
       <div class="picker-sub">Trading in the Zone</div>
+      ${syncStatusMiniHTML()}
       ${daysSinceLastSnapshotHTML()}
       ${draftContinueBannerHTML()}
       ${forcedTradeReminderHTML()}
@@ -4618,6 +4757,7 @@ function saveToHistory() {
     history.unshift(entry);
     if (history.length > HISTORY_MAX) history.length = HISTORY_MAX;
     safeSetItem(HISTORY_KEY, JSON.stringify(history));
+    scheduleAutoPushToGist();
   } catch (e) {}
 }
 function deleteHistoryEntry(id) {
@@ -4636,6 +4776,7 @@ function deleteHistoryEntry(id) {
   try { safeSetItem(HISTORY_KEY, JSON.stringify(history)); } catch (e) {}
   if (state._view === 'history') renderHistoryList();
   else render();
+  scheduleAutoPushToGist();
   // V2 · Toast with undo
   showToast('已删除', 'info', originalEntry.ticker ? originalEntry.ticker + ' · ' + originalEntry.strategy : '', {
     undo: true,
@@ -4648,6 +4789,7 @@ function deleteHistoryEntry(id) {
         try { safeSetItem(HISTORY_KEY, JSON.stringify(h)); } catch (e) {}
         if (state._view === 'history') renderHistoryList();
         else render();
+        scheduleAutoPushToGist();
         showToast('已恢复', 'success', originalEntry.ticker || '');
       }
     }
@@ -4679,6 +4821,7 @@ function editHistoryEntry(id, updates) {
   // Refresh whatever view user is on: history page → renderHistoryList; main page → render
   if (state._view === 'history') renderHistoryList();
   else render();
+  scheduleAutoPushToGist();
 }
 
 // Update only the fullState inside an entry (used for live re-render in edit modal)
@@ -6459,6 +6602,48 @@ async function syncMergeSilent() {
     showToast('云端同步失败', 'error', e.message);
   }
 }
+
+// Debounced auto-push to Gist — called after every local mutation (snapshot save / edit / delete).
+// Waits N seconds after last change so rapid edits batch into one push.
+// Skips if sync not configured. Errors are silent (user can retry manually via Sync).
+let _autoPushTimer = null;
+let _autoPushIndicator = null;
+function scheduleAutoPushToGist(delayMs = 3000) {
+  const cfg = loadSyncConfig();
+  if (!cfg || !cfg.token || !cfg.gistId) return;  // Not configured, skip
+  if (_autoPushTimer) clearTimeout(_autoPushTimer);
+  _showAutoPushIndicator('待同步...');
+  _autoPushTimer = setTimeout(async () => {
+    _autoPushTimer = null;
+    try {
+      _showAutoPushIndicator('同步中...');
+      await syncMergeCore();
+      _showAutoPushIndicator('已同步 ✓', 2000);
+    } catch (e) {
+      _showAutoPushIndicator('同步失败', 3000, 'fail');
+      // Don't spam toast — user can see in the indicator and try manual sync
+    }
+  }, delayMs);
+}
+function _showAutoPushIndicator(text, hideAfterMs = 0, cls = '') {
+  let ind = document.getElementById('auto-push-indicator');
+  if (!ind) {
+    ind = document.createElement('div');
+    ind.id = 'auto-push-indicator';
+    ind.className = 'auto-push-indicator';
+    document.body.appendChild(ind);
+  }
+  ind.className = 'auto-push-indicator ' + (cls || '');
+  ind.textContent = text;
+  ind.classList.add('visible');
+  clearTimeout(_autoPushIndicator);
+  if (hideAfterMs > 0) {
+    _autoPushIndicator = setTimeout(() => {
+      ind.classList.remove('visible');
+    }, hideAfterMs);
+  }
+}
+window.scheduleAutoPushToGist = scheduleAutoPushToGist;
 
 function ensureSyncModal() {
   if (document.getElementById('sync-modal')) return;
