@@ -4352,7 +4352,8 @@ function deleteHistoryEntry(id) {
     timestampSort: original.timestampSort || Date.now()
   };
   try { localStorage.setItem(HISTORY_KEY, JSON.stringify(history)); } catch (e) {}
-  renderHistoryList();
+  if (state._view === 'history') renderHistoryList();
+  else render();
 }
 
 // Temporarily swap global state to a snapshot state, run fn, restore.
@@ -4377,7 +4378,9 @@ function editHistoryEntry(id, updates) {
   if (history[idx]._deleted) return;  // Don't edit tombstones
   history[idx] = { ...history[idx], ...updates, updatedAt: Date.now() };
   try { localStorage.setItem(HISTORY_KEY, JSON.stringify(history)); } catch (e) {}
-  renderHistoryList();
+  // Refresh whatever view user is on: history page → renderHistoryList; main page → render
+  if (state._view === 'history') renderHistoryList();
+  else render();
 }
 
 // Update only the fullState inside an entry (used for live re-render in edit modal)
@@ -4878,7 +4881,7 @@ function showEditModal(id) {
       const toastMsg = verdictChanged
         ? `已保存 · verdict: ${entry.verdict} → ${recomputed.verdict}`
         : '已保存';
-      showToast(toastMsg, 'success', '记得 Sync 上传, 让另一端也更新');
+      showToast(toastMsg, 'success', '页面已更新 · 稍后 Sync 同步到另一端');
     };
 
     // If verdict got worse AND still holding → show choice modal
