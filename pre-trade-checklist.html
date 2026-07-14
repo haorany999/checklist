@@ -215,6 +215,51 @@
   .trend-legend { display: inline-flex; align-items: center; gap: 5px; font-family: var(--mono); font-size: 11px; color: var(--text-dim); margin-right: 14px; }
   .trend-dot { display: inline-block; width: 10px; height: 2px; border-radius: 1px; }
 
+  /* Edit modal R:R + position check computed display */
+  .edit-item-verdict-badge {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 700; letter-spacing: 0.06em;
+    padding: 2px 7px; margin-left: 8px;
+    border-radius: 3px; vertical-align: middle;
+  }
+  .edit-verdict-badge-pass { background: var(--pass-bg); color: var(--pass); border: 1px solid color-mix(in srgb, var(--pass) 40%, transparent); }
+  .edit-verdict-badge-fail { background: var(--fail-bg); color: var(--fail); border: 1px solid color-mix(in srgb, var(--fail) 40%, transparent); }
+  .edit-verdict-badge-pending { background: var(--pending-bg); color: var(--pending); border: 1px solid color-mix(in srgb, var(--pending) 40%, transparent); }
+  .edit-verdict-pass { border-left: 3px solid var(--pass) !important; }
+  .edit-verdict-fail { border-left: 3px solid var(--fail) !important; }
+  .edit-verdict-pending { border-left: 3px solid var(--pending) !important; }
+  .edit-item-rr { padding-left: 12px !important; }
+
+  /* Verdict shift dialog */
+  .verdict-shift-badge {
+    display: inline-block;
+    padding: 5px 12px;
+    border-radius: var(--radius, 4px);
+    font-family: var(--mono);
+    font-size: 12px; font-weight: 700; letter-spacing: 0.04em;
+  }
+  .verdict-shift-badge.pass { background: var(--pass-bg); color: var(--pass); }
+  .verdict-shift-badge.fail { background: var(--fail-bg); color: var(--fail); }
+  .verdict-shift-badge.pending { background: var(--pending-bg); color: var(--pending); }
+  .verdict-shift-option {
+    padding: 12px 14px;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius, 6px);
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .verdict-shift-option:hover {
+    border-color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 8%, var(--panel-2));
+    transform: translateY(-1px);
+  }
+  .vs-opt-title { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+  .vs-opt-desc { font-size: 11.5px; color: var(--text-dim); line-height: 1.5; }
+  .vs-opt-desc b { color: var(--text); font-weight: 600; }
+
   /* Backtest panel */
   .backtest-grid {
     display: grid; grid-template-columns: repeat(4, 1fr);
@@ -4299,6 +4344,40 @@ function renderEditItem(item, itemsMap) {
     `;
   }
 
+  // R:R computed item (live updated by input listeners)
+  if (item.id === 'rr_check') {
+    const verdict = itemVerdict(item);  // Uses current tempState via withTempState wrap
+    const descText = rrCheckDesc();
+    const badgeText = verdict === 'pass' ? 'PASS' : verdict === 'fail' ? 'BLOCK' : 'PENDING';
+    return `
+      <div class="edit-item edit-item-rr edit-verdict-${verdict}" data-rr-display>
+        <div class="edit-item-title">
+          ${esc(item.title)} ${hardBadge}
+          <span class="edit-item-verdict-badge edit-verdict-badge-${verdict}" data-rr-badge>${badgeText}</span>
+        </div>
+        <div class="edit-item-desc" data-rr-desc>${esc(descText)}</div>
+      </div>
+    `;
+  }
+
+  // Position check items (CSP total, CSP ticker) — auto-computed, no input in edit modal
+  if (item.positionCheck) {
+    const verdict = itemVerdict(item);
+    const badgeText = verdict === 'pass' ? 'PASS' : verdict === 'fail' ? 'BLOCK' : 'PENDING';
+    return `
+      <div class="edit-item edit-verdict-${verdict}">
+        <div class="edit-item-title">
+          ${esc(item.title)} ${hardBadge}
+          <span class="edit-item-verdict-badge edit-verdict-badge-${verdict}">${badgeText}</span>
+        </div>
+        ${desc}
+        <div style="font-size: 11px; color: var(--text-faint); font-style: italic; margin-top: 4px;">
+          由上方仓位输入自动判定
+        </div>
+      </div>
+    `;
+  }
+
   if (item.numeric) {
     const displayVal = (val != null && val !== '') ? val : '';
     const ph = item.numeric.placeholder || '';
@@ -4359,12 +4438,12 @@ function showEditModal(id) {
     groups[g].push(it);
   });
 
-  const itemsHTML = groupOrder.map(gn => `
+  const itemsHTML = withTempState(fullState, () => groupOrder.map(gn => `
     <div class="edit-group">
       <div class="edit-group-title">${esc(gn)}</div>
       ${groups[gn].map(it => renderEditItem(it, fullState.items || {})).join('')}
     </div>
-  `).join('');
+  `).join(''));
 
   // Position sizing fields (LEAPS open only)
   const showPosition = fullState.strategy === 'leaps' && fullState.leapsDirection === 'open';
@@ -4505,6 +4584,47 @@ function showEditModal(id) {
     counterEl.textContent = `${notesEl.value.length} / ${NOTES_MAX}`;
   });
 
+  // Live R:R recompute: when entry_price / stop_level / target_level change,
+  // update the rr_check display in-place without needing save + reopen
+  const rrTriggerIds = ['entry_price', 'stop_level', 'target_level'];
+  const rrDisplay = modal.querySelector('[data-rr-display]');
+  if (rrDisplay) {
+    const recomputeRR = () => {
+      // Build a temp fullState with current form values
+      const currentFormItems = { ...(fullState.items || {}) };
+      modal.querySelectorAll('.edit-item-input[data-item-id]').forEach(el => {
+        const iid = el.dataset.itemId;
+        currentFormItems[iid] = el.value.trim();
+      });
+      modal.querySelectorAll('.edit-item-seg[data-item-id]').forEach(el => {
+        const iid = el.dataset.itemId;
+        const active = el.querySelector('button.active');
+        if (active && active.dataset.v !== 'pending') currentFormItems[iid] = active.dataset.v;
+      });
+      const tempFullState = { ...fullState, items: currentFormItems };
+      // Compute with withTempState
+      let verdict, descText;
+      withTempState(tempFullState, () => {
+        verdict = rrCheckVerdict();
+        descText = rrCheckDesc();
+      });
+      // Update DOM
+      const badgeText = verdict === 'pass' ? 'PASS' : verdict === 'fail' ? 'BLOCK' : 'PENDING';
+      rrDisplay.className = `edit-item edit-item-rr edit-verdict-${verdict}`;
+      const badge = rrDisplay.querySelector('[data-rr-badge]');
+      if (badge) {
+        badge.className = `edit-item-verdict-badge edit-verdict-badge-${verdict}`;
+        badge.textContent = badgeText;
+      }
+      const descEl = rrDisplay.querySelector('[data-rr-desc]');
+      if (descEl) descEl.textContent = descText;
+    };
+    rrTriggerIds.forEach(id => {
+      const inp = modal.querySelector(`.edit-item-input[data-item-id="${id}"]`);
+      if (inp) inp.addEventListener('input', recomputeRR);
+    });
+  }
+
   // Live re-render: if user fills a dependency field (cost_basis), re-open modal with updated fullState
   // so dependent items (like strike_above_cost) unlock and become editable
   const costBasisInput = modal.querySelector('[data-item-id="cost_basis"]');
@@ -4604,29 +4724,120 @@ function showEditModal(id) {
 
     const verdictChanged = recomputed.verdict !== entry.verdict;
 
-    editHistoryEntry(id, {
-      ticker: newTicker,
-      outcome: newOutcome,
-      notes: newNotes,
-      forcedReason: modal.querySelector('#edit-forced-reason')?.value.trim() || entry.forcedReason || '',
-      nav: showPosition ? newNav : entry.nav,
-      existing: showPosition ? newExisting : entry.existing,
-      budget: showPosition ? newBudget : entry.budget,
-      ...recomputed,
-      fullState: newFullState
-    });
-    hideEditModal();
+    // Helper: rank verdict severity (higher = worse)
+    const rank = v => {
+      if (!v) return 2;
+      if (v === 'BLOCKED') return 3;
+      if (v === 'PENDING') return 2;
+      if (v.includes('软执行')) return 1;
+      if (v.startsWith('CLEAR')) return 0;
+      return 2;
+    };
+    const oldVerdict = entry.verdict || '';
+    const newVerdict = recomputed.verdict || '';
+    const gotWorse = rank(newVerdict) > rank(oldVerdict);
+    const effectiveOutcome = newOutcome || entry.outcome;
+    const isOpenPosition = effectiveOutcome === 'open';
 
-    const toastMsg = verdictChanged
-      ? `已保存 · verdict: ${entry.verdict} → ${recomputed.verdict}`
-      : '已保存';
-    showToast(toastMsg, 'success', '记得 Sync 上传, 让另一端也更新');
+    // Save closure — reused by all three paths
+    const performSave = (extraFields = {}) => {
+      editHistoryEntry(id, {
+        ticker: newTicker,
+        outcome: newOutcome,
+        notes: newNotes,
+        forcedReason: extraFields.forcedReason || modal.querySelector('#edit-forced-reason')?.value.trim() || entry.forcedReason || '',
+        nav: showPosition ? newNav : entry.nav,
+        existing: showPosition ? newExisting : entry.existing,
+        budget: showPosition ? newBudget : entry.budget,
+        ...recomputed,
+        fullState: newFullState
+      });
+      hideEditModal();
+      const toastMsg = verdictChanged
+        ? `已保存 · verdict: ${entry.verdict} → ${recomputed.verdict}`
+        : '已保存';
+      showToast(toastMsg, 'success', '记得 Sync 上传, 让另一端也更新');
+    };
+
+    // If verdict got worse AND still holding → show choice modal
+    if (gotWorse && isOpenPosition && verdictChanged) {
+      showVerdictShiftDialog({
+        oldVerdict, newVerdict,
+        onForced: () => {
+          const existingReason = modal.querySelector('#edit-forced-reason')?.value.trim() || entry.forcedReason || '';
+          const shiftNote = `[编辑后 verdict 变化: ${oldVerdict} → ${newVerdict}]`;
+          const combined = existingReason ? existingReason + ' · ' + shiftNote : shiftNote;
+          performSave({ forcedReason: combined });
+        },
+        onAccept: () => performSave(),
+        onCancel: () => {}  // Modal stays open, user can revise or cancel
+      });
+      return;
+    }
+
+    performSave();
   });
 }
 
 function hideEditModal() {
   const m = document.getElementById('edit-modal');
   if (m) m.style.display = 'none';
+}
+
+function showVerdictShiftDialog({ oldVerdict, newVerdict, onForced, onAccept, onCancel }) {
+  let modal = document.getElementById('verdict-shift-modal');
+  if (modal) modal.remove();
+  modal = document.createElement('div');
+  modal.id = 'verdict-shift-modal';
+  modal.className = 'modal-overlay';
+  modal.style.zIndex = '10000';  // Above edit modal
+  const oldCls = oldVerdict.startsWith('CLEAR') ? 'pass' : oldVerdict === 'BLOCKED' ? 'fail' : 'pending';
+  const newCls = newVerdict.startsWith('CLEAR') ? 'pass' : newVerdict === 'BLOCKED' ? 'fail' : 'pending';
+  modal.innerHTML = `
+    <div class="modal-card" style="max-width: 500px;">
+      <div class="modal-head">
+        <div class="modal-title">Verdict 变差了 · 但你还持仓</div>
+      </div>
+      <div class="modal-body">
+        <div style="text-align: center; padding: 8px 0 14px; font-family: var(--mono); font-size: 14px;">
+          <span class="verdict-shift-badge ${oldCls}">${esc(oldVerdict)}</span>
+          <span style="color: var(--text-faint); margin: 0 10px;">→</span>
+          <span class="verdict-shift-badge ${newCls}">${esc(newVerdict)}</span>
+        </div>
+        <div style="font-size: 13px; line-height: 1.6; color: var(--text-dim); margin-bottom: 14px;">
+          修改后 checklist 更严格. 你已经开仓, 现在有 2 种处理:
+        </div>
+        <div class="verdict-shift-option" data-choice="forced">
+          <div class="vs-opt-title">A · 标记为硬冲</div>
+          <div class="vs-opt-desc">保存新数值 + verdict, 并在 forcedReason 里加一条 "编辑后 verdict 变化" 备注. 这笔交易后续会出现在硬冲跟踪面板, 提醒你复盘. <b>适合: 你相信新数据更准确, 承认当时进场是基于错误信息.</b></div>
+        </div>
+        <div class="verdict-shift-option" data-choice="accept">
+          <div class="vs-opt-title">B · 接受更新, 不标记硬冲</div>
+          <div class="vs-opt-desc">保存新数值 + verdict, 无额外标记. 历史记录更新, 但不进入硬冲跟踪. <b>适合: 你只是想让 checklist 数据更准, 但当时进场是正常的.</b></div>
+        </div>
+        <div class="verdict-shift-option" data-choice="cancel">
+          <div class="vs-opt-title">C · 取消, 回到编辑</div>
+          <div class="vs-opt-desc">先别保存, 回到编辑界面. 你可能想撤销刚才的改动, 或者继续调整。</div>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  modal.style.display = 'flex';
+
+  modal.querySelectorAll('.verdict-shift-option').forEach(opt => {
+    opt.addEventListener('click', () => {
+      const choice = opt.dataset.choice;
+      modal.remove();
+      if (choice === 'forced') onForced();
+      else if (choice === 'accept') onAccept();
+      else onCancel();
+    });
+  });
+  // Click outside → cancel
+  modal.addEventListener('click', e => {
+    if (e.target === modal) { modal.remove(); onCancel(); }
+  });
 }
 function restoreFromHistory(id) {
   const entry = loadHistory().find(e => e.id === id);
