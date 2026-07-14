@@ -2972,17 +2972,17 @@ function winRateTrendHTML() {
   const xStep = points.length > 1 ? chartW / (points.length - 1) : chartW;
 
   const buildPath = (getValue) => {
-    let path = '';
-    let started = false;
+    // Connect all data points, skipping empty buckets (no line breaks on gaps)
+    const dataPoints = [];
     points.forEach((p, i) => {
       const val = getValue(p);
-      if (val == null) { started = false; return; }
+      if (val == null) return;
       const x = padL + i * xStep;
       const y = padT + chartH - (val / 100) * chartH;
-      path += (started ? ' L ' : 'M ') + x.toFixed(1) + ' ' + y.toFixed(1);
-      started = true;
+      dataPoints.push({ x, y });
     });
-    return path;
+    if (dataPoints.length === 0) return '';
+    return 'M ' + dataPoints.map(d => `${d.x.toFixed(1)} ${d.y.toFixed(1)}`).join(' L ');
   };
   const clearPath = buildPath(p => p.clearRate);
   const winPath = buildPath(p => p.winRate);
