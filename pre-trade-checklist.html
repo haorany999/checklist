@@ -2851,23 +2851,22 @@ function verdictWinRatePanelHTML() {
 
 function winRateTrendHTML() {
   const history = getActiveHistory();
-  if (history.length < 3) return '';  // Need at least 3 for meaningful trend
+  if (history.length < 3) return '';
 
-  // Determine bucket size: weekly if all history within 6 months, otherwise monthly
   const oldestTs = Math.min(...history.map(e => e.timestampSort || Date.parse(e.timestamp) || Date.now()));
   const now = Date.now();
   const spanDays = (now - oldestTs) / 86400000;
   const useWeekly = spanDays <= 180;
   const bucketMs = useWeekly ? 7 * 86400000 : 30 * 86400000;
-  const numBuckets = useWeekly ? 12 : 12;  // 12 weeks or 12 months
+  const numBuckets = 12;
   const bucketLabel = useWeekly ? '周' : '月';
 
-  // Build buckets
+  // Build buckets: buckets[0] = oldest, buckets[11] = newest (current)
   const buckets = [];
   for (let i = numBuckets - 1; i >= 0; i--) {
     const end = now - i * bucketMs;
     const start = end - bucketMs;
-    buckets.push({ start, end, snapshots: [], settled: [] });
+    buckets.push({ start, end, snapshots: [], settledByCreation: [] });
   }
 
   history.forEach(e => {
@@ -2876,24 +2875,25 @@ function winRateTrendHTML() {
     for (const b of buckets) {
       if (ts >= b.start && ts < b.end) {
         b.snapshots.push(e);
-        if (e.outcome === 'win' || e.outcome === 'loss') b.settled.push(e);
+        if (e.outcome === 'win' || e.outcome === 'loss') b.settledByCreation.push(e);
         break;
       }
     }
   });
 
-  // Compute rates
+  // Rate calculation
+  // - clearRate = (CLEAR + 软执行) / all snapshots in bucket
+  // - winRate = wins / (wins + losses) of snapshots CREATED in bucket that later settled
   const points = buckets.map(b => {
     const total = b.snapshots.length;
-    const clearCount = b.snapshots.filter(e => (e.verdict || '').startsWith('CLEAR')).length;
-    const clearRate = total > 0 ? clearCount / total * 100 : null;
-    const wins = b.settled.filter(e => e.outcome === 'win').length;
-    const settledCount = b.settled.length;
+    const clearOrSoft = b.snapshots.filter(e => (e.verdict || '').startsWith('CLEAR')).length;
+    const clearRate = total > 0 ? clearOrSoft / total * 100 : null;
+    const wins = b.settledByCreation.filter(e => e.outcome === 'win').length;
+    const settledCount = b.settledByCreation.length;
     const winRate = settledCount > 0 ? wins / settledCount * 100 : null;
-    return { total, clearRate, winRate, settledCount };
+    return { total, clearRate, winRate, settledCount, wins, losses: settledCount - wins };
   });
 
-  // If all rates are null, show helpful hint instead of hiding
   if (points.every(p => p.clearRate == null && p.winRate == null)) {
     return `
       <div class="picker-panel">
@@ -2905,13 +2905,15 @@ function winRateTrendHTML() {
     `;
   }
 
+  // Check if data spans multiple years (for label formatting)
+  const spansYears = new Set(buckets.map(b => new Date(b.end).getFullYear())).size > 1;
+
   // SVG dimensions
   const W = 640, H = 180, padL = 36, padR = 20, padT = 20, padB = 30;
   const chartW = W - padL - padR;
   const chartH = H - padT - padB;
   const xStep = points.length > 1 ? chartW / (points.length - 1) : chartW;
 
-  // Build path strings (skip null points)
   const buildPath = (getValue) => {
     let path = '';
     let started = false;
@@ -2928,7 +2930,6 @@ function winRateTrendHTML() {
   const clearPath = buildPath(p => p.clearRate);
   const winPath = buildPath(p => p.winRate);
 
-  // Y-axis labels
   const yLabels = [0, 25, 50, 75, 100];
   const yGridLines = yLabels.map(v => {
     const y = padT + chartH - (v / 100) * chartH;
@@ -2936,36 +2937,51 @@ function winRateTrendHTML() {
             <text x="${padL - 6}" y="${y + 3}" font-size="9" fill="var(--text-faint)" text-anchor="end" font-family="var(--mono)">${v}</text>`;
   }).join('');
 
-  // X-axis labels (first, middle, last)
   const xLabels = [0, Math.floor(points.length / 2), points.length - 1];
   const xTicks = xLabels.map(idx => {
     const x = padL + idx * xStep;
     const bucketDate = new Date(buckets[idx].end);
+    const M = bucketDate.getMonth() + 1;
+    const D = bucketDate.getDate();
+    const Y = bucketDate.getFullYear();
     const label = useWeekly
-      ? (bucketDate.getMonth() + 1) + '/' + bucketDate.getDate()
-      : (bucketDate.getMonth() + 1) + '月';
+      ? (spansYears ? `${Y}/${M}/${D}` : `${M}/${D}`)
+      : (spansYears ? `${Y}/${M}月` : `${M}月`);
     return `<text x="${x}" y="${H - 10}" font-size="9" fill="var(--text-faint)" text-anchor="middle" font-family="var(--mono)">${label}</text>`;
   }).join('');
 
-  // Point circles (only where data exists)
-  const clearDots = points.map((p, i) => p.clearRate == null ? '' : {
-    x: padL + i * xStep, y: padT + chartH - (p.clearRate / 100) * chartH, v: p.clearRate
-  }).filter(x => x).map(d => `<circle cx="${d.x.toFixed(1)}" cy="${d.y.toFixed(1)}" r="2.5" fill="var(--accent)" stroke="var(--bg)" stroke-width="1"><title>CLEAR 率: ${d.v.toFixed(0)}%</title></circle>`).join('');
-  const winDots = points.map((p, i) => p.winRate == null ? '' : {
-    x: padL + i * xStep, y: padT + chartH - (p.winRate / 100) * chartH, v: p.winRate
-  }).filter(x => x).map(d => `<circle cx="${d.x.toFixed(1)}" cy="${d.y.toFixed(1)}" r="2.5" fill="var(--pass)" stroke="var(--bg)" stroke-width="1"><title>胜率: ${d.v.toFixed(0)}%</title></circle>`).join('');
+  // Dots — offset overlapping points slightly (CLEAR = accent up, Win = pass down)
+  const clearDots = points.map((p, i) => {
+    if (p.clearRate == null) return '';
+    const x = padL + i * xStep;
+    const y = padT + chartH - (p.clearRate / 100) * chartH;
+    const bDate = new Date(buckets[i].end);
+    const dateStr = (bDate.getMonth() + 1) + '/' + bDate.getDate();
+    return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3" fill="var(--accent)" stroke="var(--bg)" stroke-width="1.5"><title>${dateStr} · CLEAR/软执行 率: ${p.clearRate.toFixed(0)}% (${points[i].total} snapshots)</title></circle>`;
+  }).join('');
+  const winDots = points.map((p, i) => {
+    if (p.winRate == null) return '';
+    const x = padL + i * xStep;
+    const y = padT + chartH - (p.winRate / 100) * chartH;
+    const bDate = new Date(buckets[i].end);
+    const dateStr = (bDate.getMonth() + 1) + '/' + bDate.getDate();
+    // Slight radial offset if same y as CLEAR dot
+    const clearY = p.clearRate != null ? padT + chartH - (p.clearRate / 100) * chartH : null;
+    const yOffset = (clearY != null && Math.abs(clearY - y) < 4) ? 4 : 0;
+    return `<circle cx="${x.toFixed(1)}" cy="${(y + yOffset).toFixed(1)}" r="3" fill="var(--pass)" stroke="var(--bg)" stroke-width="1.5"><title>${dateStr} · 胜率: ${p.winRate.toFixed(0)}% (${p.wins} 胜/${p.losses} 负, 按 snapshot 创建日期分桶)</title></circle>`;
+  }).join('');
 
   return `
     <div class="picker-panel">
       <div class="picker-panel-header">
-        <div class="picker-panel-title">胜率 & CLEAR 率随时间 · 过去 ${numBuckets} ${bucketLabel}</div>
+        <div class="picker-panel-title">CLEAR/软执行 率 & 胜率随时间 · 过去 ${numBuckets} ${bucketLabel}</div>
         <div class="picker-panel-sub">
-          <span class="trend-legend"><span class="trend-dot" style="background: var(--accent)"></span>CLEAR 率</span>
-          <span class="trend-legend"><span class="trend-dot" style="background: var(--pass)"></span>胜率 (盈/已结算)</span>
+          <span class="trend-legend"><span class="trend-dot" style="background: var(--accent)"></span>CLEAR/软执行 率 (占该周 snapshot)</span>
+          <span class="trend-legend"><span class="trend-dot" style="background: var(--pass)"></span>胜率 (按 snapshot 创建日期分桶)</span>
         </div>
       </div>
       <div class="trend-chart-wrap">
-        <svg class="trend-chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+        <svg class="trend-chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
           ${yGridLines}
           <path d="${clearPath}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>
           <path d="${winPath}" fill="none" stroke="var(--pass)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>
