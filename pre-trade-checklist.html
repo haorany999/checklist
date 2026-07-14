@@ -581,6 +581,20 @@
   .picker-card:active { transform: translateY(0); transition: transform 0.05s ease; }
   .open-pos-row, .override-row, .forced-row, .loss-row, .explore-row, .strategy-row { transition: transform 0.12s ease, background 0.12s ease; }
   .open-pos-row:hover, .override-row:hover, .forced-row:hover, .explore-row:hover { transform: translateX(2px); background: color-mix(in srgb, var(--panel-2) 60%, transparent); }
+
+  /* V3 — Backtest cells, verdict rows, item cards subtle lift on hover */
+  .backtest-cell, .verdict-winrate-row, .item, .edit-item, .ticker-row {
+    transition: transform 0.14s ease, box-shadow 0.14s ease, border-color 0.14s ease;
+  }
+  .backtest-cell:hover, .verdict-winrate-row:hover, .ticker-row:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px -6px rgba(0,0,0,0.14), 0 1px 2px rgba(0,0,0,0.04);
+  }
+  .item:not(.item-locked):hover, .edit-item:hover {
+    box-shadow: 0 2px 8px -4px rgba(0,0,0,0.10);
+    border-color: var(--border-hi);
+  }
+
   .btn { transition: transform 0.1s ease, box-shadow 0.15s ease, background 0.15s ease, border-color 0.15s ease; }
   .btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 3px 8px -2px rgba(0,0,0,0.08); }
   .btn:active { transform: translateY(0); transition: transform 0.05s ease; }
@@ -588,6 +602,14 @@
 
   /* Focus rings — premium subtle */
   *:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: inherit; transition: outline-offset 0.12s ease; }
+
+  /* V7 — Input focus glow (soft accent ring around inputs) */
+  input:focus, textarea:focus, select:focus,
+  .sync-setup-input:focus, .edit-item-input:focus, .item-numeric-input:focus, .explore-filters input:focus, .explore-filters select:focus {
+    outline: none !important;
+    border-color: var(--accent) !important;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent) !important;
+  }
 
   /* A2 · Button ripple */
   .btn, .picker-card, .segmented button, .item-check, .item-toggle button, .theme-btn { position: relative; overflow: hidden; }
@@ -900,6 +922,65 @@
   .toast.error   { border-left: 3px solid var(--fail); }
   .toast.info    { border-left: 3px solid var(--accent); }
   .toast-sub { font-size: 11.5px; color: var(--text-dim); margin-top: 3px; font-weight: 400; letter-spacing: 0.02em; }
+
+  /* V2 · Toast redesign — icons, undo, close */
+  .toast-v2 {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 11px 14px; cursor: pointer;
+    border-left-width: 3px;
+    border-radius: var(--radius, 6px);
+    animation: toastSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  @keyframes toastSlideIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .toast-icon {
+    flex-shrink: 0; width: 22px; height: 22px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono); font-size: 13px; font-weight: 800;
+    margin-top: 1px;
+  }
+  .toast-success .toast-icon { background: var(--pass); color: #0F1419; }
+  .toast-error .toast-icon { background: var(--fail); color: #0F1419; }
+  .toast-warning .toast-icon { background: var(--pending); color: #0F1419; }
+  .toast-info .toast-icon { background: var(--accent); color: #0F1419; }
+  .toast-body { flex: 1; min-width: 0; }
+  .toast-title { font-size: 13px; font-weight: 600; color: var(--text); line-height: 1.4; }
+  .toast-v2 .toast-sub { font-size: 11px; color: var(--text-dim); margin-top: 2px; line-height: 1.4; }
+  .toast-undo {
+    flex-shrink: 0; align-self: center;
+    font-family: var(--mono); font-size: 11px; font-weight: 700;
+    color: var(--accent); background: transparent;
+    border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+    border-radius: 3px; padding: 4px 8px; cursor: pointer;
+    letter-spacing: 0.04em;
+    -webkit-appearance: none; appearance: none;
+    transition: all 0.15s;
+  }
+  .toast-undo:hover { background: color-mix(in srgb, var(--accent) 15%, transparent); }
+  .toast-close {
+    flex-shrink: 0; background: transparent; border: none;
+    color: var(--text-faint); font-size: 18px; font-weight: 400;
+    cursor: pointer; padding: 0 2px; line-height: 1;
+    -webkit-appearance: none; appearance: none;
+    transition: color 0.15s;
+  }
+  .toast-close:hover { color: var(--text); }
+
+  /* MB2 · Swipe gestures for history rows (mobile) */
+  .history-item.swipeable { position: relative; overflow: hidden; }
+  .history-item.swipeable .history-main {
+    background: var(--panel);
+    position: relative; z-index: 2;
+    will-change: transform;
+  }
+  .history-item.swipeable .history-actions {
+    position: absolute; right: 0; top: 0; bottom: 0; z-index: 1;
+    display: flex; align-items: center; padding: 0 12px;
+    gap: 6px;
+    background: var(--panel-2);
+  }
 
   /* Terminal theme: CRT phosphor glow */
   body.theme-terminal .status-main.pass, body.theme-terminal .status-main.fail { text-shadow: 0 0 12px currentColor; }
@@ -2293,23 +2374,92 @@ function _triggerViewTransition() {
 
 function render() {
   _triggerViewTransition();
-  if (state._view === 'history') { renderHistoryPage(); return; }
-  if (!state.strategy) { renderPicker(); return; }
+  if (state._view === 'history') { renderHistoryPage(); _postRender(); return; }
+  if (!state.strategy) { renderPicker(); _postRender(); return; }
   if (state.strategy === 'leaps') {
-    if (!state.leapsDirection) { renderLeapsConfig(); return; }
-    if (!state.leapsStyle) { renderLeapsConfig(); return; }
-    if (state.leapsDirection === 'open' && !state.leapsPhase) { renderLeapsConfig(); return; }
-    if (state.leapsDirection === 'close' && !state.leapsCloseType) { renderLeapsConfig(); return; }
+    if (!state.leapsDirection) { renderLeapsConfig(); _postRender(); return; }
+    if (!state.leapsStyle) { renderLeapsConfig(); _postRender(); return; }
+    if (state.leapsDirection === 'open' && !state.leapsPhase) { renderLeapsConfig(); _postRender(); return; }
+    if (state.leapsDirection === 'close' && !state.leapsCloseType) { renderLeapsConfig(); _postRender(); return; }
     renderChecklist();
     scheduleSaveDraft();
+    _postRender();
     return;
   }
-  if (state.strategy === 'csp' && !state.cspIntent) { renderCspConfig(); return; }
-  if (state.strategy === 'pmcc' && !state.pmccUnderlyingPurpose) { renderPmccConfig(); return; }
-  if (state.strategy === 'cc' && !state.ccMode) { renderCcConfig(); return; }
+  if (state.strategy === 'csp' && !state.cspIntent) { renderCspConfig(); _postRender(); return; }
+  if (state.strategy === 'pmcc' && !state.pmccUnderlyingPurpose) { renderPmccConfig(); _postRender(); return; }
+  if (state.strategy === 'cc' && !state.ccMode) { renderCcConfig(); _postRender(); return; }
   renderChecklist();
   scheduleSaveDraft();
+  _postRender();
 }
+
+// Called after every render — runs number animations, other DOM enhancements
+function _postRender() {
+  requestAnimationFrame(() => {
+    if (typeof runNumberAnimations === 'function') runNumberAnimations();
+    if (typeof enableSwipeGestures === 'function') enableSwipeGestures();
+  });
+}
+
+// MB2 · Swipe gestures on history rows (mobile: swipe left → reveal actions)
+function enableSwipeGestures() {
+  // Only on touch devices
+  if (!('ontouchstart' in window)) return;
+  document.querySelectorAll('.history-item').forEach(row => {
+    if (row.dataset.swipeEnabled === '1') return;
+    row.dataset.swipeEnabled = '1';
+    let startX = 0, startY = 0, currentX = 0, tracking = false, revealed = false;
+    const main = row.querySelector('.history-main');
+    const actions = row.querySelector('.history-actions');
+    if (!main || !actions) return;
+    // Setup: transform main content, actions absolutely positioned on right
+    row.classList.add('swipeable');
+
+    row.addEventListener('touchstart', (e) => {
+      if (e.target.closest('button')) return;  // Skip if tapping a button
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+      currentX = 0;
+      tracking = true;
+    }, { passive: true });
+
+    row.addEventListener('touchmove', (e) => {
+      if (!tracking) return;
+      const dx = e.touches[0].clientX - startX;
+      const dy = e.touches[0].clientY - startY;
+      // If vertical scroll wins, cancel swipe
+      if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 8) { tracking = false; return; }
+      currentX = Math.min(0, dx);  // Only left swipe
+      main.style.transform = `translateX(${currentX}px)`;
+      main.style.transition = 'none';
+    }, { passive: true });
+
+    row.addEventListener('touchend', () => {
+      if (!tracking) return;
+      tracking = false;
+      main.style.transition = 'transform 0.22s cubic-bezier(0.2, 0.9, 0.3, 1)';
+      if (currentX < -60) {
+        // Reveal
+        main.style.transform = `translateX(-180px)`;
+        revealed = true;
+        haptic(6);
+      } else {
+        main.style.transform = 'translateX(0)';
+        revealed = false;
+      }
+    });
+
+    // Close reveal when tapping outside
+    row.addEventListener('touchstart', () => {
+      if (revealed && startX === 0) {
+        main.style.transform = 'translateX(0)';
+        revealed = false;
+      }
+    });
+  });
+}
+window.enableSwipeGestures = enableSwipeGestures;
 
 function headerHTML() {
   const themeName = THEME_LABEL[state.theme] || 'Auto';
@@ -2556,7 +2706,7 @@ function pickerFooterHTML() {
             <span class="strategy-name">${esc(key)}</span>
             <span class="strategy-count">${g.total}</span>
             <span class="strategy-detail">${g.win}胜 / ${g.loss}负${g.open > 0 ? ` / ${g.open}持` : ''}</span>
-            <span class="strategy-winrate ${wrClass}">${winRate == null ? '—' : winRate + '%'}</span>
+            <span class="strategy-winrate ${wrClass}" ${winRate != null ? `data-anim-num="${winRate}" data-anim-key="strat-${key}" data-anim-format="percent"` : ''}>${winRate == null ? '—' : winRate + '%'}</span>
           </div>
         `;
       }).join('');
@@ -2727,23 +2877,23 @@ function pickerFooterHTML() {
     ${verdictSparklineHTML()}
     <div class="picker-stats">
       <div class="picker-stat" title="过去 7 天 snapshot 总数">
-        <div class="picker-stat-num">${weekTotal}</div>
+        <div class="picker-stat-num" data-anim-num="${weekTotal}" data-anim-key="wk-total" data-anim-format="int">${weekTotal}</div>
         <div class="picker-stat-label">本周 Snapshot</div>
       </div>
       <div class="picker-stat" title="过去 7 天 CLEAR verdict 数">
-        <div class="picker-stat-num pass">${weekClear}</div>
+        <div class="picker-stat-num pass" data-anim-num="${weekClear}" data-anim-key="wk-clear" data-anim-format="int">${weekClear}</div>
         <div class="picker-stat-label">CLEAR</div>
       </div>
       <div class="picker-stat" title="过去 7 天 BLOCKED verdict 数">
-        <div class="picker-stat-num fail">${weekBlocked}</div>
+        <div class="picker-stat-num fail" data-anim-num="${weekBlocked}" data-anim-key="wk-block" data-anim-format="int">${weekBlocked}</div>
         <div class="picker-stat-label">BLOCKED</div>
       </div>
       <div class="picker-stat" title="本周 CLEAR / 总数">
-        <div class="picker-stat-num">${clearRateWk}%</div>
+        <div class="picker-stat-num" data-anim-num="${clearRateWk}" data-anim-key="wk-clearrate" data-anim-format="percent">${clearRateWk}%</div>
         <div class="picker-stat-label">本周 CLEAR 率</div>
       </div>
       <div class="picker-stat" title="过去 30 天已结算 (盈+亏) 的胜率">
-        <div class="picker-stat-num ${winRateCls}">${winRate30d != null ? winRate30d + '%' : '—'}</div>
+        <div class="picker-stat-num ${winRateCls}" ${winRate30d != null ? `data-anim-num="${winRate30d}" data-anim-key="wr-30d" data-anim-format="percent"` : ''}>${winRate30d != null ? winRate30d + '%' : '—'}</div>
         <div class="picker-stat-label">30 天胜率</div>
       </div>
     </div>
@@ -3110,12 +3260,12 @@ function checklistBacktestPanelHTML() {
       <div class="backtest-grid">
         <div class="backtest-cell">
           <div class="backtest-label">实际胜率 (所有交易)</div>
-          <div class="backtest-value">${actualRate}%</div>
+          <div class="backtest-value" data-anim-num="${actualRate}" data-anim-key="bt-actual" data-anim-format="percent">${actualRate}%</div>
           <div class="backtest-detail">${actualWins} 胜 · ${actualLosses} 负 · ${actualTotal} 笔</div>
         </div>
         <div class="backtest-cell strict">
           <div class="backtest-label">严格 CLEAR 胜率</div>
-          <div class="backtest-value">${strictRate != null ? strictRate + '%' : '—'}</div>
+          <div class="backtest-value" ${strictRate != null ? `data-anim-num="${strictRate}" data-anim-key="bt-strict" data-anim-format="percent"` : ''}>${strictRate != null ? strictRate + '%' : '—'}</div>
           <div class="backtest-detail">${strictWins} 胜 · ${strictLosses} 负 · ${strictTotal} 笔</div>
         </div>
         <div class="backtest-cell delta">
@@ -3125,7 +3275,7 @@ function checklistBacktestPanelHTML() {
         </div>
         <div class="backtest-cell forced">
           <div class="backtest-label">硬冲表现 (PENDING/BLOCKED)</div>
-          <div class="backtest-value ${forcedRate != null && forcedRate < 40 ? 'fail' : ''}">${forcedRate != null ? forcedRate + '%' : '—'}</div>
+          <div class="backtest-value ${forcedRate != null && forcedRate < 40 ? 'fail' : ''}" ${forcedRate != null ? `data-anim-num="${forcedRate}" data-anim-key="bt-forced" data-anim-format="percent"` : ''}>${forcedRate != null ? forcedRate + '%' : '—'}</div>
           <div class="backtest-detail">${forcedWins} 胜 · ${forcedLosses} 负 · ${forcedTotal} 笔</div>
         </div>
       </div>
@@ -4401,17 +4551,34 @@ function deleteHistoryEntry(id) {
   const history = loadHistory();
   const idx = history.findIndex(e => e.id === id);
   if (idx === -1) return;
+  // Save original for undo
+  const originalEntry = { ...history[idx] };
   // Replace with tombstone so deletion propagates via sync
-  const original = history[idx];
   history[idx] = {
-    id: original.id,
+    id: originalEntry.id,
     _deleted: true,
     _deletedAt: Date.now(),
-    timestampSort: original.timestampSort || Date.now()
+    timestampSort: originalEntry.timestampSort || Date.now()
   };
   try { localStorage.setItem(HISTORY_KEY, JSON.stringify(history)); } catch (e) {}
   if (state._view === 'history') renderHistoryList();
   else render();
+  // V2 · Toast with undo
+  showToast('已删除', 'info', originalEntry.ticker ? originalEntry.ticker + ' · ' + originalEntry.strategy : '', {
+    undo: true,
+    duration: 5000,
+    onUndo: () => {
+      const h = loadHistory();
+      const i = h.findIndex(e => e.id === id);
+      if (i !== -1) {
+        h[i] = originalEntry;
+        try { localStorage.setItem(HISTORY_KEY, JSON.stringify(h)); } catch (e) {}
+        if (state._view === 'history') renderHistoryList();
+        else render();
+        showToast('已恢复', 'success', originalEntry.ticker || '');
+      }
+    }
+  });
 }
 
 // Temporarily swap global state to a snapshot state, run fn, restore.
@@ -5290,6 +5457,7 @@ function renderHistoryList() {
       </div>
     `;
   }).join('');
+  if (typeof _postRender === 'function') _postRender();
 }
 
 /* ==========================================================
@@ -5305,17 +5473,91 @@ function ensureToastContainer() {
   }
   return c;
 }
-function showToast(message, type = 'success', sub = '') {
+// V1 · Odometer / number roll animation for stats
+// Elements marked with data-anim-num="target-value" + data-anim-key="unique-id"
+// animate from previous value to new value on render.
+const _animLastValues = new Map();
+function _formatAnimVal(v, format) {
+  const rounded = Math.round(v * 10) / 10;
+  const isInt = Math.round(v) === Math.round(rounded);
+  if (format === 'percent') return Math.round(v) + '%';
+  if (format === 'money') return '$' + (isInt ? Math.round(v).toLocaleString() : v.toFixed(2));
+  return isInt ? Math.round(v).toString() : v.toFixed(1);
+}
+function animateStatNum(el, targetValue, key, format = 'int', duration = 500) {
+  if (isNaN(targetValue) || targetValue == null) return;
+  const from = _animLastValues.has(key) ? _animLastValues.get(key) : targetValue;
+  _animLastValues.set(key, targetValue);
+  if (from === targetValue) {
+    el.textContent = _formatAnimVal(targetValue, format);
+    return;
+  }
+  const start = performance.now();
+  function tick(t) {
+    const p = Math.min(1, (t - start) / duration);
+    const ease = 1 - Math.pow(1 - p, 3);
+    const cur = from + (targetValue - from) * ease;
+    el.textContent = _formatAnimVal(cur, format);
+    if (p < 1) requestAnimationFrame(tick);
+    else el.textContent = _formatAnimVal(targetValue, format);
+  }
+  requestAnimationFrame(tick);
+}
+function runNumberAnimations() {
+  document.querySelectorAll('[data-anim-num]').forEach(el => {
+    const target = parseFloat(el.dataset.animNum);
+    const key = el.dataset.animKey || el.textContent;
+    const format = el.dataset.animFormat || 'int';
+    animateStatNum(el, target, key, format);
+  });
+}
+window.runNumberAnimations = runNumberAnimations;
+// V1 · haptic feedback on iOS/Android where supported
+function haptic(pattern = 8) {
+  try {
+    if (navigator.vibrate) navigator.vibrate(pattern);
+  } catch (e) {}
+}
+window.haptic = haptic;
+
+function showToast(message, type = 'success', sub = '', opts = {}) {
   const c = ensureToastContainer();
   const t = document.createElement('div');
-  t.className = 'toast ' + type;
-  t.innerHTML = `<div>${message}</div>${sub ? `<div class="toast-sub">${sub}</div>` : ''}`;
+  t.className = 'toast toast-v2 toast-' + type;
+  const icon = type === 'success' ? '✓' : type === 'error' ? '✕' : type === 'warning' ? '!' : 'i';
+  const undoHTML = opts.undo ? `<button class="toast-undo" data-undo>撤销</button>` : '';
+  t.innerHTML = `
+    <div class="toast-icon">${icon}</div>
+    <div class="toast-body">
+      <div class="toast-title">${message}</div>
+      ${sub ? `<div class="toast-sub">${sub}</div>` : ''}
+    </div>
+    ${undoHTML}
+    <button class="toast-close" aria-label="Close">×</button>
+  `;
   c.appendChild(t);
   requestAnimationFrame(() => t.classList.add('visible'));
-  setTimeout(() => {
+  haptic(type === 'error' ? [10, 40, 10] : 8);
+
+  const duration = opts.duration || (opts.undo ? 5000 : 2600);
+  const dismiss = () => {
     t.classList.remove('visible');
-    setTimeout(() => t.remove(), 350);
-  }, 2600);
+    setTimeout(() => t.remove(), 300);
+  };
+  const timer = setTimeout(dismiss, duration);
+
+  // Click anywhere on toast (except undo) dismisses
+  t.addEventListener('click', (e) => {
+    if (e.target.hasAttribute('data-undo')) {
+      clearTimeout(timer);
+      if (opts.onUndo) opts.onUndo();
+      dismiss();
+      haptic(5);
+      return;
+    }
+    clearTimeout(timer);
+    dismiss();
+  });
 }
 
 /* ==========================================================
@@ -6594,10 +6836,19 @@ render();
 // Warn user if localStorage is unavailable
 showStorageWarningIfNeeded();
 
-/* Global click → button ripple (A2) */
+/* Global click → button ripple (A2) + haptic (MB4) */
 document.addEventListener('click', (e) => {
-  const target = e.target.closest('.btn, .picker-card, .segmented button, .item-check, .item-toggle button, .theme-btn');
+  const target = e.target.closest('.btn, .picker-card, .segmented button, .item-check, .item-toggle button, .theme-btn, .item-btn, .edit-item-btn, .trend-range-btn');
   if (!target) return;
+  // MB4 · Haptic feedback (Android; iOS no-op)
+  if (typeof haptic === 'function') {
+    if (target.classList.contains('primary') || target.classList.contains('item-btn') || target.classList.contains('edit-item-btn')) {
+      haptic(10);  // Stronger feedback for primary actions
+    } else {
+      haptic(5);   // Subtle for secondary buttons
+    }
+  }
+  // Ripple effect
   if (target.__rippleActive) return;
   const rect = target.getBoundingClientRect();
   const ripple = document.createElement('span');
