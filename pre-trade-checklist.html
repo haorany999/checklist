@@ -226,10 +226,70 @@
   .edit-verdict-badge-pass { background: var(--pass-bg); color: var(--pass); border: 1px solid color-mix(in srgb, var(--pass) 40%, transparent); }
   .edit-verdict-badge-fail { background: var(--fail-bg); color: var(--fail); border: 1px solid color-mix(in srgb, var(--fail) 40%, transparent); }
   .edit-verdict-badge-pending { background: var(--pending-bg); color: var(--pending); border: 1px solid color-mix(in srgb, var(--pending) 40%, transparent); }
-  .edit-verdict-pass { border-left: 3px solid var(--pass) !important; }
-  .edit-verdict-fail { border-left: 3px solid var(--fail) !important; }
-  .edit-verdict-pending { border-left: 3px solid var(--pending) !important; }
+
+  /* Edit item — mirror main checklist styling exactly */
+  .edit-item {
+    position: relative;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius, 6px);
+    padding: 12px 14px;
+    transition: border-color 0.15s, background 0.15s;
+    border-left-width: 3px;
+  }
+  .edit-verdict-pass {
+    border-left-color: var(--pass) !important;
+    background: linear-gradient(90deg, var(--pass-bg) 0%, var(--panel) 45%);
+  }
+  .edit-verdict-fail {
+    border-left-color: var(--fail) !important;
+    background: linear-gradient(90deg, var(--fail-bg) 0%, var(--panel) 45%);
+  }
+  .edit-verdict-pending {
+    border-left-color: var(--border) !important;
+  }
+  .edit-item-locked {
+    background: linear-gradient(90deg, var(--pending-bg) 0%, var(--panel) 45%);
+    border-left-color: var(--pending) !important;
+  }
   .edit-item-rr { padding-left: 12px !important; }
+
+  /* Edit item buttons — mirror main .item-btn */
+  .edit-item-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  .edit-item-text { flex: 1; min-width: 0; }
+  .edit-item-buttons {
+    display: flex; gap: 6px;
+    flex-shrink: 0;
+  }
+  .edit-item-btn {
+    width: 40px; height: 40px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius, 6px);
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono);
+    font-size: 16px; font-weight: 700;
+    color: var(--text-faint);
+    transition: all 0.12s ease;
+    -webkit-appearance: none; appearance: none;
+  }
+  .edit-item-btn:active { transform: scale(0.92); }
+  .edit-pass-btn:hover { border-color: var(--pass); color: var(--pass); }
+  .edit-fail-btn:hover { border-color: var(--fail); color: var(--fail); }
+  .edit-pass-btn.on {
+    background: var(--pass);
+    color: #0F1419;
+    border-color: var(--pass);
+  }
+  .edit-fail-btn.on {
+    background: var(--fail);
+    color: #0F1419;
+    border-color: var(--fail);
+  }
+  /* Terminal theme: extra glow like main checklist */
+  body.theme-terminal .edit-pass-btn.on,
+  body.theme-terminal .edit-fail-btn.on { text-shadow: 0 0 6px currentColor; }
 
   /* Verdict shift dialog */
   .verdict-shift-badge {
@@ -591,18 +651,17 @@
   .edit-section-header { font-family: var(--mono); font-size: 10.5px; color: var(--text-faint); letter-spacing: 0.12em; text-transform: uppercase; margin: 22px 0 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
   .edit-group { margin-bottom: 16px; }
   .edit-group-title { font-family: var(--mono); font-size: 10px; color: var(--text-faint); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 8px; padding: 4px 0; border-bottom: 1px dashed var(--border); }
-  .edit-item { padding: 10px 0; border-bottom: 1px solid var(--border); }
-  .edit-item:last-child { border-bottom: none; }
-  .edit-item-title { font-size: 12.5px; color: var(--text); margin-bottom: 4px; line-height: 1.4; }
-  .edit-item-hard { display: inline-block; font-family: var(--mono); font-size: 9px; font-weight: 700; color: var(--fail); background: var(--fail-bg); padding: 1px 5px; border-radius: 3px; letter-spacing: 0.06em; margin-left: 4px; vertical-align: middle; }
-  .edit-item-desc { font-size: 11px; color: var(--text-faint); line-height: 1.5; margin-bottom: 6px; }
-  .edit-item-input-row { display: flex; align-items: center; gap: 6px; }
-  .edit-item-input { flex: 1; font-family: var(--mono); font-size: 13px; padding: 6px 8px; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 5px; -webkit-appearance: none; appearance: none; }
+  /* .edit-item base defined earlier — this section only styles internals */
+  .edit-item-title { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 6px; line-height: 1.4; }
+  .edit-item-hard { display: inline-block; font-family: var(--mono); font-size: 9.5px; font-weight: 700; color: var(--fail); background: var(--fail-bg); padding: 2px 6px; border-radius: 3px; letter-spacing: 0.08em; margin-left: 4px; vertical-align: middle; border: 1px solid rgba(248, 81, 73, 0.25); }
+  .edit-item-desc { font-size: 12px; color: var(--text-dim); line-height: 1.5; margin-bottom: 8px; }
+  .edit-item-input-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border); }
+  .edit-item-input { flex: 1; font-family: var(--mono); font-size: 14px; padding: 8px 10px; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: var(--radius, 5px); -webkit-appearance: none; appearance: none; max-width: 140px; }
   .edit-item-input:focus { outline: none; border-color: var(--accent); }
-  .edit-item-unit { font-family: var(--mono); font-size: 11px; color: var(--text-faint); }
-  .edit-item-seg { display: flex; gap: 4px; }
-  .edit-item-seg button { flex: 1; font-family: var(--mono); font-size: 11.5px; padding: 5px 6px; background: transparent; color: var(--text-dim); border: 1px solid var(--border); border-radius: 4px; cursor: pointer; -webkit-appearance: none; appearance: none; }
-  .edit-item-seg button.active { background: var(--accent); color: #0F1419; border-color: var(--accent); }
+  .edit-item-unit { font-family: var(--mono); font-size: 12px; color: var(--text-faint); }
+  .edit-group { margin-bottom: 18px; }
+  .edit-group > .edit-item { margin-bottom: 8px; }
+  .edit-group > .edit-item:last-child { margin-bottom: 0; }
   .edit-position-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
   @media (max-width: 480px) { .edit-position-grid { grid-template-columns: 1fr; } }
 
@@ -4382,10 +4441,16 @@ function renderEditItem(item, itemsMap) {
     const displayVal = (val != null && val !== '') ? val : '';
     const ph = item.numeric.placeholder || '';
     const unit = item.numeric.unit || '';
+    // Verdict for the whole item — based on current stored value
+    const verdict = itemVerdict(item);
     return `
-      <div class="edit-item">
-        <div class="edit-item-title">${esc(item.title)} ${hardBadge}</div>
-        ${desc}
+      <div class="edit-item edit-verdict-${verdict}">
+        <div class="edit-item-head">
+          <div class="edit-item-text">
+            <div class="edit-item-title">${esc(item.title)} ${hardBadge}</div>
+            ${desc}
+          </div>
+        </div>
         <div class="edit-item-input-row">
           <input type="number" class="edit-item-input" data-item-id="${item.id}"
                  data-item-type="numeric" value="${esc(displayVal)}"
@@ -4396,16 +4461,19 @@ function renderEditItem(item, itemsMap) {
     `;
   }
 
-  // Toggle item
+  // Toggle item — match main checklist: 2 buttons (✓ / ✕), click same to clear
   const currentState = (val === 'pass' || val === 'fail') ? val : 'pending';
   return `
-    <div class="edit-item">
-      <div class="edit-item-title">${esc(item.title)} ${hardBadge}</div>
-      ${desc}
-      <div class="segmented edit-item-seg" data-item-id="${item.id}" data-item-type="toggle">
-        <button data-v="pass"${currentState === 'pass' ? ' class="active"' : ''}>✓ Pass</button>
-        <button data-v="fail"${currentState === 'fail' ? ' class="active"' : ''}>✕ Fail</button>
-        <button data-v="pending"${currentState === 'pending' ? ' class="active"' : ''}>○ Clear</button>
+    <div class="edit-item edit-verdict-${currentState}">
+      <div class="edit-item-head">
+        <div class="edit-item-text">
+          <div class="edit-item-title">${esc(item.title)} ${hardBadge}</div>
+          ${desc}
+        </div>
+        <div class="edit-item-buttons" data-item-id="${item.id}" data-item-type="toggle" data-current="${currentState}">
+          <button class="edit-item-btn edit-pass-btn ${currentState === 'pass' ? 'on' : ''}" data-v="pass" title="Pass">✓</button>
+          <button class="edit-item-btn edit-fail-btn ${currentState === 'fail' ? 'on' : ''}" data-v="fail" title="Block">✕</button>
+        </div>
       </div>
     </div>
   `;
@@ -4556,12 +4624,52 @@ function showEditModal(id) {
     });
   });
 
-  // Wire item toggle segmented buttons (per-item)
-  modal.querySelectorAll('.edit-item-seg').forEach(segEl => {
-    segEl.querySelectorAll('button').forEach(b => {
-      b.addEventListener('click', () => {
-        segEl.querySelectorAll('button').forEach(x => x.classList.remove('active'));
-        b.classList.add('active');
+  // Live verdict update for numeric items — card color changes as user types
+  modal.querySelectorAll('.edit-item-input[data-item-id]').forEach(inp => {
+    inp.addEventListener('input', () => {
+      const iid = inp.dataset.itemId;
+      const item = editItems.find(it => it.id === iid);
+      if (!item || !item.numeric) return;
+      // Recompute verdict using temp state with current form value
+      const currentFormItems = { ...(fullState.items || {}), [iid]: inp.value.trim() };
+      const tempFullState = { ...fullState, items: currentFormItems };
+      let verdict;
+      withTempState(tempFullState, () => { verdict = itemVerdict(item); });
+      // Update card class
+      const card = inp.closest('.edit-item');
+      if (card) {
+        card.classList.remove('edit-verdict-pass', 'edit-verdict-fail', 'edit-verdict-pending');
+        card.classList.add('edit-verdict-' + verdict);
+      }
+    });
+  });
+
+  // Wire item toggle buttons: click ✓ → pass on, click ✕ → fail on, click same again → clear
+  modal.querySelectorAll('.edit-item-buttons').forEach(container => {
+    container.querySelectorAll('button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const clicked = btn.dataset.v;  // 'pass' or 'fail'
+        const current = container.dataset.current;
+        const passBtn = container.querySelector('.edit-pass-btn');
+        const failBtn = container.querySelector('.edit-fail-btn');
+        let next;
+        if (current === clicked) {
+          // Same button → clear
+          next = 'pending';
+          passBtn.classList.remove('on');
+          failBtn.classList.remove('on');
+        } else {
+          next = clicked;
+          passBtn.classList.toggle('on', next === 'pass');
+          failBtn.classList.toggle('on', next === 'fail');
+        }
+        container.dataset.current = next;
+        // Update parent item's verdict class for visual feedback
+        const item = container.closest('.edit-item');
+        if (item) {
+          item.classList.remove('edit-verdict-pass', 'edit-verdict-fail', 'edit-verdict-pending');
+          item.classList.add('edit-verdict-' + next);
+        }
       });
     });
   });
@@ -4596,10 +4704,10 @@ function showEditModal(id) {
         const iid = el.dataset.itemId;
         currentFormItems[iid] = el.value.trim();
       });
-      modal.querySelectorAll('.edit-item-seg[data-item-id]').forEach(el => {
+      modal.querySelectorAll('.edit-item-buttons[data-item-id]').forEach(el => {
         const iid = el.dataset.itemId;
-        const active = el.querySelector('button.active');
-        if (active && active.dataset.v !== 'pending') currentFormItems[iid] = active.dataset.v;
+        const v = el.dataset.current || 'pending';
+        if (v !== 'pending') currentFormItems[iid] = v;
       });
       const tempFullState = { ...fullState, items: currentFormItems };
       // Compute with withTempState
@@ -4641,8 +4749,7 @@ function showEditModal(id) {
           const type = el.dataset.itemType;
           if (type === 'numeric') currentItems[iid] = el.value.trim();
           else if (type === 'toggle') {
-            const inner = el.querySelector('button.active');
-            const v = inner ? inner.dataset.v : 'pending';
+            const v = el.dataset.current || 'pending';
             if (v !== 'pending') currentItems[iid] = v;
           }
         });
@@ -4671,8 +4778,7 @@ function showEditModal(id) {
       if (type === 'numeric') {
         newItems[iid] = el.value.trim();
       } else if (type === 'toggle') {
-        const activeInner = el.querySelector('button.active');
-        const v = activeInner ? activeInner.dataset.v : 'pending';
+        const v = el.dataset.current || 'pending';
         if (v === 'pending') delete newItems[iid];
         else newItems[iid] = v;
       }
