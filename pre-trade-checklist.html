@@ -1256,6 +1256,7 @@ const STRAT_LABEL = { leaps: 'LEAPS', pmcc: 'PMCC', csp: 'CSP', cc: 'CC' };
 const LEAPS_DIRECTION_LABEL = { open: '开仓', close: '关仓' };
 const LEAPS_PHASE_LABEL = {
   entry: '首笔 · 左侧衰竭',
+  add_left: '加仓 · 左侧衰竭',
   add_right: '加仓 · 右侧确认',
   add_macd: '加仓 · MACD 金叉'
 };
@@ -1473,6 +1474,7 @@ const SOP = {
         </ul>
       </li>
       <li><b>首笔 · 左侧衰竭:</b> MJ2 信号 + 左侧动能衰竭 (RSI≤30 或 RSI≤50 触及布林下轨且斜率放缓, 或底背离, MACD 红柱缩短) + 止跌 K 线形态 + 放量确认</li>
+      <li><b>加仓 · 左侧衰竭:</b> 首笔浮亏 ≤ 20% (超过应止损而非加仓) + MJ2 信号 + 左侧动能再度衰竭 + 止跌 K 线 + 放量。要求比首笔更严, 二次探底比首次筑底更多 fake.</li>
       <li><b>加仓 · 右侧确认:</b> 日线收复 5/10/20MA + 右侧 K 线形态 (反包/吞没/锤头) + 放量确认 + 站稳 EMA21/SMA50</li>
       <li><b>加仓 · MACD 金叉:</b> 日线 MACD 低位金叉 (滞后指标, 严禁作为第一买点) + 金叉当日 K 线形态 + 放量确认 + 价格站稳短周期均线</li>
       <li><b>加仓节奏 (硬性):</b> 同一张 LEAPS 每周最多加 1 次, 无论什么信号。LEAPS DTE 长, 没紧迫感; 一周多加几乎都是情绪。</li>
@@ -1661,6 +1663,25 @@ function leapsOpenItems() {
     base.push({ group: g, id: 'budget50pct',
       title: '若熊市筑底建仓: 已预留 50% 预算给 MACD 金叉阶段',
       desc: 'Δ 70-80, DTE 12-18 个月。' });
+  }
+  if (state.leapsPhase === 'add_left') {
+    const g = 'Add signals (加仓 · 左侧衰竭)';
+    base.push({ group: g, id: 'cooldown_left',
+      title: '本周同一张 LEAPS 加仓次数 ≤ 1',
+      desc: '每周最多 1 次, 无论信号类型. 一周内二次加仓几乎都是情绪.',
+      hard: true });
+    base.push({ group: g, id: 'mj2_add_left',
+      title: 'MJ2 系统给出信号', desc: 'MJ2 已触发, 加仓也要有系统确认.' });
+    base.push({ group: g, id: 'exhaustion_add',
+      title: '左侧动能再度衰竭已确认',
+      desc: 'RSI ≤ 30；或 RSI ≤ 50 触及布林下轨且斜率放缓；或底背离；或 MACD 红柱缩短。加仓比首笔要求更严: 二次探底比首次筑底更常有 fake.' });
+    base.push({ group: g, id: 'reversal_confirm_add_left',
+      title: '止跌 K 线 + 放量确认',
+      desc: '止跌形态 (锤头 / 十字星 / 吞没 / 长下影 pin bar / 早晨之星) 且当日成交量 > 5 日均量 × 1.2.' });
+    base.push({ group: g, id: 'first_pos_reviewed',
+      title: '首笔仓位状态已审视',
+      desc: '首笔浮亏 ≤ 20% (若首笔已 -30%+, 大概率画线错了, 应止损而非加仓). 或首笔已回本以上.',
+      hard: true });
   }
   if (state.leapsPhase === 'add_right') {
     const g = 'Add signals (加仓 · 右侧确认)';
@@ -3453,13 +3474,14 @@ function renderLeapsConfig() {
     subConfigHTML = `
       <div class="config">
         <div class="config-title">加仓信号类型 · 本次触发是哪一类</div>
-        <div class="segmented" id="phase-seg">
+        <div class="segmented segmented-grid" id="phase-seg">
           <button data-v="entry">首笔 · 左侧衰竭</button>
+          <button data-v="add_left">加仓 · 左侧衰竭</button>
           <button data-v="add_right">加仓 · 右侧确认</button>
           <button data-v="add_macd">加仓 · MACD 金叉</button>
         </div>
         <div style="font-size: 11.5px; color: var(--text-faint); margin-top: 8px; line-height: 1.5;">
-          按信号类型分, 不是"第几笔"。加仓可以多次, 每次归属一类。
+          按信号类型分, 不是"第几笔"。加仓可以多次, 每次归属一类。左侧加仓比首笔要求更严。
         </div>
       </div>
     `;
