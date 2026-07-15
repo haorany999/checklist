@@ -1722,7 +1722,8 @@ function leapsOpenItems() {
     numeric: { placeholder: 'e.g. 40', unit: '', max: 45, comparator: '≤' } });
   base.push({ group: 'Market environment · 宏观环境', id: 'market_ok',
     title: '市场未在系统性大跌',
-    desc: 'SPY 今日 > -3% 且 5D > -5%. 系统性下跌时别接飞刀, 等反弹或站上 5MA/10MA.' });
+    desc: 'SPY 今日 > -3% 且 5D > -5%. 系统性下跌时别接飞刀, 等反弹或站上 5MA/10MA.',
+    hard: true });
   base.push({ group: 'Market environment · 宏观环境', id: 'macro',
     title: '未来 7 天无重大宏观事件冲击',
     desc: 'FOMC / CPI / PPI / NFP 已在日历核对。' });
@@ -1752,7 +1753,8 @@ function leapsOpenItems() {
     numeric: { placeholder: 'e.g. 180.50', unit: '$', priceField: true } });
   base.push({ group: 'Trade plan · 交易计划', id: 'stop_level',
     title: '正股止损位',
-    desc: '跌到此价 → 平 LEAPS。必须 < 当前价。',
+    desc: '跌到此价 → 平 LEAPS. 必须 < 当前价. 无止损 = 无纪律.',
+    hard: true,
     numeric: { placeholder: 'e.g. 170', unit: '$', priceField: true } });
   base.push({ group: 'Trade plan · 交易计划', id: 'target_level',
     title: '正股止盈位',
@@ -1764,7 +1766,8 @@ function leapsOpenItems() {
     positionCheck: true });
   base.push({ group: 'Trade plan · 交易计划', id: 'dte',
     title: 'DTE ≥ 400 天',
-    desc: '',
+    desc: '真 LEAPS 门槛. DTE < 400 天 = 延期 call, 你的整套 SOP (时间必退 / 换约) 都基于 400+ 假设.',
+    hard: true,
     numeric: { placeholder: 'DTE', unit: 'days', min: 400, comparator: '≥' } });
 
   const dSpec = leapsDeltaSpec();
@@ -2106,6 +2109,13 @@ function cspItems() {
       title: '先选波动性类型 → 才能校验单标的敞口',
       desc: '未选波动性类型 (中/高). 此 HARD 项无法校验.',
       hard: true, locked: true });
+  }
+  // Assign-scenario check: if intent is 'assign', pre-verify post-assignment total ticker exposure
+  if (state.cspIntent === 'assign') {
+    base.push({ group: psGroup, id: 'assign_ticker_check',
+      title: '若被 assign 接股 · 该 ticker 总敞口 ≤ 25% NAV',
+      desc: '想接股 = 假设会 assign. 已算过: 现有股票 + CSP nominal (strike × 100 × 张数) ≤ 25% NAV. 超 → 减张数 / 换 strike / 换 ticker. (APLD 3 张同期集中亏损教训.)',
+      hard: true });
   }
   return base;
 }
