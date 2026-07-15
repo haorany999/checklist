@@ -1809,8 +1809,8 @@ const SOP = {
           <li>Swing 杠杆: QQQ 蓝筹 10% · 非蓝筹 5% (高杠杆 = 小仓位)</li>
         </ul>
       </li>
-      <li><b>首笔 · 左侧衰竭:</b> MJ2 信号 + 左侧动能衰竭 (MACD 红柱缩小 + RSI 下跌斜率放缓, 或 RSI ≤ 30, 或底背离) + 止跌 K 线形态 + 放量确认</li>
-      <li><b>加仓 · 左侧衰竭:</b> 首笔浮亏 ≤ 20% (超过应止损而非加仓) + MJ2 信号 + 左侧动能再度衰竭 + 止跌 K 线 + 放量。要求比首笔更严, 二次探底比首次筑底更多 fake.</li>
+      <li><b>首笔 · 左侧衰竭:</b> MJ2 信号 + 日线 KDJ J ≤ 15 (backup) + 左侧动能衰竭 (MACD 红柱缩小 + RSI 下跌斜率放缓, 或 RSI ≤ 30, 或底背离) + 止跌 K 线形态 + 放量确认</li>
+      <li><b>加仓 · 左侧衰竭:</b> 首笔浮亏 ≤ 20% (超过应止损而非加仓) + MJ2 信号 + KDJ J ≤ 15 + 左侧动能再度衰竭 + 止跌 K 线 + 放量。要求比首笔更严, 二次探底比首次筑底更多 fake.</li>
       <li><b>加仓 · 右侧确认:</b> 日线收复 5/10/20MA + 右侧 K 线形态 (反包/吞没/锤头) + 放量确认 + 站稳 EMA21/SMA50</li>
       <li><b>加仓 · MACD 金叉:</b> 日线 MACD 低位金叉 (滞后指标, 严禁作为第一买点) + 金叉当日 K 线形态 + 放量确认 + 价格站稳短周期均线</li>
       <li><b>加仓节奏 (硬性):</b> 同一张 LEAPS 每周最多加 1 次, 无论什么信号。LEAPS DTE 长, 没紧迫感; 一周多加几乎都是情绪。</li>
@@ -1993,6 +1993,11 @@ function leapsOpenItems() {
     const g = 'Entry signals (首笔 · 左侧衰竭)';
     base.push({ group: g, id: 'mj2',
       title: 'MJ2 系统给出信号', desc: 'MJ2 已触发. 无信号一律不开.', hard: true });
+    base.push({ group: g, id: 'kdj_j_leaps',
+      title: '日线 KDJ J 值 ≤ 15 (backup: 防 MJ2 失灵)',
+      desc: 'J ≤ 15 = 明显超卖. 与 MJ2 双重确认, 万一 MJ2 误发信号也能拦下. J > 15 = 不够超卖, 别接飞刀.',
+      hard: true,
+      numeric: { placeholder: 'J', unit: '', max: 15, comparator: '≤' } });
     base.push({ group: g, id: 'exhaustion',
       title: '左侧动能衰竭',
       desc: 'MACD 红柱缩小 + RSI 下跌斜率放缓 (动能衰竭). 或 RSI ≤ 30 (超卖). 或底背离.' });
@@ -2011,6 +2016,11 @@ function leapsOpenItems() {
       hard: true });
     base.push({ group: g, id: 'mj2_add_left',
       title: 'MJ2 系统给出信号', desc: 'MJ2 已触发, 加仓也要有系统确认.', hard: true });
+    base.push({ group: g, id: 'kdj_j_leaps_add',
+      title: '日线 KDJ J 值 ≤ 15 (backup: 防 MJ2 失灵)',
+      desc: 'J ≤ 15 = 明显超卖. 加仓比首笔更需要双重确认.',
+      hard: true,
+      numeric: { placeholder: 'J', unit: '', max: 15, comparator: '≤' } });
     base.push({ group: g, id: 'exhaustion_add',
       title: '左侧动能再度衰竭',
       desc: 'MACD 红柱缩小 + RSI 下跌斜率放缓. 或 RSI ≤ 30. 或底背离. 加仓比首笔更严, 二次探底多 fake.' });
