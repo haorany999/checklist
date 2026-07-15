@@ -1002,6 +1002,19 @@
   .auto-push-indicator.visible { opacity: 1; transform: translateY(0); }
   .auto-push-indicator.fail { color: var(--fail); border-color: var(--fail); }
 
+  /* PMCC mode note (core philosophy callout on aggressive mode) */
+  .pmcc-mode-note {
+    margin-top: 10px;
+    padding: 10px 12px;
+    background: color-mix(in srgb, var(--pending) 8%, var(--panel-2));
+    border-left: 3px solid var(--pending);
+    border-radius: 3px;
+    font-size: 11.5px;
+    color: var(--text-dim);
+    line-height: 1.55;
+  }
+  .pmcc-mode-note b { color: var(--text); font-weight: 700; }
+
   /* Offline banner (persistent, above header when navigator.onLine = false) */
   .offline-banner {
     position: sticky; top: 0; z-index: 300;
@@ -1396,7 +1409,7 @@ const LEAPS_CLOSE_TYPE_LABEL = {
   trend_break: '止损 · 趋势破坏'
 };
 const CSP_INTENT_LABEL = { assign: '想接股', neutral: '一般', premium: '只赚权利金' };
-const PMCC_MODE_LABEL = { standard: '标准 (≤15)', defensive: '防守 (≤10)' };
+const PMCC_MODE_LABEL = { standard: '标准 (≤15)', defensive: '防守 (≤10)', aggressive: '激进 (≤30)' };
 const CC_MODE_LABEL = { income: '收租 · Δ≤15', balanced: '平衡 · Δ 15-25', aggressive: '愿放 · Δ 25-30' };
 const OUTCOME_LABEL = { skipped: '未交易', opted_out: '自主放弃', open: '持仓', win: '盈', loss: '亏' };
 const NOTES_MAX = 2000;
@@ -1430,13 +1443,21 @@ function leapsDeltaSpec() {
   return null;
 }
 function cspDeltaMax() { return { assign: 30, neutral: 25, premium: 15 }[state.cspIntent] || null; }
-function pmccDeltaMax() { return { standard: 15, defensive: 10 }[state.pmccMode] || null; }
+function pmccDeltaMax() { return { standard: 15, defensive: 10, aggressive: 30 }[state.pmccMode] || null; }
 function pmccKdjMin() {
   // J threshold based on underlying LEAPS type (底仓珍贵 → 门槛越严)
   //   股票替代 (Δ≥75, 底仓珍贵): 85 — assign 走底仓代价大, 需极端超买
   //   Balanced (Δ 50-74): 78 — 中位
   //   Swing 杠杆 (Δ 35-49): 70 — 底仓短期, 门槛可放宽
+  // Aggressive 模式: 愿意被 assign, 门槛下调 10 分
+  if (state.pmccMode === 'aggressive') {
+    return { stock_sub: 75, balanced: 70, swing: 60 }[state.pmccUnderlyingPurpose] || null;
+  }
   return { stock_sub: 85, balanced: 78, swing: 70 }[state.pmccUnderlyingPurpose] || null;
+}
+function pmccLeapsProfitMin() {
+  // Aggressive: LEAPS 必须已大幅盈利, 才有资格放松 Δ 限制
+  return state.pmccMode === 'aggressive' ? 50 : 20;
 }
 
 // CC (Covered Call) helpers
@@ -1776,6 +1797,11 @@ function leapsOpenItems() {
     title: `单标的 LEAPS 敞口 ≤ ${cap}% 账户净值`,
     desc: capDesc + ' 敞口 = 现有 + 本次预算。',
     hard: true, positionCheck: true });
+  base.push({ group: 'Position sizing · 仓位控制', id: 'cash_reserve',
+    title: '当前自由 cash / NAV ≥ 10% (目标 20%, 绝对底线 10%)',
+    desc: '目标 20%: 有余力应对波动 + 抓新机会. 绝对底线 10%: 低于此新开仓一律 BLOCKED. LEAPS 与 CSP 各自占比可弹性 (LEAPS 机会多时可倾斜, 反之亦然), 但组合现金红线不变.',
+    hard: true,
+    numeric: { placeholder: 'e.g. 22', unit: '%', min: 10, comparator: '≥', step: 0.5 } });
 
   if (state.leapsPhase === 'entry') {
     const g = 'Entry signals (首笔 · 左侧衰竭)';
@@ -2063,6 +2089,11 @@ function cspItems() {
 
   // Position sizing checks (auto-computed from inputs above)
   const psGroup = 'Position sizing · 仓位控制';
+  base.push({ group: psGroup, id: 'cash_reserve',
+    title: '当前自由 cash / NAV ≥ 10% (目标 20%, 绝对底线 10%)',
+    desc: '目标 20%: 有余力应对波动 + 抓新机会. 绝对底线 10%: 低于此新开仓一律 BLOCKED. LEAPS 与 CSP 各自占比可弹性 (CSP 机会多时可倾斜, 反之亦然), 但组合现金红线不变.',
+    hard: true,
+    numeric: { placeholder: 'e.g. 22', unit: '%', min: 10, comparator: '≥', step: 0.5 } });
   base.push({ group: psGroup, id: 'csp_total_check',
     title: 'CSP 总敞口 ≤ 50% NAV',
     desc: '目标 40% · 硬顶 50%. 总 = 现有 CSP + 本笔 nominal.',
@@ -2088,23 +2119,59 @@ function cspItems() {
  * CHECKLIST · PMCC
  * ========================================================== */
 function pmccItems() {
+  const isAggressive = state.pmccMode === 'aggressive';
+  const leapsProfitMin = pmccLeapsProfitMin();
   const base = [];
   base.push({ group: 'Discipline · 交易前提', id: 'discipline',
     title: '本笔非临时起意 · 前一天已计划',
     desc: '非当天上班/盘中随机发现。动机非: 报复、FOMO、回本、无聊、证明自己。' });
   base.push({ group: 'Underlying LEAPS health · 底仓健康度', id: 'leaps_profit',
-    title: '底仓 LEAPS 当前盈利 ≥ 20%',
-    desc: '填当前盈利百分比 (如 23 表示 +23%)。< 20% = 底仓不够健康, 禁止卖 call (assign 走底仓代价大)。',
+    title: `底仓 LEAPS 当前盈利 ≥ ${leapsProfitMin}%`,
+    desc: isAggressive
+      ? '激进模式: 底仓必须已大幅盈利 (≥ 50%). 因为 Δ 30 有 ~30% 概率被 assign, 若不盈利, 被 assign = 强制平仓小赚/持平, 不划算. 高盈利 = assign 也是收获.'
+      : '填当前盈利百分比 (如 23 表示 +23%)。< 20% = 底仓不够健康, 禁止卖 call (assign 走底仓代价大)。',
     hard: true,
-    numeric: { placeholder: 'e.g. 23', unit: '%', min: 20, comparator: '≥' } });
+    numeric: { placeholder: `e.g. ${leapsProfitMin + 3}`, unit: '%', min: leapsProfitMin, comparator: '≥' } });
+
+  // Aggressive mode: explicit acceptance of assignment + strict conditions
+  if (isAggressive) {
+    base.push({ group: 'Aggressive intent · 激进意图确认', id: 'exit_mindset',
+      title: '本仓位已在"准备退出"心态 · 不是"想继续骑上涨"',
+      desc: '⚠ 核心理念: 激进 PMCC 是"退出前收最后一波保险费", 不是"骑上涨 + 加个收入"。若你其实想继续骑, 请用标准 PMCC 或直接持有. 若你其实想止盈, 直接关. 只有"想留一段但已准备好被 assign"才用激进.',
+      hard: true });
+    base.push({ group: 'Aggressive intent · 激进意图确认', id: 'accept_assign',
+      title: '确认愿意底仓被 assign · 已接受可能失去 LEAPS',
+      desc: 'Δ 30 的短 call 大约有 30% 概率被 assign 到期. 若真被顶破, 你会失去整个底仓 LEAPS. 这不是意外, 是策略预期. 现在必须心态上准备好: 假如今天就被 called out, 你也 OK.',
+      hard: true });
+    base.push({ group: 'Aggressive intent · 激进意图确认', id: 'position_still_bullish',
+      title: '标的仍是好持仓 (被 assign 会遗憾但不后悔)',
+      desc: '两个前提: (1) 底仓仍值得持有, 不想立刻走; (2) 若被 assign 也接受 — 因为已经赚够. 若你其实想走, 直接止盈, 别绕弯用 PMCC.' });
+    base.push({ group: 'Aggressive intent · 激进意图确认', id: 'resistance_nearby',
+      title: '明确的技术阻力位 / 目标区在 short call strike 附近',
+      desc: 'Δ 30 的合理性依赖于"到那里概率不大". 必须有明确的**理由**认为 short call 不会被穿透 — 强阻力位, 目标价, 布林上轨, 前高等. 若无阻力位单纯赌"上不去" = 投机, 不用激进模式.',
+      hard: true });
+    base.push({ group: 'Aggressive intent · 激进意图确认', id: 'aggressive_dte',
+      title: 'Short call DTE ≤ 21 天',
+      desc: '激进模式 DTE 必须短. DTE 30+ = 更多时间被回撤袭击, theta decay 慢, 权利金跑不掉. DTE 14-21 = 快速回收.',
+      hard: true,
+      numeric: { placeholder: 'DTE', unit: '天', max: 21, comparator: '≤' } });
+    base.push({ group: 'Aggressive intent · 激进意图确认', id: 'aggressive_premium',
+      title: '权利金收入 ≥ 底仓市值 2%',
+      desc: '算法: (short call premium × 100) / LEAPS 市值 × 100. 例: LEAPS 市值 $10000, short call premium $250 → 2.5% ✓. < 2% = 保险费太薄, 不足以对冲底仓回撤 15%+ 的风险, 不划算.',
+      numeric: { placeholder: '%', unit: '%', min: 2, comparator: '≥' } });
+  }
 
   base.push({ group: 'Market environment · 宏观环境', id: 'macro',
     title: '未来 short call DTE 内无重大宏观事件',
     desc: 'FOMC / CPI / PPI / NFP 已核对. 大跌时 IV spike, short call 暴涨拿不到好点位卖.' });
 
   base.push({ group: 'Underlying context · 大周期', id: 'weekly_top_range',
-    title: '标的处于阻力区 / 横盘 / 高位滞涨',
-    desc: '适用: 阻力位 / 横盘 / 高位钝化. 不适用: 底部启动 (被推爆), 单边急涨 (卖飞底仓).' });
+    title: isAggressive
+      ? '标的处于阻力区 / 高位 / 或已到目标区'
+      : '标的处于阻力区 / 横盘 / 高位滞涨',
+    desc: isAggressive
+      ? '激进模式: 更适合"目标价附近" (愿意止盈). 若在启动早期不建议激进 — 会卖飞长期趋势.'
+      : '适用: 阻力位 / 横盘 / 高位钝化. 不适用: 底部启动 (被推爆), 单边急涨 (卖飞底仓).' });
 
   const dMax = pmccDeltaMax();
   const modeLabel = PMCC_MODE_LABEL[state.pmccMode];
@@ -2122,19 +2189,33 @@ function pmccItems() {
     numeric: { placeholder: 'IVP', unit: '%', min: 30, comparator: '>' } });
   base.push({ group: 'Short call selection · 短 call 选择', id: 'delta',
     title: `Short call Delta ≤ ${dMax != null ? dMax : '?'}  (${modeLabel || '未选'})`,
-    desc: `≤ ${dMax != null ? dMax : '?'} (=0.${dMax < 10 ? '0' + dMax : dMax}), 整数。`,
+    desc: isAggressive
+      ? `激进: Δ ≤ 30, 权利金丰厚但 ~30% assign 概率. 整数.`
+      : `≤ ${dMax != null ? dMax : '?'} (=0.${dMax < 10 ? '0' + dMax : dMax}), 整数。`,
     numeric: { placeholder: 'Delta', unit: '', max: dMax, comparator: '≤' } });
   base.push({ group: 'Short call selection · 短 call 选择', id: 'gex_call_wall',
-    title: 'GEX Call Wall 已查看 · Short Call 行权价 > Call Wall',
-    desc: 'Call Wall = dealer 集中卖 call 处, 短期阻力. Short call 设在 Wall 上方 = 阻力先起作用, 卖飞底仓概率降低.',
-    hard: true });
-  base.push({ group: 'Short call selection · 短 call 选择', id: 'bb_upper_zone',
-    title: '价格位于 BB 中轨与上轨的中点之上 (至少)',
-    desc: '底仓 LEAPS 珍贵, 不想 assign. 严格要求超买区卖 call, 回落概率高.' });
+    title: isAggressive
+      ? 'GEX Call Wall 已查看 (激进模式可穿越, 仅供参考)'
+      : 'GEX Call Wall 已查看 · Short Call 行权价 > Call Wall',
+    desc: isAggressive
+      ? '激进模式已接受 assign, Call Wall 不再是硬约束. 但仍应知道 Wall 在哪 — 用于选择 strike 位置和判断被 assign 概率.'
+      : 'Call Wall = dealer 集中卖 call 处, 短期阻力. Short call 设在 Wall 上方 = 阻力先起作用, 卖飞底仓概率降低.',
+    hard: !isAggressive });
+  if (!isAggressive) {
+    base.push({ group: 'Short call selection · 短 call 选择', id: 'bb_upper_zone',
+      title: '价格位于 BB 中轨与上轨的中点之上 (至少)',
+      desc: '底仓 LEAPS 珍贵, 不想 assign. 严格要求超买区卖 call, 回落概率高.' });
+  }
   base.push({ group: 'Short call selection · 短 call 选择', id: 'kdj_j',
-    title: `日线 KDJ 的 J 值 > ${pmccKdjMin() != null ? pmccKdjMin() : '?'}  (底仓 ${LEAPS_STYLE_LABEL[state.pmccUnderlyingPurpose] || '未选'})`,
+    title: `日线 KDJ 的 J 值 > ${pmccKdjMin() != null ? pmccKdjMin() : '?'}  (底仓 ${LEAPS_STYLE_LABEL[state.pmccUnderlyingPurpose] || '未选'}${isAggressive ? ', 激进' : ''})`,
     desc: (() => {
       const p = state.pmccUnderlyingPurpose;
+      if (isAggressive) {
+        if (p === 'stock_sub') return '激进 · 股票替代: J > 75 (标准是 85)。已接受 assign, 门槛放宽.';
+        if (p === 'balanced')  return '激进 · Balanced: J > 70 (标准是 78)。';
+        if (p === 'swing')     return '激进 · Swing: J > 60 (标准是 70)。';
+        return '';
+      }
       if (p === 'stock_sub') return '股票替代底仓 (Δ≥75) = 长期珍贵。Assign 走底仓代价大, 需极端超买 (J > 85) 才卖 call。';
       if (p === 'balanced') return 'Balanced 底仓 (Δ 50-74) = 中位。中位门槛 (J > 78)。';
       if (p === 'swing') return 'Swing 杠杆底仓 (Δ 35-49) = 短期。低门槛 (J > 70), 底仓可 assign, 门槛放宽。';
@@ -3801,9 +3882,14 @@ function renderPmccConfig() {
       </div>
       <div class="config">
         <div class="config-title">Short Call Delta 模式</div>
-        <div class="segmented" id="mode-seg">
+        <div class="segmented segmented-grid" id="mode-seg">
           <button data-v="standard">标准 · Δ≤15</button>
           <button data-v="defensive">防守 · Δ≤10</button>
+          <button data-v="aggressive">激进 · Δ≤30</button>
+        </div>
+        <div class="pmcc-mode-note">
+          <div><b>激进 (Δ≤30)</b> · 核心: <b>"准备退出前收最后一波保险费"</b>, 不是"骑上涨 + 加个收入"</div>
+          <div style="margin-top: 4px; opacity: 0.85;">前提: 底仓 ≥ 50% 盈利 · 明确阻力位 · DTE ≤ 21 · 权利金 ≥ 2%. 全部满足才用.</div>
         </div>
       </div>
       <button class="btn primary big" id="proceed-btn" style="margin-top: 12px; width: 100%;" disabled>先选择底仓目的</button>
