@@ -1423,21 +1423,21 @@ function leapsDeltaSpec() {
     return {
       title: 'Delta ≥ 75',
       numeric: { placeholder: 'Delta', unit: '', min: 75, comparator: '≥' },
-      desc: '≥ 75 (=0.75+). DITM 股票替代, 长持, 内在价值主导, 少受 IV crush 影响。'
+      desc: '≥ 75. DITM 长持, 内在价值主导, 抗 IV crush.'
     };
   }
   if (state.leapsStyle === 'balanced') {
     return {
       title: 'Delta 50-74',
       numeric: { placeholder: 'Delta', unit: '', range: [50, 74] },
-      desc: '50-74 (=0.50-0.74). 类股加杠杆, 灵活持期。介于股票替代与 Swing 之间, 时间价值与内在价值兼顾。'
+      desc: '50-74. 类股加杠杆, 灵活持期. 时间价值+内在价值兼顾.'
     };
   }
   if (state.leapsStyle === 'swing') {
     return {
       title: 'Delta 35-49',
       numeric: { placeholder: 'Delta', unit: '', range: [35, 49] },
-      desc: '35-49 (=0.35-0.49). 高杠杆 swing, ATM 附近, 短持, theta 大。'
+      desc: '35-49. 高杠杆 swing, ATM 附近, 短持, theta 大.'
     };
   }
   return null;
@@ -1465,17 +1465,17 @@ function ccDeltaSpec() {
   if (state.ccMode === 'income') return {
     title: 'Delta ≤ 15',
     numeric: { placeholder: 'Delta', unit: '', max: 15, comparator: '≤' },
-    desc: '≤ 15 (=0.15). 收租: 想留股, 只收小 premium. Assign 概率 ~10%.'
+    desc: '≤ 15 (=0.15). 想留股, 收小 premium. Assign ~10%.'
   };
   if (state.ccMode === 'balanced') return {
     title: 'Delta 15-25',
     numeric: { placeholder: 'Delta', unit: '', range: [15, 25] },
-    desc: '15-25 (=0.15-0.25). 平衡: 标准 CC, 合理 premium. Assign 概率 ~15-25%.'
+    desc: '15-25. 标准 CC, 合理 premium. Assign ~15-25%.'
   };
   if (state.ccMode === 'aggressive') return {
     title: 'Delta 25-30',
     numeric: { placeholder: 'Delta', unit: '', range: [25, 30] },
-    desc: '25-30 (=0.25-0.30). 愿放: 愿意 assign 锁盈, 收多 premium. Assign 概率 ~25-35%.'
+    desc: '25-30. 愿 assign 锁盈, 收多 premium. Assign ~25-35%.'
   };
   return null;
 }
@@ -1621,7 +1621,7 @@ const SOP = {
           <li>Swing 杠杆: QQQ 蓝筹 10% · 非蓝筹 5% (高杠杆 = 小仓位)</li>
         </ul>
       </li>
-      <li><b>首笔 · 左侧衰竭:</b> MJ2 信号 + 左侧动能衰竭 (RSI≤30 或 RSI≤50 触及布林下轨且斜率放缓, 或底背离, MACD 红柱缩短) + 止跌 K 线形态 + 放量确认</li>
+      <li><b>首笔 · 左侧衰竭:</b> MJ2 信号 + 左侧动能衰竭 (MACD 红柱缩小 + RSI 下跌斜率放缓, 或 RSI ≤ 30, 或底背离) + 止跌 K 线形态 + 放量确认</li>
       <li><b>加仓 · 左侧衰竭:</b> 首笔浮亏 ≤ 20% (超过应止损而非加仓) + MJ2 信号 + 左侧动能再度衰竭 + 止跌 K 线 + 放量。要求比首笔更严, 二次探底比首次筑底更多 fake.</li>
       <li><b>加仓 · 右侧确认:</b> 日线收复 5/10/20MA + 右侧 K 线形态 (反包/吞没/锤头) + 放量确认 + 站稳 EMA21/SMA50</li>
       <li><b>加仓 · MACD 金叉:</b> 日线 MACD 低位金叉 (滞后指标, 严禁作为第一买点) + 金叉当日 K 线形态 + 放量确认 + 价格站稳短周期均线</li>
@@ -1715,21 +1715,21 @@ function leapsOpenItems() {
   const base = [];
   base.push({ group: 'Discipline · 交易前提', id: 'discipline',
     title: '本笔非临时起意 · 前一天已计划',
-    desc: '非当天上班/盘中随机发现。动机非: 报复、FOMO、回本、无聊、证明自己。' });
+    desc: '非当天盘中随机. 动机不含: 报复/FOMO/回本/无聊/证明自己.' });
   base.push({ group: 'Market environment · 宏观环境', id: 'fg',
     title: 'Fear & Greed ≤ 45  (不追高)',
-    desc: '填当前 CNN Fear & Greed Index (0-100 分)。≤ 45 = Neutral / Fear 区间, 允许入场; > 45 (Greed) → 慎入, 避免追高。非 HARD, 只作 pending 提示。',
+    desc: 'CNN F&G Index. ≤ 45 (Fear) 允许; > 45 (Greed) 慎入, 避免追高.',
     numeric: { placeholder: 'e.g. 40', unit: '', max: 45, comparator: '≤' } });
   base.push({ group: 'Market environment · 宏观环境', id: 'market_ok',
     title: '市场未在系统性大跌',
-    desc: 'SPY 今日 > -3% 且 5D > -5% = ✓。大盘小跌可入 LEAPS; 大盘系统性下跌 (今日 -3%+ 或 5D -5%+) → ✕, 别接飞刀, 等 SPY 反弹或穿越 5MA/10MA 再考虑。' });
+    desc: 'SPY 今日 > -3% 且 5D > -5%. 系统性下跌时别接飞刀, 等反弹或站上 5MA/10MA.' });
   base.push({ group: 'Market environment · 宏观环境', id: 'macro',
     title: '未来 7 天无重大宏观事件冲击',
     desc: 'FOMC / CPI / PPI / NFP 已在日历核对。' });
 
   base.push({ group: 'Underlying & technicals · 标的与技术面', id: 'ticker',
-    title: '标的选择合规',
-    desc: 'QQQ (熊市筑底期必配, 20-30%) 或 周线向上、基本面健康、高 Beta 个股。' });
+    title: '已分析标的基本面 · 护城河 · 市值 ≥ $20B',
+    desc: '来源: YouTube / SeekingAlpha / Reddit / 财报. 小盘 (< $20B) 波动大, LEAPS 时间价值不友好. QQQ 例外 (熊市筑底期必配 20-30%).' });
   base.push({ group: 'Underlying & technicals · 标的与技术面', id: 'support',
     title: '价格回落至 200MA / 250MA 或历史核心支撑附近',
     desc: '基本面体检通过。' });
@@ -1741,23 +1741,18 @@ function leapsOpenItems() {
     desc: '锚点合适, 价格在其之上或刚触及。' });
   base.push({ group: 'Underlying & technicals · 标的与技术面', id: 'earnings',
     title: '距下次财报 ≥ 45 天',
-    desc: '给 LEAPS 时间站稳。距离 < 45 天 → pending, 提醒你财报事件风险, 需自己判断。非 HARD。',
+    desc: '给 LEAPS 时间站稳。距离 < 45 天 → pending, 提醒你财报事件风险, 需自己判断。',
     numeric: { placeholder: 'e.g. 68', unit: '天', min: 45, comparator: '≥' } });
   base.push({ group: 'Underlying & technicals · 标的与技术面', id: 'stock_ivp',
     title: '个股 IVP < 70',
-    desc: '刚崩过的股 IV 通常 elevated (IVP 80+), 买 LEAPS 会被 IV 顶价, 未来 IV crush 影响方向利润。参考: 券商 IVP / IV Rank。你亦可看具体 option 的历史价格图。非 HARD, 只作 pending 提示。',
-    numeric: { placeholder: 'e.g. 55', unit: '', max: 70, comparator: '<' } });
-
-  base.push({ group: 'Trade plan · 交易计划', id: 'expectation',
-    title: '交易预期已明确',
-    desc: '波段 vs 长期 → 止盈思路不同。' });
+    desc: '刚崩过 IV 高 (IVP 80+). 买入被 IV 顶价, 后续 IV crush 吃掉方向利润.' });
   base.push({ group: 'Trade plan · 交易计划', id: 'entry_price',
     title: '正股当前价',
     desc: '本次开仓时正股价格。用于自动计算 R:R。',
     numeric: { placeholder: 'e.g. 180.50', unit: '$', priceField: true } });
   base.push({ group: 'Trade plan · 交易计划', id: 'stop_level',
     title: '正股止损位',
-    desc: '跌到此价 → 平 LEAPS。例如 "跌破 200MA" / 前低 / 关键支撑。必须 < 当前价。',
+    desc: '跌到此价 → 平 LEAPS。必须 < 当前价。',
     numeric: { placeholder: 'e.g. 170', unit: '$', priceField: true } });
   base.push({ group: 'Trade plan · 交易计划', id: 'target_level',
     title: '正股止盈位',
@@ -1799,20 +1794,20 @@ function leapsOpenItems() {
     hard: true, positionCheck: true });
   base.push({ group: 'Position sizing · 仓位控制', id: 'cash_reserve',
     title: '当前自由 cash / NAV ≥ 10% (目标 20%, 绝对底线 10%)',
-    desc: '目标 20%: 有余力应对波动 + 抓新机会. 绝对底线 10%: 低于此新开仓一律 BLOCKED. LEAPS 与 CSP 各自占比可弹性 (LEAPS 机会多时可倾斜, 反之亦然), 但组合现金红线不变.',
+    desc: '目标 20%, 底线 10%. 低于 10% 一律 BLOCKED. LEAPS/CSP 占比可弹, 但组合现金红线不变.',
     hard: true,
     numeric: { placeholder: 'e.g. 22', unit: '%', min: 10, comparator: '≥', step: 0.5 } });
 
   if (state.leapsPhase === 'entry') {
     const g = 'Entry signals (首笔 · 左侧衰竭)';
     base.push({ group: g, id: 'mj2',
-      title: 'MJ2 系统给出信号', desc: 'MJ2 已触发。' });
+      title: 'MJ2 系统给出信号', desc: 'MJ2 已触发. 无信号一律不开.', hard: true });
     base.push({ group: g, id: 'exhaustion',
-      title: '左侧动能衰竭已确认',
-      desc: 'RSI ≤ 30；或 RSI ≤ 50 触及布林下轨且斜率放缓；或底背离；或 MACD 红柱缩短。' });
+      title: '左侧动能衰竭',
+      desc: 'MACD 红柱缩小 + RSI 下跌斜率放缓 (动能衰竭). 或 RSI ≤ 30 (超卖). 或底背离.' });
     base.push({ group: g, id: 'reversal_confirm',
       title: '止跌 K 线 + 放量确认',
-      desc: '止跌形态 (锤头 / 十字星 / 吞没 / 长下影 pin bar / 早晨之星) 且当日成交量 > 5 日均量 × 1.2. 光指标超卖不够, 必须 K 线 + 量能确认反转.' });
+      desc: '止跌 K 线 (锤头/十字星/吞没/长下影/早晨之星) + 量 > 5MA × 1.2. 指标超卖不够, 需 K 线+量确认.' });
     base.push({ group: g, id: 'budget50pct',
       title: '若熊市筑底建仓: 已预留 50% 预算给 MACD 金叉阶段',
       desc: 'Δ 70-80, DTE 12-18 个月。' });
@@ -1824,13 +1819,13 @@ function leapsOpenItems() {
       desc: '每周最多 1 次, 无论信号类型. 一周内二次加仓几乎都是情绪.',
       hard: true });
     base.push({ group: g, id: 'mj2_add_left',
-      title: 'MJ2 系统给出信号', desc: 'MJ2 已触发, 加仓也要有系统确认.' });
+      title: 'MJ2 系统给出信号', desc: 'MJ2 已触发, 加仓也要有系统确认.', hard: true });
     base.push({ group: g, id: 'exhaustion_add',
-      title: '左侧动能再度衰竭已确认',
-      desc: 'RSI ≤ 30；或 RSI ≤ 50 触及布林下轨且斜率放缓；或底背离；或 MACD 红柱缩短。加仓比首笔要求更严: 二次探底比首次筑底更常有 fake.' });
+      title: '左侧动能再度衰竭',
+      desc: 'MACD 红柱缩小 + RSI 下跌斜率放缓. 或 RSI ≤ 30. 或底背离. 加仓比首笔更严, 二次探底多 fake.' });
     base.push({ group: g, id: 'reversal_confirm_add_left',
       title: '止跌 K 线 + 放量确认',
-      desc: '止跌形态 (锤头 / 十字星 / 吞没 / 长下影 pin bar / 早晨之星) 且当日成交量 > 5 日均量 × 1.2.' });
+      desc: '止跌 K 线 (锤头/十字星/吞没/长下影/早晨之星) + 量 > 5MA × 1.2.' });
     base.push({ group: g, id: 'first_pos_reviewed',
       title: '首笔仓位状态已审视',
       desc: '首笔浮亏 ≤ 20% (若首笔已 -30%+, 大概率画线错了, 应止损而非加仓). 或首笔已回本以上.',
@@ -1846,7 +1841,7 @@ function leapsOpenItems() {
       title: '日线收复 5MA、10MA 或 20MA 之一', desc: '任一即可。' });
     base.push({ group: g, id: 'reversal_confirm_right',
       title: '右侧 K 线形态 + 放量确认',
-      desc: '反包 / 吞没 / 锤头 / 十字星等右侧确认形态 且 当日成交量 > 5 日均量 × 1.2. 缩量右侧 = 空头没了但多头也没进.' });
+      desc: '右侧形态 (反包/吞没/锤头/十字星) + 量 > 5MA × 1.2. 缩量 = 空头没了但多头也没进.' });
     base.push({ group: g, id: 'above_ema21_sma50',
       title: '站稳 EMA21 或 SMA50 之上',
       desc: '更长周期均线之上, 趋势更可靠。' });
@@ -1862,7 +1857,7 @@ function leapsOpenItems() {
       desc: '滞后指标, 严禁作为第一买点。' });
     base.push({ group: g, id: 'reversal_confirm_macd',
       title: '金叉当日 K 线 + 放量确认',
-      desc: '金叉当日或前一日出现反包 / 吞没 / 锤头等右侧 K 线 且 当日成交量 > 5 日均量 × 1.2. 缩量金叉 = 假信号.' });
+      desc: '金叉当日或前日出现右侧 K 线 + 量 > 5MA × 1.2. 缩量金叉 = 假信号.' });
     base.push({ group: g, id: 'price_above_ma',
       title: '价格站稳短周期均线之上 (5/10/20MA)',
       desc: '价格 + 均线协同, 非光靠 MACD 指标。' });
@@ -1934,7 +1929,7 @@ function leapsCloseItems() {
     if (style === 'swing' && profit >= 100) {
       base.push({ group: g, id: 'swing_walk',
         title: 'Swing 杠杆 + 利润 ≥ 100% → 已走仓位 ≥ 70%',
-        desc: '达 100% 平掉 70-100% 的张数或价值。给 swing 空间跑到 100%, 到点果断锁大部分, 留少量试探更高目标。',
+        desc: '达 100% 平 70-100% 张数/价值. 果断锁大头, 留少量试更高目标.',
         hard: true });
     }
 
@@ -1966,7 +1961,7 @@ function leapsCloseItems() {
     if (contracts >= 2) {
       const half = Math.floor(contracts / 2);
       base.push({ group: g, id: 'plan_half',
-        title: `平仓 ${half} 张 (约一半) 计划已确定`,
+        title: `平仓 ${half} 张 (约一半) 计划定`,
         desc: '锁一半利润, 余仓继续吃趋势。' });
     } else if (contracts === 1) {
       base.push({ group: g, id: 'plan_half_single',
@@ -1974,7 +1969,7 @@ function leapsCloseItems() {
         desc: '单张无法平半。可: 全部止盈, 或滚动更远 DTE + 更高 strike。' });
     } else {
       base.push({ group: g, id: 'plan_half',
-        title: '平仓方案已确定',
+        title: '平仓方案定',
         desc: '先填上方"剩余张数"。' });
     }
 
@@ -2044,10 +2039,10 @@ function cspItems() {
   const base = [];
   base.push({ group: 'Discipline · 交易前提', id: 'discipline',
     title: '本笔非临时起意 · 前一天已计划',
-    desc: '非当天上班/盘中随机发现。动机非: 报复、FOMO、回本、无聊、证明自己。' });
+    desc: '非当天盘中随机. 动机不含: 报复/FOMO/回本/无聊/证明自己.' });
   base.push({ group: 'Market environment · 宏观环境', id: 'macro',
     title: '宏观事件已核对',
-    desc: 'CSP DTE 30-45 天通常覆盖至少一次 FOMC/CPI/NFP。此项打钩 = 你已在日历核对, 已知晓事件时点, 有心理准备。' });
+    desc: 'CSP DTE 30-45 天通常覆盖至少一次 FOMC/CPI/NFP。此项打钩 = 在日历核对, 已知晓事件时点, 有心理准备。' });
   base.push({ group: 'Underlying · 标的', id: 'no_earnings',
     title: '合约存续期不覆盖财报',
     desc: '硬性禁令。前后 3-5 天也不新开。',
@@ -2063,7 +2058,7 @@ function cspItems() {
     desc: '中轨之下 = 已在回调, 不在情绪高点. 卖 put 靠支撑 + GEX 双 HARD 保护, BB 只需粗筛.' });
   base.push({ group: 'Underlying · 标的', id: 'gex_put_wall',
     title: 'GEX Put Wall 已查看 · 行权价 < Put Wall',
-    desc: 'Put Wall = dealer 集中卖 put 处, 短期支撑. 行权价设在 Wall 下方 = 支撑先失守才轮到 assign.',
+    desc: 'Put Wall = dealer 卖 put 支撑位. Strike 设在 Wall 下方 = 支撑先失守才 assign.',
     hard: true });
 
   const dMax = cspDeltaMax();
@@ -2091,7 +2086,7 @@ function cspItems() {
   const psGroup = 'Position sizing · 仓位控制';
   base.push({ group: psGroup, id: 'cash_reserve',
     title: '当前自由 cash / NAV ≥ 10% (目标 20%, 绝对底线 10%)',
-    desc: '目标 20%: 有余力应对波动 + 抓新机会. 绝对底线 10%: 低于此新开仓一律 BLOCKED. LEAPS 与 CSP 各自占比可弹性 (CSP 机会多时可倾斜, 反之亦然), 但组合现金红线不变.',
+    desc: '目标 20%, 底线 10%. 低于 10% 一律 BLOCKED. LEAPS/CSP 占比可弹, 但组合现金红线不变.',
     hard: true,
     numeric: { placeholder: 'e.g. 22', unit: '%', min: 10, comparator: '≥', step: 0.5 } });
   base.push({ group: psGroup, id: 'csp_total_check',
@@ -2124,11 +2119,11 @@ function pmccItems() {
   const base = [];
   base.push({ group: 'Discipline · 交易前提', id: 'discipline',
     title: '本笔非临时起意 · 前一天已计划',
-    desc: '非当天上班/盘中随机发现。动机非: 报复、FOMO、回本、无聊、证明自己。' });
+    desc: '非当天盘中随机. 动机不含: 报复/FOMO/回本/无聊/证明自己.' });
   base.push({ group: 'Underlying LEAPS health · 底仓健康度', id: 'leaps_profit',
     title: `底仓 LEAPS 当前盈利 ≥ ${leapsProfitMin}%`,
     desc: isAggressive
-      ? '激进模式: 底仓必须已大幅盈利 (≥ 50%). 因为 Δ 30 有 ~30% 概率被 assign, 若不盈利, 被 assign = 强制平仓小赚/持平, 不划算. 高盈利 = assign 也是收获.'
+      ? '激进模式底仓必须 ≥ 50% 盈利. 否则被 assign = 强制小赚离场, 不划算.'
       : '填当前盈利百分比 (如 23 表示 +23%)。< 20% = 底仓不够健康, 禁止卖 call (assign 走底仓代价大)。',
     hard: true,
     numeric: { placeholder: `e.g. ${leapsProfitMin + 3}`, unit: '%', min: leapsProfitMin, comparator: '≥' } });
@@ -2137,41 +2132,37 @@ function pmccItems() {
   if (isAggressive) {
     base.push({ group: 'Aggressive intent · 激进意图确认', id: 'exit_mindset',
       title: '本仓位已在"准备退出"心态 · 不是"想继续骑上涨"',
-      desc: '⚠ 核心理念: 激进 PMCC 是"退出前收最后一波保险费", 不是"骑上涨 + 加个收入"。若你其实想继续骑, 请用标准 PMCC 或直接持有. 若你其实想止盈, 直接关. 只有"想留一段但已准备好被 assign"才用激进.',
+      desc: '⚠ 核心: 退出前收最后一波保险费, 不是骑上涨+加收入. 想骑就用标准 PMCC, 想走直接止盈.',
       hard: true });
     base.push({ group: 'Aggressive intent · 激进意图确认', id: 'accept_assign',
       title: '确认愿意底仓被 assign · 已接受可能失去 LEAPS',
-      desc: 'Δ 30 的短 call 大约有 30% 概率被 assign 到期. 若真被顶破, 你会失去整个底仓 LEAPS. 这不是意外, 是策略预期. 现在必须心态上准备好: 假如今天就被 called out, 你也 OK.',
+      desc: 'Δ 30 ≈ 30% assign 概率. 被顶破 = 失去 LEAPS, 是预期不是意外. 心态: 今天被 called out 也 OK.',
       hard: true });
     base.push({ group: 'Aggressive intent · 激进意图确认', id: 'position_still_bullish',
       title: '标的仍是好持仓 (被 assign 会遗憾但不后悔)',
-      desc: '两个前提: (1) 底仓仍值得持有, 不想立刻走; (2) 若被 assign 也接受 — 因为已经赚够. 若你其实想走, 直接止盈, 别绕弯用 PMCC.' });
+      desc: '前提: 想留但可失去. 若其实想走, 直接止盈, 别绕弯 PMCC.' });
     base.push({ group: 'Aggressive intent · 激进意图确认', id: 'resistance_nearby',
       title: '明确的技术阻力位 / 目标区在 short call strike 附近',
-      desc: 'Δ 30 的合理性依赖于"到那里概率不大". 必须有明确的**理由**认为 short call 不会被穿透 — 强阻力位, 目标价, 布林上轨, 前高等. 若无阻力位单纯赌"上不去" = 投机, 不用激进模式.',
+      desc: 'Δ 30 合理性依赖"到那里概率不大". 需明确阻力/目标/BB 上轨/前高. 无阻力单纯赌"上不去" = 投机, 别用激进.',
       hard: true });
     base.push({ group: 'Aggressive intent · 激进意图确认', id: 'aggressive_dte',
       title: 'Short call DTE ≤ 21 天',
-      desc: '激进模式 DTE 必须短. DTE 30+ = 更多时间被回撤袭击, theta decay 慢, 权利金跑不掉. DTE 14-21 = 快速回收.',
+      desc: 'DTE ≤ 21: theta decay 快, 回撤窗口小. DTE 30+ = 权利金跑不掉.',
       hard: true,
       numeric: { placeholder: 'DTE', unit: '天', max: 21, comparator: '≤' } });
-    base.push({ group: 'Aggressive intent · 激进意图确认', id: 'aggressive_premium',
-      title: '权利金收入 ≥ 底仓市值 2%',
-      desc: '算法: (short call premium × 100) / LEAPS 市值 × 100. 例: LEAPS 市值 $10000, short call premium $250 → 2.5% ✓. < 2% = 保险费太薄, 不足以对冲底仓回撤 15%+ 的风险, 不划算.',
-      numeric: { placeholder: '%', unit: '%', min: 2, comparator: '≥' } });
   }
 
   base.push({ group: 'Market environment · 宏观环境', id: 'macro',
     title: '未来 short call DTE 内无重大宏观事件',
-    desc: 'FOMC / CPI / PPI / NFP 已核对. 大跌时 IV spike, short call 暴涨拿不到好点位卖.' });
+    desc: 'FOMC/CPI/PPI/NFP 已核对. 大跌时 IV spike, short call 涨爆卖不出价.' });
 
   base.push({ group: 'Underlying context · 大周期', id: 'weekly_top_range',
     title: isAggressive
       ? '标的处于阻力区 / 高位 / 或已到目标区'
       : '标的处于阻力区 / 横盘 / 高位滞涨',
     desc: isAggressive
-      ? '激进模式: 更适合"目标价附近" (愿意止盈). 若在启动早期不建议激进 — 会卖飞长期趋势.'
-      : '适用: 阻力位 / 横盘 / 高位钝化. 不适用: 底部启动 (被推爆), 单边急涨 (卖飞底仓).' });
+      ? '激进适合目标价附近 (愿止盈). 启动早期别激进, 会卖飞.'
+      : '适用: 阻力/横盘/高位钝化. 不适用: 底部启动 (被推爆), 单边急涨 (卖飞).' });
 
   const dMax = pmccDeltaMax();
   const modeLabel = PMCC_MODE_LABEL[state.pmccMode];
@@ -2181,7 +2172,7 @@ function pmccItems() {
     hard: true });
   base.push({ group: 'Short call selection · 短 call 选择', id: 'no_breakout_day',
     title: '非在突破当天卖 short call',
-    desc: '突破当天动能最强, 短腿易被推爆. 等次日冲高回落再卖.',
+    desc: '突破当天动能最强, 短腿易被推爆. 次日冲高回落再卖.',
     hard: true });
   base.push({ group: 'Short call selection · 短 call 选择', id: 'ivp',
     title: 'IVP > 30%',
@@ -2198,27 +2189,27 @@ function pmccItems() {
       ? 'GEX Call Wall 已查看 (激进模式可穿越, 仅供参考)'
       : 'GEX Call Wall 已查看 · Short Call 行权价 > Call Wall',
     desc: isAggressive
-      ? '激进模式已接受 assign, Call Wall 不再是硬约束. 但仍应知道 Wall 在哪 — 用于选择 strike 位置和判断被 assign 概率.'
+      ? '激进已接受 assign, Wall 非硬约束. 仍需知位置, 用于选 strike.'
       : 'Call Wall = dealer 集中卖 call 处, 短期阻力. Short call 设在 Wall 上方 = 阻力先起作用, 卖飞底仓概率降低.',
     hard: !isAggressive });
   if (!isAggressive) {
     base.push({ group: 'Short call selection · 短 call 选择', id: 'bb_upper_zone',
       title: '价格位于 BB 中轨与上轨的中点之上 (至少)',
-      desc: '底仓 LEAPS 珍贵, 不想 assign. 严格要求超买区卖 call, 回落概率高.' });
+      desc: '底仓珍贵不想 assign. 超买区卖 call, 回落概率高.' });
   }
   base.push({ group: 'Short call selection · 短 call 选择', id: 'kdj_j',
     title: `日线 KDJ 的 J 值 > ${pmccKdjMin() != null ? pmccKdjMin() : '?'}  (底仓 ${LEAPS_STYLE_LABEL[state.pmccUnderlyingPurpose] || '未选'}${isAggressive ? ', 激进' : ''})`,
     desc: (() => {
       const p = state.pmccUnderlyingPurpose;
       if (isAggressive) {
-        if (p === 'stock_sub') return '激进 · 股票替代: J > 75 (标准是 85)。已接受 assign, 门槛放宽.';
-        if (p === 'balanced')  return '激进 · Balanced: J > 70 (标准是 78)。';
-        if (p === 'swing')     return '激进 · Swing: J > 60 (标准是 70)。';
+        if (p === 'stock_sub') return '激进 · 股票替代: J > 75 (标准 85). 已接受 assign.';
+        if (p === 'balanced')  return '激进 · Balanced: J > 70 (标准 78).';
+        if (p === 'swing')     return '激进 · Swing: J > 60 (标准 70).';
         return '';
       }
-      if (p === 'stock_sub') return '股票替代底仓 (Δ≥75) = 长期珍贵。Assign 走底仓代价大, 需极端超买 (J > 85) 才卖 call。';
-      if (p === 'balanced') return 'Balanced 底仓 (Δ 50-74) = 中位。中位门槛 (J > 78)。';
-      if (p === 'swing') return 'Swing 杠杆底仓 (Δ 35-49) = 短期。低门槛 (J > 70), 底仓可 assign, 门槛放宽。';
+      if (p === 'stock_sub') return '股票替代底仓 (Δ≥75) 珍贵. Assign 代价大, 需极端超买 (J > 85).';
+      if (p === 'balanced') return 'Balanced 底仓中位. 门槛 J > 78.';
+      if (p === 'swing') return 'Swing 底仓短期, 可 assign, 门槛放宽 (J > 70).';
       return '选底仓类型决定 J 门槛。';
     })(),
     numeric: { placeholder: 'J', unit: '', min: pmccKdjMin(), comparator: '>' } });
@@ -2229,11 +2220,11 @@ function ccItems() {
   const base = [];
   base.push({ group: 'Discipline · 交易前提', id: 'discipline',
     title: '本笔非临时起意 · 前一天已计划',
-    desc: '非当天上班/盘中随机发现。动机非: 报复、FOMO、回本、无聊、证明自己。' });
+    desc: '非当天盘中随机. 动机不含: 报复/FOMO/回本/无聊/证明自己.' });
 
   base.push({ group: 'Market environment · 宏观环境', id: 'macro',
     title: '未来 short call DTE 内无重大宏观事件',
-    desc: 'FOMC / CPI / PPI / NFP 已核对. 大跌时 IV spike, short call 暴涨拿不到好点位卖.' });
+    desc: 'FOMC/CPI/PPI/NFP 已核对. 大跌时 IV spike, short call 涨爆卖不出价.' });
 
   base.push({ group: 'Underlying context · 大周期', id: 'weekly_top_range',
     title: '标的处于阻力区 / 横盘 / 高位滞涨',
@@ -2250,7 +2241,7 @@ function ccItems() {
     hard: true });
   base.push({ group: 'Short call selection · 短 call 选择', id: 'no_breakout_day',
     title: '非在突破当天卖 short call',
-    desc: '突破当天动能最强, 短腿易被推爆. 等次日冲高回落再卖.',
+    desc: '突破当天动能最强, 短腿易被推爆. 次日冲高回落再卖.',
     hard: true });
 
   const costBasis = parseFloat(state.items['cost_basis']) || 0;
@@ -2285,7 +2276,7 @@ function ccItems() {
 
   base.push({ group: 'Short call selection · 短 call 选择', id: 'gex_call_wall',
     title: 'GEX Call Wall 已查看 · Short Call 行权价 > Call Wall',
-    desc: 'Call Wall = dealer 集中卖 call 处, 短期阻力. Short call 设在 Wall 上方 = 阻力先起作用.',
+    desc: 'Call Wall = dealer 卖 call 阻力位. Short call 设在 Wall 上方 = 阻力先扛.',
     hard: true });
   base.push({ group: 'Short call selection · 短 call 选择', id: 'bb_above_mid',
     title: '价格位于 BB 中轨之上',
@@ -3889,7 +3880,7 @@ function renderPmccConfig() {
         </div>
         <div class="pmcc-mode-note">
           <div><b>激进 (Δ≤30)</b> · 核心: <b>"准备退出前收最后一波保险费"</b>, 不是"骑上涨 + 加个收入"</div>
-          <div style="margin-top: 4px; opacity: 0.85;">前提: 底仓 ≥ 50% 盈利 · 明确阻力位 · DTE ≤ 21 · 权利金 ≥ 2%. 全部满足才用.</div>
+          <div>前提: 底仓 ≥ 50% 盈利 · 明确阻力位 · DTE ≤ 21. 全部满足才用.</div>
         </div>
       </div>
       <button class="btn primary big" id="proceed-btn" style="margin-top: 12px; width: 100%;" disabled>先选择底仓目的</button>
@@ -5498,7 +5489,7 @@ function showVerdictShiftDialog({ oldVerdict, newVerdict, onForced, onAccept, on
           <span class="verdict-shift-badge ${newCls}">${esc(newVerdict)}</span>
         </div>
         <div style="font-size: 13px; line-height: 1.6; color: var(--text-dim); margin-bottom: 14px;">
-          修改后 checklist 更严格. 你已经开仓, 现在有 2 种处理:
+          修改后 checklist 更严格. 开仓, 现在有 2 种处理:
         </div>
         <div class="verdict-shift-option" data-choice="forced">
           <div class="vs-opt-title">A · 标记为硬冲</div>
