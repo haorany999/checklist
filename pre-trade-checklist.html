@@ -3190,30 +3190,14 @@ function pickerFooterHTML() {
     `;
   }
 
-  // Open positions
+  // Open positions panel — merged into Explore (default filter: outcome=open)
   const openPos = history.filter(e => e.outcome === 'open');
-  const openHTML = openPos.length > 0 ? `
-    <div class="picker-panel open-positions">
-      <div class="picker-panel-head">
-        <span>当前持仓 · Open Positions</span>
-        <span class="picker-panel-count">${openPos.length}</span>
-      </div>
-      <div class="picker-panel-list">
-        ${openPos.slice(0, 8).map(e => `
-          <div class="open-pos-row" onclick="showEditModal('${e.id}')" data-preview-id="${e.id}">
-            <span class="open-pos-ticker">${esc(e.ticker || '—')}</span>
-            <span class="open-pos-strategy">${esc(e.strategy)} · ${esc(e.subtype)}</span>
-            <span class="open-pos-time">${formatTimeAgo(e.timestampSort)}</span>
-          </div>
-        `).join('')}
-      </div>
-    </div>
-  ` : '';
+  const openHTML = '';
 
   // Strategy performance breakdown
   const traded = history.filter(e => e.outcome === 'win' || e.outcome === 'loss' || e.outcome === 'open');
   let strategyHTML = '';
-  if (traded.length >= 3) {
+  if (traded.length >= 1) {
     // Group by strategy (using subtype to distinguish LEAPS styles)
     const groups = {};
     traded.forEach(e => {
@@ -3232,7 +3216,7 @@ function pickerFooterHTML() {
     });
     const rows = Object.entries(groups)
       .sort(([, a], [, b]) => b.total - a.total)
-      .filter(([, g]) => g.total >= 2)
+      .filter(([, g]) => g.total >= 1)
       .map(([key, g]) => {
         const settled = g.win + g.loss;
         const winRate = settled > 0 ? Math.round(g.win / settled * 100) : null;
@@ -3347,11 +3331,12 @@ function pickerFooterHTML() {
     return null;
   }).filter(Boolean))].sort().reverse();
 
-  // Explore panel
+  // Explore panel — merged Open Positions here. Default filter shows current positions (outcome=open).
   const exploreHTML = `
     <div class="picker-panel explore-panel">
       <div class="picker-panel-head">
-        <span>Explore · 搜索历史</span>
+        <span>Explore · <span id="explore-mode-label">当前持仓 · Open Positions</span></span>
+        <span class="picker-panel-count" id="explore-count-badge">${openPos.length}</span>
       </div>
       <div class="explore-filters">
         <input type="text" id="explore-ticker" placeholder="Ticker (e.g. MSFT)" autocomplete="off" spellcheck="false" list="tickers-datalist-explore" oninput="updateExploreResults()">
@@ -3368,13 +3353,14 @@ function pickerFooterHTML() {
           <option value="CC">CC</option>
         </select>
         <select id="explore-outcome" onchange="updateExploreResults()">
-          <option value="">状态</option>
+          <option value="">状态 (全部)</option>
+          <option value="open" selected>持仓 (默认)</option>
           <option value="skipped">未交易</option>
           <option value="opted_out">自主放弃</option>
-          <option value="open">持仓</option>
           <option value="win">盈</option>
           <option value="loss">亏</option>
         </select>
+        <button class="btn ghost small" onclick="clearExploreFilters()" title="清空所有筛选">×</button>
       </div>
       <div id="explore-results">${renderExploreDefaultResults()}</div>
     </div>
@@ -3471,8 +3457,23 @@ function renderExploreResultsFor(matches) {
 }
 
 function renderExploreDefaultResults() {
-  return renderExploreResultsFor(getActiveHistory());
+  // Default view: show only current positions (outcome=open)
+  const openPositions = getActiveHistory().filter(e => e.outcome === 'open');
+  return renderExploreResultsFor(openPositions);
 }
+
+function clearExploreFilters() {
+  const tk = document.getElementById('explore-ticker');
+  const yr = document.getElementById('explore-year');
+  const st = document.getElementById('explore-strategy');
+  const oc = document.getElementById('explore-outcome');
+  if (tk) tk.value = '';
+  if (yr) yr.value = '';
+  if (st) st.value = '';
+  if (oc) oc.value = 'open';  // Reset to default: open positions
+  updateExploreResults();
+}
+window.clearExploreFilters = clearExploreFilters;
 
 function updateExploreResults() {
   const ticker = (document.getElementById('explore-ticker')?.value || '').trim().toUpperCase();
@@ -3491,6 +3492,26 @@ function updateExploreResults() {
   });
   if (strategy) matches = matches.filter(e => e.strategy && e.strategy.startsWith(strategy));
   if (outcome) matches = matches.filter(e => e.outcome === outcome);
+
+  // Update mode label + count based on active filters
+  const labelEl = document.getElementById('explore-mode-label');
+  const countEl = document.getElementById('explore-count-badge');
+  if (labelEl) {
+    const anyFilter = ticker || year || strategy || (outcome && outcome !== 'open');
+    if (!anyFilter && outcome === 'open') {
+      labelEl.textContent = '当前持仓 · Open Positions';
+    } else if (anyFilter) {
+      const parts = [];
+      if (outcome) parts.push({skipped:'未交易', opted_out:'自主放弃', open:'持仓', win:'盈', loss:'亏'}[outcome] || outcome);
+      if (strategy) parts.push(strategy);
+      if (ticker) parts.push(ticker);
+      if (year) parts.push(year);
+      labelEl.textContent = parts.length ? '筛选: ' + parts.join(' · ') : '搜索历史';
+    } else {
+      labelEl.textContent = '搜索历史';
+    }
+  }
+  if (countEl) countEl.textContent = matches.length;
 
   container.innerHTML = renderExploreResultsFor(matches);
 }
@@ -5397,6 +5418,88 @@ function renderEditItem(item, itemsMap) {
   `;
 }
 
+// Renders editable strategy config (subtype) segmented buttons for the edit modal.
+// Returns HTML that allows user to change fields like pmccUnderlyingPurpose, cspIntent, leapsStyle, etc.
+// which is essential when the original snapshot had missing/wrong config.
+function renderEditConfigHTML(fullState) {
+  const strat = fullState.strategy;
+  if (!strat) return '';
+  const parts = [];
+  const seg = (label, field, options, current) => {
+    const btns = options.map(([v, txt]) => `<button data-v="${esc(v)}" ${v === current ? 'class="active"' : ''}>${esc(txt)}</button>`).join('');
+    return `
+      <div class="sync-setup-input-group">
+        <label>${esc(label)}${!current ? ' <span style="color: var(--fail);">· 未选!</span>' : ''}</label>
+        <div class="segmented segmented-grid" data-config-field="${esc(field)}">${btns}</div>
+      </div>
+    `;
+  };
+
+  if (strat === 'leaps') {
+    parts.push(seg('方向', 'leapsDirection', [['open', '开仓'], ['close', '关仓']], fullState.leapsDirection));
+    if (fullState.leapsDirection === 'open') {
+      parts.push(seg('风格', 'leapsStyle', [
+        ['stock_sub', '股票替代'],
+        ['balanced', 'Balanced'],
+        ['swing', 'Swing 杠杆']
+      ], fullState.leapsStyle));
+      parts.push(seg('信号类型', 'leapsPhase', [
+        ['entry', '首笔 · 左侧'],
+        ['add_left', '加仓 · 左侧'],
+        ['add_right', '加仓 · 右侧'],
+        ['add_macd', '加仓 · MACD']
+      ], fullState.leapsPhase));
+    } else if (fullState.leapsDirection === 'close') {
+      parts.push(seg('风格', 'leapsStyle', [
+        ['stock_sub', '股票替代'],
+        ['balanced', 'Balanced'],
+        ['swing', 'Swing 杠杆']
+      ], fullState.leapsStyle));
+      parts.push(seg('关仓类型', 'leapsCloseType', [
+        ['gradient', '分批止盈'],
+        ['profit200', '暴利平半'],
+        ['time_loss', '止损 · 时间+浮亏'],
+        ['time_forced', '时间必退'],
+        ['trend_break', '止损 · 趋势破坏']
+      ], fullState.leapsCloseType));
+    }
+  } else if (strat === 'pmcc') {
+    parts.push(seg('底仓类型', 'pmccUnderlyingPurpose', [
+      ['stock_sub', '股票替代'],
+      ['balanced', 'Balanced'],
+      ['swing', 'Swing 杠杆']
+    ], fullState.pmccUnderlyingPurpose));
+    parts.push(seg('Delta 模式', 'pmccMode', [
+      ['standard', '标准 (≤15)'],
+      ['defensive', '防守 (≤10)'],
+      ['aggressive', '激进 (≤30)']
+    ], fullState.pmccMode));
+  } else if (strat === 'csp') {
+    parts.push(seg('意图', 'cspIntent', [
+      ['assign', '想接股'],
+      ['neutral', '一般'],
+      ['premium', '只赚权利金']
+    ], fullState.cspIntent));
+    parts.push(seg('波动性', 'cspVolTier', [
+      ['medium', '中波动 (SOFI/HIMS)'],
+      ['high', '高波动 (IREN/ASTS)']
+    ], fullState.cspVolTier));
+  } else if (strat === 'cc') {
+    parts.push(seg('CC 模式', 'ccMode', [
+      ['income', '收租 · Δ≤15'],
+      ['balanced', '平衡 · Δ 15-25'],
+      ['aggressive', '愿放 · Δ 25-30']
+    ], fullState.ccMode));
+  }
+
+  if (parts.length === 0) return '';
+  return `
+    <div class="edit-section-header">策略配置</div>
+    <div class="edit-warning">修改配置会重新加载 checklist (当前填入的数据会保留)</div>
+    ${parts.join('')}
+  `;
+}
+
 function showEditModal(id) {
   const entry = loadHistory().find(e => e.id === id);
   if (!entry || entry._deleted) return;
@@ -5452,6 +5555,9 @@ function showEditModal(id) {
       </div>
     </div>
   ` : '';
+
+  // Editable strategy config section — allows changing subtype fields (leaps style/phase, pmcc mode, csp intent, cc mode, etc.)
+  const configHTML = renderEditConfigHTML(fullState);
 
   modal.innerHTML = `
     <div class="modal-card">
@@ -5517,6 +5623,8 @@ function showEditModal(id) {
         </div>
 
         ${positionHTML}
+
+        ${configHTML}
 
         <div class="edit-section-header">CHECKLIST 项目</div>
         ${itemsHTML || '<div style="color: var(--text-faint); font-size: 12px; padding: 10px 0;">无法加载 checklist 项目 (可能是旧数据格式)</div>'}
@@ -5608,6 +5716,44 @@ function showEditModal(id) {
   const counterEl = modal.querySelector('#edit-notes-count');
   notesEl.addEventListener('input', () => {
     counterEl.textContent = `${notesEl.value.length} / ${NOTES_MAX}`;
+  });
+
+  // Strategy config change — updates fullState + reloads modal (checklist depends on config)
+  modal.querySelectorAll('[data-config-field]').forEach(segEl => {
+    segEl.querySelectorAll('button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const field = segEl.dataset.configField;
+        const newVal = btn.dataset.v;
+        if (fullState[field] === newVal) return;  // No change
+
+        // Collect all currently filled items so they aren't lost on reload
+        const currentItems = { ...(fullState.items || {}) };
+        modal.querySelectorAll('[data-item-id]').forEach(el => {
+          const iid = el.dataset.itemId;
+          const type = el.dataset.itemType;
+          if (type === 'numeric') {
+            const v = el.value.trim();
+            if (v !== '') currentItems[iid] = v; else delete currentItems[iid];
+          } else if (type === 'toggle') {
+            const v = el.dataset.current || 'pending';
+            if (v === 'pending') delete currentItems[iid];
+            else currentItems[iid] = v;
+          }
+        });
+        // Also preserve position sizing / ticker inputs
+        const partial = { [field]: newVal, items: currentItems };
+        if (modal.querySelector('#edit-nav')) partial.nav = modal.querySelector('#edit-nav').value.trim();
+        if (modal.querySelector('#edit-existing')) partial.existingExposure = modal.querySelector('#edit-existing').value.trim();
+        if (modal.querySelector('#edit-budget')) partial.budget = modal.querySelector('#edit-budget').value.trim();
+        const tickerVal = modal.querySelector('#edit-ticker')?.value.trim().toUpperCase();
+        if (tickerVal) partial.ticker = tickerVal;
+
+        const updatedFullState = { ...fullState, ...partial };
+        editHistoryEntryFullState(id, updatedFullState);
+        hideEditModal();
+        setTimeout(() => showEditModal(id), 100);
+      });
+    });
   });
 
   // Live R:R recompute: when entry_price / stop_level / target_level change,
