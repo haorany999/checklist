@@ -88,32 +88,57 @@
 
   /* E3 · Ambient background - subtle drifting radial gradients */
   body::before {
-    content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+    content: ''; position: fixed; inset: 0; z-index: -2; pointer-events: none;
     background:
-      radial-gradient(700px 500px at 15% 25%, rgba(63, 185, 80, 0.035), transparent 70%),
-      radial-gradient(600px 600px at 85% 75%, rgba(37, 99, 235, 0.035), transparent 70%),
-      radial-gradient(500px 400px at 50% 100%, rgba(210, 153, 34, 0.025), transparent 70%);
-    animation: ambientDrift 40s ease-in-out infinite;
+      radial-gradient(900px 700px at var(--mesh-a, 15%) 25%, color-mix(in srgb, var(--pass) 6%, transparent), transparent 65%),
+      radial-gradient(800px 800px at var(--mesh-b, 85%) 75%, color-mix(in srgb, var(--accent) 6%, transparent), transparent 65%),
+      radial-gradient(700px 600px at var(--mesh-c, 50%) 100%, color-mix(in srgb, var(--pending) 4%, transparent), transparent 65%);
+    animation: ambientDrift 55s ease-in-out infinite;
+    will-change: transform;
+    transition: background 1.5s ease;
+  }
+  /* Breathing halo layer (center-ish, subtle) */
+  body::after {
+    content: ''; position: fixed;
+    top: 50%; left: 50%;
+    width: 1200px; height: 1200px;
+    transform: translate(-50%, -50%);
+    z-index: -1; pointer-events: none;
+    background: radial-gradient(circle, color-mix(in srgb, var(--accent) 3%, transparent) 0%, transparent 55%);
+    animation: breatheHalo 8s ease-in-out infinite;
+    will-change: opacity, transform;
   }
   body.theme-warm::before {
     background:
-      radial-gradient(700px 500px at 15% 25%, rgba(184, 134, 11, 0.05), transparent 70%),
-      radial-gradient(600px 600px at 85% 75%, rgba(160, 82, 45, 0.04), transparent 70%);
+      radial-gradient(900px 700px at var(--mesh-a, 15%) 25%, rgba(184, 134, 11, 0.07), transparent 65%),
+      radial-gradient(800px 800px at var(--mesh-b, 85%) 75%, rgba(160, 82, 45, 0.06), transparent 65%),
+      radial-gradient(700px 600px at var(--mesh-c, 50%) 100%, rgba(180, 100, 30, 0.04), transparent 65%);
   }
   body.theme-terminal::before {
-    background: radial-gradient(700px 700px at 50% 50%, rgba(0, 255, 102, 0.04), transparent 70%);
+    background: radial-gradient(900px 900px at var(--mesh-a, 50%) 50%, rgba(0, 255, 102, 0.05), transparent 65%);
+  }
+  body.theme-terminal::after {
+    background: radial-gradient(circle, rgba(0, 255, 102, 0.04) 0%, transparent 55%);
   }
   body.theme-slate::before {
     background:
-      radial-gradient(700px 500px at 20% 20%, rgba(88, 166, 255, 0.05), transparent 70%),
-      radial-gradient(600px 600px at 80% 80%, rgba(63, 185, 80, 0.04), transparent 70%);
+      radial-gradient(900px 700px at var(--mesh-a, 20%) 20%, rgba(88, 166, 255, 0.06), transparent 65%),
+      radial-gradient(800px 800px at var(--mesh-b, 80%) 80%, rgba(63, 185, 80, 0.05), transparent 65%),
+      radial-gradient(700px 600px at var(--mesh-c, 50%) 100%, rgba(210, 153, 34, 0.03), transparent 65%);
   }
   @keyframes ambientDrift {
-    0%, 100% { transform: translate(0, 0) scale(1); }
-    33% { transform: translate(30px, -20px) scale(1.05); }
-    66% { transform: translate(-20px, 30px) scale(0.95); }
+    0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+    25% { transform: translate3d(25px, -18px, 0) scale(1.04); }
+    50% { transform: translate3d(-15px, 20px, 0) scale(0.97); }
+    75% { transform: translate3d(-25px, -10px, 0) scale(1.02); }
   }
-  @media (prefers-reduced-motion: reduce) { body::before { animation: none; } }
+  @keyframes breatheHalo {
+    0%, 100% { opacity: 0.5; transform: translate(-50%, -50%) scale(1); }
+    50% { opacity: 0.9; transform: translate(-50%, -50%) scale(1.08); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    body::before, body::after { animation: none; }
+  }
   body { padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
   .app { max-width: 780px; margin: 0 auto; padding: 16px 16px 48px; }
 
@@ -1015,6 +1040,168 @@
   }
   .pmcc-mode-note b { color: var(--text); font-weight: 700; }
 
+  /* ==========================================================
+   * BATCH: UPGRADE 2025-07 · animations & micro-interactions
+   * ========================================================== */
+
+  /* Verdict change ceremony: brief flash + slight scale when verdict transitions to CLEAR */
+  .status-main.verdict-clear-flash {
+    animation: verdictClearFlash 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  @keyframes verdictClearFlash {
+    0% { transform: scale(1); }
+    30% { transform: scale(1.06); text-shadow: 0 0 20px currentColor; }
+    100% { transform: scale(1); text-shadow: none; }
+  }
+  .status-main.verdict-block-shake {
+    animation: verdictBlockShake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+  }
+  @keyframes verdictBlockShake {
+    10%, 90% { transform: translate3d(-1px, 0, 0); }
+    20%, 80% { transform: translate3d(2px, 0, 0); }
+    30%, 50%, 70% { transform: translate3d(-3px, 0, 0); }
+    40%, 60% { transform: translate3d(3px, 0, 0); }
+  }
+
+  /* HARD block item shake when clicked while blocked */
+  .item.item-hard-shake { animation: itemHardShake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97); }
+  @keyframes itemHardShake {
+    0%, 100% { transform: translate3d(0, 0, 0); }
+    25% { transform: translate3d(-3px, 0, 0); }
+    50% { transform: translate3d(3px, 0, 0); }
+    75% { transform: translate3d(-2px, 0, 0); }
+  }
+
+  /* Snapshot save particle burst */
+  .snapshot-particle {
+    position: fixed;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--pass);
+    pointer-events: none;
+    z-index: 9999;
+    animation: particleBurst 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  @keyframes particleBurst {
+    0% { opacity: 1; transform: translate(0, 0) scale(1); }
+    100% { opacity: 0; transform: translate(var(--dx, 0), var(--dy, 0)) scale(0.3); }
+  }
+
+  /* Loading skeleton */
+  .skel { background: linear-gradient(90deg, var(--panel-2) 25%, var(--panel) 50%, var(--panel-2) 75%); background-size: 200% 100%; animation: skelShine 1.4s ease-in-out infinite; border-radius: 6px; }
+  @keyframes skelShine { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+  .skel-line { height: 12px; margin: 8px 0; }
+  .skel-line.wide { width: 100%; }
+  .skel-line.med { width: 60%; }
+  .skel-line.short { width: 35%; }
+  .skel-block { padding: 16px; background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius, 6px); margin-bottom: 12px; }
+
+  /* Refined button ripple (softer, colored) */
+  .ripple-fx {
+    position: absolute; border-radius: 50%; pointer-events: none;
+    background: radial-gradient(circle, color-mix(in srgb, var(--accent) 40%, transparent), transparent 70%);
+    transform: translate(-50%, -50%) scale(0);
+    animation: rippleExpand 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  @keyframes rippleExpand {
+    to { transform: translate(-50%, -50%) scale(30); opacity: 0; }
+  }
+
+  /* Collapsible group header — clickable, chevron indicates state */
+  .group-header { user-select: none; transition: background 0.15s; }
+  .group-header:hover { background: color-mix(in srgb, var(--panel-2) 40%, transparent); }
+  .group-title { position: relative; }
+  .group-title::after {
+    content: '▾';
+    display: inline-block;
+    margin-left: 6px;
+    color: var(--text-faint);
+    font-size: 10px;
+    transition: transform 0.25s;
+  }
+  .group.collapsed .group-title::after { transform: rotate(-90deg); }
+  .group .items { max-height: 8000px; opacity: 1; transition: max-height 0.35s ease, opacity 0.2s ease, margin 0.25s ease, padding 0.25s ease; overflow: hidden; }
+  .group.collapsed .items { max-height: 0; opacity: 0; margin: 0 !important; padding: 0 !important; pointer-events: none; }
+
+  /* Sticky verdict bar (compact) — shows at top of checklist page when scrolling */
+  .sticky-verdict-bar {
+    position: sticky; top: 0; z-index: 30;
+    background: color-mix(in srgb, var(--bg) 88%, transparent);
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    border-bottom: 1px solid var(--border);
+    padding: 8px 14px;
+    margin: 12px -16px 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--mono); font-size: 11.5px;
+    box-shadow: 0 2px 12px -6px rgba(0,0,0,0.10);
+    animation: slideDown 0.3s ease;
+  }
+  .sticky-verdict-bar .verdict-pill {
+    padding: 2px 8px; border-radius: 3px; font-weight: 700; letter-spacing: 0.05em;
+  }
+  .sticky-verdict-bar .verdict-pill.clear { background: var(--pass-bg); color: var(--pass); }
+  .sticky-verdict-bar .verdict-pill.block { background: var(--fail-bg); color: var(--fail); }
+  .sticky-verdict-bar .verdict-pill.pending { background: var(--pending-bg); color: var(--pending); }
+  .sticky-verdict-bar .verdict-tally {
+    display: flex; gap: 10px;
+    color: var(--text-dim);
+  }
+  .sticky-verdict-bar .verdict-tally span b { color: var(--text); font-weight: 700; }
+  @keyframes slideDown { from { transform: translateY(-8px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+  /* Density toggle · 3 levels */
+  body.density-compact .item { padding: 6px 10px; }
+  body.density-compact .item-title { font-size: 12px; }
+  body.density-compact .item-desc { font-size: 10.5px; margin-top: 2px; }
+  body.density-compact .picker-panel { padding: 10px 12px; margin-bottom: 8px; }
+  body.density-comfy .item { padding: 12px 14px; }
+  body.density-comfy .item-title { font-size: 14px; }
+  body.density-spacious .item { padding: 18px 20px; }
+  body.density-spacious .item-title { font-size: 15px; }
+  body.density-spacious .picker-panel { padding: 20px 24px; margin-bottom: 20px; }
+
+  /* Two-column desktop layout for checklist view (>= 1080px) */
+  @media (min-width: 1080px) {
+    body.layout-twocol .app.checklist-app {
+      max-width: 1240px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 320px;
+      grid-auto-flow: dense;
+      column-gap: 24px;
+      row-gap: 0;
+      padding-top: 12px;
+      padding-bottom: 40px;
+    }
+    /* Everything defaults to left column */
+    body.layout-twocol .app.checklist-app > * {
+      grid-column: 1;
+    }
+    /* Header + status bar + sticky bar span BOTH columns */
+    body.layout-twocol .app.checklist-app > .status-bar,
+    body.layout-twocol .app.checklist-app > .ticker-bar,
+    body.layout-twocol .app.checklist-app > header,
+    body.layout-twocol .app.checklist-app > .disclaimer {
+      grid-column: 1 / -1;
+    }
+    /* SOP + config go to sidebar */
+    body.layout-twocol .app.checklist-app > .qref,
+    body.layout-twocol .app.checklist-app > .config {
+      grid-column: 2;
+      grid-row: span 1;
+      align-self: start;
+      position: sticky;
+      top: 130px;
+    }
+    /* Only one sticky at a time — qref sticks to top, config below */
+    body.layout-twocol .app.checklist-app > .config {
+      top: auto;
+      position: relative;
+    }
+  }
+
   /* Offline banner (persistent, above header when navigator.onLine = false) */
   .offline-banner {
     position: sticky; top: 0; z-index: 300;
@@ -1443,6 +1630,7 @@ function leapsDeltaSpec() {
   return null;
 }
 function cspDeltaMax() { return { assign: 30, neutral: 25, premium: 15 }[state.cspIntent] || null; }
+function cspIvpMin() { return { assign: 40, neutral: 50, premium: 60 }[state.cspIntent] || null; }
 function pmccDeltaMax() { return { standard: 15, defensive: 10, aggressive: 30 }[state.pmccMode] || null; }
 function pmccKdjMin() {
   // J threshold based on underlying LEAPS type (底仓珍贵 → 门槛越严)
@@ -1641,7 +1829,7 @@ const SOP = {
     <h4>准备</h4>
     <ul>
       <li>财报前后 3-5 天不新开仓</li>
-      <li>IVP > 30%</li>
+      <li>IVP 门槛按意图: 想接股 > 40% · 一般 > 50% · 只赚权利金 > 60%</li>
       <li>行权价设在 1Y 和 180D Volume Profile 的 HVN 下沿或下方</li>
       <li>找到多次测试的关键支撑位, 选在下方</li>
     </ul>
@@ -2066,10 +2254,17 @@ function cspItems() {
 
   const dMax = cspDeltaMax();
   const intentLabel = CSP_INTENT_LABEL[state.cspIntent];
+  const ivpMin = cspIvpMin();
   base.push({ group: 'Contract structure · 合约结构', id: 'ivp',
-    title: 'IVP > 30%',
-    desc: 'IVP 低 = 权利金差。',
-    numeric: { placeholder: 'IVP', unit: '%', min: 30, comparator: '>' } });
+    title: `IVP > ${ivpMin != null ? ivpMin : '?'}%  (${intentLabel || '未选'})`,
+    desc: (() => {
+      const i = state.cspIntent;
+      if (i === 'assign') return '想接股 · 主要目标是拿股, IV 门槛放松 (> 40%).';
+      if (i === 'neutral') return '一般 · 上中位, 权利金合理 (> 50%).';
+      if (i === 'premium') return '只赚权利金 · 必须高 IV, 低了不划算 (> 60%).';
+      return '选意图决定 IVP 门槛.';
+    })(),
+    numeric: { placeholder: 'IVP', unit: '%', min: ivpMin, comparator: '>' } });
   base.push({ group: 'Contract structure · 合约结构', id: 'dte',
     title: 'DTE 30-45 天',
     desc: '30-45 = 甜蜜点. < 30 = 时间衰减快但 delta 陡; > 45 = 资金占用久, ROC 低.',
@@ -2629,8 +2824,109 @@ function _postRender() {
   requestAnimationFrame(() => {
     if (typeof runNumberAnimations === 'function') runNumberAnimations();
     if (typeof enableSwipeGestures === 'function') enableSwipeGestures();
+    if (typeof enableGroupCollapse === 'function') enableGroupCollapse();
+    if (typeof updateStickyVerdictBar === 'function') updateStickyVerdictBar();
+    if (typeof triggerVerdictAnimations === 'function') triggerVerdictAnimations();
+    if (typeof applyLayoutMode === 'function') applyLayoutMode();
   });
 }
+
+// Density mode (compact/comfy/spacious) — persisted
+const DENSITY_KEY = 'pretrade_density';
+let densityMode = 'comfy';
+function loadDensity() {
+  try {
+    const saved = localStorage.getItem(DENSITY_KEY);
+    if (['compact', 'comfy', 'spacious'].includes(saved)) densityMode = saved;
+  } catch (e) {}
+  document.body.classList.remove('density-compact', 'density-comfy', 'density-spacious');
+  document.body.classList.add('density-' + densityMode);
+}
+function setDensity(m) {
+  densityMode = m;
+  try { localStorage.setItem(DENSITY_KEY, m); } catch (e) {}
+  document.body.classList.remove('density-compact', 'density-comfy', 'density-spacious');
+  document.body.classList.add('density-' + m);
+  render();
+}
+window.setDensity = setDensity;
+
+// Two-column layout — disabled by default. Users can toggle via customize if desired later.
+// Existing sticky status-bar already provides persistent verdict/stats visibility.
+function applyLayoutMode() {
+  // No-op for now. Auto two-col layout was tried but conflicted with DOM structure.
+  // Kept as function so _postRender wiring stays intact.
+}
+
+// Collapsible groups on checklist page — click group header to collapse/expand
+function enableGroupCollapse() {
+  document.querySelectorAll('.group').forEach(g => {
+    const header = g.querySelector('.group-header');
+    if (!header || header.dataset.collapseWired === '1') return;
+    header.dataset.collapseWired = '1';
+    header.style.cursor = 'pointer';
+    header.addEventListener('click', (e) => {
+      // Don't fire on button/input clicks inside header
+      if (e.target.closest('button, input')) return;
+      g.classList.toggle('collapsed');
+      haptic && haptic(5);
+    });
+  });
+}
+
+// Verdict transition tracking — detect PENDING → CLEAR to trigger flash animation
+let _lastVerdictStatus = null;
+function triggerVerdictAnimations() {
+  const statusEls = document.querySelectorAll('.status-main');
+  statusEls.forEach(el => {
+    const currentStatus = el.textContent.trim();
+    const prev = _lastVerdictStatus;
+    if (prev && prev !== currentStatus) {
+      if (currentStatus.includes('CLEAR')) {
+        el.classList.remove('verdict-clear-flash');
+        void el.offsetWidth;
+        el.classList.add('verdict-clear-flash');
+        setTimeout(() => el.classList.remove('verdict-clear-flash'), 900);
+      } else if (currentStatus.includes('BLOCK')) {
+        el.classList.remove('verdict-block-shake');
+        void el.offsetWidth;
+        el.classList.add('verdict-block-shake');
+        setTimeout(() => el.classList.remove('verdict-block-shake'), 600);
+      }
+    }
+    _lastVerdictStatus = currentStatus;
+  });
+}
+
+// Sticky verdict bar visibility (shown when scrolling down on checklist page)
+function updateStickyVerdictBar() {
+  const bar = document.getElementById('sticky-verdict-bar');
+  if (!bar) return;
+  const onChecklist = state.strategy && state.strategy;
+  if (!onChecklist) { bar.classList.remove('visible'); return; }
+  bar.classList.add('visible');
+}
+
+// Snapshot particles — burst outward from button
+function emitSnapshotParticles(x, y) {
+  const count = 8;
+  for (let i = 0; i < count; i++) {
+    const p = document.createElement('div');
+    p.className = 'snapshot-particle';
+    p.style.left = x + 'px';
+    p.style.top = y + 'px';
+    const angle = (i / count) * Math.PI * 2;
+    const dist = 60 + Math.random() * 40;
+    p.style.setProperty('--dx', Math.cos(angle) * dist + 'px');
+    p.style.setProperty('--dy', Math.sin(angle) * dist + 'px');
+    // Vary colors slightly (pass/accent mix)
+    p.style.background = i % 2 === 0 ? 'var(--pass)' : 'var(--accent)';
+    document.body.appendChild(p);
+    setTimeout(() => p.remove(), 900);
+  }
+  haptic && haptic([10, 20, 10]);
+}
+window.emitSnapshotParticles = emitSnapshotParticles;
 
 // MB2 · Swipe gestures on history rows (mobile: swipe left → reveal actions)
 function enableSwipeGestures() {
@@ -4052,6 +4348,30 @@ function qrefHTML() {
         <span class="qref-arrow">▸</span>
       </div>
       <div class="qref-body">${sop}</div>
+    </div>
+  `;
+}
+
+// Sticky verdict bar — compact, appears when status bar is scrolled out of view
+function stickyVerdictBarHTML() {
+  const v = overallVerdict();
+  const pillCls = v.status === 'BLOCKED' ? 'block'
+    : v.status.startsWith('CLEAR') ? 'clear'
+    : 'pending';
+  const shortStatus = v.status === 'BLOCKED' ? 'BLOCKED'
+    : v.status.startsWith('CLEAR TO OPEN · 软执行') ? 'CLEAR · 软'
+    : v.status.startsWith('CLEAR TO CLOSE · 软执行') ? 'CLEAR · 软'
+    : v.status.startsWith('CLEAR') ? 'CLEAR'
+    : 'PENDING';
+  return `
+    <div class="sticky-verdict-bar" id="sticky-verdict-bar">
+      <span class="verdict-pill ${pillCls}">${shortStatus}</span>
+      <span class="verdict-tally">
+        <span><b>${v.pass}</b> pass</span>
+        <span><b>${v.hardFail}</b> hard</span>
+        <span><b>${v.softFail}</b> soft</span>
+        <span><b>${v.pending}</b> pending</span>
+      </span>
     </div>
   `;
 }
@@ -6194,6 +6514,12 @@ function ensureSnapshotModal() {
 
 function showSnapshot() {
   if (!state.strategy) return;
+  // Emit particle burst from Snapshot button (visual feedback regardless of verdict)
+  const snapBtn = document.querySelector('.sab-btn-snapshot') || document.querySelector('.btn.ghost[onclick*="showSnapshot"]');
+  if (snapBtn && typeof emitSnapshotParticles === 'function') {
+    const r = snapBtn.getBoundingClientRect();
+    emitSnapshotParticles(r.left + r.width / 2, r.top + r.height / 2);
+  }
   ensureSnapshotModal();
   document.getElementById('snapshot-preview').value = buildTextSnapshot();
   saveToHistory();
@@ -7083,6 +7409,15 @@ function ensureCustomizeModal() {
           </div>
           <div class="customize-hint">0 = 方角 · 6 = 默认 · 16 = 圆润</div>
         </div>
+        <div class="customize-row">
+          <label class="customize-label">信息密度</label>
+          <div class="segmented" id="cm-density-seg" style="width: 100%;">
+            <button data-v="compact" onclick="setDensity('compact')">紧凑</button>
+            <button data-v="comfy" onclick="setDensity('comfy')">舒适</button>
+            <button data-v="spacious" onclick="setDensity('spacious')">宽松</button>
+          </div>
+          <div class="customize-hint">紧凑 = 一屏更多 items · 宽松 = 更好阅读</div>
+        </div>
         <div class="customize-preview">
           <div class="customize-preview-title">预览</div>
           <div class="customize-preview-row">
@@ -7121,6 +7456,10 @@ function showCustomizeModal() {
   bgText.value = currentBg;
   radiusSlider.value = currentRadius;
   radiusValue.textContent = currentRadius + 'px';
+  // Init density segmented active state
+  modal.querySelectorAll('#cm-density-seg button').forEach(b => {
+    b.classList.toggle('active', b.dataset.v === densityMode);
+  });
   // Wire live updates
   accentPicker.addEventListener('input', e => {
     themeCustom.accent = e.target.value;
@@ -7282,6 +7621,7 @@ window.autoFillLeapsExisting = () => {
 /* Boot */
 loadTheme();
 loadTrendRange();
+loadDensity();
 render();
 // Warn user if localStorage is unavailable
 showStorageWarningIfNeeded();
