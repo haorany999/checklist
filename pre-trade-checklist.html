@@ -1582,9 +1582,9 @@
 const STRAT_LABEL = { leaps: 'LEAPS', pmcc: 'PMCC', csp: 'CSP', cc: 'CC' };
 const LEAPS_DIRECTION_LABEL = { open: '开仓', close: '关仓' };
 const LEAPS_PHASE_LABEL = {
-  entry: '首笔 · 左侧衰竭',
-  add_left: '加仓 · 左侧衰竭',
-  add_right: '加仓 · 右侧确认',
+  entry: '首笔 · 左衰',
+  add_left: '加仓 · 左衰',
+  add_right: '加仓 · 右确',
   add_macd: '加仓 · MACD 金叉'
 };
 const LEAPS_STYLE_LABEL = { stock_sub: '股票替代', balanced: 'Balanced', swing: 'Swing 杠杆' };
@@ -1721,29 +1721,30 @@ function cspTickerSoftTarget() {
 function autoComputeCspExistingTotal() {
   const history = getActiveHistory();
   let total = 0;
+  const items = [];
   history.forEach(e => {
     if (!e.strategy || !e.strategy.startsWith('CSP')) return;
     if (e.outcome !== 'open') return;  // Only open positions
-    // Try to extract strike & contracts from inputs field
     const inp = e.inputs || '';
     const strikeMatch = inp.match(/strike=(\d+\.?\d*)/);
     const contractsMatch = inp.match(/contracts=(\d+)/) || inp.match(/cn=(\d+)/);
+    let val = 0;
     if (strikeMatch) {
       const strike = parseFloat(strikeMatch[1]);
       const contracts = contractsMatch ? parseFloat(contractsMatch[1]) : 1;
-      total += strike * 100 * contracts;
+      val = strike * 100 * contracts;
     } else if (e.fullState && e.fullState.cspThisNominal) {
-      // Fallback: use the stored nominal
-      total += parseFloat(e.fullState.cspThisNominal) || 0;
+      val = parseFloat(e.fullState.cspThisNominal) || 0;
     }
+    if (val > 0) { total += val; items.push({ ticker: e.ticker || '?', val }); }
   });
-  return total;
+  return { total, items };
 }
-// Same for one ticker
 function autoComputeCspTickerExisting(ticker) {
-  if (!ticker) return 0;
+  if (!ticker) return { total: 0, items: [] };
   const history = getActiveHistory();
   let total = 0;
+  const items = [];
   history.forEach(e => {
     if (!e.strategy || !e.strategy.startsWith('CSP')) return;
     if (e.outcome !== 'open') return;
@@ -1751,29 +1752,32 @@ function autoComputeCspTickerExisting(ticker) {
     const inp = e.inputs || '';
     const strikeMatch = inp.match(/strike=(\d+\.?\d*)/);
     const contractsMatch = inp.match(/contracts=(\d+)/) || inp.match(/cn=(\d+)/);
+    let val = 0;
     if (strikeMatch) {
       const strike = parseFloat(strikeMatch[1]);
       const contracts = contractsMatch ? parseFloat(contractsMatch[1]) : 1;
-      total += strike * 100 * contracts;
+      val = strike * 100 * contracts;
     } else if (e.fullState && e.fullState.cspThisNominal) {
-      total += parseFloat(e.fullState.cspThisNominal) || 0;
+      val = parseFloat(e.fullState.cspThisNominal) || 0;
     }
+    if (val > 0) { total += val; items.push({ ticker: e.ticker || '?', val }); }
   });
-  return total;
+  return { total, items };
 }
-// LEAPS: total budget across open positions
 function autoComputeLeapsExistingExposure() {
   const history = getActiveHistory();
   let total = 0;
+  const items = [];
   history.forEach(e => {
     if (!e.strategy || !e.strategy.startsWith('LEAPS')) return;
     if (e.outcome !== 'open') return;
-    // Try to use budget from fullState
+    let val = 0;
     if (e.fullState && e.fullState.budget) {
-      total += parseFloat(e.fullState.budget) || 0;
+      val = parseFloat(e.fullState.budget) || 0;
     }
+    if (val > 0) { total += val; items.push({ ticker: e.ticker || '?', val }); }
   });
-  return total;
+  return { total, items };
 }
 
 /* ==========================================================
@@ -1809,9 +1813,9 @@ const SOP = {
           <li>Swing 杠杆: QQQ 蓝筹 10% · 非蓝筹 5% (高杠杆 = 小仓位)</li>
         </ul>
       </li>
-      <li><b>首笔 · 左侧衰竭:</b> MJ2 信号 + 日线 KDJ J ≤ 15 (backup) + 左侧动能衰竭 (MACD 红柱缩小 + RSI 下跌斜率放缓, 或 RSI ≤ 30, 或底背离) + 止跌 K 线形态 + 放量确认</li>
-      <li><b>加仓 · 左侧衰竭:</b> 首笔浮亏 ≤ 20% (超过应止损而非加仓) + MJ2 信号 + KDJ J ≤ 15 + 左侧动能再度衰竭 + 止跌 K 线 + 放量。要求比首笔更严, 二次探底比首次筑底更多 fake.</li>
-      <li><b>加仓 · 右侧确认:</b> 日线收复 5/10/20MA + 右侧 K 线形态 (反包/吞没/锤头) + 放量确认 + 站稳 EMA21/SMA50</li>
+      <li><b>首笔 · 左衰:</b> MJ2 信号 + 日线 KDJ J ≤ 15 (backup) + 左侧动能衰竭 (MACD 红柱缩小 + RSI 下跌斜率放缓, 或 RSI ≤ 30, 或底背离) + 止跌 K 线形态 + 放量确认</li>
+      <li><b>加仓 · 左衰:</b> 首笔浮亏 ≤ 20% (超过应止损而非加仓) + MJ2 信号 + KDJ J ≤ 15 + 左侧动能再度衰竭 + 止跌 K 线 + 放量。要求比首笔更严, 二次探底比首次筑底更多 fake.</li>
+      <li><b>加仓 · 右确:</b> 日线收复 5/10/20MA + 右侧 K 线形态 (反包/吞没/锤头) + 放量确认 + 站稳 EMA21/SMA50</li>
       <li><b>加仓 · MACD 金叉:</b> 日线 MACD 低位金叉 (滞后指标, 严禁作为第一买点) + 金叉当日 K 线形态 + 放量确认 + 价格站稳短周期均线</li>
       <li><b>加仓节奏 (硬性):</b> 同一张 LEAPS 每周最多加 1 次, 无论什么信号。LEAPS DTE 长, 没紧迫感; 一周多加几乎都是情绪。</li>
       <li>熊市筑底建仓: Δ 70-80, DTE 12-18 个月, 预留 50% 预算给后续 MACD 金叉阶段</li>
@@ -1990,7 +1994,7 @@ function leapsOpenItems() {
     numeric: { placeholder: 'e.g. 22', unit: '%', min: 10, comparator: '≥', step: 0.5 } });
 
   if (state.leapsPhase === 'entry') {
-    const g = 'Entry signals (首笔 · 左侧衰竭)';
+    const g = 'Entry signals (首笔 · 左衰)';
     base.push({ group: g, id: 'mj2',
       title: 'MJ2 系统给出信号', desc: 'MJ2 已触发. 无信号一律不开.', hard: true });
     base.push({ group: g, id: 'kdj_j_leaps',
@@ -2009,7 +2013,7 @@ function leapsOpenItems() {
       desc: 'Δ 70-80, DTE 12-18 个月。' });
   }
   if (state.leapsPhase === 'add_left') {
-    const g = 'Add signals (加仓 · 左侧衰竭)';
+    const g = 'Add signals (加仓 · 左衰)';
     base.push({ group: g, id: 'cooldown_left',
       title: '本周同一张 LEAPS 加仓次数 ≤ 1',
       desc: '每周最多 1 次, 无论信号类型. 一周内二次加仓几乎都是情绪.',
@@ -2033,7 +2037,7 @@ function leapsOpenItems() {
       hard: true });
   }
   if (state.leapsPhase === 'add_right') {
-    const g = 'Add signals (加仓 · 右侧确认)';
+    const g = 'Add signals (加仓 · 右确)';
     base.push({ group: g, id: 'cooldown_right',
       title: '本周同一张 LEAPS 加仓次数 ≤ 1',
       desc: '每周最多 1 次, 无论信号类型. 一周内二次加仓几乎都是情绪.',
@@ -3011,7 +3015,6 @@ function headerHTML() {
         <button class="btn ghost" onclick="showSyncModal()">Sync</button>
         <button class="btn ghost" onclick="showHistory()">History</button>
         ${state.strategy ? `<button class="btn ghost" onclick="showSnapshot()">Snapshot</button>` : ''}
-        ${state.strategy ? `<button class="btn ghost" onclick="switchStrategy()">Switch</button>` : ''}
         <button class="btn" onclick="resetAll()">Reset</button>
       </div>
     </div>
@@ -4064,22 +4067,22 @@ function renderLeapsConfig() {
   if (dir === 'open') {
     subConfigHTML = `
       <div class="config">
-        <div class="config-title">加仓信号类型 · 本次触发是哪一类</div>
+        <div class="config-title">信号类型</div>
         <div class="segmented segmented-grid" id="phase-seg">
-          <button data-v="entry">首笔 · 左侧衰竭</button>
-          <button data-v="add_left">加仓 · 左侧衰竭</button>
-          <button data-v="add_right">加仓 · 右侧确认</button>
+          <button data-v="entry">首笔 · 左衰</button>
+          <button data-v="add_left">加仓 · 左衰</button>
+          <button data-v="add_right">加仓 · 右确</button>
           <button data-v="add_macd">加仓 · MACD 金叉</button>
         </div>
         <div style="font-size: 11.5px; color: var(--text-faint); margin-top: 8px; line-height: 1.5;">
-          按信号类型分, 不是"第几笔"。加仓可以多次, 每次归属一类。左侧加仓比首笔要求更严。
+          按信号类型分类, 不看"第几笔"。左侧加仓比首笔更严.
         </div>
       </div>
     `;
   } else if (dir === 'close') {
     subConfigHTML = `
       <div class="config">
-        <div class="config-title">关仓类型 · 本次触发是哪一类</div>
+        <div class="config-title">关仓类型</div>
         <div class="segmented segmented-grid" id="close-type-seg">
           <button data-v="gradient">分批止盈</button>
           <button data-v="profit200">暴利平半</button>
@@ -5444,9 +5447,9 @@ function renderEditConfigHTML(fullState) {
         ['swing', 'Swing 杠杆']
       ], fullState.leapsStyle));
       parts.push(seg('信号类型', 'leapsPhase', [
-        ['entry', '首笔 · 左侧'],
-        ['add_left', '加仓 · 左侧'],
-        ['add_right', '加仓 · 右侧'],
+        ['entry', '首笔 · 左衰'],
+        ['add_left', '加仓 · 左衰'],
+        ['add_right', '加仓 · 右确'],
         ['add_macd', '加仓 · MACD']
       ], fullState.leapsPhase));
     } else if (fullState.leapsDirection === 'close') {
@@ -7753,25 +7756,42 @@ window.dismissDraft = dismissDraft;
 window.showSyncModal = showSyncModal;
 window.hideSyncModal = hideSyncModal;
 
-// Auto-fill from history helpers
+// Auto-fill from history helpers — only sums outcome=open positions, shows detail
+function _formatAutoDetail(items) {
+  if (!items.length) return '';
+  const parts = items.map(it => `${it.ticker} $${Math.round(it.val).toLocaleString()}`);
+  return parts.join(' + ');
+}
 window.autoFillCspExisting = () => {
-  const total = autoComputeCspExistingTotal();
+  const { total, items } = autoComputeCspExistingTotal();
   state.cspExistingTotal = total > 0 ? String(Math.round(total)) : '';
   render();
-  showToast(total > 0 ? `已从 history 汇总: $${Math.round(total).toLocaleString()}` : '无 outcome=持仓 的 CSP 快照', total > 0 ? 'success' : 'info');
+  if (total > 0) {
+    showToast(`已汇总: $${Math.round(total).toLocaleString()}  (${items.length} 笔持仓)`, 'success', _formatAutoDetail(items));
+  } else {
+    showToast('无 outcome=持仓 的 CSP 快照', 'info');
+  }
 };
 window.autoFillCspTicker = () => {
-  const total = autoComputeCspTickerExisting(state.ticker);
+  const { total, items } = autoComputeCspTickerExisting(state.ticker);
   state.cspTickerExisting = total > 0 ? String(Math.round(total)) : '';
   render();
-  if (!state.ticker) showToast('先填 ticker', 'error');
-  else showToast(total > 0 ? `已从 history 汇总 ${state.ticker}: $${Math.round(total).toLocaleString()}` : `${state.ticker} 无 outcome=持仓 的 CSP`, total > 0 ? 'success' : 'info');
+  if (!state.ticker) { showToast('先填 ticker', 'error'); return; }
+  if (total > 0) {
+    showToast(`${state.ticker}: $${Math.round(total).toLocaleString()}  (${items.length} 笔持仓)`, 'success', _formatAutoDetail(items));
+  } else {
+    showToast(`${state.ticker} 无 outcome=持仓 的 CSP`, 'info');
+  }
 };
 window.autoFillLeapsExisting = () => {
-  const total = autoComputeLeapsExistingExposure();
+  const { total, items } = autoComputeLeapsExistingExposure();
   state.existingExposure = total > 0 ? String(Math.round(total)) : '';
   render();
-  showToast(total > 0 ? `已从 history 汇总: $${Math.round(total).toLocaleString()}` : '无 outcome=持仓 的 LEAPS 快照', total > 0 ? 'success' : 'info');
+  if (total > 0) {
+    showToast(`已汇总: $${Math.round(total).toLocaleString()}  (${items.length} 笔持仓)`, 'success', _formatAutoDetail(items));
+  } else {
+    showToast('无 outcome=持仓 的 LEAPS 快照', 'info');
+  }
 };
 
 /* Boot */
