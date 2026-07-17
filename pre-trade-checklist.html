@@ -783,7 +783,8 @@
   .num-field input:focus { border-color: var(--accent); }
   .num-field input::placeholder { color: var(--text-faint); }
 
-  .position-summary { margin-top: 10px; padding: 10px 12px; background: var(--bg); border-radius: var(--radius, 6px); font-family: var(--mono); font-size: 12.5px; display: flex; justify-content: space-between; align-items: center; border-left: 3px solid var(--border); }
+  .position-summary { margin-top: 10px; padding: 10px 12px; background: var(--bg); border-radius: var(--radius, 6px); font-family: var(--mono); font-size: 12.5px; display: flex; flex-direction: column; gap: 4px; border-left: 3px solid var(--border); }
+  .position-summary-line { display: flex; justify-content: space-between; align-items: center; }
   .position-summary.pass { border-left-color: var(--pass); }
   .position-summary.fail { border-left-color: var(--fail); }
   .position-summary-label { color: var(--text-dim); }
@@ -1295,6 +1296,50 @@
     .sync-mini-usage-label { font-size: 9.5px; }
   }
 
+  /* Global NAV widget on main page */
+  .main-nav-widget {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 14px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius, 6px);
+    margin: 12px 0;
+  }
+  .main-nav-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-faint);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    flex-shrink: 0;
+  }
+  .main-nav-input {
+    flex: 1;
+    max-width: 220px;
+    padding: 6px 10px;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 14px; font-weight: 600;
+    letter-spacing: 0.02em;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .main-nav-input:focus { border-color: var(--accent); }
+  .main-nav-hint {
+    font-size: 11px;
+    color: var(--text-faint);
+    font-family: var(--mono);
+    letter-spacing: 0.02em;
+  }
+  @media (max-width: 560px) {
+    .main-nav-widget { flex-wrap: wrap; }
+    .main-nav-input { max-width: none; width: 100%; }
+    .main-nav-hint { font-size: 10.5px; }
+  }
+
   /* MB2 · Swipe gestures for history rows (mobile) */
   .history-item.swipeable { position: relative; overflow: hidden; }
   .history-item.swipeable .history-main {
@@ -1771,6 +1816,23 @@ function autoComputeLeapsExistingExposure() {
   history.forEach(e => {
     if (!e.strategy || !e.strategy.startsWith('LEAPS')) return;
     if (e.outcome !== 'open') return;
+    let val = 0;
+    if (e.fullState && e.fullState.budget) {
+      val = parseFloat(e.fullState.budget) || 0;
+    }
+    if (val > 0) { total += val; items.push({ ticker: e.ticker || '?', val }); }
+  });
+  return { total, items };
+}
+function autoComputeLeapsTickerExposure(ticker) {
+  if (!ticker) return { total: 0, items: [] };
+  const history = getActiveHistory();
+  let total = 0;
+  const items = [];
+  history.forEach(e => {
+    if (!e.strategy || !e.strategy.startsWith('LEAPS')) return;
+    if (e.outcome !== 'open') return;
+    if ((e.ticker || '').toUpperCase() !== ticker.toUpperCase()) return;
     let val = 0;
     if (e.fullState && e.fullState.budget) {
       val = parseFloat(e.fullState.budget) || 0;
@@ -3953,6 +4015,37 @@ function daysSinceLastSnapshotHTML() {
   return `<div class="last-snap-bar ${cls}">距上次 snapshot: <b>${days} 天前</b>${days > 14 ? ' · 长时间未自查, 记得每笔单前用 checklist' : ''} · 最新: ${esc(latest.ticker || '—')} ${esc(latest.strategy || '')}</div>`;
 }
 
+// Global NAV — persisted across sessions, prefills LEAPS/CSP position sizing
+const NAV_KEY = 'pretrade_account_nav';
+function loadSavedNav() {
+  try { return localStorage.getItem(NAV_KEY) || ''; } catch (e) { return ''; }
+}
+function saveNav(val) {
+  try {
+    if (val && String(val).trim()) localStorage.setItem(NAV_KEY, String(val).trim());
+    else localStorage.removeItem(NAV_KEY);
+  } catch (e) {}
+}
+window.updateGlobalNav = (val) => {
+  saveNav(val);
+  state.nav = val;
+  // Refresh main page widget in case user is on main page
+  const disp = document.getElementById('main-nav-display');
+  if (disp) disp.textContent = val ? '$' + Number(val).toLocaleString() : '未设置';
+};
+
+function mainNavWidgetHTML() {
+  const nav = loadSavedNav();
+  const display = nav ? '$' + Number(nav).toLocaleString() : '未设置';
+  return `
+    <div class="main-nav-widget">
+      <label class="main-nav-label">Account NAV</label>
+      <input type="number" inputmode="decimal" id="main-nav-input" class="main-nav-input" value="${esc(nav)}" placeholder="e.g. 250000" oninput="updateGlobalNav(this.value)" onblur="render()">
+      <span class="main-nav-hint">自动同步到 LEAPS / CSP 表单</span>
+    </div>
+  `;
+}
+
 // Persistent sync status widget (mobile + desktop) — always visible on main page
 function syncStatusMiniHTML() {
   const cfg = loadSyncConfig();
@@ -4026,6 +4119,7 @@ function renderPicker() {
       <div class="picker-title">选择要检查的策略</div>
       <div class="picker-sub">Trading in the Zone</div>
       ${syncStatusMiniHTML()}
+      ${mainNavWidgetHTML()}
       ${daysSinceLastSnapshotHTML()}
       ${draftContinueBannerHTML()}
       ${forcedTradeReminderHTML()}
@@ -4444,8 +4538,9 @@ function renderChecklist() {
         <div class="num-row">
           <div class="num-field"><label class="num-field-label">Account NAV</label>
             <input inputmode="decimal" type="number" id="in-nav" placeholder="e.g. 250000" value="${esc(state.nav)}"></div>
-          <div class="num-field"><label class="num-field-label">已有敞口
-            <button class="autofill-btn" onclick="autoFillLeapsExisting()" title="从 history 里 outcome=持仓 的 LEAPS 快照自动汇总 budget">Auto</button>
+          <div class="num-field"><label class="num-field-label">已有敞口 (本 ticker)
+            <button class="autofill-btn" onclick="autoFillLeapsTicker()" title="仅汇总当前 ticker 的 outcome=持仓 LEAPS budget">Auto</button>
+            <button class="autofill-btn" onclick="autoFillLeapsExisting()" title="汇总所有 ticker 的 outcome=持仓 LEAPS 总敞口" style="margin-left: 4px; opacity: 0.7;">总</button>
           </label>
             <input inputmode="decimal" type="number" id="in-ex" placeholder="0" value="${esc(state.existingExposure)}"></div>
           <div class="num-field"><label class="num-field-label">本次预算</label>
@@ -4457,8 +4552,25 @@ function renderChecklist() {
             </div></div>
         </div>
         <div class="position-summary ${pctCls}" id="position-summary">
-          <span class="position-summary-label">敞口 / NAV</span>
-          <span class="position-summary-val ${pctCls}">${pctDisp} <span style="color:var(--text-faint); font-weight:400;"> / cap ${cap}%</span></span>
+          <div class="position-summary-line">
+            <span class="position-summary-label">本 ticker 敞口 / NAV</span>
+            <span class="position-summary-val ${pctCls}">${pctDisp} <span style="color:var(--text-faint); font-weight:400;"> / cap ${cap}%</span></span>
+          </div>
+          ${(() => {
+            const { total: totalLeaps } = autoComputeLeapsExistingExposure();
+            const navNum = parseFloat(state.nav);
+            const bg = parseFloat(state.budget) || 0;
+            const thisNew = state.ticker ? bg : 0;  // Only count as "new" if ticker set
+            const grandTotal = totalLeaps + thisNew;
+            if (!navNum || navNum <= 0 || totalLeaps <= 0) return '';
+            const grandPct = (grandTotal / navNum) * 100;
+            return `
+              <div class="position-summary-line" style="margin-top: 4px; opacity: 0.85;">
+                <span class="position-summary-label" style="font-size: 10.5px;">总 LEAPS 敞口 / NAV</span>
+                <span class="position-summary-val" style="font-size: 12px; color: var(--text-dim);">${grandPct.toFixed(1)}% <span style="color:var(--text-faint); font-weight:400;">($${Math.round(grandTotal).toLocaleString()})</span></span>
+              </div>
+            `;
+          })()}
         </div>
       </div>
     `;
@@ -4562,6 +4674,7 @@ function renderChecklist() {
       el.addEventListener('focus', () => { pushUndo(); cancelFullRender(); });
       el.addEventListener('input', e => {
         state[key] = e.target.value;
+        if (key === 'nav') saveNav(e.target.value);
         updateVerdictsInPlace();
       });
       el.addEventListener('blur', () => scheduleFullRender());
@@ -4586,6 +4699,7 @@ function renderChecklist() {
       el.addEventListener('focus', () => { pushUndo(); cancelFullRender(); });
       el.addEventListener('input', e => {
         state[key] = e.target.value;
+        if (key === 'nav') saveNav(e.target.value);
         updateVerdictsInPlace();
       });
       el.addEventListener('blur', () => scheduleFullRender());
@@ -4921,6 +5035,9 @@ function itemHTML(it) {
 function pickStrategy(s) {
   state.strategy = s;
   state.items = {};
+  // Prefill NAV from saved global NAV
+  const savedNav = loadSavedNav();
+  if (savedNav && !state.nav) state.nav = savedNav;
   render();
 }
 function switchStrategy() {
@@ -7788,9 +7905,20 @@ window.autoFillLeapsExisting = () => {
   state.existingExposure = total > 0 ? String(Math.round(total)) : '';
   render();
   if (total > 0) {
-    showToast(`已汇总: $${Math.round(total).toLocaleString()}  (${items.length} 笔持仓)`, 'success', _formatAutoDetail(items));
+    showToast(`总 LEAPS 敞口: $${Math.round(total).toLocaleString()}  (${items.length} 笔持仓)`, 'success', _formatAutoDetail(items));
   } else {
     showToast('无 outcome=持仓 的 LEAPS 快照', 'info');
+  }
+};
+window.autoFillLeapsTicker = () => {
+  if (!state.ticker) { showToast('先填 ticker', 'error'); return; }
+  const { total, items } = autoComputeLeapsTickerExposure(state.ticker);
+  state.existingExposure = total > 0 ? String(Math.round(total)) : '';
+  render();
+  if (total > 0) {
+    showToast(`${state.ticker} 敞口: $${Math.round(total).toLocaleString()}  (${items.length} 笔持仓)`, 'success', _formatAutoDetail(items));
+  } else {
+    showToast(`${state.ticker} 无 outcome=持仓 的 LEAPS`, 'info');
   }
 };
 
