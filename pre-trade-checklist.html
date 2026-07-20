@@ -820,6 +820,7 @@
   .item-text { flex: 1; min-width: 0; }
   .item-title { font-size: 15.5px; font-weight: 600; color: var(--text); line-height: 1.4; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
   .hard-badge { font-family: var(--mono); font-size: 9.5px; color: var(--fail); background: var(--fail-bg); padding: 2px 6px; border-radius: 3px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 600; border: 1px solid rgba(248, 81, 73, 0.25); }
+  .hard-badge.hard-badge-compensated { color: var(--pending); background: var(--pending-bg); border-color: rgba(210, 153, 34, 0.25); text-transform: none; letter-spacing: 0.02em; }
   .item-desc { font-size: 13.5px; color: var(--text-dim); margin-top: 4px; line-height: 1.5; }
   .item-buttons { display: flex; gap: 6px; flex-shrink: 0; }
   .item-btn { width: 40px; height: 40px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--text-faint); transition: all 0.12s ease; -webkit-appearance: none; appearance: none; }
@@ -1619,6 +1620,7 @@
   }
 </script>
 <script>
+
 "use strict";
 
 /* ==========================================================
@@ -1677,6 +1679,11 @@ function leapsDeltaSpec() {
 function cspDeltaMax() { return { assign: 30, neutral: 25, premium: 15 }[state.cspIntent] || null; }
 function cspIvpMin() { return { assign: 40, neutral: 50, premium: 60 }[state.cspIntent] || null; }
 function pmccDeltaMax() { return { standard: 15, defensive: 10, aggressive: 30 }[state.pmccMode] || null; }
+function pmccIvpMin() {
+  // Standard/Defensive: 想留底仓, IV 门槛保守
+  // Aggressive: 愿放底仓, 需要高 IV 才值得赌 assign
+  return { standard: 40, defensive: 40, aggressive: 60 }[state.pmccMode] || null;
+}
 function pmccKdjMin() {
   // J threshold based on underlying LEAPS type (底仓珍贵 → 门槛越严)
   //   股票替代 (Δ≥75, 底仓珍贵): 85 — assign 走底仓代价大, 需极端超买
@@ -1718,6 +1725,12 @@ function ccKdjMin() {
   //   平衡: 74 — 中位
   //   愿放 (愿 assign): 70 — 门槛低, 反正 assign 也 OK
   return { income: 78, balanced: 74, aggressive: 70 }[state.ccMode] || null;
+}
+function ccIvpMin() {
+  // 收租 (想留股): 中位门槛 40%
+  // 平衡: 上中位 50%
+  // 愿放 (想 assign 锁盈): 需高 IV 60%
+  return { income: 40, balanced: 50, aggressive: 60 }[state.ccMode] || null;
 }
 function positionCapPct() {
   // Style-aware cap:
@@ -1882,14 +1895,9 @@ const SOP = {
       <li><b>加仓节奏 (硬性):</b> 同一张 LEAPS 每周最多加 1 次, 无论什么信号。LEAPS DTE 长, 没紧迫感; 一周多加几乎都是情绪。</li>
       <li>熊市筑底建仓: Δ 70-80, DTE 12-18 个月, 预留 50% 预算给后续 MACD 金叉阶段</li>
     </ul>
-    <h4>关仓 / 减仓 / 止损</h4>
-    <ul>
-      <li>分批止盈: 股票替代 150%→平50% · Balanced 100%可走 + 150%必走 60% · Swing 50%可走 + 100%必走 ≥70%</li>
-      <li>暴利换约 (利润 ≥ 200%): 平仓 50% 锁利, 余仓移动止盈</li>
-      <li>时间+浮亏止损: 仅当 DTE &lt; 9 个月 且 浮亏 ≥ 50%, 才考虑割肉/换约</li>
-      <li>时间必须退出: DTE 剩 6 个月, 无条件平仓或滚动至更远 LEAPS</li>
-      <li>趋势破坏止损: 跌破 200MA 且基本面恶化, 无条件仓位减半</li>
-    </ul>
+    <div style="font-size: 11px; color: var(--text-faint); margin-top: 8px; padding: 6px 8px; background: var(--panel); border-left: 2px solid var(--border);">
+      本工具只覆盖<b>开仓 / 加仓</b>纪律. 关仓 / 减仓 / 止损另行决策, 不进此 checklist.
+    </div>
   `,
   csp: `
     <h4>准备</h4>
@@ -2070,9 +2078,6 @@ function leapsOpenItems() {
     base.push({ group: g, id: 'reversal_confirm',
       title: '止跌 K 线 + 放量确认',
       desc: '止跌 K 线 (锤头/十字星/吞没/长下影/早晨之星) + 量 > 5MA × 1.2. 指标超卖不够, 需 K 线+量确认.' });
-    base.push({ group: g, id: 'budget50pct',
-      title: '若熊市筑底建仓: 已预留 50% 预算给 MACD 金叉阶段',
-      desc: 'Δ 70-80, DTE 12-18 个月。' });
   }
   if (state.leapsPhase === 'add_left') {
     const g = 'Add signals (加仓 · 左衰)';
@@ -2312,8 +2317,12 @@ function cspItems() {
     desc: 'CSP DTE 30-45 天通常覆盖至少一次 FOMC/CPI/NFP。此项打钩 = 在日历核对, 已知晓事件时点, 有心理准备。' });
   base.push({ group: 'Underlying · 标的', id: 'no_earnings',
     title: '合约存续期不覆盖财报',
-    desc: '硬性禁令。前后 3-5 天也不新开。',
+    desc: '首选: 不覆盖. 前后 3-5 天也不新开. 例外见下条 sub-check.',
     hard: true });
+  base.push({ group: 'Underlying · 标的', id: 'earnings_exit_plan',
+    title: '例外 · 若覆盖财报: 机会极好 + 已计划财报前 3+ 天关闭',
+    desc: '仅当上一条无法满足时使用. 必须同时满足: (1) 机会真的极好 (IV 高 + 支撑强 + 意图明确). (2) 已计划财报前 3+ 天主动关掉 (提前止盈 / 换约 / 砍单). (3) 接受 IV crush + gap 风险. 打勾此项相当于替代上一条 HARD.',
+    hard: false });
   base.push({ group: 'Underlying · 标的', id: 'strike_hvn',
     title: '行权价位于 1Y 与 180D Volume Profile 的 HVN 下沿或下方',
     desc: '密集区承接。' });
@@ -2380,13 +2389,6 @@ function cspItems() {
       title: '先选波动性类型 → 才能校验单标的敞口',
       desc: '未选波动性类型 (中/高). 此 HARD 项无法校验.',
       hard: true, locked: true });
-  }
-  // Assign-scenario check: if intent is 'assign', pre-verify post-assignment total ticker exposure
-  if (state.cspIntent === 'assign') {
-    base.push({ group: psGroup, id: 'assign_ticker_check',
-      title: '若被 assign 接股 · 该 ticker 总敞口 ≤ 25% NAV',
-      desc: '想接股 = 假设会 assign. 已算过: 现有股票 + CSP nominal (strike × 100 × 张数) ≤ 25% NAV. 超 → 减张数 / 换 strike / 换 ticker. (APLD 3 张同期集中亏损教训.)',
-      hard: true });
   }
   return base;
 }
@@ -2455,10 +2457,13 @@ function pmccItems() {
     title: '非在突破当天卖 short call',
     desc: '突破当天动能最强, 短腿易被推爆. 次日冲高回落再卖.',
     hard: true });
+  const pmccIvpMinV = pmccIvpMin();
   base.push({ group: 'Short call selection · 短 call 选择', id: 'ivp',
-    title: 'IVP > 30%',
-    desc: 'IVP < 30 = 权利金差, 不划算.',
-    numeric: { placeholder: 'IVP', unit: '%', min: 30, comparator: '>' } });
+    title: `IVP > ${pmccIvpMinV != null ? pmccIvpMinV : '?'}%  (${modeLabel || '未选'})`,
+    desc: isAggressive
+      ? '激进: 愿放底仓, 需高 IV (> 60%) 才值得赌 assign.'
+      : '标准/防守: 想留底仓, IV 门槛 40%. 低于此权利金差, 不划算.',
+    numeric: { placeholder: 'IVP', unit: '%', min: pmccIvpMinV, comparator: '>' } });
   base.push({ group: 'Short call selection · 短 call 选择', id: 'delta',
     title: `Short call Delta ≤ ${dMax != null ? dMax : '?'}  (${modeLabel || '未选'})`,
     desc: isAggressive
@@ -2541,13 +2546,19 @@ function ccItems() {
       locked: true });
   }
 
+  const ccIvpMinV = ccIvpMin();
+  const ccModeLabel = CC_MODE_LABEL[state.ccMode];
   base.push({ group: 'Short call selection · 短 call 选择', id: 'ivp',
-    title: 'IVP > 30%',
-    desc: 'IVP < 30 = 权利金差, 不划算.',
-    numeric: { placeholder: 'IVP', unit: '%', min: 30, comparator: '>' } });
+    title: `IVP > ${ccIvpMinV != null ? ccIvpMinV : '?'}%  (${ccModeLabel || '未选'})`,
+    desc: (() => {
+      if (state.ccMode === 'income') return '收租 · 想留股, IV 门槛中位 (> 40%).';
+      if (state.ccMode === 'balanced') return '平衡 · 上中位 (> 50%).';
+      if (state.ccMode === 'aggressive') return '愿放 · 想 assign 锁盈, 需高 IV (> 60%).';
+      return '选模式决定 IVP 门槛.';
+    })(),
+    numeric: { placeholder: 'IVP', unit: '%', min: ccIvpMinV, comparator: '>' } });
 
   const ccDelta = ccDeltaSpec();
-  const ccModeLabel = CC_MODE_LABEL[state.ccMode];
   if (ccDelta) {
     base.push({ group: 'Short call selection · 短 call 选择', id: 'delta',
       title: `Short call ${ccDelta.title}  (${ccModeLabel || '未选'})`,
@@ -2577,9 +2588,9 @@ function ccItems() {
 
 function currentItems() {
   if (state.strategy === 'leaps') {
-    if (state.leapsDirection === 'open') return leapsOpenItems();
+    // Legacy: read old close entries in history without breaking. Always route new entries to open.
     if (state.leapsDirection === 'close') return leapsCloseItems();
-    return [];
+    return leapsOpenItems();
   }
   if (state.strategy === 'csp') return cspItems();
   if (state.strategy === 'pmcc') return pmccItems();
@@ -2786,12 +2797,25 @@ function overallVerdict() {
   const items = currentItems();
   let pass = 0, fail = 0, pending = 0, hardFail = 0;
   const pendingItems = [];
+  // Special OR-pair: no_earnings HARD can be compensated by earnings_exit_plan pass (for CSP)
+  const noEarningsItem = items.find(i => i.id === 'no_earnings');
+  const exitPlanItem = items.find(i => i.id === 'earnings_exit_plan');
+  const noEarningsCompensated = state.strategy === 'csp'
+    && noEarningsItem && exitPlanItem
+    && itemVerdict(noEarningsItem) === 'fail'
+    && itemVerdict(exitPlanItem) === 'pass';
   for (const it of items) {
     const v = itemVerdict(it);
     if (v === 'pass') pass++;
     else if (v === 'fail') {
-      fail++;
-      if (it.hard) hardFail++;
+      // If no_earnings is compensated by exit_plan, don't count it as HARD block
+      if (it.id === 'no_earnings' && noEarningsCompensated) {
+        // Still count as fail (soft) — visible reminder — but not as HARD block
+        fail++;
+      } else {
+        fail++;
+        if (it.hard) hardFail++;
+      }
     }
     else {
       pending++;
@@ -2851,9 +2875,7 @@ function _viewKey() {
   if (state._view === 'history') return 'history';
   if (!state.strategy) return 'picker';
   if (state.strategy === 'leaps') {
-    if (!state.leapsDirection || !state.leapsStyle) return 'leaps-config';
-    if (state.leapsDirection === 'open' && !state.leapsPhase) return 'leaps-config';
-    if (state.leapsDirection === 'close' && !state.leapsCloseType) return 'leaps-config';
+    if (!state.leapsStyle || !state.leapsPhase) return 'leaps-config';
     return 'checklist';
   }
   if (state.strategy === 'csp' && !state.cspIntent) return 'csp-config';
@@ -2878,10 +2900,10 @@ function render() {
   if (state._view === 'history') { renderHistoryPage(); _postRender(); return; }
   if (!state.strategy) { renderPicker(); _postRender(); return; }
   if (state.strategy === 'leaps') {
-    if (!state.leapsDirection) { renderLeapsConfig(); _postRender(); return; }
+    // Always open — force direction to 'open' if not already set
+    if (state.leapsDirection !== 'open') state.leapsDirection = 'open';
     if (!state.leapsStyle) { renderLeapsConfig(); _postRender(); return; }
-    if (state.leapsDirection === 'open' && !state.leapsPhase) { renderLeapsConfig(); _postRender(); return; }
-    if (state.leapsDirection === 'close' && !state.leapsCloseType) { renderLeapsConfig(); _postRender(); return; }
+    if (!state.leapsPhase) { renderLeapsConfig(); _postRender(); return; }
     renderChecklist();
     scheduleSaveDraft();
     _postRender();
@@ -3085,13 +3107,10 @@ function headerHTML() {
 
 function subtypeString() {
   if (state.strategy === 'leaps') {
-    if (state.leapsDirection === 'open') {
-      return `开仓 · ${LEAPS_PHASE_LABEL[state.leapsPhase] || '?'} / ${LEAPS_STYLE_LABEL[state.leapsStyle] || '?'}`;
-    }
     if (state.leapsDirection === 'close') {
       return `关仓 · ${LEAPS_CLOSE_TYPE_LABEL[state.leapsCloseType] || '?'} / ${LEAPS_STYLE_LABEL[state.leapsStyle] || '?'}`;
     }
-    return '?';
+    return `${LEAPS_PHASE_LABEL[state.leapsPhase] || '?'} / ${LEAPS_STYLE_LABEL[state.leapsStyle] || '?'}`;
   }
   if (state.strategy === 'csp') return CSP_INTENT_LABEL[state.cspIntent] || '?';
   if (state.strategy === 'pmcc') return `底仓 ${LEAPS_STYLE_LABEL[state.pmccUnderlyingPurpose] || '?'} / ${PMCC_MODE_LABEL[state.pmccMode] || '?'}`;
@@ -4154,92 +4173,52 @@ function renderPicker() {
 }
 
 function renderLeapsConfig() {
-  const dir = state.leapsDirection;
+  // LEAPS is always 'open' — close/exit logic moved out of scope for this app.
+  // Force direction to 'open' on entry to ensure a consistent state.
+  if (state.leapsDirection !== 'open') state.leapsDirection = 'open';
 
-  let subConfigHTML = '';
-
-  if (dir === 'open') {
-    subConfigHTML = `
-      <div class="config">
-        <div class="config-title">信号类型</div>
-        <div class="segmented segmented-grid" id="phase-seg">
-          <button data-v="entry">首笔 · 左衰</button>
-          <button data-v="add_left">加仓 · 左衰</button>
-          <button data-v="add_right">加仓 · 右确</button>
-          <button data-v="add_macd">加仓 · MACD 金叉</button>
-        </div>
-        <div style="font-size: 11.5px; color: var(--text-faint); margin-top: 8px; line-height: 1.5;">
-          按信号类型分类, 不看"第几笔"。左侧加仓比首笔更严.
-        </div>
-      </div>
-    `;
-  } else if (dir === 'close') {
-    subConfigHTML = `
-      <div class="config">
-        <div class="config-title">关仓类型</div>
-        <div class="segmented segmented-grid" id="close-type-seg">
-          <button data-v="gradient">分批止盈</button>
-          <button data-v="profit200">暴利平半</button>
-          <button data-v="time_loss">时间+浮亏</button>
-          <button data-v="time_forced">时间必退</button>
-          <button data-v="trend_break">趋势破坏</button>
-        </div>
-      </div>
-    `;
-  }
-
-  const styleConfigHTML = dir ? `
+  const subConfigHTML = `
     <div class="config">
-      <div class="config-title">Style · ${dir === 'open' ? '决定 Delta 门槛' : '决定止盈门槛'}</div>
-      <div class="segmented" id="style-seg">
-        <button data-v="stock_sub">股票替代${dir === 'open' ? ' · Δ≥75' : ''}</button>
-        <button data-v="balanced">Balanced${dir === 'open' ? ' · Δ 50-74' : ''}</button>
-        <button data-v="swing">Swing 杠杆${dir === 'open' ? ' · Δ 35-49' : ''}</button>
+      <div class="config-title">信号类型</div>
+      <div class="segmented segmented-grid" id="phase-seg">
+        <button data-v="entry">首笔 · 左衰</button>
+        <button data-v="add_left">加仓 · 左衰</button>
+        <button data-v="add_right">加仓 · 右确</button>
+        <button data-v="add_macd">加仓 · MACD 金叉</button>
       </div>
-      ${dir === 'close' ? `<div style="font-size: 11.5px; color: var(--text-faint); margin-top: 8px; line-height: 1.5;">这笔当初是哪一类? 决定止盈门槛: 股票替代 150%+ · Balanced 100%+ (150% 必走 60%) · Swing 50%+ (100% 必走 70%)。</div>` : ''}
+      <div style="font-size: 11.5px; color: var(--text-faint); margin-top: 8px; line-height: 1.5;">
+        按信号类型分类, 不看"第几笔"。左侧加仓比首笔更严.
+      </div>
     </div>
-  ` : '';
+  `;
+
+  const styleConfigHTML = `
+    <div class="config">
+      <div class="config-title">Style · 决定 Delta 门槛</div>
+      <div class="segmented" id="style-seg">
+        <button data-v="stock_sub">股票替代 · Δ≥75</button>
+        <button data-v="balanced">Balanced · Δ 50-74</button>
+        <button data-v="swing">Swing 杠杆 · Δ 35-49</button>
+      </div>
+    </div>
+  `;
 
   $app.innerHTML = `
     ${headerHTML()}
     <div class="picker">
       <div class="picker-title">LEAPS · 交易画像</div>
-      <div class="picker-sub">方向 · style · 触发类型。</div>
-      <div class="config" style="margin-top: 20px;">
-        <div class="config-title">Direction · 开仓 or 关仓</div>
-        <div class="segmented" id="direction-seg">
-          <button data-v="open">开仓 (含加仓)</button>
-          <button data-v="close">关仓 · 止盈 · 止损</button>
-        </div>
-      </div>
+      <div class="picker-sub">此工具专注开仓纪律。关仓另行决策, 不在此 checklist 内.</div>
       ${styleConfigHTML}
       ${subConfigHTML}
       <button class="btn primary big" id="proceed-btn" style="margin-top: 12px; width: 100%;" disabled>先完成配置</button>
     </div>
   `;
 
-  wireSegmented('direction-seg', v => {
-    state.leapsDirection = v;
-    // Reset direction-specific items; keep leapsStyle (shared for open & close)
-    state.leapsPhase = null;
-    state.leapsCloseType = null;
-    render();
-  });
-  if (dir) document.querySelector(`#direction-seg button[data-v="${dir}"]`)?.classList.add('active');
+  wireSegmented('style-seg', v => { state.leapsStyle = v; updateProceed(); });
+  if (state.leapsStyle) document.querySelector(`#style-seg button[data-v="${state.leapsStyle}"]`)?.classList.add('active');
 
-  // Style picker (shared)
-  if (dir) {
-    wireSegmented('style-seg', v => { state.leapsStyle = v; updateProceed(); });
-    if (state.leapsStyle) document.querySelector(`#style-seg button[data-v="${state.leapsStyle}"]`)?.classList.add('active');
-  }
-
-  if (dir === 'open') {
-    wireSegmented('phase-seg', v => { state.leapsPhase = v; updateProceed(); });
-    if (state.leapsPhase) document.querySelector(`#phase-seg button[data-v="${state.leapsPhase}"]`)?.classList.add('active');
-  } else if (dir === 'close') {
-    wireSegmented('close-type-seg', v => { state.leapsCloseType = v; updateProceed(); });
-    if (state.leapsCloseType) document.querySelector(`#close-type-seg button[data-v="${state.leapsCloseType}"]`)?.classList.add('active');
-  }
+  wireSegmented('phase-seg', v => { state.leapsPhase = v; updateProceed(); });
+  if (state.leapsPhase) document.querySelector(`#phase-seg button[data-v="${state.leapsPhase}"]`)?.classList.add('active');
 
   updateProceed();
   document.getElementById('proceed-btn').addEventListener('click', () => {
@@ -4249,10 +4228,7 @@ function renderLeapsConfig() {
 
 function isProceedReady() {
   if (state.strategy === 'leaps') {
-    if (!state.leapsDirection || !state.leapsStyle) return false;
-    if (state.leapsDirection === 'open') return !!state.leapsPhase;
-    if (state.leapsDirection === 'close') return !!state.leapsCloseType;
-    return false;
+    return !!state.leapsStyle && !!state.leapsPhase;
   }
   if (state.strategy === 'csp') return !!state.cspIntent;
   if (state.strategy === 'pmcc') return !!state.pmccUnderlyingPurpose;
@@ -4941,8 +4917,15 @@ function updateVerdictsInPlace() {
 
 function itemHTML(it) {
   const v = itemVerdict(it);
-  const hardBadge = it.hard ? `<span class="hard-badge">Hard block</span>` : '';
-  const hardClass = it.hard && v === 'fail' ? 'hard-fail' : '';
+  // Special OR-pair compensation: no_earnings HARD is soft-downgraded when earnings_exit_plan passes (CSP only)
+  const isCompensated = state.strategy === 'csp'
+    && it.id === 'no_earnings'
+    && v === 'fail'
+    && state.items['earnings_exit_plan'] === 'pass';
+  // Effective HARD flag — false when compensated, so hard-badge and hard-fail class are suppressed
+  const effectiveHard = it.hard && !isCompensated;
+  const hardBadge = effectiveHard ? `<span class="hard-badge">Hard block</span>` : (isCompensated ? `<span class="hard-badge hard-badge-compensated">HARD · 已由例外抵消</span>` : '');
+  const hardClass = effectiveHard && v === 'fail' ? 'hard-fail' : '';
 
   // Special render for R:R computed check
   if (it.id === 'rr_check') {
@@ -5556,32 +5539,19 @@ function renderEditConfigHTML(fullState) {
   };
 
   if (strat === 'leaps') {
-    parts.push(seg('方向', 'leapsDirection', [['open', '开仓'], ['close', '关仓']], fullState.leapsDirection));
-    if (fullState.leapsDirection === 'open') {
-      parts.push(seg('风格', 'leapsStyle', [
-        ['stock_sub', '股票替代'],
-        ['balanced', 'Balanced'],
-        ['swing', 'Swing 杠杆']
-      ], fullState.leapsStyle));
+    parts.push(seg('风格', 'leapsStyle', [
+      ['stock_sub', '股票替代'],
+      ['balanced', 'Balanced'],
+      ['swing', 'Swing 杠杆']
+    ], fullState.leapsStyle));
+    // Only show phase picker for open direction (legacy close entries stay read-only for direction)
+    if (fullState.leapsDirection !== 'close') {
       parts.push(seg('信号类型', 'leapsPhase', [
         ['entry', '首笔 · 左衰'],
         ['add_left', '加仓 · 左衰'],
         ['add_right', '加仓 · 右确'],
         ['add_macd', '加仓 · MACD']
       ], fullState.leapsPhase));
-    } else if (fullState.leapsDirection === 'close') {
-      parts.push(seg('风格', 'leapsStyle', [
-        ['stock_sub', '股票替代'],
-        ['balanced', 'Balanced'],
-        ['swing', 'Swing 杠杆']
-      ], fullState.leapsStyle));
-      parts.push(seg('关仓类型', 'leapsCloseType', [
-        ['gradient', '分批止盈'],
-        ['profit200', '暴利平半'],
-        ['time_loss', '止损 · 时间+浮亏'],
-        ['time_forced', '时间必退'],
-        ['trend_break', '止损 · 趋势破坏']
-      ], fullState.leapsCloseType));
     }
   } else if (strat === 'pmcc') {
     parts.push(seg('底仓类型', 'pmccUnderlyingPurpose', [
@@ -7975,6 +7945,7 @@ window.addEventListener('scroll', updateScrolledState, { passive: true });
   // Delay 800ms so UI renders + user sees the app before any sync toast
   setTimeout(() => { syncMergeSilent(); }, 800);
 })();
+
 
 </script>
 </body>
