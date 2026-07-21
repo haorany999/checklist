@@ -1734,9 +1734,10 @@ function ccIvpMin() {
 }
 function positionCapPct() {
   // Style-aware cap:
-  //   股票替代 (Δ≥75, 低杠杆, 长持): QQQ 30% · 非蓝筹 15%
-  //   Balanced (Δ 50-74, 中杠杆): QQQ 20% · 非蓝筹 10%
-  //   Swing 杠杆 (Δ 35-49, 高杠杆, 短持): QQQ 10% · 非蓝筹 5%
+  //   股票替代 (Δ≥75, 低杠杆, 长持): 大蓝筹 30% · 非蓝筹 15%
+  //   Balanced (Δ 50-74, 中杠杆): 大蓝筹 20% · 非蓝筹 10%
+  //   Swing 杠杆 (Δ 35-49, 高杠杆, 短持): 大蓝筹 10% · 非蓝筹 5%
+  //   大蓝筹 = QQQ / MSFT / AAPL / GOOG 等大市值权重股
   const isBluechip = state.leapsBluechip;
   const style = state.leapsStyle;
   if (style === 'swing') return isBluechip ? 10 : 5;
@@ -1883,9 +1884,9 @@ const SOP = {
     <ul>
       <li>单标的 LEAPS 敞口:
         <ul>
-          <li>股票替代: QQQ 蓝筹 30% · 非蓝筹 15%</li>
-          <li>Balanced: QQQ 蓝筹 20% · 非蓝筹 10%</li>
-          <li>Swing 杠杆: QQQ 蓝筹 10% · 非蓝筹 5% (高杠杆 = 小仓位)</li>
+          <li>股票替代: 大蓝筹 30% · 非蓝筹 15%</li>
+          <li>Balanced: 大蓝筹 20% · 非蓝筹 10%</li>
+          <li>Swing 杠杆: 大蓝筹 10% · 非蓝筹 5% (高杠杆 = 小仓位)</li>
         </ul>
       </li>
       <li><b>首笔 · 左衰:</b> MJ2 信号 + 日线 KDJ J ≤ 15 (backup) + 左侧动能衰竭 (MACD 红柱缩小 + RSI 下跌斜率放缓, 或 RSI ≤ 30, 或底背离) + 止跌 K 线形态 + 放量确认</li>
@@ -2059,7 +2060,7 @@ function leapsOpenItems() {
   if (state.leapsStyle === 'swing') capDescParts.push('Swing 杠杆 = 小仓位');
   else if (state.leapsStyle === 'balanced') capDescParts.push('Balanced = 中仓位');
   else if (state.leapsStyle === 'stock_sub') capDescParts.push('股票替代');
-  if (state.leapsBluechip) capDescParts.push('QQQ 蓝筹');
+  if (state.leapsBluechip) capDescParts.push('大蓝筹');
   const capDesc = capDescParts.length ? `${capDescParts.join(' · ')}, 上限 ${cap}%。` : `上限 ${cap}%。`;
   base.push({ group: 'Position sizing · 仓位控制', id: 'sizecap',
     title: `单标的 LEAPS 敞口 ≤ ${cap}% 账户净值`,
@@ -4616,7 +4617,7 @@ function renderChecklist() {
             <input inputmode="decimal" type="number" id="in-ex" placeholder="0" value="${esc(state.existingExposure)}"></div>
           <div class="num-field"><label class="num-field-label">本次预算</label>
             <input inputmode="decimal" type="number" id="in-bg" placeholder="e.g. 8000" value="${esc(state.budget)}"></div>
-          <div class="num-field"><label class="num-field-label">是否大蓝筹</label>
+          <div class="num-field"><label class="num-field-label" title="大蓝筹 = QQQ / MSFT / AAPL / GOOG / AMZN / META 等大市值权重股. 允许更高单标的 cap.">是否大蓝筹</label>
             <div class="segmented" id="bluechip-seg" style="margin-top: 0;">
               <button data-v="no">否 (≤${capNo}%)</button>
               <button data-v="yes">是 (≤${capYes}%)</button>
