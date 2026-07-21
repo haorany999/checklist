@@ -1642,7 +1642,7 @@ const LEAPS_CLOSE_TYPE_LABEL = {
   time_forced: '时间必退 (DTE ≤ 6m)',
   trend_break: '止损 · 趋势破坏'
 };
-const CSP_INTENT_LABEL = { assign: '想接股', neutral: '一般', premium: '只赚权利金' };
+const CSP_INTENT_LABEL = { assign: '想接股', neutral: '一般', premium: '只赚权利金', sniper: '狙击 · 高波远期' };
 const PMCC_MODE_LABEL = { standard: '标准 (≤15)', defensive: '防守 (≤10)', aggressive: '激进 (≤30)' };
 const CC_MODE_LABEL = { income: '收租 · Δ≤15', balanced: '平衡 · Δ 15-25', aggressive: '愿放 · Δ 25-30' };
 const OUTCOME_LABEL = { skipped: '未交易', opted_out: '自主放弃', open: '持仓', win: '盈', loss: '亏' };
@@ -1676,8 +1676,8 @@ function leapsDeltaSpec() {
   }
   return null;
 }
-function cspDeltaMax() { return { assign: 30, neutral: 25, premium: 15 }[state.cspIntent] || null; }
-function cspIvpMin() { return { assign: 40, neutral: 50, premium: 60 }[state.cspIntent] || null; }
+function cspDeltaMax() { return { assign: 30, neutral: 25, premium: 15, sniper: null }[state.cspIntent]; }  // sniper: no delta cap (可 ITM/ATM/OTM)
+function cspIvpMin() { return { assign: 40, neutral: 50, premium: 60, sniper: 60 }[state.cspIntent] || null; }
 function pmccDeltaMax() { return { standard: 15, defensive: 10, aggressive: 30 }[state.pmccMode] || null; }
 function pmccIvpMin() {
   // Standard/Defensive: 想留底仓, IV 门槛保守
@@ -1918,6 +1918,14 @@ const SOP = {
     <ul>
       <li>参考 50% / 21 Days, 自由发挥</li>
       <li>不过财报 (硬性禁令)</li>
+    </ul>
+    <h4>狙击型 (独立场景 · 高波远期)</h4>
+    <ul>
+      <li>触发条件: 大盘 SPY 或 板块 ETF 今日跌 ≥ 3% · 标的跟跌 -3~-8%+ · 非独跌</li>
+      <li>合约: DTE 60-90 天 · IVP > 60% · Monthly · 高 OI</li>
+      <li>核心: Breakeven (Strike - Premium) ≤ 技术强支撑位</li>
+      <li>仓位: 单笔可大 (设计上 33-50% NAV), 但仍算入 CSP 总 50% cap</li>
+      <li>财报: 15-30 天早退窗口内无财报 (后段财报 OK)</li>
     </ul>
   `,
   pmcc: `
@@ -2308,6 +2316,7 @@ function leapsCloseItems() {
  * CHECKLIST · CSP
  * ========================================================== */
 function cspItems() {
+  if (state.cspIntent === 'sniper') return cspSniperItems();
   const base = [];
   base.push({ group: 'Discipline · 交易前提', id: 'discipline',
     title: '本笔非临时起意 · 前一天已计划',
@@ -2390,6 +2399,88 @@ function cspItems() {
       desc: '未选波动性类型 (中/高). 此 HARD 项无法校验.',
       hard: true, locked: true });
   }
+  return base;
+}
+
+/* ==========================================================
+ * CHECKLIST · CSP · SNIPER (高波远期狙击型)
+ * 独立场景: 只在大盘/板块暴跌日出手, 60-90 DTE, 大仓 (≤ 50% NAV)
+ * 与常规 CSP cap 隔离 (不算入 csp_total_check / csp_ticker_check)
+ * ========================================================== */
+function cspSniperItems() {
+  const base = [];
+
+  // === Discipline ===
+  base.push({ group: 'Discipline · 交易前提', id: 'discipline',
+    title: '本笔非临时起意 · 平时排查已就位',
+    desc: '战前排查过标的池 (清晰业务 + 长持 1-2 年意愿). 大跌日出击是"预设动作", 不是临时反应.' });
+
+  // === 战前 · Pre-battle ===
+  base.push({ group: '战前 · Pre-battle', id: 'quality_stock',
+    title: '标的业务清晰 · 愿意长持 1-2 年',
+    desc: '狙击 = 深度接股风险. 必须是"就算 -30% 也愿意持 1-2 年"的公司. 概念股/爆雷股/纯 momentum 一律不用.',
+    hard: true });
+  base.push({ group: '战前 · Pre-battle', id: 'no_earnings_window',
+    title: '早退窗口 (15-30 天) 内无财报',
+    desc: '60-90 DTE 必然覆盖至少一次财报. 但因你 15-30 天早退, 只要早退窗口内无财报即可. 财报在后半段问题不大 (那时你已离场).',
+    hard: true });
+  base.push({ group: '战前 · Pre-battle', id: 'monthly_contract',
+    title: '月度大合约 (Monthly, 非 weekly)',
+    desc: '流动性好, bid-ask 窄, roll 空间大.' });
+
+  // === 枪响 · The Shot ===
+  base.push({ group: '枪响 · The Shot', id: 'market_or_sector_crash',
+    title: '大盘 SPY 或 板块 ETF 今日跌 ≥ 3%',
+    desc: '大盘 SPY / 板块 ETF (QQQ / XLK / SMH / XLF 等) 必须至少一个今日跌 ≥ 3%. 只有"泥沙俱下"才用狙击. 平静市里出手 = 追高.',
+    hard: true });
+  base.push({ group: '枪响 · The Shot', id: 'ticker_crash_matched',
+    title: '标的今日跌 -3% ~ -8%+ · 非个股独跌',
+    desc: '标的必须跟随大盘/板块跌 (板块内其他股也跌). 若标的独跌 (板块反而涨) → 大概率爆雷, 绝对不出手.',
+    hard: true,
+    numeric: { placeholder: 'e.g. -5.2', unit: '%', max: -3, comparator: '≤' } });
+  const sniperIvpMin = 60;
+  base.push({ group: '枪响 · The Shot', id: 'ivp',
+    title: `IVP > ${sniperIvpMin}%`,
+    desc: '狙击必须高 IV. IV 高 → 权利金厚 → breakeven 低. 低 IV 狙击不划算.',
+    hard: true,
+    numeric: { placeholder: 'IVP', unit: '%', min: sniperIvpMin, comparator: '>' } });
+
+  // === 合约 · Contract ===
+  base.push({ group: '合约 · Contract', id: 'dte_60_90',
+    title: 'DTE 60-90 天',
+    desc: '短于 60 天 = 时间价值不够, 权利金薄, 且 IV crush 空间小. 长于 90 天 = 资金占用过久.',
+    hard: true,
+    numeric: { placeholder: 'DTE', unit: 'days', range: [60, 90] } });
+  base.push({ group: '合约 · Contract', id: 'oi',
+    title: '合约 OI 足够大 (流动性)',
+    desc: '避免宽 bid-ask / 难 roll.' });
+
+  // === 核心 · Core ===
+  base.push({ group: '核心 · Core', id: 'breakeven_below_support',
+    title: 'Breakeven (Strike - Premium) ≤ 技术强支撑位',
+    desc: '狙击的核心 HARD. 计算方式: strike 减 premium 后, 必须 ≤ 图表上的关键强支撑 (多次测试的水平位 / HVN / 年线等). 满足这条 = 就算接股, 成本也在支撑下方 (深度打折).',
+    hard: true });
+
+  // === GEX ===
+  base.push({ group: 'GEX', id: 'gex_put_wall',
+    title: 'GEX Put Wall 已查看',
+    desc: 'Put Wall = dealer 卖 put 支撑位. 参考位置, 不作 HARD 约束 (狙击 breakeven ≤ 支撑已是主保护).' });
+  base.push({ group: 'GEX', id: 'gex_gamma_wall',
+    title: 'GEX Gamma Wall 已查看',
+    desc: 'Gamma Wall = dealer 对冲最敏感区域. 价格易在 Gamma Wall 附近震荡. 参考 strike 相对 Gamma Wall 位置判断反弹概率.' });
+
+  // === 仓位 · Position (与常规 CSP 共用 50% 总 cap) ===
+  const psGroup = 'Position sizing · 仓位控制';
+  base.push({ group: psGroup, id: 'cash_reserve',
+    title: '当前自由 cash / NAV ≥ 10%',
+    desc: '开完这笔狙击后, 剩余自由 cash 仍 ≥ 10% NAV. 底线不为狙击破.',
+    hard: true,
+    numeric: { placeholder: 'e.g. 15', unit: '%', min: 10, comparator: '≥', step: 0.5 } });
+  base.push({ group: psGroup, id: 'csp_total_check',
+    title: 'CSP 总敞口 ≤ 50% NAV (含本狙击)',
+    desc: '狙击算入总 CSP cap. 若已有其他 CSP, 加上本笔 nominal 后总额 ≤ 50%. 通常狙击 = 你唯一或主要的 CSP.',
+    hard: true, positionCheck: true });
+
   return base;
 }
 
@@ -4249,13 +4340,17 @@ function renderCspConfig() {
     ${headerHTML()}
     <div class="picker">
       <div class="picker-title">CSP · 交易意图</div>
-      <div class="picker-sub">接股 vs 权利金 → Delta 门槛不同。</div>
+      <div class="picker-sub">前 3 种是常规 CSP。狙击型是独立场景 (大跌日, 大仓 60-90 天)。</div>
       <div class="config" style="margin-top: 20px;">
         <div class="config-title">Intent · 意图</div>
-        <div class="segmented" id="intent-seg">
+        <div class="segmented segmented-grid" id="intent-seg">
           <button data-v="assign">想接股 · Δ≤30</button>
           <button data-v="neutral">一般 · Δ≤25</button>
           <button data-v="premium">只赚权利金 · Δ≤15</button>
+          <button data-v="sniper">狙击 · 高波远期</button>
+        </div>
+        <div class="pmcc-mode-note" style="margin-top: 10px;">
+          <div><b>狙击</b> · 只在大盘/板块暴跌 (-3%~-8%+) 时用. DTE 60-90 天, IVP > 60%, 单笔可 33-50% NAV. 仍算入 CSP 总 50% cap.</div>
         </div>
       </div>
       <button class="btn primary big" id="proceed-btn" style="margin-top: 12px; width: 100%;" disabled>先选择意图</button>
@@ -5568,12 +5663,16 @@ function renderEditConfigHTML(fullState) {
     parts.push(seg('意图', 'cspIntent', [
       ['assign', '想接股'],
       ['neutral', '一般'],
-      ['premium', '只赚权利金']
+      ['premium', '只赚权利金'],
+      ['sniper', '狙击 · 高波远期']
     ], fullState.cspIntent));
-    parts.push(seg('波动性', 'cspVolTier', [
-      ['medium', '中波动 (SOFI/HIMS)'],
-      ['high', '高波动 (IREN/ASTS)']
-    ], fullState.cspVolTier));
+    // Vol tier only relevant for non-sniper intents (sniper has independent size cap)
+    if (fullState.cspIntent !== 'sniper') {
+      parts.push(seg('波动性', 'cspVolTier', [
+        ['medium', '中波动 (SOFI/HIMS)'],
+        ['high', '高波动 (IREN/ASTS)']
+      ], fullState.cspVolTier));
+    }
   } else if (strat === 'cc') {
     parts.push(seg('CC 模式', 'ccMode', [
       ['income', '收租 · Δ≤15'],
