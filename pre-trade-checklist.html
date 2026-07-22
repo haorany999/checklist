@@ -526,6 +526,41 @@
   .strategy-winrate.fail { color: var(--fail); }
   .strategy-winrate.text-faint { color: var(--text-faint); }
 
+  /* Discipline profile panel */
+  .discipline-panel { }
+  .dp-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 8px 0 12px; border-bottom: 1px solid var(--border); margin-bottom: 12px; }
+  .dp-stat { text-align: center; }
+  .dp-stat-num { font-family: var(--mono); font-size: 22px; font-weight: 700; line-height: 1; }
+  .dp-stat-num.pass { color: var(--pass); }
+  .dp-stat-num.fail { color: var(--fail); }
+  .dp-stat-num.pending { color: var(--pending); }
+  .dp-stat-label { font-family: var(--mono); font-size: 10.5px; color: var(--text-faint); margin-top: 4px; letter-spacing: 0.05em; }
+  .dp-fails-head { font-family: var(--mono); font-size: 11px; color: var(--text-faint); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 6px; }
+  .dp-fails-list { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+  .dp-fail-row { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; padding: 6px 8px; background: var(--panel-2); border-radius: 4px; font-size: 12px; }
+  .dp-fail-rank { font-family: var(--mono); font-size: 11px; color: var(--fail); font-weight: 700; width: 16px; text-align: center; }
+  .dp-fail-title { color: var(--text-dim); line-height: 1.3; }
+  .dp-fail-count { font-family: var(--mono); font-size: 11px; color: var(--fail); font-weight: 600; }
+  .dp-insight { margin-top: 10px; padding: 8px 10px; background: color-mix(in srgb, var(--pending-bg) 60%, var(--panel)); border-left: 2px solid var(--pending); border-radius: 3px; font-size: 12px; color: var(--text-dim); line-height: 1.5; }
+  .dp-insight b { color: var(--text); font-weight: 700; }
+  .dp-empty { font-size: 12px; color: var(--pass); padding: 6px 0; }
+
+  /* Watchlist panel */
+  .watchlist-panel { }
+  .picker-panel-actions { display: flex; align-items: center; gap: 8px; }
+  .picker-panel-actions .btn.small { padding: 3px 10px; font-size: 11px; letter-spacing: 0.02em; text-transform: none; font-weight: 500; }
+  .wl-empty { font-size: 12.5px; color: var(--text-faint); padding: 12px 4px; line-height: 1.5; font-style: italic; }
+  .wl-list { display: flex; flex-direction: column; gap: 6px; }
+  .wl-item { padding: 10px 12px; background: var(--panel-2); border-radius: 4px; display: flex; flex-direction: column; gap: 4px; border-left: 2px solid var(--border); }
+  .wl-item:hover { border-left-color: var(--accent); }
+  .wl-item-main { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 12px; }
+  .wl-ticker { font-family: var(--mono); font-size: 13.5px; font-weight: 700; color: var(--text); letter-spacing: 0.03em; }
+  .wl-strat { font-family: var(--mono); font-size: 10.5px; color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); padding: 1px 6px; border-radius: 3px; letter-spacing: 0.05em; }
+  .wl-trigger { font-family: var(--mono); font-size: 11.5px; color: var(--text-dim); flex: 1; min-width: 120px; }
+  .wl-notes { font-size: 11.5px; color: var(--text-faint); line-height: 1.5; padding-top: 2px; font-style: italic; }
+  .wl-actions { display: flex; gap: 6px; margin-top: 2px; }
+  .wl-actions .btn { padding: 3px 8px; font-size: 10.5px; }
+
   /* 30-day verdict sparkline */
   .spark-panel { margin-top: 12px; }
   .spark-filters { display: grid; grid-template-columns: 1fr auto auto auto; gap: 6px; margin-bottom: 12px; }
@@ -1389,6 +1424,34 @@
     50% { box-shadow: 0 0 0 4px rgba(210, 153, 34, 0.18); }
   }
   body.theme-light .ticker-bar { box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05); }
+
+  /* Ticker exposure panel — shows cross-strategy exposure for current ticker */
+  .ticker-exposure-panel {
+    margin: -4px 0 12px;
+    padding: 10px 14px;
+    background: color-mix(in srgb, var(--pending-bg) 50%, var(--panel));
+    border: 1px solid color-mix(in srgb, var(--pending) 25%, transparent);
+    border-radius: var(--radius, 6px);
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text);
+    line-height: 1.6;
+  }
+  .ticker-exposure-panel.mid {
+    background: color-mix(in srgb, var(--pending-bg) 70%, var(--panel));
+    border-color: color-mix(in srgb, var(--pending) 40%, transparent);
+  }
+  .ticker-exposure-panel.high {
+    background: color-mix(in srgb, var(--fail-bg) 40%, var(--panel));
+    border-color: color-mix(in srgb, var(--fail) 45%, transparent);
+  }
+  .tep-head { font-weight: 700; letter-spacing: 0.03em; margin-bottom: 4px; font-size: 11.5px; color: var(--pending); text-transform: uppercase; }
+  .ticker-exposure-panel.high .tep-head { color: var(--fail); }
+  .tep-body { display: flex; flex-wrap: wrap; gap: 8px 20px; }
+  .tep-row { color: var(--text-dim); }
+  .tep-row b { color: var(--text); font-weight: 700; letter-spacing: 0.05em; }
+  .tep-total { margin-top: 4px; padding-top: 6px; border-top: 1px dashed color-mix(in srgb, var(--border) 60%, transparent); font-size: 12px; }
+  .tep-total b { color: var(--text); font-size: 13px; }
   .ticker-label {
     font-family: var(--mono); font-size: 11.5px;
     letter-spacing: 0.14em; text-transform: uppercase;
@@ -3222,6 +3285,246 @@ function formatTimeAgo(ts) {
   return `${Math.round(days / 30)} 月`;
 }
 
+/* ==========================================================
+ * DISCIPLINE PROFILE · HARD rejection analysis
+ * ========================================================== */
+function renderDisciplineProfileHTML(history) {
+  // Filter to last ~3 months
+  const cutoff = Date.now() - 90 * 24 * 60 * 60 * 1000;
+  const recent = history.filter(e => (e.timestampSort || 0) >= cutoff);
+  if (recent.length < 3) return '';
+
+  const stats = { clear: 0, blocked: 0, pending: 0 };
+  const hardFailCounts = {};  // itemId → count
+  const hardFailTitles = {};  // itemId → title (from most recent)
+
+  recent.forEach(e => {
+    const v = (e.verdict || '').toUpperCase();
+    if (v.includes('BLOCK')) stats.blocked++;
+    else if (v.includes('CLEAR')) stats.clear++;
+    else stats.pending++;
+
+    // Count HARD failures — from hardFails array
+    if (Array.isArray(e.hardFails)) {
+      e.hardFails.forEach(hf => {
+        // hf can be a string (title) or object; assume string title for simplicity
+        const label = String(hf);
+        hardFailCounts[label] = (hardFailCounts[label] || 0) + 1;
+        hardFailTitles[label] = label;
+      });
+    }
+  });
+
+  const topFails = Object.entries(hardFailCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3);
+
+  const clearPct = recent.length > 0 ? Math.round(stats.clear / recent.length * 100) : 0;
+  const blockedPct = recent.length > 0 ? Math.round(stats.blocked / recent.length * 100) : 0;
+
+  const topFailsHTML = topFails.length > 0
+    ? topFails.map(([title, count], i) => `
+        <div class="dp-fail-row">
+          <span class="dp-fail-rank">${i + 1}</span>
+          <span class="dp-fail-title">${esc(title)}</span>
+          <span class="dp-fail-count">${count} 次</span>
+        </div>
+      `).join('')
+    : `<div class="dp-empty">过去 3 个月无 HARD 失败记录 · 纪律良好</div>`;
+
+  const insight = (() => {
+    if (topFails.length === 0) return '过去 3 月未被 HARD 拦下 · 保持警觉';
+    const [top, cnt] = topFails[0];
+    if (top.includes('财报') || top.includes('earnings')) return '**财报纪律** 是你最常滑的点 · 每次开仓前先查财报日';
+    if (top.includes('MJ2') || top.includes('信号')) return '**信号纪律** 你最常滑 · 无信号不开是铁律';
+    if (top.includes('cash') || top.includes('现金')) return '**现金底线** 你最常触碰 · 保护 10% 底线';
+    if (top.includes('cap') || top.includes('敞口') || top.includes('单标的')) return '**仓位 cap** 你最常撞到 · 减少集中';
+    return `**${esc(top.slice(0, 20))}** 是你最容易失败的 HARD (${cnt} 次)`;
+  })();
+
+  return `
+    <div class="picker-panel discipline-panel">
+      <div class="picker-panel-head">
+        <span>纪律画像 · Discipline Profile</span>
+        <span class="picker-panel-count">${recent.length}</span>
+      </div>
+      <div class="dp-stats">
+        <div class="dp-stat">
+          <div class="dp-stat-num pass">${stats.clear}</div>
+          <div class="dp-stat-label">CLEAR · ${clearPct}%</div>
+        </div>
+        <div class="dp-stat">
+          <div class="dp-stat-num fail">${stats.blocked}</div>
+          <div class="dp-stat-label">BLOCKED · ${blockedPct}%</div>
+        </div>
+        <div class="dp-stat">
+          <div class="dp-stat-num pending">${stats.pending}</div>
+          <div class="dp-stat-label">PENDING</div>
+        </div>
+      </div>
+      <div class="dp-fails-head">最容易失败的 HARD (过去 3 月)</div>
+      <div class="dp-fails-list">${topFailsHTML}</div>
+      <div class="dp-insight">${insight.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')}</div>
+    </div>
+  `;
+}
+
+/* ==========================================================
+ * WATCHLIST · candidate ticker list (not in checklist)
+ * ========================================================== */
+const WATCHLIST_KEY = 'pretrade_watchlist';
+
+function loadWatchlist() {
+  try {
+    const raw = localStorage.getItem(WATCHLIST_KEY);
+    if (!raw) return [];
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? arr : [];
+  } catch (e) { return []; }
+}
+function saveWatchlist(arr) {
+  try { localStorage.setItem(WATCHLIST_KEY, JSON.stringify(arr)); } catch (e) {}
+}
+window.addWatchlistItem = function() {
+  const modal = ensureWatchlistModal();
+  modal.dataset.mode = 'add';
+  modal.dataset.editId = '';
+  modal.querySelector('#wl-form-title').textContent = '新增候选';
+  modal.querySelector('#wl-ticker').value = '';
+  modal.querySelector('#wl-strategy').value = '';
+  modal.querySelector('#wl-trigger').value = '';
+  modal.querySelector('#wl-notes').value = '';
+  modal.style.display = 'flex';
+  setTimeout(() => modal.querySelector('#wl-ticker').focus(), 50);
+};
+window.editWatchlistItem = function(id) {
+  const list = loadWatchlist();
+  const it = list.find(x => x.id === id);
+  if (!it) return;
+  const modal = ensureWatchlistModal();
+  modal.dataset.mode = 'edit';
+  modal.dataset.editId = id;
+  modal.querySelector('#wl-form-title').textContent = '编辑候选';
+  modal.querySelector('#wl-ticker').value = it.ticker || '';
+  modal.querySelector('#wl-strategy').value = it.strategy || '';
+  modal.querySelector('#wl-trigger').value = it.trigger || '';
+  modal.querySelector('#wl-notes').value = it.notes || '';
+  modal.style.display = 'flex';
+};
+window.deleteWatchlistItem = function(id) {
+  if (!confirm('删除该候选?')) return;
+  const list = loadWatchlist().filter(x => x.id !== id);
+  saveWatchlist(list);
+  render();
+};
+window.hideWatchlistModal = function() {
+  const m = document.getElementById('watchlist-modal');
+  if (m) m.style.display = 'none';
+};
+window.saveWatchlistItem = function() {
+  const modal = document.getElementById('watchlist-modal');
+  if (!modal) return;
+  const ticker = modal.querySelector('#wl-ticker').value.trim().toUpperCase();
+  const strategy = modal.querySelector('#wl-strategy').value.trim();
+  const trigger = modal.querySelector('#wl-trigger').value.trim();
+  const notes = modal.querySelector('#wl-notes').value.trim();
+  if (!ticker) { showToast('先填 Ticker', 'error'); return; }
+  const list = loadWatchlist();
+  const mode = modal.dataset.mode;
+  if (mode === 'edit') {
+    const id = modal.dataset.editId;
+    const idx = list.findIndex(x => x.id === id);
+    if (idx >= 0) list[idx] = { ...list[idx], ticker, strategy, trigger, notes, updatedAt: Date.now() };
+  } else {
+    list.unshift({ id: 'wl_' + Date.now(), ticker, strategy, trigger, notes, addedAt: Date.now() });
+  }
+  saveWatchlist(list);
+  hideWatchlistModal();
+  render();
+  showToast(mode === 'edit' ? '已更新' : '已添加', 'success');
+};
+
+function ensureWatchlistModal() {
+  let modal = document.getElementById('watchlist-modal');
+  if (modal) return modal;
+  modal = document.createElement('div');
+  modal.id = 'watchlist-modal';
+  modal.className = 'modal';
+  modal.style.display = 'none';
+  modal.innerHTML = `
+    <div class="modal-content" style="max-width: 480px;">
+      <div class="modal-title" id="wl-form-title">新增候选</div>
+      <div class="sync-setup-input-group">
+        <label>Ticker (必填)</label>
+        <input type="text" id="wl-ticker" class="sync-setup-input" placeholder="e.g. NVDA" autocomplete="off" spellcheck="false" maxlength="10" style="text-transform: uppercase;">
+      </div>
+      <div class="sync-setup-input-group">
+        <label>策略 (可选)</label>
+        <select id="wl-strategy" class="sync-setup-input">
+          <option value="">未定</option>
+          <option value="LEAPS">LEAPS</option>
+          <option value="CSP">CSP</option>
+          <option value="CSP · 狙击">CSP · 狙击</option>
+          <option value="PMCC">PMCC</option>
+          <option value="CC">CC</option>
+        </select>
+      </div>
+      <div class="sync-setup-input-group">
+        <label>触发条件 (可选)</label>
+        <input type="text" id="wl-trigger" class="sync-setup-input" placeholder="e.g. 跌到 $450 · IVP > 60% · 或大盘暴跌日" maxlength="120">
+      </div>
+      <div class="sync-setup-input-group">
+        <label>备注 (可选)</label>
+        <textarea id="wl-notes" class="sync-setup-input" placeholder="思路 / 观察 / 心得" maxlength="400" rows="3" style="resize: vertical; font-family: inherit;"></textarea>
+      </div>
+      <div class="modal-actions">
+        <button class="btn ghost" onclick="hideWatchlistModal()">取消</button>
+        <button class="btn primary" onclick="saveWatchlistItem()">保存</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  return modal;
+}
+
+function watchlistPanelHTML() {
+  const list = loadWatchlist();
+  const empty = list.length === 0;
+  return `
+    <div class="picker-panel watchlist-panel">
+      <div class="picker-panel-head">
+        <span>Watchlist · 候选清单</span>
+        <span class="picker-panel-actions">
+          <span class="picker-panel-count">${list.length}</span>
+          <button class="btn ghost small" onclick="addWatchlistItem()" title="添加候选">+ 添加</button>
+        </span>
+      </div>
+      ${empty ? `
+        <div class="wl-empty">
+          还没有候选. 平时看到的机会先记这里, 触发时再走 checklist.
+        </div>
+      ` : `
+        <div class="wl-list">
+          ${list.map(it => `
+            <div class="wl-item" data-id="${esc(it.id)}">
+              <div class="wl-item-main">
+                <span class="wl-ticker">${esc(it.ticker)}</span>
+                ${it.strategy ? `<span class="wl-strat">${esc(it.strategy)}</span>` : ''}
+                ${it.trigger ? `<span class="wl-trigger">${esc(it.trigger)}</span>` : ''}
+              </div>
+              ${it.notes ? `<div class="wl-notes">${esc(it.notes)}</div>` : ''}
+              <div class="wl-actions">
+                <button class="btn ghost small" onclick="editWatchlistItem('${esc(it.id)}')">编辑</button>
+                <button class="btn ghost small" onclick="deleteWatchlistItem('${esc(it.id)}')" title="删除">×</button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `}
+    </div>
+  `;
+}
+
 function verdictSparklineHTML() {
   const history = getActiveHistory();
   if (history.length < 1) return '';
@@ -3419,6 +3722,9 @@ function pickerFooterHTML() {
     }
   }
 
+  // Discipline profile · HARD rejection analysis (over past 3 months)
+  const disciplineHTML = renderDisciplineProfileHTML(history);
+
   // Forced trades (硬冲跟踪): entries with forcedReason
   const forced = history.filter(e => e.forcedReason).slice(0, 8);
   const forcedHTML = forced.length > 0 ? `
@@ -3567,11 +3873,13 @@ function pickerFooterHTML() {
     ${overridesHTML}
     ${lossesHTML}
     ${strategyHTML}
+    ${disciplineHTML}
     ${winRateTrendHTML()}
     ${checklistBacktestPanelHTML()}
     ${verdictWinRatePanelHTML()}
     ${tickerWinRatePanelHTML()}
     ${exploreHTML}
+    ${watchlistPanelHTML()}
     ${verdictSparklineHTML()}
     <div class="picker-stats">
       <div class="picker-stat" title="过去 7 天 snapshot 总数">
@@ -4469,6 +4777,66 @@ function tickerBarHTML() {
              spellcheck="false" list="tickers-datalist-main"
              placeholder="e.g. MSFT / QQQ / AAPL" value="${esc(state.ticker || '')}">
       ${renderTickerDatalist('tickers-datalist-main')}
+    </div>
+    ${state.ticker ? tickerExposurePanelHTML(state.ticker) : ''}
+  `;
+}
+
+// Get all open exposures for a ticker across strategies
+function getTickerExposureBreakdown(ticker) {
+  if (!ticker) return { total: 0, byStrat: {} };
+  const history = getActiveHistory();
+  const t = ticker.toUpperCase();
+  const byStrat = { LEAPS: { count: 0, val: 0, items: [] }, CSP: { count: 0, val: 0, items: [] }, PMCC: { count: 0, val: 0, items: [] }, CC: { count: 0, val: 0, items: [] } };
+  history.forEach(e => {
+    if (e.outcome !== 'open') return;
+    if ((e.ticker || '').toUpperCase() !== t) return;
+    const strat = (e.strategy || '').split(' ')[0].toUpperCase();
+    if (!byStrat[strat]) byStrat[strat] = { count: 0, val: 0, items: [] };
+    let val = 0;
+    if (strat === 'CSP') {
+      const inp = e.inputs || '';
+      const strikeMatch = inp.match(/strike=(\d+\.?\d*)/);
+      const contractsMatch = inp.match(/contracts=(\d+)/) || inp.match(/cn=(\d+)/);
+      if (strikeMatch) {
+        const strike = parseFloat(strikeMatch[1]);
+        const contracts = contractsMatch ? parseFloat(contractsMatch[1]) : 1;
+        val = strike * 100 * contracts;
+      } else if (e.fullState && e.fullState.cspThisNominal) {
+        val = parseFloat(e.fullState.cspThisNominal) || 0;
+      }
+    } else {
+      // LEAPS / PMCC / CC — use budget as proxy
+      if (e.fullState && e.fullState.budget) val = parseFloat(e.fullState.budget) || 0;
+    }
+    if (val > 0) {
+      byStrat[strat].count += 1;
+      byStrat[strat].val += val;
+      byStrat[strat].items.push({ id: e.id, subtype: e.subtype, val });
+    }
+  });
+  const total = Object.values(byStrat).reduce((s, o) => s + o.val, 0);
+  return { total, byStrat };
+}
+
+function tickerExposurePanelHTML(ticker) {
+  const { total, byStrat } = getTickerExposureBreakdown(ticker);
+  if (total === 0) return '';  // No existing exposure — hide panel entirely
+  const nav = parseFloat(state.nav || loadSavedNav()) || 0;
+  const totalPct = nav > 0 ? (total / nav * 100).toFixed(1) : null;
+  const rows = ['LEAPS', 'CSP', 'PMCC', 'CC']
+    .filter(k => byStrat[k] && byStrat[k].count > 0)
+    .map(k => {
+      const g = byStrat[k];
+      const pct = nav > 0 ? (g.val / nav * 100).toFixed(1) : null;
+      return `<span class="tep-row"><b>${k}</b> ${g.count}张 · $${Math.round(g.val).toLocaleString()}${pct != null ? ` · ${pct}%` : ''}</span>`;
+    }).join('');
+  const totalCls = totalPct != null && parseFloat(totalPct) > 30 ? 'high' : parseFloat(totalPct) > 15 ? 'mid' : '';
+  return `
+    <div class="ticker-exposure-panel ${totalCls}">
+      <div class="tep-head">⚠ ${esc(ticker.toUpperCase())} 已有敞口 (跨策略汇总)</div>
+      <div class="tep-body">${rows}</div>
+      ${totalPct != null ? `<div class="tep-total">合计: <b>${totalPct}%</b> NAV · $${Math.round(total).toLocaleString()}</div>` : ''}
     </div>
   `;
 }
