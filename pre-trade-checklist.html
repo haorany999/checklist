@@ -484,9 +484,38 @@
   .draft-dismiss-btn:hover { background: var(--fail-bg); color: var(--fail); }
 
   .picker-panel { margin: 12px 0 16px; padding: 12px 14px; background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius, 10px); }
-  .picker-panel-head { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 11px; color: var(--text-faint); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 10px; }
-  .picker-panel-count { color: var(--text-dim); }
+  .picker-panel-head {
+    display: flex; justify-content: space-between; align-items: center;
+    font-family: var(--mono); font-size: 12px;
+    color: var(--text);
+    font-weight: 600;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    margin-bottom: 12px;
+    user-select: none;
+    cursor: pointer;
+  }
+  .picker-panel-head:hover .panel-collapse-toggle { color: var(--text); background: color-mix(in srgb, var(--panel-2) 90%, transparent); }
+  .picker-panel-count { color: var(--text-dim); font-weight: 500; }
   .picker-panel-list { display: flex; flex-direction: column; gap: 8px; }
+
+  /* Collapse chevron in top-right of each panel head */
+  .panel-collapse-toggle {
+    background: transparent;
+    border: none;
+    color: var(--text-faint);
+    font-size: 14px;
+    cursor: pointer;
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin-left: 8px;
+    line-height: 1;
+    font-family: inherit;
+    transition: transform 0.2s ease, color 0.15s ease, background 0.15s ease;
+  }
+  .picker-panel.collapsed .panel-collapse-toggle { transform: rotate(-90deg); }
+  .picker-panel.collapsed { padding-bottom: 12px; }
+  .picker-panel.collapsed .picker-panel-head { margin-bottom: 0; }
+  .picker-panel.collapsed > *:not(.picker-panel-head) { display: none !important; }
 
   .open-pos-row { display: grid; grid-template-columns: 60px 1fr auto; gap: 8px; align-items: center; padding: 6px 0; font-size: 13px; cursor: pointer; border-bottom: 1px solid var(--border); }
   .open-pos-row:last-child { border-bottom: none; }
@@ -3092,9 +3121,76 @@ function _postRender() {
     if (typeof runNumberAnimations === 'function') runNumberAnimations();
     if (typeof enableSwipeGestures === 'function') enableSwipeGestures();
     if (typeof enableGroupCollapse === 'function') enableGroupCollapse();
+    if (typeof enablePanelCollapse === 'function') enablePanelCollapse();
     if (typeof updateStickyVerdictBar === 'function') updateStickyVerdictBar();
     if (typeof triggerVerdictAnimations === 'function') triggerVerdictAnimations();
     if (typeof applyLayoutMode === 'function') applyLayoutMode();
+  });
+}
+
+/* ==========================================================
+ * Panel collapse system — click header to fold/unfold panels
+ * State persisted to localStorage per panel identity
+ * ========================================================== */
+const PANEL_COLLAPSE_KEY = 'pretrade_panel_collapse';
+function loadCollapsedPanels() {
+  try {
+    const raw = localStorage.getItem(PANEL_COLLAPSE_KEY);
+    if (!raw) return new Set();
+    return new Set(JSON.parse(raw));
+  } catch (e) { return new Set(); }
+}
+function saveCollapsedPanels(set) {
+  try { localStorage.setItem(PANEL_COLLAPSE_KEY, JSON.stringify(Array.from(set))); } catch (e) {}
+}
+function getPanelId(panel) {
+  // Use first class name that starts with a known panel identifier, or fallback
+  const cls = panel.className || '';
+  const match = cls.match(/(?:^|\s)([\w-]+-panel)/);
+  if (match) return match[1];
+  // Try head text as identifier
+  const head = panel.querySelector('.picker-panel-head span');
+  if (head) return 'p-' + head.textContent.trim().replace(/\s+/g, '_').slice(0, 30);
+  return null;
+}
+function enablePanelCollapse() {
+  const collapsed = loadCollapsedPanels();
+  document.querySelectorAll('.picker-panel').forEach(panel => {
+    if (panel.dataset.collapseWired === '1') return;
+    panel.dataset.collapseWired = '1';
+    const head = panel.querySelector('.picker-panel-head');
+    if (!head) return;
+    const panelId = getPanelId(panel);
+    if (!panelId) return;
+    panel.dataset.panelId = panelId;
+
+    // Add chevron toggle button (top-right)
+    if (!head.querySelector('.panel-collapse-toggle')) {
+      const btn = document.createElement('button');
+      btn.className = 'panel-collapse-toggle';
+      btn.textContent = '▾';
+      btn.title = '折叠 / 展开';
+      btn.setAttribute('aria-label', '折叠/展开面板');
+      // Insert at end of head
+      head.appendChild(btn);
+    }
+
+    // Apply saved collapse state
+    if (collapsed.has(panelId)) {
+      panel.classList.add('collapsed');
+    }
+
+    // Click handler on entire head
+    head.addEventListener('click', (e) => {
+      // Ignore clicks on inner buttons/inputs unless it's the toggle
+      if (e.target.tagName === 'BUTTON' && !e.target.classList.contains('panel-collapse-toggle')) return;
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+      panel.classList.toggle('collapsed');
+      const current = loadCollapsedPanels();
+      if (panel.classList.contains('collapsed')) current.add(panelId);
+      else current.delete(panelId);
+      saveCollapsedPanels(current);
+    });
   });
 }
 
