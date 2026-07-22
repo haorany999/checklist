@@ -544,6 +544,20 @@
   .dp-insight { margin-top: 10px; padding: 8px 10px; background: color-mix(in srgb, var(--pending-bg) 60%, var(--panel)); border-left: 2px solid var(--pending); border-radius: 3px; font-size: 12px; color: var(--text-dim); line-height: 1.5; }
   .dp-insight b { color: var(--text); font-weight: 700; }
   .dp-empty { font-size: 12px; color: var(--pass); padding: 6px 0; }
+  .dp-filter-row { display: flex; align-items: center; gap: 10px; margin: 8px 0 12px; font-family: var(--mono); font-size: 10.5px; }
+  .dp-filter-label { color: var(--text-faint); letter-spacing: 0.06em; text-transform: uppercase; }
+  .dp-filter-tabs { display: flex; gap: 2px; background: var(--panel-2); padding: 2px; border-radius: 4px; }
+  .dp-filter-tab { background: transparent; border: none; padding: 4px 10px; font-family: var(--mono); font-size: 10.5px; color: var(--text-faint); cursor: pointer; border-radius: 3px; letter-spacing: 0.04em; transition: all 0.15s; }
+  .dp-filter-tab:hover { color: var(--text-dim); }
+  .dp-filter-tab.active { background: var(--panel); color: var(--text); font-weight: 600; }
+  .dp-fails-head-sub { color: var(--text-faint); font-size: 10.5px; font-weight: 400; text-transform: none; letter-spacing: 0.02em; }
+  .dp-explain { margin-top: 8px; padding: 6px 8px; font-family: var(--mono); font-size: 10.5px; color: var(--text-faint); line-height: 1.5; border-top: 1px dashed color-mix(in srgb, var(--border) 60%, transparent); padding-top: 8px; }
+  .dp-explain b { color: var(--text-dim); font-weight: 600; }
+
+  /* Backtest / ticker WR empty placeholder */
+  .backtest-empty, .ticker-wr-empty { }
+  .backtest-empty-msg { font-size: 12px; color: var(--text-faint); line-height: 1.6; padding: 8px 4px; font-style: italic; }
+  .backtest-empty-msg b { color: var(--text-dim); font-style: normal; font-weight: 600; }
 
   /* Watchlist panel */
   .watchlist-panel { }
@@ -3288,6 +3302,12 @@ function formatTimeAgo(ts) {
 /* ==========================================================
  * DISCIPLINE PROFILE · HARD rejection analysis
  * ========================================================== */
+let __disciplineFilter = 'blocked';  // 'all' | 'blocked' | 'pending'
+window.setDisciplineFilter = function(f) {
+  __disciplineFilter = f;
+  render();
+};
+
 function renderDisciplineProfileHTML(history) {
   // Filter to last ~3 months
   const cutoff = Date.now() - 90 * 24 * 60 * 60 * 1000;
@@ -3295,51 +3315,87 @@ function renderDisciplineProfileHTML(history) {
   if (recent.length < 3) return '';
 
   const stats = { clear: 0, blocked: 0, pending: 0 };
-  const hardFailCounts = {};  // itemId → count
-  const hardFailTitles = {};  // itemId → title (from most recent)
+  const hardFailCounts = {};   // for BLOCKED entries: itemId → count
+  const pendingCounts = {};    // for PENDING entries: pending item → count
 
   recent.forEach(e => {
     const v = (e.verdict || '').toUpperCase();
-    if (v.includes('BLOCK')) stats.blocked++;
+    const isBlocked = v.includes('BLOCK');
+    const isPending = !isBlocked && !v.includes('CLEAR');
+    if (isBlocked) stats.blocked++;
     else if (v.includes('CLEAR')) stats.clear++;
     else stats.pending++;
 
-    // Count HARD failures — from hardFails array
-    if (Array.isArray(e.hardFails)) {
+    // Count HARD failures for BLOCKED entries
+    if (isBlocked && Array.isArray(e.hardFails)) {
       e.hardFails.forEach(hf => {
-        // hf can be a string (title) or object; assume string title for simplicity
         const label = String(hf);
         hardFailCounts[label] = (hardFailCounts[label] || 0) + 1;
-        hardFailTitles[label] = label;
+      });
+    }
+    // Count pending items for PENDING entries
+    if (isPending && Array.isArray(e.pendingItems)) {
+      e.pendingItems.forEach(pi => {
+        // pendingItems can be object or string
+        const label = typeof pi === 'string' ? pi : (pi.title || pi.id || String(pi));
+        pendingCounts[label] = (pendingCounts[label] || 0) + 1;
       });
     }
   });
 
-  const topFails = Object.entries(hardFailCounts)
+  // Choose counts based on filter
+  const filterMode = __disciplineFilter;
+  let counts, filterLabelZh, filterLabelHead;
+  if (filterMode === 'pending') {
+    counts = pendingCounts;
+    filterLabelZh = '最常 PENDING 的 items';
+    filterLabelHead = '（未确认最多的检查）';
+  } else if (filterMode === 'all') {
+    // Merge both
+    counts = {};
+    Object.keys(hardFailCounts).forEach(k => { counts[k] = (counts[k] || 0) + hardFailCounts[k]; });
+    Object.keys(pendingCounts).forEach(k => { counts[k] = (counts[k] || 0) + pendingCounts[k]; });
+    filterLabelZh = '最常失败或 PENDING 的 items';
+    filterLabelHead = '（合并 BLOCKED HARD + PENDING）';
+  } else {
+    // blocked (default)
+    counts = hardFailCounts;
+    filterLabelZh = '最容易失败的 HARD';
+    filterLabelHead = '（BLOCKED 里最常撞的硬性禁令）';
+  }
+
+  const topItems = Object.entries(counts)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 3);
 
   const clearPct = recent.length > 0 ? Math.round(stats.clear / recent.length * 100) : 0;
   const blockedPct = recent.length > 0 ? Math.round(stats.blocked / recent.length * 100) : 0;
 
-  const topFailsHTML = topFails.length > 0
-    ? topFails.map(([title, count], i) => `
+  const topHTML = topItems.length > 0
+    ? topItems.map(([title, count], i) => `
         <div class="dp-fail-row">
           <span class="dp-fail-rank">${i + 1}</span>
           <span class="dp-fail-title">${esc(title)}</span>
           <span class="dp-fail-count">${count} 次</span>
         </div>
       `).join('')
-    : `<div class="dp-empty">过去 3 个月无 HARD 失败记录 · 纪律良好</div>`;
+    : `<div class="dp-empty">过去 3 个月 无对应记录</div>`;
 
+  // Insight: match TOP-1 to a known pattern (only for blocked/all modes)
   const insight = (() => {
-    if (topFails.length === 0) return '过去 3 月未被 HARD 拦下 · 保持警觉';
-    const [top, cnt] = topFails[0];
-    if (top.includes('财报') || top.includes('earnings')) return '**财报纪律** 是你最常滑的点 · 每次开仓前先查财报日';
-    if (top.includes('MJ2') || top.includes('信号')) return '**信号纪律** 你最常滑 · 无信号不开是铁律';
-    if (top.includes('cash') || top.includes('现金')) return '**现金底线** 你最常触碰 · 保护 10% 底线';
-    if (top.includes('cap') || top.includes('敞口') || top.includes('单标的')) return '**仓位 cap** 你最常撞到 · 减少集中';
-    return `**${esc(top.slice(0, 20))}** 是你最容易失败的 HARD (${cnt} 次)`;
+    if (filterMode === 'pending') {
+      if (topItems.length === 0) return null;
+      return `PENDING 最多的是: ${esc(topItems[0][0])} · 提示: 定期回顾未完成的 snapshot, 补齐或关闭`;
+    }
+    if (topItems.length === 0) return '过去 3 月未被 HARD 拦下 · 保持警觉';
+    const [top, cnt] = topItems[0];
+    if (top.includes('财报') || top.includes('earnings')) return `<b>财报纪律</b> 是你最常滑的点 · 每次开仓前先查财报日`;
+    if (top.includes('MJ2') || top.includes('信号')) return `<b>信号纪律</b> 你最常滑 · 无信号不开是铁律`;
+    if (top.includes('cash') || top.includes('现金')) return `<b>现金底线</b> 你最常触碰 · 保护 10% 底线`;
+    if (top.includes('cap') || top.includes('敞口') || top.includes('单标的')) return `<b>仓位 cap</b> 你最常撞到 · 减少集中`;
+    if (top.includes('KDJ') || top.includes('J')) return `<b>KDJ 门槛</b> 是你最常滑的点 · 等超卖到位再动`;
+    if (top.includes('突破') || top.includes('breakout')) return `<b>突破规则</b> 你最常撞 · 别在突破当天追高`;
+    return `<b>${esc(top.slice(0, 20))}</b> 是你最容易失败的 HARD (${cnt} 次)`;
   })();
 
   return `
@@ -3362,9 +3418,22 @@ function renderDisciplineProfileHTML(history) {
           <div class="dp-stat-label">PENDING</div>
         </div>
       </div>
-      <div class="dp-fails-head">最容易失败的 HARD (过去 3 月)</div>
-      <div class="dp-fails-list">${topFailsHTML}</div>
-      <div class="dp-insight">${insight.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')}</div>
+      <div class="dp-filter-row">
+        <span class="dp-filter-label">分析模式:</span>
+        <div class="dp-filter-tabs">
+          <button class="dp-filter-tab ${filterMode === 'blocked' ? 'active' : ''}" onclick="setDisciplineFilter('blocked')">BLOCKED</button>
+          <button class="dp-filter-tab ${filterMode === 'pending' ? 'active' : ''}" onclick="setDisciplineFilter('pending')">PENDING</button>
+          <button class="dp-filter-tab ${filterMode === 'all' ? 'active' : ''}" onclick="setDisciplineFilter('all')">合并</button>
+        </div>
+      </div>
+      <div class="dp-fails-head">
+        ${filterLabelZh} <span class="dp-fails-head-sub">${filterLabelHead}</span>
+      </div>
+      <div class="dp-fails-list">${topHTML}</div>
+      ${insight ? `<div class="dp-insight">${insight}</div>` : ''}
+      <div class="dp-explain">
+        <b>说明</b> · 底部黄字是自动生成: 匹配"最常失败的 HARD"关键词 (财报/信号/现金/仓位/KDJ/突破) → 给出对应提醒. 未匹配则直接引用 item 名称.
+      </div>
     </div>
   `;
 }
@@ -3449,33 +3518,38 @@ function ensureWatchlistModal() {
   if (modal) return modal;
   modal = document.createElement('div');
   modal.id = 'watchlist-modal';
-  modal.className = 'modal';
+  modal.className = 'modal-overlay';
   modal.style.display = 'none';
   modal.innerHTML = `
-    <div class="modal-content" style="max-width: 480px;">
-      <div class="modal-title" id="wl-form-title">新增候选</div>
-      <div class="sync-setup-input-group">
-        <label>Ticker (必填)</label>
-        <input type="text" id="wl-ticker" class="sync-setup-input" placeholder="e.g. NVDA" autocomplete="off" spellcheck="false" maxlength="10" style="text-transform: uppercase;">
+    <div class="modal-card" style="max-width: 480px;">
+      <div class="modal-head">
+        <div class="modal-title" id="wl-form-title">新增候选</div>
+        <button class="modal-close" onclick="hideWatchlistModal()" aria-label="关闭">×</button>
       </div>
-      <div class="sync-setup-input-group">
-        <label>策略 (可选)</label>
-        <select id="wl-strategy" class="sync-setup-input">
-          <option value="">未定</option>
-          <option value="LEAPS">LEAPS</option>
-          <option value="CSP">CSP</option>
-          <option value="CSP · 狙击">CSP · 狙击</option>
-          <option value="PMCC">PMCC</option>
-          <option value="CC">CC</option>
-        </select>
-      </div>
-      <div class="sync-setup-input-group">
-        <label>触发条件 (可选)</label>
-        <input type="text" id="wl-trigger" class="sync-setup-input" placeholder="e.g. 跌到 $450 · IVP > 60% · 或大盘暴跌日" maxlength="120">
-      </div>
-      <div class="sync-setup-input-group">
-        <label>备注 (可选)</label>
-        <textarea id="wl-notes" class="sync-setup-input" placeholder="思路 / 观察 / 心得" maxlength="400" rows="3" style="resize: vertical; font-family: inherit;"></textarea>
+      <div class="modal-body">
+        <div class="sync-setup-input-group">
+          <label>Ticker (必填)</label>
+          <input type="text" id="wl-ticker" class="sync-setup-input" placeholder="e.g. NVDA" autocomplete="off" spellcheck="false" maxlength="10" style="text-transform: uppercase;">
+        </div>
+        <div class="sync-setup-input-group">
+          <label>策略 (可选)</label>
+          <select id="wl-strategy" class="sync-setup-input">
+            <option value="">未定</option>
+            <option value="LEAPS">LEAPS</option>
+            <option value="CSP">CSP</option>
+            <option value="CSP · 狙击">CSP · 狙击</option>
+            <option value="PMCC">PMCC</option>
+            <option value="CC">CC</option>
+          </select>
+        </div>
+        <div class="sync-setup-input-group">
+          <label>触发条件 (可选)</label>
+          <input type="text" id="wl-trigger" class="sync-setup-input" placeholder="e.g. 跌到 $450 · IVP > 60% · 或大盘暴跌日" maxlength="120">
+        </div>
+        <div class="sync-setup-input-group">
+          <label>备注 (可选)</label>
+          <textarea id="wl-notes" class="sync-setup-input" placeholder="思路 / 观察 / 心得" maxlength="400" rows="3" style="resize: vertical; font-family: inherit;"></textarea>
+        </div>
       </div>
       <div class="modal-actions">
         <button class="btn ghost" onclick="hideWatchlistModal()">取消</button>
@@ -4246,7 +4320,21 @@ function winRateTrendHTML() {
 function checklistBacktestPanelHTML() {
   const history = getActiveHistory();
   const settled = history.filter(e => (e.outcome === 'win' || e.outcome === 'loss'));
-  if (settled.length < 3) return '';  // Need meaningful data
+  if (settled.length < 2) {
+    // Show placeholder so user knows this panel exists
+    return `
+      <div class="picker-panel backtest-panel backtest-empty">
+        <div class="picker-panel-head">
+          <span>Checklist 回测 · Backtest</span>
+          <span class="picker-panel-count">${settled.length}/2</span>
+        </div>
+        <div class="backtest-empty-msg">
+          需 ≥ 2 笔已结算 (win/loss) 的 snapshot 才有意义.<br>
+          现有 ${settled.length} 笔 · 待更多数据后此处将对比 <b>CLEAR 胜率</b> vs <b>硬冲胜率</b>.
+        </div>
+      </div>
+    `;
+  }
 
   // Actual: all settled trades
   const actualWins = settled.filter(e => e.outcome === 'win').length;
@@ -4327,7 +4415,20 @@ function checklistBacktestPanelHTML() {
 
 function tickerWinRatePanelHTML() {  const history = getActiveHistory();
   const settled = history.filter(e => e.outcome === 'win' || e.outcome === 'loss');
-  if (settled.length < 3) return '';  // Need meaningful data
+  if (settled.length < 2) {
+    return `
+      <div class="picker-panel ticker-wr-empty">
+        <div class="picker-panel-head">
+          <span>Ticker 胜率 · Winner / Loser Tickers</span>
+          <span class="picker-panel-count">${settled.length}/2</span>
+        </div>
+        <div class="backtest-empty-msg">
+          需 ≥ 2 笔已结算的 snapshot 才有意义.<br>
+          结算 (win/loss) 更多后, 此处将显示 <b>你在哪些 ticker 上赚钱 / 亏钱</b>.
+        </div>
+      </div>
+    `;
+  }
   // Group by ticker
   const byTicker = {};
   settled.forEach(e => {
