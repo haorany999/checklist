@@ -3551,6 +3551,18 @@ function loadWatchlist() {
 }
 function saveWatchlist(arr) {
   try { localStorage.setItem(WATCHLIST_KEY, JSON.stringify(arr)); } catch (e) {}
+  // Debounced auto-sync — if user has sync configured, push watchlist changes to Gist
+  if (typeof _scheduleWatchlistSync === 'function') _scheduleWatchlistSync();
+}
+let _watchlistSyncTimer = null;
+function _scheduleWatchlistSync() {
+  if (_watchlistSyncTimer) clearTimeout(_watchlistSyncTimer);
+  _watchlistSyncTimer = setTimeout(() => {
+    _watchlistSyncTimer = null;
+    const cfg = loadSyncConfig();
+    if (!cfg || !cfg.token || !cfg.gistId) return;  // Sync not configured
+    if (typeof syncMergeSilent === 'function') syncMergeSilent();
+  }, 5000);
 }
 window.addWatchlistItem = function() {
   const modal = ensureWatchlistModal();
@@ -7814,6 +7826,69 @@ async function githubFetch(url, options = {}) {
   return resp.json();
 }
 
+// Build full sync payload — includes history + watchlist + user settings.
+// This is what gets uploaded to Gist so all devices share the same state.
+function buildSyncPayload() {
+  const payload = {
+    version: 3,   // v3 = includes watchlist + settings
+    syncedAt: new Date().toISOString(),
+    history: loadHistory(),
+    watchlist: loadWatchlist(),
+    settings: {
+      nav: loadSavedNav() || '',
+      density: (function() { try { return localStorage.getItem(DENSITY_KEY) || ''; } catch (e) { return ''; } })(),
+      panelCollapse: Array.from(loadCollapsedPanels()),
+      trendRange: (function() { try { return localStorage.getItem(TREND_RANGE_KEY) || ''; } catch (e) { return ''; } })(),
+      themeCustom: (function() { try { return localStorage.getItem(THEME_CUSTOM_KEY) || ''; } catch (e) { return ''; } })(),
+      theme: (function() { try { return localStorage.getItem('pretrade_theme') || ''; } catch (e) { return ''; } })(),
+    }
+  };
+  return payload;
+}
+
+// Apply downloaded payload to local storage. Handles both v2 (history only) and v3 (full) formats.
+// For watchlist: id-based tombstone-aware merge (like history).
+// For settings: last-write-wins (remote overwrites local).
+function applyRemotePayload(remote, mode) {
+  // mode: 'overwrite' (download) OR 'merge' (merge push/pull)
+  // History handling is done by caller (needs merge logic); this handles watchlist + settings only
+
+  // === Watchlist ===
+  if (Array.isArray(remote.watchlist)) {
+    if (mode === 'overwrite') {
+      saveWatchlist(remote.watchlist);
+    } else {
+      // Merge by id · last-write-wins by updatedAt
+      const local = loadWatchlist();
+      const map = new Map();
+      [...local, ...remote.watchlist].forEach(w => {
+        if (!w || !w.id) return;
+        const cur = map.get(w.id);
+        if (!cur) { map.set(w.id, w); return; }
+        // tombstone-aware
+        if (cur._deleted && !w._deleted) return;
+        if (!cur._deleted && w._deleted) { map.set(w.id, w); return; }
+        const curTs = cur.updatedAt || cur.addedAt || 0;
+        const wTs = w.updatedAt || w.addedAt || 0;
+        if (wTs > curTs) map.set(w.id, w);
+      });
+      const merged = Array.from(map.values()).filter(w => !w._deleted);
+      saveWatchlist(merged);
+    }
+  }
+
+  // === Settings === (all last-write-wins from remote if present)
+  const s = remote.settings || {};
+  try {
+    if (typeof s.nav === 'string' && s.nav) localStorage.setItem(NAV_KEY, s.nav);
+    if (typeof s.density === 'string' && s.density) localStorage.setItem(DENSITY_KEY, s.density);
+    if (Array.isArray(s.panelCollapse)) localStorage.setItem(PANEL_COLLAPSE_KEY, JSON.stringify(s.panelCollapse));
+    if (typeof s.trendRange === 'string' && s.trendRange) localStorage.setItem(TREND_RANGE_KEY, s.trendRange);
+    if (typeof s.themeCustom === 'string' && s.themeCustom) localStorage.setItem(THEME_CUSTOM_KEY, s.themeCustom);
+    if (typeof s.theme === 'string' && s.theme) localStorage.setItem('pretrade_theme', s.theme);
+  } catch (e) { /* localStorage full or blocked */ }
+}
+
 async function pushToGist(payload) {
   const cfg = loadSyncConfig();
   const content = JSON.stringify(payload, null, 2);
@@ -7859,27 +7934,30 @@ async function pullFromGist() {
 async function syncUpload() {
   try {
     showToast('上传中...', 'info');
-    const payload = { version: 2, syncedAt: new Date().toISOString(), history: loadHistory() };
+    const payload = buildSyncPayload();
     await pushToGist(payload);
     const cfg = loadSyncConfig();
     saveSyncConfig({ ...cfg, lastSyncAt: payload.syncedAt });
     const activeCount = payload.history.filter(e => !e._deleted).length;
-    showToast('已上传', 'success', `${activeCount} 条历史 → Gist`);
+    const wlCount = (payload.watchlist || []).length;
+    showToast('已上传', 'success', `${activeCount} 条历史 · ${wlCount} 条 watchlist · 设置 → Gist`);
     hideSyncModal();
   } catch (e) { showToast('上传失败', 'error', e.message); }
 }
 
 async function syncDownload() {
-  if (!confirm('下载会覆盖本地历史。继续?')) return;
+  if (!confirm('下载会覆盖本地历史 · watchlist · 设置。继续?')) return;
   try {
     showToast('下载中...', 'info');
     const remote = await pullFromGist();
     if (!Array.isArray(remote.history)) throw new Error('Gist 数据格式错误');
     safeSetItem(HISTORY_KEY, JSON.stringify(remote.history));
+    applyRemotePayload(remote, 'overwrite');
     const cfg = loadSyncConfig();
     saveSyncConfig({ ...cfg, lastSyncAt: new Date().toISOString() });
     const activeCount = remote.history.filter(e => !e._deleted).length;
-    showToast('已下载', 'success', `${activeCount} 条历史 → 本地`);
+    const wlCount = Array.isArray(remote.watchlist) ? remote.watchlist.length : 0;
+    showToast('已下载', 'success', `${activeCount} 条历史 · ${wlCount} 条 watchlist → 本地`);
     hideSyncModal();
     if (!state.strategy) render();
   } catch (e) { showToast('下载失败', 'error', e.message); }
@@ -7890,9 +7968,10 @@ async function syncDownload() {
 async function syncMergeCore() {
   const local = loadHistory();
   const localActiveIds = new Set(local.filter(e => !e._deleted).map(e => e.id));
+  let remote = {};
   let remoteHistory = [];
   try {
-    const remote = await pullFromGist();
+    remote = await pullFromGist();
     remoteHistory = Array.isArray(remote.history) ? remote.history : [];
   } catch (e) {
     // If gist doesn't exist yet (first sync), just upload local
@@ -7927,7 +8006,13 @@ async function syncMergeCore() {
     .slice(0, HISTORY_MAX);
 
   safeSetItem(HISTORY_KEY, JSON.stringify(merged));
-  const payload = { version: 2, syncedAt: new Date().toISOString(), history: merged };
+
+  // Merge watchlist + apply remote settings (last-write-wins from remote)
+  applyRemotePayload(remote, 'merge');
+
+  // Build fresh payload from now-updated local state (includes merged history + merged watchlist + local settings)
+  const payload = buildSyncPayload();
+  payload.history = merged;
   await pushToGist(payload);
   const cfg = loadSyncConfig();
   saveSyncConfig({ ...cfg, lastSyncAt: payload.syncedAt });
