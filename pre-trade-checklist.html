@@ -568,6 +568,12 @@
   .backtest-empty-msg { font-size: 12px; color: var(--text-faint); line-height: 1.6; padding: 8px 4px; font-style: italic; }
   .backtest-empty-msg b { color: var(--text-dim); font-style: normal; font-weight: 600; }
 
+  /* Computed value display (auto-computed nominal etc.) */
+  .computed-value { padding: 8px 10px; font-family: var(--mono); font-size: 13px; color: var(--text-dim); background: var(--panel-2); border: 1px solid var(--border); border-radius: 4px; letter-spacing: 0.02em; }
+
+  /* History row: STK / strike tag */
+  .history-stk { font-family: var(--mono); font-size: 11px; color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); padding: 1px 6px; border-radius: 3px; letter-spacing: 0.03em; }
+
   /* Watchlist panel */
   .watchlist-panel { }
   .picker-panel-actions { display: flex; align-items: center; gap: 8px; }
@@ -2064,8 +2070,14 @@ const state = {
   // CSP position sizing (using state.nav shared with LEAPS)
   cspVolTier: null,  // 'medium' or 'high'
   cspExistingTotal: '',  // 现有 CSP 总敞口 nominal
-  cspThisNominal: '',    // 本笔 CSP nominal (strike × 100 × 张数)
+  cspThisNominal: '',    // 本笔 CSP nominal (auto-computed from strike × 100 × contracts)
+  cspStrike: '',         // 本笔 strike price (STK) — new input, auto-computes nominal
+  cspContracts: '',      // 本笔 张数 — default 1
   cspTickerExisting: '', // 本 ticker 现有 CSP nominal
+  // Trade identification (all strategies) — strike helps distinguish trades on same ticker
+  tradeStrike: '',       // Strike / STK · shared field for LEAPS / PMCC / CC / CSP identification
+  tradeContracts: '',    // Contracts / 张数 · used to compute nominal for CSP
+  tradeExpiry: '',       // Optional: expiration date · YYYY-MM-DD
   // Checklist item state
   items: {},
   // Session context
@@ -5156,6 +5168,13 @@ function renderChecklist() {
     const tickerPctDisp = tickerPct == null ? '—' : tickerPct.toFixed(1) + '%';
     const totalCls = totalPct == null ? '' : (totalPct > 50 ? 'fail' : totalPct > 40 ? 'pending' : 'pass');
     const tickerCls = (tickerPct == null || tickerCap == null) ? '' : (tickerPct > tickerCap ? 'fail' : tickerPct > cspTickerSoftTarget() ? 'pending' : 'pass');
+    // Auto-compute nominal if strike + contracts filled (this is the primary input path now)
+    const strikeNum = parseFloat(state.cspStrike) || 0;
+    const contractsNum = parseFloat(state.cspContracts) || 0;
+    const computedNominal = (strikeNum > 0 && contractsNum > 0) ? strikeNum * 100 * contractsNum : 0;
+    // Keep state.cspThisNominal in sync so downstream position checks work
+    if (computedNominal > 0) state.cspThisNominal = String(computedNominal);
+    else if (!state.cspThisNominal) state.cspThisNominal = '';
     configHTML = `
       <div class="config">
         <div class="config-title">CSP 仓位控制 · 名义敞口 (nominal = strike × 100 × 张数)</div>
@@ -5166,8 +5185,12 @@ function renderChecklist() {
             <button class="autofill-btn" onclick="autoFillCspExisting()" title="从 history 里 outcome=持仓 的 CSP 快照自动汇总">Auto</button>
           </label>
             <input inputmode="decimal" type="number" id="in-csp-ex-total" placeholder="0" value="${esc(state.cspExistingTotal)}"></div>
-          <div class="num-field"><label class="num-field-label">本笔 CSP 名义</label>
-            <input inputmode="decimal" type="number" id="in-csp-nominal" placeholder="e.g. 5000" value="${esc(state.cspThisNominal)}"></div>
+          <div class="num-field"><label class="num-field-label">本笔 Strike ($) · STK</label>
+            <input inputmode="decimal" type="number" id="in-csp-strike" placeholder="e.g. 50" value="${esc(state.cspStrike)}"></div>
+          <div class="num-field"><label class="num-field-label">张数</label>
+            <input inputmode="numeric" type="number" id="in-csp-contracts" placeholder="1" value="${esc(state.cspContracts)}" min="1"></div>
+          <div class="num-field"><label class="num-field-label">本笔 nominal (自动)</label>
+            <div class="computed-value">${computedNominal > 0 ? '$' + Math.round(computedNominal).toLocaleString() : '<span style="color:var(--text-faint);">先填 STK + 张数</span>'}</div></div>
           <div class="num-field"><label class="num-field-label">本 ticker 现有 CSP
             <button class="autofill-btn" onclick="autoFillCspTicker()" title="从 history 里 outcome=持仓 且相同 ticker 的 CSP 快照自动汇总">Auto</button>
           </label>
@@ -5278,7 +5301,37 @@ function renderChecklist() {
     };
     bind('in-nav', 'nav');
     bind('in-csp-ex-total', 'cspExistingTotal');
-    bind('in-csp-nominal', 'cspThisNominal');
+    // Strike + Contracts inputs · auto-recompute nominal on change
+    const updateComputedNominalDisplay = () => {
+      const disp = document.querySelector('.config .computed-value');
+      if (!disp) return;
+      const s = parseFloat(state.cspStrike) || 0;
+      const c = parseFloat(state.cspContracts) || 0;
+      const nom = s * 100 * c;
+      if (nom > 0) disp.textContent = '$' + Math.round(nom).toLocaleString();
+      else disp.innerHTML = '<span style="color:var(--text-faint);">先填 STK + 张数</span>';
+    };
+    const bindStrikeContract = (id, key) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener('focus', () => { pushUndo(); cancelFullRender(); });
+      el.addEventListener('input', e => {
+        state[key] = e.target.value;
+        // Recompute nominal for CSP
+        const strikeN = parseFloat(state.cspStrike) || 0;
+        const contractsN = parseFloat(state.cspContracts) || 0;
+        if (strikeN > 0 && contractsN > 0) {
+          state.cspThisNominal = String(strikeN * 100 * contractsN);
+        } else {
+          state.cspThisNominal = '';
+        }
+        updateComputedNominalDisplay();
+        updateVerdictsInPlace();
+      });
+      el.addEventListener('blur', () => scheduleFullRender());
+    };
+    bindStrikeContract('in-csp-strike', 'cspStrike');
+    bindStrikeContract('in-csp-contracts', 'cspContracts');
     bind('in-csp-ticker-ex', 'cspTickerExisting');
     const vSeg = document.getElementById('csp-vol-seg');
     if (vSeg) {
@@ -5783,6 +5836,8 @@ function snapshotStateForStorage() {
     cspVolTier: state.cspVolTier,
     cspExistingTotal: state.cspExistingTotal,
     cspThisNominal: state.cspThisNominal,
+    cspStrike: state.cspStrike,
+    cspContracts: state.cspContracts,
     cspTickerExisting: state.cspTickerExisting,
     pmccUnderlyingPurpose: state.pmccUnderlyingPurpose,
     pmccMode: state.pmccMode,
@@ -5791,6 +5846,9 @@ function snapshotStateForStorage() {
     existingExposure: state.existingExposure,
     budget: state.budget,
     ticker: state.ticker,
+    tradeStrike: state.tradeStrike,
+    tradeContracts: state.tradeContracts,
+    tradeExpiry: state.tradeExpiry,
     items: { ...state.items }
   };
 }
@@ -5904,6 +5962,11 @@ function saveToHistory() {
         if (val != null && val !== '') inputs.push(`${it.id}=${val}`);
       }
     });
+    // Include strike & contracts in inputs for later ID + Auto compute reliability
+    if (state.strategy === 'csp') {
+      if (state.cspStrike) inputs.push(`strike=${state.cspStrike}`);
+      if (state.cspContracts) inputs.push(`contracts=${state.cspContracts}`);
+    }
     let exposurePct = '', capPct = '';
     if (state.strategy === 'leaps' && state.leapsDirection === 'open') {
       const p = positionUsedPct();
@@ -6224,9 +6287,14 @@ function showEditModal(id) {
     </div>
   `).join(''));
 
-  // Position sizing fields (LEAPS open only)
-  const showPosition = fullState.strategy === 'leaps' && fullState.leapsDirection === 'open';
-  const positionHTML = showPosition ? `
+  // Position sizing fields — different fields per strategy
+  const isLeapsOpen = fullState.strategy === 'leaps' && fullState.leapsDirection === 'open';
+  const isCsp = fullState.strategy === 'csp';
+  const cspStrikeVal = fullState.cspStrike || '';
+  const cspContractsVal = fullState.cspContracts || '';
+  const cspComputedNom = (parseFloat(cspStrikeVal) || 0) * 100 * (parseFloat(cspContractsVal) || 0);
+
+  const positionHTML = isLeapsOpen ? `
     <div class="edit-group">
       <div class="edit-group-title">仓位</div>
       <div class="edit-position-grid">
@@ -6244,7 +6312,39 @@ function showEditModal(id) {
         </div>
       </div>
     </div>
-  ` : '';
+  ` : (isCsp ? `
+    <div class="edit-group">
+      <div class="edit-group-title">仓位 · Strike/张数/名义</div>
+      <div class="edit-position-grid">
+        <div>
+          <div class="edit-item-title" style="font-size: 11.5px;">Account NAV</div>
+          <input type="number" class="sync-setup-input" id="edit-nav" value="${esc(fullState.nav || '')}" placeholder="e.g. 100000" inputmode="decimal" step="any">
+        </div>
+        <div>
+          <div class="edit-item-title" style="font-size: 11.5px;">Strike ($) · STK</div>
+          <input type="number" class="sync-setup-input" id="edit-csp-strike" value="${esc(cspStrikeVal)}" placeholder="e.g. 50" inputmode="decimal" step="any">
+        </div>
+        <div>
+          <div class="edit-item-title" style="font-size: 11.5px;">张数</div>
+          <input type="number" class="sync-setup-input" id="edit-csp-contracts" value="${esc(cspContractsVal)}" placeholder="1" inputmode="numeric" min="1">
+        </div>
+        <div>
+          <div class="edit-item-title" style="font-size: 11.5px;">本笔名义 (自动)</div>
+          <div id="edit-csp-nominal-disp" style="padding: 8px 10px; font-family: var(--mono); font-size: 13px; color: var(--text-dim); background: var(--panel-2); border-radius: 4px;">
+            ${cspComputedNom > 0 ? '$' + Math.round(cspComputedNom).toLocaleString() : '—'}
+          </div>
+        </div>
+        <div>
+          <div class="edit-item-title" style="font-size: 11.5px;">现有 CSP 总名义 $</div>
+          <input type="number" class="sync-setup-input" id="edit-csp-ex-total" value="${esc(fullState.cspExistingTotal || '')}" placeholder="0" inputmode="decimal" step="any">
+        </div>
+        <div>
+          <div class="edit-item-title" style="font-size: 11.5px;">本 ticker 现有 CSP $</div>
+          <input type="number" class="sync-setup-input" id="edit-csp-ticker-ex" value="${esc(fullState.cspTickerExisting || '')}" placeholder="0" inputmode="decimal" step="any">
+        </div>
+      </div>
+    </div>
+  ` : '');
 
   // Editable strategy config section — allows changing subtype fields (leaps style/phase, pmcc mode, csp intent, cc mode, etc.)
   const configHTML = renderEditConfigHTML(fullState);
@@ -6446,6 +6546,21 @@ function showEditModal(id) {
     });
   });
 
+  // Live nominal recompute for CSP when strike / contracts change
+  const cspStrikeEl = modal.querySelector('#edit-csp-strike');
+  const cspContractsEl = modal.querySelector('#edit-csp-contracts');
+  const cspNominalDisp = modal.querySelector('#edit-csp-nominal-disp');
+  if (cspStrikeEl && cspContractsEl && cspNominalDisp) {
+    const recomputeNominal = () => {
+      const s = parseFloat(cspStrikeEl.value) || 0;
+      const c = parseFloat(cspContractsEl.value) || 0;
+      const nom = s * 100 * c;
+      cspNominalDisp.textContent = nom > 0 ? '$' + Math.round(nom).toLocaleString() : '—';
+    };
+    cspStrikeEl.addEventListener('input', recomputeNominal);
+    cspContractsEl.addEventListener('input', recomputeNominal);
+  }
+
   // Live R:R recompute: when entry_price / stop_level / target_level change,
   // update the rr_check display in-place without needing save + reopen
   const rrTriggerIds = ['entry_price', 'stop_level', 'target_level'];
@@ -6542,14 +6657,26 @@ function showEditModal(id) {
     const newNav = modal.querySelector('#edit-nav')?.value.trim() || '';
     const newExisting = modal.querySelector('#edit-existing')?.value.trim() || '';
     const newBudget = modal.querySelector('#edit-budget')?.value.trim() || '';
+    // CSP-specific inputs
+    const newCspStrike = modal.querySelector('#edit-csp-strike')?.value.trim() || '';
+    const newCspContracts = modal.querySelector('#edit-csp-contracts')?.value.trim() || '';
+    const newCspExTotal = modal.querySelector('#edit-csp-ex-total')?.value.trim() || '';
+    const newCspTickerEx = modal.querySelector('#edit-csp-ticker-ex')?.value.trim() || '';
+    // Auto-compute nominal from strike × 100 × contracts
+    const newCspNominal = ((parseFloat(newCspStrike) || 0) * 100 * (parseFloat(newCspContracts) || 0)) || '';
 
     // Build new fullState
     const newFullState = {
       ...fullState,
       ticker: newTicker,
-      nav: showPosition ? newNav : fullState.nav,
-      existingExposure: showPosition ? newExisting : fullState.existingExposure,
-      budget: showPosition ? newBudget : fullState.budget,
+      nav: (isLeapsOpen || isCsp) ? newNav : fullState.nav,
+      existingExposure: isLeapsOpen ? newExisting : fullState.existingExposure,
+      budget: isLeapsOpen ? newBudget : fullState.budget,
+      cspStrike: isCsp ? newCspStrike : fullState.cspStrike,
+      cspContracts: isCsp ? newCspContracts : fullState.cspContracts,
+      cspThisNominal: isCsp ? String(newCspNominal || '') : fullState.cspThisNominal,
+      cspExistingTotal: isCsp ? newCspExTotal : fullState.cspExistingTotal,
+      cspTickerExisting: isCsp ? newCspTickerEx : fullState.cspTickerExisting,
       items: newItems
     };
 
@@ -6606,9 +6733,9 @@ function showEditModal(id) {
         outcome: newOutcome,
         notes: newNotes,
         forcedReason: extraFields.forcedReason || modal.querySelector('#edit-forced-reason')?.value.trim() || entry.forcedReason || '',
-        nav: showPosition ? newNav : entry.nav,
-        existing: showPosition ? newExisting : entry.existing,
-        budget: showPosition ? newBudget : entry.budget,
+        nav: (isLeapsOpen || isCsp) ? newNav : entry.nav,
+        existing: isLeapsOpen ? newExisting : entry.existing,
+        budget: isLeapsOpen ? newBudget : entry.budget,
         ...recomputed,
         fullState: newFullState
       });
@@ -6946,10 +7073,25 @@ function renderHistoryList() {
     const cls = e.verdict.startsWith('CLEAR') ? 'pass' : e.verdict === 'BLOCKED' ? 'fail' : 'pending';
     const outcomeLabel = e.outcome ? OUTCOME_LABEL[e.outcome] : null;
     const outcomeCls = e.outcome || '';
+    // Extract strike/contracts from fullState or inputs string for display
+    const fs = e.fullState || {};
+    let strikeDisp = '';
+    let contractsDisp = '';
+    if (fs.cspStrike) strikeDisp = fs.cspStrike;
+    else if (e.inputs) {
+      const m = e.inputs.match(/strike=([\d.]+)/);
+      if (m) strikeDisp = m[1];
+    }
+    if (fs.cspContracts) contractsDisp = fs.cspContracts;
+    else if (e.inputs) {
+      const m = e.inputs.match(/contracts=(\d+)/);
+      if (m) contractsDisp = m[1];
+    }
+    const stkTag = strikeDisp ? `<span class="history-stk">STK $${esc(strikeDisp)}${contractsDisp ? ' × ' + esc(contractsDisp) : ''}</span>` : '';
     return `
       <div class="history-item">
         <div class="history-main">
-          <div class="history-time">${esc(e.timestamp)}${e.ticker ? ` · <span class="history-ticker">${esc(e.ticker)}</span>` : ''}</div>
+          <div class="history-time">${esc(e.timestamp)}${e.ticker ? ` · <span class="history-ticker">${esc(e.ticker)}</span>` : ''}${stkTag ? ' · ' + stkTag : ''}</div>
           <div class="history-title">${esc(e.strategy)} · ${esc(e.subtype)}</div>
           <div class="history-meta">
             <span class="history-verdict ${cls}">${esc(e.verdict)}</span>
