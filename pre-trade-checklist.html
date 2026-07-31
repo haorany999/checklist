@@ -1659,6 +1659,16 @@
     padding: 10px 12px; background: var(--panel-2); border-radius: 6px;
     margin-bottom: 16px; font-size: 12.5px; font-family: var(--mono);
   }
+  .sync-ratelimit-bar {
+    padding: 8px 12px; background: var(--panel-2); border-radius: 6px;
+    margin-bottom: 16px; font-size: 11.5px; font-family: var(--mono);
+    color: var(--text-dim); border-left: 3px solid var(--border);
+  }
+  .sync-ratelimit-bar b { color: var(--text); font-weight: 700; }
+  .sync-ratelimit-bar.ok { border-left-color: var(--pass); }
+  .sync-ratelimit-bar.mid { border-left-color: var(--pending); }
+  .sync-ratelimit-bar.low { border-left-color: var(--fail); background: color-mix(in srgb, var(--fail-bg) 40%, var(--panel-2)); }
+  .sync-ratelimit-bar.cooldown { border-left-color: var(--fail); background: color-mix(in srgb, var(--fail-bg) 60%, var(--panel-2)); color: var(--fail); font-weight: 600; }
   .sync-setup-list {
     padding-left: 22px; line-height: 1.8; font-size: 13.5px; color: var(--text-dim);
   }
@@ -3470,10 +3480,10 @@ function _scheduleWatchlistSync() {
   if (_watchlistSyncTimer) clearTimeout(_watchlistSyncTimer);
   _watchlistSyncTimer = setTimeout(() => {
     _watchlistSyncTimer = null;
-    const cfg = loadSyncConfig();
-    if (!cfg || !cfg.token || !cfg.gistId) return;  // Sync not configured
-    if (typeof syncMergeSilent === 'function') syncMergeSilent();
-  }, 5000);
+    // Route through scheduleAutoPushToGist which enforces the 45s min interval
+    // and shares the same throttling as history changes
+    if (typeof scheduleAutoPushToGist === 'function') scheduleAutoPushToGist(1000);
+  }, 30000);  // 30s debounce (batch rapid watchlist edits)
 }
 window.addWatchlistItem = function() {
   const modal = ensureWatchlistModal();
@@ -7719,19 +7729,71 @@ function clearSyncConfig() {
   try { localStorage.removeItem(SYNC_CONFIG_KEY); } catch (e) {}
 }
 
+// Track rate limit status from most recent GitHub response
+let _ghRateLimit = { remaining: null, resetAt: null, isSecondary: false };
+// Cooldown lockout: prevent sync for X ms after a 403
+let _syncCooldownUntil = 0;
+
 async function githubFetch(url, options = {}) {
   const cfg = loadSyncConfig();
   if (!cfg || !cfg.token) throw new Error('未配置 token');
+
+  // Enforce local cooldown after previous 403 (don't hammer API)
+  if (Date.now() < _syncCooldownUntil) {
+    const secLeft = Math.ceil((_syncCooldownUntil - Date.now()) / 1000);
+    const min = Math.ceil(secLeft / 60);
+    throw new Error(`本地冷却中 · 请 ${min} 分钟后再试`);
+  }
+
   const headers = {
     'Authorization': `token ${cfg.token}`,
     'Accept': 'application/vnd.github.v3+json'
   };
   if (options.body) headers['Content-Type'] = 'application/json';
   const resp = await fetch(url, { ...options, headers });
+
+  // Parse rate limit headers
+  const remaining = parseInt(resp.headers.get('X-RateLimit-Remaining') || '', 10);
+  const reset = parseInt(resp.headers.get('X-RateLimit-Reset') || '', 10);
+  if (!isNaN(remaining)) _ghRateLimit.remaining = remaining;
+  if (!isNaN(reset)) _ghRateLimit.resetAt = reset * 1000;
+
   if (!resp.ok) {
-    if (resp.status === 401) throw new Error('Token 无效或已过期');
-    if (resp.status === 404) throw new Error('Gist 不存在, 请重新设置');
-    if (resp.status === 403) throw new Error('GitHub API 限流, 稍后再试');
+    if (resp.status === 401) throw new Error('Token 无效或已过期 · 重新生成 token');
+    if (resp.status === 404) throw new Error('Gist 不存在 · 请重新设置 Gist ID');
+    if (resp.status === 403) {
+      // 3 possible 403 reasons for GitHub gists:
+      // 1) Primary rate limit exhausted (5000/hr): X-RateLimit-Remaining = 0
+      // 2) Secondary rate limit (burst): usually within X-RateLimit-Remaining > 0
+      // 3) Token missing 'gist' scope: message says "resource not accessible"
+      let msg;
+      try {
+        const body = await resp.clone().json();
+        const bodyMsg = body.message || '';
+        if (/scope/i.test(bodyMsg) || /not accessible/i.test(bodyMsg)) {
+          throw new Error(`Token 缺少 gist 权限 · 生成 token 时勾选 gist scope · ${bodyMsg}`);
+        }
+        if (/abuse|secondary/i.test(bodyMsg)) {
+          _ghRateLimit.isSecondary = true;
+          const retryAfter = parseInt(resp.headers.get('Retry-After') || '60', 10);
+          _syncCooldownUntil = Date.now() + retryAfter * 1000;
+          throw new Error(`GitHub 触发短时限流 (burst) · 冷却 ${Math.ceil(retryAfter/60)} 分钟 · 减少频繁操作`);
+        }
+        // Primary rate limit
+        if (!isNaN(remaining) && remaining === 0 && !isNaN(reset)) {
+          const resetIn = Math.ceil((reset * 1000 - Date.now()) / 60000);
+          _syncCooldownUntil = reset * 1000;
+          throw new Error(`GitHub API 限流 · ${resetIn} 分钟后重置 (5000/hr 上限)`);
+        }
+        msg = `GitHub 403 · ${bodyMsg || '未知原因'}`;
+      } catch (e) {
+        if (e.message.startsWith('Token') || e.message.startsWith('GitHub')) throw e;
+        msg = 'GitHub API 限流 · 稍后再试';
+      }
+      // Set local cooldown (5 min default for unknown 403)
+      _syncCooldownUntil = Math.max(_syncCooldownUntil, Date.now() + 5 * 60 * 1000);
+      throw new Error(msg);
+    }
     throw new Error(`GitHub API ${resp.status}`);
   }
   return resp.json();
@@ -7949,7 +8011,19 @@ async function syncMerge() {
 }
 
 // Silent auto-sync used on app boot. Toasts only for changes / errors.
-async function syncMergeSilent() {
+// Minimum interval between auto-syncs (prevents API hammering).
+// User-triggered syncs (button clicks) bypass this — only auto-sync is throttled.
+const AUTO_SYNC_MIN_INTERVAL_MS = 60 * 1000;  // 1 minute
+let _lastAutoSyncAt = 0;
+
+async function syncMergeSilent(force) {
+  // Cooldown protection: skip if we've synced recently OR are in a cooldown lockout
+  const now = Date.now();
+  if (!force) {
+    if (now < _syncCooldownUntil) return;  // In 403 cooldown, skip silently
+    if (now - _lastAutoSyncAt < AUTO_SYNC_MIN_INTERVAL_MS) return;  // Too soon since last
+  }
+  _lastAutoSyncAt = now;
   try {
     const stats = await syncMergeCore();
     if (stats.newFromRemote > 0 || stats.deletedByRemote > 0) {
@@ -7960,32 +8034,48 @@ async function syncMergeSilent() {
       if (!state.strategy) render();
     }
   } catch (e) {
-    showToast('云端同步失败', 'error', e.message);
+    // Only toast if it's not a silent skip
+    if (!/冷却中/.test(e.message)) {
+      showToast('云端同步失败', 'error', e.message);
+    }
   }
 }
 
 // Debounced auto-push to Gist — called after every local mutation (snapshot save / edit / delete).
 // Waits N seconds after last change so rapid edits batch into one push.
+// Enforces a minimum interval between actual pushes to avoid hitting GitHub secondary rate limit.
 // Skips if sync not configured. Errors are silent (user can retry manually via Sync).
 let _autoPushTimer = null;
 let _autoPushIndicator = null;
-function scheduleAutoPushToGist(delayMs = 3000) {
+let _lastAutoPushAt = 0;
+const AUTO_PUSH_MIN_INTERVAL_MS = 45 * 1000;  // Min 45s between actual API pushes
+const AUTO_PUSH_DEBOUNCE_MS = 20 * 1000;      // Wait 20s after last change before pushing
+function scheduleAutoPushToGist(delayMs = AUTO_PUSH_DEBOUNCE_MS) {
   const cfg = loadSyncConfig();
   if (!cfg || !cfg.token || !cfg.gistId) return;  // Not configured, skip
   if (!navigator.onLine) {
     _showAutoPushIndicator('离线 · 待联网同步', 4000);
     return;  // Skip when offline; will auto-fire on 'online' event
   }
+  // Extend delay if we recently pushed (respect min interval)
+  const sinceLast = Date.now() - _lastAutoPushAt;
+  if (sinceLast < AUTO_PUSH_MIN_INTERVAL_MS) {
+    const extraWait = AUTO_PUSH_MIN_INTERVAL_MS - sinceLast;
+    delayMs = Math.max(delayMs, extraWait);
+  }
   if (_autoPushTimer) clearTimeout(_autoPushTimer);
-  _showAutoPushIndicator('待同步...');
+  const readySec = Math.ceil(delayMs / 1000);
+  _showAutoPushIndicator(`${readySec}s 后同步`);
   _autoPushTimer = setTimeout(async () => {
     _autoPushTimer = null;
     try {
       _showAutoPushIndicator('同步中...');
       await syncMergeCore();
+      _lastAutoPushAt = Date.now();
       _showAutoPushIndicator('已同步 ✓', 2000);
     } catch (e) {
-      _showAutoPushIndicator('同步失败', 3000, 'fail');
+      // On rate limit, back off dramatically — cooldown handled inside githubFetch
+      _showAutoPushIndicator('同步失败 · 稍后重试', 5000, 'fail');
       // Don't spam toast — user can see in the indicator and try manual sync
     }
   }, delayMs);
@@ -8153,6 +8243,24 @@ function renderSyncActions() {
           <span style="color: var(--text-dim);">本地 ${localCount} 条 · Gist ${esc(gistShort)}</span>
           <span style="color: var(--text-faint);">上次: ${esc(lastSync)}</span>
         </div>
+        ${(() => {
+          // Rate limit status indicator
+          const rl = _ghRateLimit;
+          if (rl.remaining === null && Date.now() < _syncCooldownUntil) {
+            const min = Math.ceil((_syncCooldownUntil - Date.now()) / 60000);
+            return `<div class="sync-ratelimit-bar cooldown">⚠ 冷却中 · ${min} 分钟后可再试</div>`;
+          }
+          if (rl.remaining === null) return '';
+          const resetMin = rl.resetAt ? Math.ceil((rl.resetAt - Date.now()) / 60000) : null;
+          const cls = rl.remaining < 100 ? 'low' : rl.remaining < 1000 ? 'mid' : 'ok';
+          return `
+            <div class="sync-ratelimit-bar ${cls}">
+              GitHub API 剩余: <b>${rl.remaining}</b> / 5000 请求
+              ${resetMin != null ? ` · ${resetMin} 分钟后重置` : ''}
+              ${Date.now() < _syncCooldownUntil ? ` · <span style="color: var(--fail);">冷却中</span>` : ''}
+            </div>
+          `;
+        })()}
         <div class="sync-usage-bar">
           <div class="sync-usage-label">
             <span>本地存储 · ${usageMB} MB (${usagePct}%)</span>
