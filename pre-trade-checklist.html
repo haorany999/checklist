@@ -68,7 +68,50 @@
     --pending: #B8860B; --pending-bg: rgba(184, 134, 11, 0.10);
     --accent: #A0522D;
   }
+  /* Sepia — 护眼模式 (深色暖调 · 降蓝光) */
+  body.theme-sepia {
+    --bg: #1A1611; --panel: #221D16; --panel-2: #2A241C;
+    --border: #3E3629; --border-hi: #5A4E3A;
+    --text: #E8DDC4; --text-dim: #C4B79C; --text-faint: #9E9179;
+    --pass: #A8B865; --pass-bg: rgba(168, 184, 101, 0.14);
+    --fail: #D97757; --fail-bg: rgba(217, 119, 87, 0.14);
+    --pending: #D4A24C; --pending-bg: rgba(212, 162, 76, 0.14);
+    --accent: #E8B872;
+  }
   html, body { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 16px; line-height: 1.55; min-height: 100vh; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; font-variant-numeric: tabular-nums slashed-zero; font-feature-settings: "cv02", "cv11", "salt", "ss01", "ss02", "tnum", "zero"; letter-spacing: 0.008em; text-rendering: optimizeLegibility; }
+
+  /* Mobile font size bump — cleaner legibility on phone */
+  @media (max-width: 640px) {
+    html, body { font-size: 17.5px; line-height: 1.6; }
+    .item-title { font-size: 15px; }
+    .item-desc { font-size: 13.5px; line-height: 1.65; }
+    .picker-panel-head { font-size: 13px; }
+    .picker-title { font-size: 22px; }
+    .picker-sub { font-size: 14px; }
+    .config-title { font-size: 13px; }
+    .num-field-label { font-size: 12.5px; }
+    .num-field input, .num-field select { font-size: 15px; padding: 10px 12px; }
+    .segmented button { font-size: 13.5px; padding: 8px 12px; }
+    .item-btn { font-size: 15px; }
+    .btn { font-size: 14px; padding: 8px 14px; }
+    .btn.big { font-size: 16px; padding: 12px 18px; }
+    .history-item { font-size: 14px; }
+    .history-title { font-size: 14.5px; }
+    .history-desc { font-size: 13px; }
+    .explore-row { font-size: 13.5px; grid-template-columns: 68px 62px auto 1fr auto auto auto; }
+    .explore-row-time { font-size: 12px; }
+    .explore-row-stk { font-size: 11.5px; }
+    .explore-row-strategy { font-size: 13px; }
+    .status-main { font-size: 26px; }
+    .status-detail { font-size: 13px; }
+    .dp-stat-num { font-size: 24px; }
+    .dp-stat-label { font-size: 11.5px; }
+    .verdict-line { font-size: 15px; }
+    .header .brand { font-size: 12.5px; }
+    .header button { font-size: 13px; padding: 6px 10px; }
+    .picker-choice-name { font-size: 18px; }
+    .picker-choice-desc { font-size: 12.5px; }
+  }
 
   /* Page transition (subtle fade-slide on view change) */
   @keyframes pageEnter {
@@ -3281,7 +3324,7 @@ function headerHTML() {
     <div class="header">
       <div class="brand">Pre-Trade Checklist</div>
       <div class="header-actions">
-        <button class="theme-btn" onclick="cycleTheme()" title="Cycle theme (Auto → Slate → Terminal → Light → Warm)">
+        <button class="theme-btn" onclick="cycleTheme()" title="循环主题 (Auto → Slate → Terminal → Light → Warm → 护眼)">
           <span class="theme-dot"></span>
           <span>${themeName}</span>
         </button>
@@ -4687,7 +4730,7 @@ function renderPicker() {
     <div class="header">
       <div class="brand">Pre-Trade Checklist</div>
       <div class="header-actions">
-        <button class="theme-btn" onclick="cycleTheme()" title="Cycle theme (Auto → Slate → Terminal → Light → Warm)">
+        <button class="theme-btn" onclick="cycleTheme()" title="循环主题 (Auto → Slate → Terminal → Light → Warm → 护眼)">
           <span class="theme-dot"></span>
           <span>${themeName}</span>
         </button>
@@ -6006,8 +6049,12 @@ function deleteHistoryEntry(id) {
   const history = loadHistory();
   const idx = history.findIndex(e => e.id === id);
   if (idx === -1) return;
-  // Save original for undo
   const originalEntry = { ...history[idx] };
+  // Confirmation dialog — prevent accidental deletion via mis-click
+  const label = originalEntry.ticker
+    ? `${originalEntry.ticker} · ${originalEntry.strategy || ''} · ${originalEntry.timestamp || ''}`
+    : `${originalEntry.strategy || 'snapshot'} · ${originalEntry.timestamp || ''}`;
+  if (!confirm(`确认删除 snapshot?\n\n${label}\n\n删除后有 10 秒可撤销.`)) return;
   // Replace with tombstone so deletion propagates via sync
   history[idx] = {
     id: originalEntry.id,
@@ -6019,10 +6066,10 @@ function deleteHistoryEntry(id) {
   if (state._view === 'history') renderHistoryList();
   else render();
   scheduleAutoPushToGist();
-  // V2 · Toast with undo
+  // Toast with undo · 10 秒
   showToast('已删除', 'info', originalEntry.ticker ? originalEntry.ticker + ' · ' + originalEntry.strategy : '', {
     undo: true,
-    duration: 5000,
+    duration: 10000,
     onUndo: () => {
       const h = loadHistory();
       const i = h.findIndex(e => e.id === id);
@@ -8445,9 +8492,9 @@ function wireSyncActions() {
 /* ==========================================================
  * THEME
  * ========================================================== */
-const THEME_CYCLE = ['auto', 'slate', 'terminal', 'light', 'warm'];
-const THEME_LABEL = { auto: 'Auto', slate: 'Slate', terminal: 'Terminal', light: 'Light', warm: 'Warm' };
-const THEME_COLORS = { slate: '#0F1419', terminal: '#000000', light: '#F9FAFB', warm: '#FBF6E9' };
+const THEME_CYCLE = ['auto', 'slate', 'terminal', 'light', 'warm', 'sepia'];
+const THEME_LABEL = { auto: 'Auto', slate: 'Slate', terminal: 'Terminal', light: 'Light', warm: 'Warm', sepia: '护眼' };
+const THEME_COLORS = { slate: '#0F1419', terminal: '#000000', light: '#F9FAFB', warm: '#FBF6E9', sepia: '#1A1611' };
 
 // User theme customization (persisted separately)
 const THEME_CUSTOM_KEY = 'pretrade_theme_custom';
