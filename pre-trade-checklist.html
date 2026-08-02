@@ -795,15 +795,32 @@
   .explore-filters input:focus, .explore-filters select:focus { outline: none; border-color: var(--accent); }
   .explore-summary { font-family: var(--mono); font-size: 11.5px; color: var(--text-dim); padding: 4px 0 8px; display: flex; gap: 4px; flex-wrap: wrap; }
   .explore-list { display: flex; flex-direction: column; gap: 4px; max-height: 300px; overflow-y: auto; }
-  .explore-row { display: grid; grid-template-columns: 70px 60px 1fr auto auto; gap: 6px; align-items: center; padding: 5px 6px; font-size: 12px; cursor: pointer; border-radius: 4px; }
+  /* Explore row: date · ticker · STK · strategy · verdict · outcome? · delete */
+  .explore-row {
+    display: grid;
+    grid-template-columns: 70px 60px auto 1fr auto auto auto;
+    gap: 6px;
+    align-items: center;
+    padding: 5px 6px;
+    font-size: 12px;
+    border-radius: 4px;
+  }
   .explore-row:hover { background: var(--bg); }
   .explore-row-time { font-family: var(--mono); font-size: 11px; color: var(--text-faint); }
-  .explore-row-ticker { font-family: var(--mono); font-weight: 600; color: var(--accent); }
-  .explore-row-strategy { color: var(--text-dim); font-size: 11.5px; }
-  .explore-row-verdict { font-family: var(--mono); font-size: 10px; font-weight: 600; letter-spacing: 0.05em; padding: 1px 4px; border-radius: 3px; }
+  .explore-row-ticker { font-family: var(--mono); font-weight: 600; color: var(--accent); cursor: pointer; }
+  .explore-row-stk { font-family: var(--mono); font-size: 10.5px; color: var(--text-dim); background: color-mix(in srgb, var(--accent) 8%, transparent); padding: 1px 5px; border-radius: 3px; letter-spacing: 0.02em; white-space: nowrap; }
+  .explore-row-strategy { color: var(--text-dim); font-size: 11.5px; cursor: pointer; }
+  .explore-row-verdict { font-family: var(--mono); font-size: 10px; font-weight: 600; letter-spacing: 0.05em; padding: 1px 4px; border-radius: 3px; cursor: pointer; }
   .explore-row-verdict.pass { color: var(--pass); background: var(--pass-bg); }
   .explore-row-verdict.fail { color: var(--fail); background: var(--fail-bg); }
   .explore-row-verdict.pending { color: var(--pending); background: var(--pending-bg); }
+  .explore-row-del {
+    background: transparent; border: none; padding: 2px 6px;
+    font-family: var(--mono); font-size: 14px; color: var(--text-faint);
+    cursor: pointer; border-radius: 3px; line-height: 1;
+    transition: color 0.15s, background 0.15s;
+  }
+  .explore-row-del:hover { color: var(--fail); background: var(--fail-bg); }
   .explore-empty { text-align: center; padding: 20px 10px; font-size: 12.5px; color: var(--text-faint); font-style: italic; }
 
   .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; gap: 8px; flex-wrap: wrap; }
@@ -2074,6 +2091,9 @@ const state = {
   cspStrike: '',         // 本笔 strike price (STK) — new input, auto-computes nominal
   cspContracts: '',      // 本笔 张数 — default 1
   cspTickerExisting: '', // 本 ticker 现有 CSP nominal
+  // LEAPS identification — strike + contracts to distinguish trades on same ticker
+  leapsStrike: '',       // LEAPS strike (informational, for identification)
+  leapsContracts: '',    // LEAPS contract count (informational)
   // Trade identification (all strategies) — strike helps distinguish trades on same ticker
   tradeStrike: '',       // Strike / STK · shared field for LEAPS / PMCC / CC / CSP identification
   tradeContracts: '',    // Contracts / 张数 · used to compute nominal for CSP
@@ -4014,17 +4034,45 @@ function renderExploreResultsFor(matches) {
     const cls = e.verdict.startsWith('CLEAR') ? 'pass' : e.verdict === 'BLOCKED' ? 'fail' : 'pending';
     const verdictShort = e.verdict.startsWith('CLEAR') ? 'CLEAR' : e.verdict === 'BLOCKED' ? 'BLOCK' : 'PEND';
     const outcomeLabel = e.outcome ? OUTCOME_LABEL[e.outcome] : null;
+    // Extract STK + contracts for identification (works for CSP + LEAPS both)
+    const idInfo = extractStrikeInfo(e);
+    const stkTag = idInfo.strike ? `<span class="explore-row-stk">STK $${esc(idInfo.strike)}${idInfo.contracts ? ' × ' + esc(idInfo.contracts) : ''}</span>` : '';
     return `
-      <div class="explore-row" onclick="showEditModal('${e.id}')" data-preview-id="${e.id}">
+      <div class="explore-row" data-preview-id="${e.id}">
         <span class="explore-row-time">${esc(e.timestamp.slice(0, 10))}</span>
         <span class="explore-row-ticker">${esc(e.ticker || '—')}</span>
-        <span class="explore-row-strategy">${esc(e.strategy)}</span>
-        <span class="explore-row-verdict ${cls}">${verdictShort}</span>
-        ${outcomeLabel ? `<span class="history-outcome ${e.outcome}">${esc(outcomeLabel)}</span>` : ''}
+        ${stkTag}
+        <span class="explore-row-strategy" onclick="showEditModal('${e.id}')">${esc(e.strategy)}</span>
+        <span class="explore-row-verdict ${cls}" onclick="showEditModal('${e.id}')">${verdictShort}</span>
+        ${outcomeLabel ? `<span class="history-outcome ${e.outcome}" onclick="showEditModal('${e.id}')">${esc(outcomeLabel)}</span>` : ''}
+        <button class="explore-row-del" onclick="deleteHistoryEntry('${e.id}'); event.stopPropagation();" title="删除此 snapshot">×</button>
       </div>
     `;
   }).join('');
   return summaryHTML + `<div class="explore-list">${rowsHTML}</div>`;
+}
+
+// Extract strike/contracts from either CSP or LEAPS state, used across explore + history rows
+function extractStrikeInfo(e) {
+  const fs = e.fullState || {};
+  let strike = '';
+  let contracts = '';
+  // Priority order: cspStrike (CSP) → leapsStrike (LEAPS) → tradeStrike (generic) → inputs regex
+  if (fs.cspStrike) strike = fs.cspStrike;
+  else if (fs.leapsStrike) strike = fs.leapsStrike;
+  else if (fs.tradeStrike) strike = fs.tradeStrike;
+  else if (e.inputs) {
+    const m = e.inputs.match(/strike=([\d.]+)/);
+    if (m) strike = m[1];
+  }
+  if (fs.cspContracts) contracts = fs.cspContracts;
+  else if (fs.leapsContracts) contracts = fs.leapsContracts;
+  else if (fs.tradeContracts) contracts = fs.tradeContracts;
+  else if (e.inputs) {
+    const m = e.inputs.match(/contracts=(\d+)/);
+    if (m) contracts = m[1];
+  }
+  return { strike, contracts };
 }
 
 function renderExploreDefaultResults() {
@@ -5070,6 +5118,10 @@ function renderChecklist() {
             <input inputmode="decimal" type="number" id="in-ex" placeholder="0" value="${esc(state.existingExposure)}"></div>
           <div class="num-field"><label class="num-field-label">本次预算</label>
             <input inputmode="decimal" type="number" id="in-bg" placeholder="e.g. 8000" value="${esc(state.budget)}"></div>
+          <div class="num-field"><label class="num-field-label">Strike ($) · STK</label>
+            <input inputmode="decimal" type="number" id="in-leaps-strike" placeholder="e.g. 450" value="${esc(state.leapsStrike || '')}"></div>
+          <div class="num-field"><label class="num-field-label">张数</label>
+            <input inputmode="numeric" type="number" id="in-leaps-contracts" placeholder="1" value="${esc(state.leapsContracts || '')}" min="1"></div>
           <div class="num-field"><label class="num-field-label" title="大蓝筹 = QQQ / MSFT / AAPL / GOOG / AMZN / META 等大市值权重股. 允许更高单标的 cap.">是否大蓝筹</label>
             <div class="segmented" id="bluechip-seg" style="margin-top: 0;">
               <button data-v="no">否 (≤${capNo}%)</button>
@@ -5218,6 +5270,8 @@ function renderChecklist() {
     bind('in-nav', 'nav');
     bind('in-ex', 'existingExposure');
     bind('in-bg', 'budget');
+    bind('in-leaps-strike', 'leapsStrike');
+    bind('in-leaps-contracts', 'leapsContracts');
     const bcSeg = document.getElementById('bluechip-seg');
     if (bcSeg) {
       bcSeg.querySelector(`button[data-v="${state.leapsBluechip ? 'yes' : 'no'}"]`)?.classList.add('active');
@@ -5780,6 +5834,8 @@ function snapshotStateForStorage() {
     cspStrike: state.cspStrike,
     cspContracts: state.cspContracts,
     cspTickerExisting: state.cspTickerExisting,
+    leapsStrike: state.leapsStrike,
+    leapsContracts: state.leapsContracts,
     pmccUnderlyingPurpose: state.pmccUnderlyingPurpose,
     pmccMode: state.pmccMode,
     ccMode: state.ccMode,
@@ -5907,6 +5963,10 @@ function saveToHistory() {
     if (state.strategy === 'csp') {
       if (state.cspStrike) inputs.push(`strike=${state.cspStrike}`);
       if (state.cspContracts) inputs.push(`contracts=${state.cspContracts}`);
+    }
+    if (state.strategy === 'leaps') {
+      if (state.leapsStrike) inputs.push(`strike=${state.leapsStrike}`);
+      if (state.leapsContracts) inputs.push(`contracts=${state.leapsContracts}`);
     }
     let exposurePct = '', capPct = '';
     if (state.strategy === 'leaps' && state.leapsDirection === 'open') {
@@ -6241,6 +6301,14 @@ function showEditModal(id) {
         <div>
           <div class="edit-item-title" style="font-size: 11.5px;">本次预算 $</div>
           <input type="number" class="sync-setup-input" id="edit-budget" value="${esc(fullState.budget || '')}" placeholder="e.g. 10000" inputmode="decimal" step="any">
+        </div>
+        <div>
+          <div class="edit-item-title" style="font-size: 11.5px;">Strike ($) · STK</div>
+          <input type="number" class="sync-setup-input" id="edit-leaps-strike" value="${esc(fullState.leapsStrike || '')}" placeholder="e.g. 450" inputmode="decimal" step="any">
+        </div>
+        <div>
+          <div class="edit-item-title" style="font-size: 11.5px;">张数</div>
+          <input type="number" class="sync-setup-input" id="edit-leaps-contracts" value="${esc(fullState.leapsContracts || '')}" placeholder="1" inputmode="numeric" min="1">
         </div>
       </div>
     </div>
@@ -6589,6 +6657,9 @@ function showEditModal(id) {
     const newNav = modal.querySelector('#edit-nav')?.value.trim() || '';
     const newExisting = modal.querySelector('#edit-existing')?.value.trim() || '';
     const newBudget = modal.querySelector('#edit-budget')?.value.trim() || '';
+    // LEAPS-specific STK inputs
+    const newLeapsStrike = modal.querySelector('#edit-leaps-strike')?.value.trim() || '';
+    const newLeapsContracts = modal.querySelector('#edit-leaps-contracts')?.value.trim() || '';
     // CSP-specific inputs
     const newCspStrike = modal.querySelector('#edit-csp-strike')?.value.trim() || '';
     const newCspContracts = modal.querySelector('#edit-csp-contracts')?.value.trim() || '';
@@ -6604,6 +6675,8 @@ function showEditModal(id) {
       nav: (isLeapsOpen || isCsp) ? newNav : fullState.nav,
       existingExposure: isLeapsOpen ? newExisting : fullState.existingExposure,
       budget: isLeapsOpen ? newBudget : fullState.budget,
+      leapsStrike: isLeapsOpen ? newLeapsStrike : fullState.leapsStrike,
+      leapsContracts: isLeapsOpen ? newLeapsContracts : fullState.leapsContracts,
       cspStrike: isCsp ? newCspStrike : fullState.cspStrike,
       cspContracts: isCsp ? newCspContracts : fullState.cspContracts,
       cspThisNominal: isCsp ? String(newCspNominal || '') : fullState.cspThisNominal,
@@ -7005,20 +7078,10 @@ function renderHistoryList() {
     const cls = e.verdict.startsWith('CLEAR') ? 'pass' : e.verdict === 'BLOCKED' ? 'fail' : 'pending';
     const outcomeLabel = e.outcome ? OUTCOME_LABEL[e.outcome] : null;
     const outcomeCls = e.outcome || '';
-    // Extract strike/contracts from fullState or inputs string for display
-    const fs = e.fullState || {};
-    let strikeDisp = '';
-    let contractsDisp = '';
-    if (fs.cspStrike) strikeDisp = fs.cspStrike;
-    else if (e.inputs) {
-      const m = e.inputs.match(/strike=([\d.]+)/);
-      if (m) strikeDisp = m[1];
-    }
-    if (fs.cspContracts) contractsDisp = fs.cspContracts;
-    else if (e.inputs) {
-      const m = e.inputs.match(/contracts=(\d+)/);
-      if (m) contractsDisp = m[1];
-    }
+    // Extract strike/contracts (works for CSP + LEAPS)
+    const idInfo = extractStrikeInfo(e);
+    const strikeDisp = idInfo.strike;
+    const contractsDisp = idInfo.contracts;
     const stkTag = strikeDisp ? `<span class="history-stk">STK $${esc(strikeDisp)}${contractsDisp ? ' × ' + esc(contractsDisp) : ''}</span>` : '';
     return `
       <div class="history-item">
