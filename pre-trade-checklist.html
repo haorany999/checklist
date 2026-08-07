@@ -1783,6 +1783,7 @@
 </script>
 <script>
 
+
 "use strict";
 
 /* ==========================================================
@@ -1932,10 +1933,12 @@ function cspTickerPct() {
   return ((tickerExisting + thisTrade) / nav) * 100;
 }
 function cspTickerCap() {
-  return { medium: 12, high: 8 }[state.cspVolTier] || null;
+  // Hard cap per ticker · 中波动 (SOFI/HIMS/COIN 类) 12% · 高波动 (IREN/ASTS 类极端投机) 10%
+  return { medium: 12, high: 10 }[state.cspVolTier] || null;
 }
 function cspTickerSoftTarget() {
-  return { medium: 10, high: 6 }[state.cspVolTier] || null;
+  // Soft target · aim below this for buffer
+  return { medium: 10, high: 8 }[state.cspVolTier] || null;
 }
 
 // Auto-compute existing CSP nominal from history (all `open` outcome CSP snapshots)
@@ -2567,7 +2570,7 @@ function cspItems() {
   if (state.cspVolTier) {
     const cap = cspTickerCap();
     const target = cspTickerSoftTarget();
-    const tierLabel = state.cspVolTier === 'medium' ? '中波动 (如 SOFI/HIMS)' : '高波动 (如 IREN/ASTS)';
+    const tierLabel = state.cspVolTier === 'medium' ? '中波动 (如 SOFI / HIMS / COIN)' : '高波动 (如 IREN / ASTS 类极端投机)';
     base.push({ group: psGroup, id: 'csp_ticker_check',
       title: `单标的 CSP ≤ ${cap}% NAV  (${tierLabel})`,
       desc: `目标 ${target}% · 硬顶 ${cap}%. 单标的 = 本 ticker 现有 CSP + 本笔.`,
@@ -5234,7 +5237,7 @@ function renderChecklist() {
           <div class="num-field"><label class="num-field-label">波动性类型</label>
             <div class="segmented" id="csp-vol-seg" style="margin-top: 0;">
               <button data-v="medium">中波动 (≤12%)</button>
-              <button data-v="high">高波动 (≤8%)</button>
+              <button data-v="high">高波动 (≤10%)</button>
             </div></div>
         </div>
         <div class="position-summary ${totalCls}">
@@ -8900,6 +8903,7 @@ window.addEventListener('scroll', updateScrolledState, { passive: true });
   // Delay 800ms so UI renders + user sees the app before any sync toast
   setTimeout(() => { syncMergeSilent(); }, 800);
 })();
+
 
 
 </script>
