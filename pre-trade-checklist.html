@@ -599,6 +599,12 @@
   .dp-filter-row { display: flex; align-items: center; gap: 10px; margin: 8px 0 12px; font-family: var(--mono); font-size: 10.5px; }
   .dp-filter-label { color: var(--text-faint); letter-spacing: 0.06em; text-transform: uppercase; }
   .dp-filter-tabs { display: flex; gap: 2px; background: var(--panel-2); padding: 2px; border-radius: 4px; }
+  .twr-filter-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; font-family: var(--mono); font-size: 10.5px; }
+  .twr-filter-label { color: var(--text-faint); letter-spacing: 0.06em; text-transform: uppercase; }
+  .twr-filter-tabs { display: flex; gap: 2px; background: var(--panel-2); padding: 2px; border-radius: 4px; flex-wrap: wrap; }
+  .twr-filter-tab { background: transparent; border: none; padding: 4px 10px; font-family: var(--mono); font-size: 10.5px; color: var(--text-faint); cursor: pointer; border-radius: 3px; letter-spacing: 0.04em; transition: all 0.15s; }
+  .twr-filter-tab:hover { color: var(--text-dim); }
+  .twr-filter-tab.active { background: var(--panel); color: var(--text); font-weight: 600; }
   .dp-filter-tab { background: transparent; border: none; padding: 4px 10px; font-family: var(--mono); font-size: 10.5px; color: var(--text-faint); cursor: pointer; border-radius: 3px; letter-spacing: 0.04em; transition: all 0.15s; }
   .dp-filter-tab:hover { color: var(--text-dim); }
   .dp-filter-tab.active { background: var(--panel); color: var(--text); font-weight: 600; }
@@ -2075,7 +2081,7 @@ const SOP = {
     </ul>
     <h4>开仓</h4>
     <ul>
-      <li>DTE 建议 30-45 天 (非硬性, 根据 IV 和支撑位判断)</li>
+      <li>DTE 建议 20-45 天 (非硬性, 根据 IV 和支撑位判断)</li>
       <li>选 OI 大的合约</li>
       <li>Delta: 一般 <code>≤ 25</code>, 不想被指派 <code>≤ 15</code>, 想接股 <code>≤ 30</code></li>
       <li>30 天 ROC ≥ 2-3%</li>
@@ -2505,7 +2511,7 @@ function cspItems() {
     desc: 'VTV/QQQ 深底位 (负值区) 反映风格极端偏成长, 警惕反转杀跌, 左侧加仓 CSP 需谨慎. 底部企稳可作情绪底部辅助信号. 极端读数时不勾, 触发再评估.' });
   base.push({ group: 'Market environment · 宏观环境', id: 'macro',
     title: '宏观事件已核对',
-    desc: 'CSP DTE 30-45 天通常覆盖至少一次 FOMC / CPI / NFP. 勾选 = 已在日历核对事件时点.' });
+    desc: 'CSP DTE 20-45 天通常覆盖至少一次 FOMC / CPI / NFP. 勾选 = 已在日历核对事件时点.' });
   base.push({ group: 'Underlying · 标的', id: 'no_earnings',
     title: '合约存续期不覆盖财报',
     desc: '首选合约存续期不覆盖财报, 前后 3-5 天亦不新开. 例外见下条.',
@@ -2542,9 +2548,9 @@ function cspItems() {
     })(),
     numeric: { placeholder: 'IVP', unit: '%', min: ivpMin, comparator: '>' } });
   base.push({ group: 'Contract structure · 合约结构', id: 'dte',
-    title: 'DTE 30-45 天',
-    desc: '30-45 天区间最优. < 30 delta 敏感度高; > 45 资金占用久且 ROC 偏低.',
-    numeric: { placeholder: 'DTE', unit: 'days', range: [30, 45] } });
+    title: 'DTE 20-45 天',
+    desc: '20-45 天区间可用. 20-30 delta 敏感度高但 theta 快; 30-45 最平衡; > 45 资金占用久且 ROC 偏低.',
+    numeric: { placeholder: 'DTE', unit: 'days', range: [20, 45] } });
   base.push({ group: 'Contract structure · 合约结构', id: 'oi',
     title: '合约 OI 足够大 (流动性)', desc: '避免宽 bid-ask 与 roll 困难.' });
   base.push({ group: 'Contract structure · 合约结构', id: 'delta',
@@ -4520,7 +4526,14 @@ function checklistBacktestPanelHTML() {
   `;
 }
 
-function tickerWinRatePanelHTML() {  const history = getActiveHistory();
+let __tickerWrFilter = 'all';  // 'all' | 'LEAPS' | 'CSP' | 'PMCC' | 'CC'
+window.setTickerWrFilter = function(f) {
+  __tickerWrFilter = f;
+  render();
+};
+
+function tickerWinRatePanelHTML() {
+  const history = getActiveHistory();
   const settled = history.filter(e => e.outcome === 'win' || e.outcome === 'loss');
   if (settled.length < 2) {
     return `
@@ -4536,9 +4549,16 @@ function tickerWinRatePanelHTML() {  const history = getActiveHistory();
       </div>
     `;
   }
+
+  // Filter by strategy
+  const filterMode = __tickerWrFilter;
+  const filtered = filterMode === 'all'
+    ? settled
+    : settled.filter(e => (e.strategy || '').toUpperCase().startsWith(filterMode));
+
   // Group by ticker
   const byTicker = {};
-  settled.forEach(e => {
+  filtered.forEach(e => {
     const t = (e.ticker || '').toUpperCase();
     if (!t) return;
     if (!byTicker[t]) byTicker[t] = { wins: 0, losses: 0, total: 0 };
@@ -4558,13 +4578,44 @@ function tickerWinRatePanelHTML() {  const history = getActiveHistory();
     }))
     .sort((a, b) => b.wr - a.wr || b.total - a.total)
     .slice(0, 10);  // Top 10
-  if (rows.length === 0) return '';
+
+  const filterLabel = { all: '汇总', LEAPS: 'LEAPS', CSP: 'CSP', PMCC: 'PMCC', CC: 'CC' }[filterMode];
+
+  const filterTabsHTML = `
+    <div class="twr-filter-row">
+      <span class="twr-filter-label">策略:</span>
+      <div class="twr-filter-tabs">
+        ${['all', 'LEAPS', 'CSP', 'PMCC', 'CC'].map(k => `
+          <button class="twr-filter-tab ${filterMode === k ? 'active' : ''}" onclick="setTickerWrFilter('${k}')">${k === 'all' ? '汇总' : k}</button>
+        `).join('')}
+      </div>
+    </div>
+  `;
+
+  // If no rows for this filter, still show panel with filter + empty state
+  if (rows.length === 0) {
+    return `
+      <div class="picker-panel">
+        <div class="picker-panel-head">
+          <span>Ticker 胜率排行 · ${esc(filterLabel)}</span>
+          <span class="picker-panel-count">0</span>
+        </div>
+        ${filterTabsHTML}
+        <div class="backtest-empty-msg" style="padding: 12px 4px;">
+          ${filterMode === 'all' ? '暂无 ≥ 2 次已结算的 ticker.' : `暂无 ${filterLabel} 策略下 ≥ 2 次已结算的 ticker.`}
+        </div>
+      </div>
+    `;
+  }
+
   return `
     <div class="picker-panel">
-      <div class="picker-panel-header">
-        <div class="picker-panel-title">Ticker 胜率排行 (Top ${rows.length})</div>
-        <div class="picker-panel-sub">≥ 2 次已结算的 ticker · 识别历史优势标的与短板</div>
+      <div class="picker-panel-head">
+        <span>Ticker 胜率排行 · ${esc(filterLabel)}</span>
+        <span class="picker-panel-count">${rows.length}</span>
       </div>
+      ${filterTabsHTML}
+      <div class="picker-panel-sub" style="margin-bottom: 8px;">≥ 2 次已结算的 ticker · 识别历史优势标的与短板</div>
       <div class="ticker-winrate-list">
         ${rows.map(r => {
           const wrCls = r.wr >= 60 ? 'pass' : r.wr >= 40 ? 'pending' : 'fail';
@@ -4572,9 +4623,13 @@ function tickerWinRatePanelHTML() {  const history = getActiveHistory();
           return `
             <div class="ticker-winrate-row">
               <div class="twr-ticker">${esc(r.ticker)}</div>
-              <div class="twr-bar">
-                <div class="twr-bar-fill ${wrCls}" style="width: ${barPct}%"></div>
-                <div class="twr-bar-label ${wrCls}">${r.wr}% · ${r.wins}胜/${r.losses}负</div>
+              <div class="twr-bar-wrap">
+                <div class="twr-bar ${wrCls}" style="width: ${barPct}%;"></div>
+              </div>
+              <div class="twr-stats">
+                <span class="twr-total">${r.total} 笔</span>
+                <span class="twr-wl">${r.wins}胜 / ${r.losses}负</span>
+                <span class="twr-wr ${wrCls}">${r.wr}%</span>
               </div>
             </div>
           `;
