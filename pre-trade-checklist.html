@@ -527,6 +527,9 @@
   .draft-dismiss-btn:hover { background: var(--fail-bg); color: var(--fail); }
 
   .picker-panel { margin: 12px 0 16px; padding: 12px 14px; background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius, 10px); }
+  .picker-panel-sub { font-size: 11.5px; color: var(--text-faint); font-family: var(--mono); letter-spacing: 0.02em; margin-bottom: 8px; }
+  .picker-panel-header { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 10px; flex-wrap: wrap; }
+  .picker-panel-title { font-family: var(--mono); font-size: 12px; color: var(--text); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
   .picker-panel-head {
     display: flex; justify-content: space-between; align-items: center;
     font-family: var(--mono); font-size: 12px;
@@ -4623,13 +4626,9 @@ function tickerWinRatePanelHTML() {
           return `
             <div class="ticker-winrate-row">
               <div class="twr-ticker">${esc(r.ticker)}</div>
-              <div class="twr-bar-wrap">
-                <div class="twr-bar ${wrCls}" style="width: ${barPct}%;"></div>
-              </div>
-              <div class="twr-stats">
-                <span class="twr-total">${r.total} 笔</span>
-                <span class="twr-wl">${r.wins}胜 / ${r.losses}负</span>
-                <span class="twr-wr ${wrCls}">${r.wr}%</span>
+              <div class="twr-bar">
+                <div class="twr-bar-fill ${wrCls}" style="width: ${barPct}%"></div>
+                <div class="twr-bar-label ${wrCls}">${r.wr}% · ${r.total} 笔 · ${r.wins}胜 / ${r.losses}负</div>
               </div>
             </div>
           `;
