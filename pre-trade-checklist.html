@@ -2111,12 +2111,16 @@ const SOP = {
     </ul>
     <h4>卖 Short Call 检查项</h4>
     <ul>
-      <li>底仓 LEAPS 当前盈利 ≥ 20% (低于 20% = 禁止卖 call, assign 走底仓代价大)</li>
-      <li>标的大周期 (周 K) 非底部或强势启动, 只在高位整理时开</li>
+      <li>底仓 LEAPS 当前盈利 ≥ 15% (低于 15% = 禁止卖 call, assign 走底仓代价大)</li>
+      <li>距止盈距离 ≥ 10% (低于 10% 直接分批止盈, 不卖 call)</li>
+      <li>标的处于短期回调 / 高位横盘 / 冲高钝化 (非底部启动 / 单边急涨)</li>
       <li>非在突破当天卖 short call (动能最强, 短腿易被推爆)</li>
-      <li>Short call Delta ≤ 15 (标准) 或 ≤ 10 (防守)</li>
-      <li>价格位于 BB 中轨与上轨的中点之上 (超买区, 底仓珍贵不想 assign)</li>
-      <li>日线 KDJ 的 J 值 (按底仓类型): 股票替代 > 85 · Balanced > 78 · Swing 杠杆 > 70</li>
+      <li>Short call DTE ≤ 30 天 (theta decay 加速区)</li>
+      <li>Short call Delta ≤ 15 (低 assign 概率, 保护底仓)</li>
+      <li>IVP > 40% (权利金厚度门槛)</li>
+      <li>价格位于 BB 中轨与上轨的中点之上 (超买区回落概率高)</li>
+      <li>日线 KDJ 的 J 值 > 78 (高位超买, 满足回调前提)</li>
+      <li>Short call 行权价 > GEX Call Wall (阻力先于 strike 生效)</li>
     </ul>
   `
 };
@@ -2697,14 +2701,15 @@ function pmccItems() {
 
   // === Underlying LEAPS health ===
   base.push({ group: 'Underlying LEAPS health · 底仓健康度', id: 'leaps_profit',
-    title: '底仓 LEAPS 当前盈利 ≥ 20%',
-    desc: '当前盈利 % (如 23 表示 +23%). < 20% 底仓健康度不足, 抗回撤空间有限, 禁开 short call.',
+    title: '底仓 LEAPS 当前盈利 ≥ 15%',
+    desc: '当前盈利 % (如 23 表示 +23%). < 15% 底仓健康度不足, 抗回撤空间有限, 禁开 short call.',
     hard: true,
-    numeric: { placeholder: 'e.g. 25', unit: '%', min: 20, comparator: '≥' } });
+    numeric: { placeholder: 'e.g. 25', unit: '%', min: 15, comparator: '≥' } });
   base.push({ group: 'Underlying LEAPS health · 底仓健康度', id: 'below_takeprofit',
-    title: '底仓当前股价距止盈点位仍有空间',
-    desc: '距止盈位仍有 5%+ 空间. 已接近止盈应直接分批止盈, 不再通过 PMCC 收权利金.',
-    hard: true });
+    title: '距止盈距离 ≥ 10%',
+    desc: '距止盈距离 % (如 12 表示当前价距止盈位仍有 12% 空间). < 10% 时短 call 权利金收益 (2-3%) 无法补偿卖飞底仓风险 (损失 20-30% 未落袋收益). 直接分批止盈, 不再通过 PMCC 收权利金.',
+    hard: true,
+    numeric: { placeholder: 'e.g. 15', unit: '%', min: 10, comparator: '≥' } });
 
   // === Market environment ===
   base.push({ group: 'Market environment · 宏观环境', id: 'macro',
@@ -2725,6 +2730,11 @@ function pmccItems() {
     title: '非在突破当天卖 short call',
     desc: '突破日动能最强, 短腿易被推爆. 待次日冲高回落再卖.',
     hard: true });
+  base.push({ group: 'Short call selection · 短 call 选择', id: 'sc_dte',
+    title: 'Short call DTE ≤ 30 天',
+    desc: 'DTE ≤ 30 = theta decay 加速区, 权利金消耗快. > 30 时间价值消耗慢, 权利金相对时间成本不划算, 且底仓上涨风险窗口更长.',
+    hard: true,
+    numeric: { placeholder: 'DTE', unit: 'days', max: 30, comparator: '≤' } });
   base.push({ group: 'Short call selection · 短 call 选择', id: 'ivp',
     title: 'IVP > 40%',
     desc: '保底仓场景 IV 门槛 40%. 低于此权利金厚度不足.',
@@ -7422,6 +7432,8 @@ function buildCSVSnapshot() {
     'stop_level': 'Stop',
     'target_level': 'Target',
     'leaps_profit': 'LEAPS_Profit%',
+    'below_takeprofit': 'DistTP%',
+    'sc_dte': 'SC_DTE',
     'fg': 'F&G',
     'earnings': 'DaysToEarn',
     'stock_ivp': 'IVP',
