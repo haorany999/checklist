@@ -5661,9 +5661,23 @@ function updateVerdictsInPlace() {
     }
   }
 
-  // R:R desc live update
+  // R:R desc + badge live update
   const $rrDesc = document.getElementById('rr-desc');
   if ($rrDesc) $rrDesc.textContent = rrCheckDesc();
+  const $rrBadge = document.getElementById('badge-rr_check');
+  if ($rrBadge) {
+    const rrItem = items.find(i => i.id === 'rr_check');
+    if (rrItem) {
+      const rrV = itemVerdict(rrItem);
+      $rrBadge.className = 'item-numeric-verdict' + (rrV === 'pass' ? ' pass' : rrV === 'fail' ? ' fail' : rrV === 'pending' ? ' pending' : '');
+      $rrBadge.textContent = rrV === 'pass' ? 'PASS' : rrV === 'fail' ? 'BLOCK' : rrV === 'pending' ? 'PENDING' : '';
+      const $rrItem = document.getElementById('item-rr_check');
+      if ($rrItem) {
+        $rrItem.classList.remove('pass', 'fail', 'pending');
+        $rrItem.classList.add(rrV);
+      }
+    }
+  }
 
   // Save draft after any state change
   scheduleSaveDraft();
@@ -5683,13 +5697,18 @@ function itemHTML(it) {
 
   // Special render for R:R computed check
   if (it.id === 'rr_check') {
+    const verdictText = v === 'pass' ? `<span class="item-numeric-verdict pass" id="badge-${esc(it.id)}">PASS</span>` :
+                        v === 'fail' ? `<span class="item-numeric-verdict fail" id="badge-${esc(it.id)}">BLOCK</span>` :
+                        v === 'pending' ? `<span class="item-numeric-verdict pending" id="badge-${esc(it.id)}">PENDING</span>` :
+                        `<span class="item-numeric-verdict" id="badge-${esc(it.id)}"></span>`;
     return `
-      <div class="item ${v}" id="item-${esc(it.id)}">
+      <div class="item ${v} ${hardClass}" id="item-${esc(it.id)}">
         <div class="item-head">
           <div class="item-text">
             <div class="item-title">${esc(it.title)}</div>
             <div class="item-desc" id="rr-desc">${esc(rrCheckDesc())}</div>
           </div>
+          ${verdictText}
         </div>
       </div>
     `;
@@ -6077,6 +6096,13 @@ function saveToHistory() {
     if (state.strategy === 'leaps') {
       if (state.leapsStrike) inputs.push(`strike=${state.leapsStrike}`);
       if (state.leapsContracts) inputs.push(`contracts=${state.leapsContracts}`);
+      // Include computed R:R ratio for historical reference (derived from entry/stop/target)
+      const rr = computeRR();
+      if (rr && !rr.error) {
+        inputs.push(`rr=${rr.rr.toFixed(2)}`);
+        inputs.push(`downside=${rr.downsidePct.toFixed(1)}%`);
+        inputs.push(`upside=${rr.upsidePct.toFixed(1)}%`);
+      }
     }
     let exposurePct = '', capPct = '';
     if (state.strategy === 'leaps' && state.leapsDirection === 'open') {
