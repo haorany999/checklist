@@ -690,6 +690,29 @@
   .forced-search-clear { background: transparent; border: none; color: var(--text-faint); font-size: 16px; cursor: pointer; padding: 2px 8px; border-radius: 3px; line-height: 1; }
   .forced-search-clear:hover { color: var(--fail); background: var(--fail-bg); }
 
+  /* Ticker chip row · quick-filter without typing */
+  .ticker-chip-row { display: flex; flex-wrap: wrap; gap: 5px; margin: 0 0 10px; }
+  .ticker-chip {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 3px 9px;
+    border-radius: 3px;
+    cursor: pointer;
+    letter-spacing: 0.04em;
+    transition: all 0.12s;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    line-height: 1.3;
+  }
+  .ticker-chip:hover { color: var(--text); border-color: var(--border-hi); background: var(--panel); }
+  .ticker-chip.active { background: var(--panel); color: var(--accent); border-color: var(--accent); font-weight: 600; }
+  .ticker-chip-count { font-size: 9.5px; opacity: 0.65; font-weight: 400; }
+  .ticker-chip.active .ticker-chip-count { opacity: 0.85; }
+
   /* Stale reminder — top of main page when forced entries need attention */
   .stale-reminder-panel {
     margin: 0 0 14px;
@@ -3429,8 +3452,35 @@ function formatTimeAgo(ts) {
  * FORCED TRADES · search + stale reminder actions
  * ========================================================== */
 let __forcedSearchQuery = '';
+let __overridesSearchQuery = '';
+let __lossesSearchQuery = '';
 window.setForcedSearchQuery = function(q) {
   __forcedSearchQuery = q || '';
+  render();
+  // Restore focus + cursor to end (render() rebuilds DOM, wiping input state)
+  requestAnimationFrame(() => {
+    const input = document.getElementById('forced-search');
+    if (input) {
+      input.focus();
+      const len = input.value.length;
+      try { input.setSelectionRange(len, len); } catch (e) {}
+    }
+  });
+};
+window.setOverridesSearchQuery = function(q) {
+  __overridesSearchQuery = q || '';
+  render();
+  requestAnimationFrame(() => {
+    const input = document.getElementById('overrides-search');
+    if (input) {
+      input.focus();
+      const len = input.value.length;
+      try { input.setSelectionRange(len, len); } catch (e) {}
+    }
+  });
+};
+window.setLossesSearchQuery = function(q) {
+  __lossesSearchQuery = q || '';
   render();
 };
 
@@ -4044,6 +4094,24 @@ function pickerFooterHTML() {
                autocomplete="off" spellcheck="false" oninput="setForcedSearchQuery(this.value)">
         ${forcedSearchQ ? `<button class="forced-search-clear" onclick="setForcedSearchQuery('')" title="清空">×</button>` : ''}
       </div>
+      ${(() => {
+        // Extract unique tickers with counts, sorted by frequency
+        const tickerCounts = {};
+        allForced.forEach(e => {
+          const t = (e.ticker || '').toUpperCase();
+          if (t) tickerCounts[t] = (tickerCounts[t] || 0) + 1;
+        });
+        const chips = Object.entries(tickerCounts).sort((a, b) => b[1] - a[1]);
+        if (chips.length <= 1) return '';  // Only 1 ticker = no need to filter
+        return `
+          <div class="ticker-chip-row">
+            <button class="ticker-chip ${!forcedSearchQ ? 'active' : ''}" onclick="setForcedSearchQuery('')">全部</button>
+            ${chips.map(([t, n]) => `
+              <button class="ticker-chip ${forcedSearchQ === t ? 'active' : ''}" onclick="setForcedSearchQuery('${esc(t)}')">${esc(t)} <span class="ticker-chip-count">${n}</span></button>
+            `).join('')}
+          </div>
+        `;
+      })()}
       ${filteredForced.length === 0 ? `
         <div style="font-size: 12px; color: var(--text-faint); padding: 12px 4px; font-style: italic;">
           未找到匹配 "${esc(forcedSearchQ)}" 的硬冲记录
@@ -4070,43 +4138,100 @@ function pickerFooterHTML() {
             `;
           }).join('')}
         </div>
-        ${filteredForced.length > 5 ? `<div style="font-size: 11px; color: var(--text-faint); text-align: center; padding: 6px 0; font-style: italic;">还有 ${filteredForced.length - 5} 笔 · 用搜索定位</div>` : ''}
+        ${filteredForced.length > 5 ? `<div style="font-size: 11px; color: var(--text-faint); text-align: center; padding: 6px 0; font-style: italic;">还有 ${filteredForced.length - 5} 笔 · 用搜索或 ticker 标签定位</div>` : ''}
       `}
     </div>
   ` : '';
 
   // Overrides (自主放弃) - shows where you disagreed with checklist
-  const overrides = history.filter(e => e.outcome === 'opted_out').slice(0, 5);
-  const overridesHTML = overrides.length > 0 ? `
+  const allOverrides = history.filter(e => e.outcome === 'opted_out');
+  const overridesSearchQ = (__overridesSearchQuery || '').trim().toUpperCase();
+  const filteredOverrides = overridesSearchQ
+    ? allOverrides.filter(e => (e.ticker || '').toUpperCase().includes(overridesSearchQ))
+    : allOverrides;
+  const overrides = filteredOverrides.slice(0, 5);
+  const overridesHTML = allOverrides.length > 0 ? `
     <div class="picker-panel overrides-panel">
       <div class="picker-panel-head">
         <span>自主放弃 · Overrides</span>
-        <span class="picker-panel-count">${overrides.length}</span>
+        <span class="picker-panel-count">${allOverrides.length}</span>
       </div>
-      <div style="font-size: 11px; color: var(--text-faint); margin-bottom: 8px; line-height: 1.4;">Checklist 允许但你主动没做的机会 · 复盘对错</div>
-      <div class="picker-panel-list">
-        ${overrides.map(e => `
-          <div class="override-row" onclick="showEditModal('${e.id}')" data-preview-id="${e.id}">
-            <div class="override-header">
-              <span class="override-ticker">${esc(e.ticker || '—')}</span>
-              <span class="override-strategy">${esc(e.strategy)} · ${esc(e.verdict)}</span>
-              <span class="override-time">${formatTimeAgo(e.timestampSort)}</span>
-            </div>
-            ${e.notes ? `<div class="override-notes">${esc(e.notes)}</div>` : '<div class="override-notes-empty">未填放弃原因</div>'}
+      <div style="font-size: 11px; color: var(--text-faint); margin-bottom: 8px; line-height: 1.4;">Checklist 允许但你主动没做的机会 · 复盘对错${allOverrides.length > 5 ? ' · 显示最近 5 笔' : ''}</div>
+      <div class="forced-search-row">
+        <input type="text" class="forced-search-input" id="overrides-search"
+               placeholder="按 ticker 搜索 (如 MSFT)" value="${esc(overridesSearchQ)}"
+               autocomplete="off" spellcheck="false" oninput="setOverridesSearchQuery(this.value)">
+        ${overridesSearchQ ? `<button class="forced-search-clear" onclick="setOverridesSearchQuery('')" title="清空">×</button>` : ''}
+      </div>
+      ${(() => {
+        const tickerCounts = {};
+        allOverrides.forEach(e => {
+          const t = (e.ticker || '').toUpperCase();
+          if (t) tickerCounts[t] = (tickerCounts[t] || 0) + 1;
+        });
+        const chips = Object.entries(tickerCounts).sort((a, b) => b[1] - a[1]);
+        if (chips.length <= 1) return '';
+        return `
+          <div class="ticker-chip-row">
+            <button class="ticker-chip ${!overridesSearchQ ? 'active' : ''}" onclick="setOverridesSearchQuery('')">全部</button>
+            ${chips.map(([t, n]) => `
+              <button class="ticker-chip ${overridesSearchQ === t ? 'active' : ''}" onclick="setOverridesSearchQuery('${esc(t)}')">${esc(t)} <span class="ticker-chip-count">${n}</span></button>
+            `).join('')}
           </div>
-        `).join('')}
-      </div>
+        `;
+      })()}
+      ${filteredOverrides.length === 0 ? `
+        <div style="font-size: 12px; color: var(--text-faint); padding: 12px 4px; font-style: italic;">
+          未找到匹配 "${esc(overridesSearchQ)}" 的自主放弃记录
+        </div>
+      ` : `
+        <div class="picker-panel-list">
+          ${overrides.map(e => `
+            <div class="override-row" onclick="showEditModal('${e.id}')" data-preview-id="${e.id}">
+              <div class="override-header">
+                <span class="override-ticker">${esc(e.ticker || '—')}</span>
+                <span class="override-strategy">${esc(e.strategy)} · ${esc(e.verdict)}</span>
+                <span class="override-time">${formatTimeAgo(e.timestampSort)}</span>
+              </div>
+              ${e.notes ? `<div class="override-notes">${esc(e.notes)}</div>` : '<div class="override-notes-empty">未填放弃原因</div>'}
+            </div>
+          `).join('')}
+        </div>
+        ${filteredOverrides.length > 5 ? `<div style="font-size: 11px; color: var(--text-faint); text-align: center; padding: 6px 0; font-style: italic;">还有 ${filteredOverrides.length - 5} 笔 · 用搜索或 ticker 标签定位</div>` : ''}
+      `}
     </div>
   ` : '';
 
   // Losses learning
-  const losses = history.filter(e => e.outcome === 'loss').slice(0, 5);
-  const lossesHTML = losses.length > 0 ? `
+  const allLosses = history.filter(e => e.outcome === 'loss');
+  const lossesSearchQ = (__lossesSearchQuery || '').trim().toUpperCase();
+  const filteredLosses = lossesSearchQ
+    ? allLosses.filter(e => (e.ticker || '').toUpperCase().includes(lossesSearchQ))
+    : allLosses;
+  const losses = filteredLosses.slice(0, 5);
+  const lossesHTML = allLosses.length > 0 ? `
     <div class="picker-panel losses-learning">
       <div class="picker-panel-head">
         <span>最近亏损教训 · Losses Learning</span>
-        <span class="picker-panel-count">${losses.length}</span>
+        <span class="picker-panel-count">${allLosses.length}</span>
       </div>
+      ${(() => {
+        const tickerCounts = {};
+        allLosses.forEach(e => {
+          const t = (e.ticker || '').toUpperCase();
+          if (t) tickerCounts[t] = (tickerCounts[t] || 0) + 1;
+        });
+        const chips = Object.entries(tickerCounts).sort((a, b) => b[1] - a[1]);
+        if (chips.length <= 1) return '';
+        return `
+          <div class="ticker-chip-row" style="margin-top: 6px;">
+            <button class="ticker-chip ${!lossesSearchQ ? 'active' : ''}" onclick="setLossesSearchQuery('')">全部</button>
+            ${chips.map(([t, n]) => `
+              <button class="ticker-chip ${lossesSearchQ === t ? 'active' : ''}" onclick="setLossesSearchQuery('${esc(t)}')">${esc(t)} <span class="ticker-chip-count">${n}</span></button>
+            `).join('')}
+          </div>
+        `;
+      })()}
       <div class="picker-panel-list">
         ${losses.map(e => `
           <div class="loss-row">
@@ -4119,6 +4244,7 @@ function pickerFooterHTML() {
           </div>
         `).join('')}
       </div>
+      ${filteredLosses.length > 5 ? `<div style="font-size: 11px; color: var(--text-faint); text-align: center; padding: 6px 0; font-style: italic;">还有 ${filteredLosses.length - 5} 笔 · 点 ticker 标签定位</div>` : ''}
     </div>
   ` : '';
 
