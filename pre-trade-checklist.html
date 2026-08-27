@@ -123,7 +123,7 @@
     .app.view-entering { animation: none; }
   }
   /* Numbers everywhere: tabular + slashed-zero for professional finance look */
-  .tally-num, .picker-stat-num, .strategy-count, .strategy-winrate, .spark-count, .spark-pct,
+  .tally-num, .picker-stat-num, .strategy-count, .strategy-winrate, .vd-count, .vd-pct, .vd-wr-val, .vd-wr-detail,
   .status-main, .bottom-status-main, .stamp-verdict, .item-check-label, .picker-recent-count,
   .picker-panel-count, .explore-summary, .forced-time, .loss-time, .open-pos-time, .override-time { font-variant-numeric: tabular-nums slashed-zero; font-feature-settings: "tnum", "zero"; }
   /* Headers use stylistic alt for cleaner glyphs */
@@ -300,6 +300,28 @@
   .al-swatch { display: inline-block; width: 10px; height: 10px; border-radius: 2px; border: 1px solid var(--border); }
   .activity-bar rect { transition: opacity 0.15s; }
   .activity-bar:hover rect { opacity: 0.85; cursor: help; }
+  .activity-bar:active rect { opacity: 0.7; }
+
+  /* Detail line under the chart · updates when a bar is tapped/clicked */
+  .activity-detail {
+    margin-top: 8px;
+    padding: 8px 12px;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-dim);
+    letter-spacing: 0.02em;
+    line-height: 1.5;
+    min-height: 1.5em;
+  }
+  .activity-detail-hint { font-style: italic; color: var(--text-faint); font-size: 11.5px; }
+  .activity-detail-selected { color: var(--text); }
+  @media (max-width: 640px) {
+    .activity-detail { font-size: 13px; padding: 10px 12px; }
+    .activity-detail-hint { font-size: 12.5px; }
+  }
   .trend-dot { display: inline-block; width: 10px; height: 2px; border-radius: 1px; }
 
   /* Edit modal R:R + position check computed display */
@@ -632,23 +654,11 @@
   /* History row: STK / strike tag */
   .history-stk { font-family: var(--mono); font-size: 11px; color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); padding: 1px 6px; border-radius: 3px; letter-spacing: 0.03em; }
 
-  /* Watchlist panel */
-  .watchlist-panel { }
+  /* Shared panel actions (used by other panels) */
   .picker-panel-actions { display: flex; align-items: center; gap: 8px; }
   .picker-panel-actions .btn.small { padding: 3px 10px; font-size: 11px; letter-spacing: 0.02em; text-transform: none; font-weight: 500; }
-  .wl-empty { font-size: 12.5px; color: var(--text-faint); padding: 12px 4px; line-height: 1.5; font-style: italic; }
-  .wl-list { display: flex; flex-direction: column; gap: 6px; }
-  .wl-item { padding: 10px 12px; background: var(--panel-2); border-radius: 4px; display: flex; flex-direction: column; gap: 4px; border-left: 2px solid var(--border); }
-  .wl-item:hover { border-left-color: var(--accent); }
-  .wl-item-main { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 12px; }
-  .wl-ticker { font-family: var(--mono); font-size: 13.5px; font-weight: 700; color: var(--text); letter-spacing: 0.03em; }
-  .wl-strat { font-family: var(--mono); font-size: 10.5px; color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); padding: 1px 6px; border-radius: 3px; letter-spacing: 0.05em; }
-  .wl-trigger { font-family: var(--mono); font-size: 11.5px; color: var(--text-dim); flex: 1; min-width: 120px; }
-  .wl-notes { font-size: 11.5px; color: var(--text-faint); line-height: 1.5; padding-top: 2px; font-style: italic; }
-  .wl-actions { display: flex; gap: 6px; margin-top: 2px; }
-  .wl-actions .btn { padding: 3px 8px; font-size: 10.5px; }
 
-  /* 30-day verdict sparkline */
+  /* 30-day verdict sparkline · merged with win rate */
   .spark-panel { margin-top: 12px; }
   .spark-filters { display: grid; grid-template-columns: 1fr auto auto auto; gap: 6px; margin-bottom: 12px; }
   @media (max-width: 480px) { .spark-filters { grid-template-columns: 1fr 1fr; } }
@@ -656,18 +666,49 @@
   .spark-filters input:focus, .spark-filters select:focus { outline: none; border-color: var(--accent); }
   .spark-clear-btn { font-family: var(--mono); font-size: 10px; padding: 5px 8px; background: transparent; color: var(--text-faint); border: 1px solid var(--border); border-radius: 4px; cursor: pointer; text-transform: uppercase; letter-spacing: 0.08em; }
   .spark-clear-btn:hover { color: var(--fail); border-color: var(--fail); }
-  .spark-empty { text-align: center; padding: 16px 10px; font-size: 12px; color: var(--text-faint); font-style: italic; }
-  .spark-list { display: flex; flex-direction: column; gap: 6px; }
-  .spark-row { display: grid; grid-template-columns: 60px 1fr 30px 40px; gap: 10px; align-items: center; font-family: var(--mono); font-size: 11px; }
-  .spark-label { color: var(--text-dim); letter-spacing: 0.05em; }
-  .spark-track { height: 8px; background: var(--panel-2); border-radius: 4px; overflow: hidden; }
-  .spark-fill { height: 100%; border-radius: 4px; transition: width 0.3s ease; }
-  .spark-fill.pass { background: var(--pass); }
-  .spark-fill.pass-soft { background: var(--pass); opacity: 0.55; }
-  .spark-fill.fail { background: var(--fail); }
-  .spark-fill.pending { background: var(--pending); }
-  .spark-count { color: var(--text-dim); text-align: right; }
-  .spark-pct { color: var(--text); font-weight: 500; text-align: right; }
+
+  /* Verdict analysis: merged distribution + win rate rows */
+  .vd-legend { display: flex; gap: 12px; margin-bottom: 8px; font-family: var(--mono); font-size: 10.5px; color: var(--text-faint); letter-spacing: 0.04em; }
+  .vd-legend-label { }
+  .vd-list { display: flex; flex-direction: column; gap: 6px; }
+  .vd-row {
+    display: grid;
+    grid-template-columns: 64px 1fr 32px 40px 8px 1fr;
+    gap: 8px;
+    align-items: center;
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 3px 0;
+  }
+  .vd-row-subset { padding-left: 12px; opacity: 0.85; font-size: 10.5px; }
+  .vd-label { font-weight: 700; letter-spacing: 0.05em; }
+  .vd-label-pass { color: var(--pass); }
+  .vd-label-pass-soft { color: var(--pass); opacity: 0.7; }
+  .vd-label-pending { color: var(--pending); }
+  .vd-label-fail { color: var(--fail); }
+  .vd-track { height: 8px; background: var(--panel-2); border-radius: 4px; overflow: hidden; }
+  .vd-fill { height: 100%; border-radius: 4px; transition: width 0.3s ease; }
+  .vd-fill.pass { background: var(--pass); }
+  .vd-fill.pass-soft { background: var(--pass); opacity: 0.55; }
+  .vd-fill.pending { background: var(--pending); }
+  .vd-fill.fail { background: var(--fail); }
+  .vd-count { color: var(--text); text-align: right; }
+  .vd-pct { color: var(--text-dim); text-align: right; }
+  .vd-divider { color: var(--text-faint); text-align: center; font-size: 10px; }
+  .vd-wr { display: inline-flex; align-items: baseline; gap: 6px; }
+  .vd-wr-val { font-weight: 700; letter-spacing: 0.03em; }
+  .vd-wr-val.pass { color: var(--pass); }
+  .vd-wr-val.pending { color: var(--pending); }
+  .vd-wr-val.fail { color: var(--fail); }
+  .vd-wr-detail { color: var(--text-faint); font-size: 10px; }
+  .vd-wr-none { color: var(--text-faint); font-style: italic; font-size: 10.5px; }
+  @media (max-width: 640px) {
+    .vd-row { font-size: 12.5px; grid-template-columns: 68px 1fr 30px 40px 8px 1fr; gap: 6px; }
+    .vd-row-subset { font-size: 12px; }
+    .vd-wr-detail { font-size: 11px; }
+    .vd-wr-none { font-size: 12px; }
+    .vd-legend { font-size: 11.5px; }
+  }
 
   /* Pre-mortem dialog */
   .premortem-warn { background: var(--fail-bg); color: var(--text); padding: 12px 14px; border-radius: 6px; font-size: 13px; margin-bottom: 16px; line-height: 1.65; border-left: 3px solid var(--fail); }
@@ -3709,179 +3750,6 @@ function renderDisciplineProfileHTML(history) {
   `;
 }
 
-/* ==========================================================
- * WATCHLIST · candidate ticker list (not in checklist)
- * ========================================================== */
-const WATCHLIST_KEY = 'pretrade_watchlist';
-
-function loadWatchlist() {
-  try {
-    const raw = localStorage.getItem(WATCHLIST_KEY);
-    if (!raw) return [];
-    const arr = JSON.parse(raw);
-    return Array.isArray(arr) ? arr : [];
-  } catch (e) { return []; }
-}
-function saveWatchlist(arr) {
-  try { localStorage.setItem(WATCHLIST_KEY, JSON.stringify(arr)); } catch (e) {}
-  // Debounced auto-sync — if user has sync configured, push watchlist changes to Gist
-  if (typeof _scheduleWatchlistSync === 'function') _scheduleWatchlistSync();
-}
-let _watchlistSyncTimer = null;
-function _scheduleWatchlistSync() {
-  if (_watchlistSyncTimer) clearTimeout(_watchlistSyncTimer);
-  _watchlistSyncTimer = setTimeout(() => {
-    _watchlistSyncTimer = null;
-    // Route through scheduleAutoPushToGist which enforces the 45s min interval
-    // and shares the same throttling as history changes
-    if (typeof scheduleAutoPushToGist === 'function') scheduleAutoPushToGist(1000);
-  }, 30000);  // 30s debounce (batch rapid watchlist edits)
-}
-window.addWatchlistItem = function() {
-  const modal = ensureWatchlistModal();
-  modal.dataset.mode = 'add';
-  modal.dataset.editId = '';
-  modal.querySelector('#wl-form-title').textContent = '新增候选';
-  modal.querySelector('#wl-ticker').value = '';
-  modal.querySelector('#wl-strategy').value = '';
-  modal.querySelector('#wl-trigger').value = '';
-  modal.querySelector('#wl-notes').value = '';
-  modal.style.display = 'flex';
-  setTimeout(() => modal.querySelector('#wl-ticker').focus(), 50);
-};
-window.editWatchlistItem = function(id) {
-  const list = loadWatchlist();
-  const it = list.find(x => x.id === id);
-  if (!it) return;
-  const modal = ensureWatchlistModal();
-  modal.dataset.mode = 'edit';
-  modal.dataset.editId = id;
-  modal.querySelector('#wl-form-title').textContent = '编辑候选';
-  modal.querySelector('#wl-ticker').value = it.ticker || '';
-  modal.querySelector('#wl-strategy').value = it.strategy || '';
-  modal.querySelector('#wl-trigger').value = it.trigger || '';
-  modal.querySelector('#wl-notes').value = it.notes || '';
-  modal.style.display = 'flex';
-};
-window.deleteWatchlistItem = function(id) {
-  if (!confirm('删除该候选?')) return;
-  const list = loadWatchlist().filter(x => x.id !== id);
-  saveWatchlist(list);
-  render();
-};
-window.hideWatchlistModal = function() {
-  const m = document.getElementById('watchlist-modal');
-  if (m) m.style.display = 'none';
-};
-window.saveWatchlistItem = function() {
-  const modal = document.getElementById('watchlist-modal');
-  if (!modal) return;
-  const ticker = modal.querySelector('#wl-ticker').value.trim().toUpperCase();
-  const strategy = modal.querySelector('#wl-strategy').value.trim();
-  const trigger = modal.querySelector('#wl-trigger').value.trim();
-  const notes = modal.querySelector('#wl-notes').value.trim();
-  if (!ticker) { showToast('先填 Ticker', 'error'); return; }
-  const list = loadWatchlist();
-  const mode = modal.dataset.mode;
-  if (mode === 'edit') {
-    const id = modal.dataset.editId;
-    const idx = list.findIndex(x => x.id === id);
-    if (idx >= 0) list[idx] = { ...list[idx], ticker, strategy, trigger, notes, updatedAt: Date.now() };
-  } else {
-    list.unshift({ id: 'wl_' + Date.now(), ticker, strategy, trigger, notes, addedAt: Date.now() });
-  }
-  saveWatchlist(list);
-  hideWatchlistModal();
-  render();
-  showToast(mode === 'edit' ? '已更新' : '已添加', 'success');
-};
-
-function ensureWatchlistModal() {
-  let modal = document.getElementById('watchlist-modal');
-  if (modal) return modal;
-  modal = document.createElement('div');
-  modal.id = 'watchlist-modal';
-  modal.className = 'modal-overlay';
-  modal.style.display = 'none';
-  modal.innerHTML = `
-    <div class="modal-card" style="max-width: 480px;">
-      <div class="modal-head">
-        <div class="modal-title" id="wl-form-title">新增候选</div>
-        <button class="modal-close" onclick="hideWatchlistModal()" aria-label="关闭">×</button>
-      </div>
-      <div class="modal-body">
-        <div class="sync-setup-input-group">
-          <label>Ticker (必填)</label>
-          <input type="text" id="wl-ticker" class="sync-setup-input" placeholder="e.g. NVDA" autocomplete="off" spellcheck="false" maxlength="10" style="text-transform: uppercase;">
-        </div>
-        <div class="sync-setup-input-group">
-          <label>策略 (可选)</label>
-          <select id="wl-strategy" class="sync-setup-input">
-            <option value="">未定</option>
-            <option value="LEAPS">LEAPS</option>
-            <option value="CSP">CSP</option>
-            <option value="CSP · 狙击">CSP · 狙击</option>
-            <option value="PMCC">PMCC</option>
-            <option value="CC">CC</option>
-          </select>
-        </div>
-        <div class="sync-setup-input-group">
-          <label>触发条件 (可选)</label>
-          <input type="text" id="wl-trigger" class="sync-setup-input" placeholder="e.g. 跌到 $450 · IVP > 60% · 或大盘暴跌日" maxlength="120">
-        </div>
-        <div class="sync-setup-input-group">
-          <label>备注 (可选)</label>
-          <textarea id="wl-notes" class="sync-setup-input" placeholder="思路 / 观察 / 心得" maxlength="400" rows="3" style="resize: vertical; font-family: inherit;"></textarea>
-        </div>
-      </div>
-      <div class="modal-actions">
-        <button class="btn ghost" onclick="hideWatchlistModal()">取消</button>
-        <button class="btn primary" onclick="saveWatchlistItem()">保存</button>
-      </div>
-    </div>
-  `;
-  document.body.appendChild(modal);
-  return modal;
-}
-
-function watchlistPanelHTML() {
-  const list = loadWatchlist();
-  const empty = list.length === 0;
-  return `
-    <div class="picker-panel watchlist-panel">
-      <div class="picker-panel-head">
-        <span>Watchlist · 候选清单</span>
-        <span class="picker-panel-actions">
-          <span class="picker-panel-count">${list.length}</span>
-          <button class="btn ghost small" onclick="addWatchlistItem()" title="添加候选">+ 添加</button>
-        </span>
-      </div>
-      ${empty ? `
-        <div class="wl-empty">
-          还没有候选. 平时看到的机会先记这里, 触发时再走 checklist.
-        </div>
-      ` : `
-        <div class="wl-list">
-          ${list.map(it => `
-            <div class="wl-item" data-id="${esc(it.id)}">
-              <div class="wl-item-main">
-                <span class="wl-ticker">${esc(it.ticker)}</span>
-                ${it.strategy ? `<span class="wl-strat">${esc(it.strategy)}</span>` : ''}
-                ${it.trigger ? `<span class="wl-trigger">${esc(it.trigger)}</span>` : ''}
-              </div>
-              ${it.notes ? `<div class="wl-notes">${esc(it.notes)}</div>` : ''}
-              <div class="wl-actions">
-                <button class="btn ghost small" onclick="editWatchlistItem('${esc(it.id)}')">编辑</button>
-                <button class="btn ghost small" onclick="deleteWatchlistItem('${esc(it.id)}')" title="删除">×</button>
-              </div>
-            </div>
-          `).join('')}
-        </div>
-      `}
-    </div>
-  `;
-}
-
 function verdictSparklineHTML() {
   const history = getActiveHistory();
   if (history.length < 1) return '';
@@ -3893,16 +3761,13 @@ function verdictSparklineHTML() {
     return null;
   }).filter(Boolean))].sort().reverse();
 
-  // Read current filter state from DOM if exists, else default
   const currentTicker = document.getElementById('spark-ticker')?.value || '';
   const currentYear = document.getElementById('spark-year')?.value || '';
   const currentStrategy = document.getElementById('spark-strategy')?.value || '';
 
-  // Determine base data (all history if no filter, else full history filtered)
   let data = history;
   const activeFilter = currentTicker || currentYear || currentStrategy;
   if (activeFilter) {
-    // Apply filters
     if (currentTicker) data = data.filter(e => e.ticker && e.ticker.toUpperCase().includes(currentTicker.trim().toUpperCase()));
     if (currentYear) data = data.filter(e => {
       const t = e.timestamp && e.timestamp.length >= 4 ? e.timestamp.slice(0, 4)
@@ -3913,38 +3778,62 @@ function verdictSparklineHTML() {
   }
 
   const total = data.length;
-  let clear = 0, soft = 0, pend = 0, block = 0;
+  // Group by verdict class
+  const buckets = { CLEAR: [], SOFT: [], PENDING: [], BLOCKED: [] };
   data.forEach(e => {
     const v = e.verdict || '';
-    if (v === 'BLOCKED') block++;
-    else if (v.includes('软执行')) soft++;
-    else if (v.startsWith('CLEAR')) clear++;
-    else pend++;
+    if (v === 'BLOCKED') buckets.BLOCKED.push(e);
+    else if (v.includes('软执行')) buckets.SOFT.push(e);
+    else if (v.startsWith('CLEAR')) buckets.CLEAR.push(e);
+    else buckets.PENDING.push(e);
   });
-  const pct = n => total > 0 ? Math.round(n / total * 100) : 0;
+  // Forced = BLOCKED subset with forcedReason
+  const forced = buckets.BLOCKED.filter(e => e.forcedReason);
 
-  const bar = (label, count, cls) => {
-    const p = pct(count);
-    return `
-      <div class="spark-row">
-        <span class="spark-label">${label}</span>
-        <div class="spark-track">
-          <div class="spark-fill ${cls}" style="width: ${p}%"></div>
-        </div>
-        <span class="spark-count">${count}</span>
-        <span class="spark-pct">${p}%</span>
-      </div>
-    `;
+  const pct = n => total > 0 ? Math.round(n / total * 100) : 0;
+  const winRate = (arr) => {
+    const wins = arr.filter(e => e.outcome === 'win').length;
+    const losses = arr.filter(e => e.outcome === 'loss').length;
+    const settled = wins + losses;
+    return { wins, losses, settled, wr: settled > 0 ? Math.round(wins / settled * 100) : null };
   };
+
+  const rows = [
+    { key: 'CLEAR',   label: 'CLEAR',   cls: 'pass',      arr: buckets.CLEAR },
+    { key: 'SOFT',    label: '软执行',   cls: 'pass-soft', arr: buckets.SOFT },
+    { key: 'PENDING', label: 'PENDING', cls: 'pending',   arr: buckets.PENDING },
+    { key: 'BLOCKED', label: 'BLOCKED', cls: 'fail',      arr: buckets.BLOCKED },
+    { key: 'FORCED',  label: '↳ 硬冲',   cls: 'fail',      arr: forced, isSubset: true },
+  ];
 
   const scopeText = activeFilter
     ? [currentTicker && `ticker: ${esc(currentTicker.toUpperCase())}`, currentYear, currentStrategy].filter(Boolean).join(' · ')
     : '全部';
 
+  const rowHTML = (r) => {
+    const n = r.arr.length;
+    const p = pct(n);
+    const wr = winRate(r.arr);
+    const wrCls = wr.wr == null ? '' : wr.wr >= 60 ? 'pass' : wr.wr >= 40 ? 'pending' : 'fail';
+    const wrText = wr.wr != null
+      ? `<span class="vd-wr-val ${wrCls}">${wr.wr}%</span> <span class="vd-wr-detail">${wr.wins}胜/${wr.losses}亏</span>`
+      : `<span class="vd-wr-none">${wr.settled === 0 ? '未结算' : '—'}</span>`;
+    return `
+      <div class="vd-row ${r.isSubset ? 'vd-row-subset' : ''}">
+        <span class="vd-label vd-label-${r.cls}">${r.label}</span>
+        <div class="vd-track"><div class="vd-fill ${r.cls}" style="width: ${p}%"></div></div>
+        <span class="vd-count">${n}</span>
+        <span class="vd-pct">${p}%</span>
+        <span class="vd-divider">┃</span>
+        <span class="vd-wr">${wrText}</span>
+      </div>
+    `;
+  };
+
   return `
     <div class="picker-panel spark-panel">
       <div class="picker-panel-head">
-        <span>Verdict 分布 · ${scopeText}</span>
+        <span>Verdict 分析 · 分布 + 胜率 · ${scopeText}</span>
         <span class="picker-panel-count">${total}</span>
       </div>
       <div class="spark-filters">
@@ -3958,20 +3847,20 @@ function verdictSparklineHTML() {
         <select id="spark-strategy" onchange="updateSparklinePanel()">
           <option value="">策略</option>
           <option value="LEAPS"${currentStrategy === 'LEAPS' ? ' selected' : ''}>LEAPS</option>
-          <option value="PMCC"${currentStrategy === 'PMCC' ? ' selected' : ''}>PMCC</option>
           <option value="CSP"${currentStrategy === 'CSP' ? ' selected' : ''}>CSP</option>
+          <option value="PMCC"${currentStrategy === 'PMCC' ? ' selected' : ''}>PMCC</option>
           <option value="CC"${currentStrategy === 'CC' ? ' selected' : ''}>CC</option>
         </select>
-        ${activeFilter ? '<button class="spark-clear-btn" onclick="clearSparklineFilters()">清除</button>' : ''}
+        ${activeFilter ? `<button class="spark-clear-btn" onclick="clearSparklineFilters()">清除</button>` : ''}
       </div>
-      ${total === 0 ? '<div class="spark-empty">无匹配</div>' : `
-        <div class="spark-list">
-          ${bar('CLEAR', clear, 'pass')}
-          ${bar('SOFT', soft, 'pass-soft')}
-          ${bar('PEND', pend, 'pending')}
-          ${bar('BLOCK', block, 'fail')}
-        </div>
-      `}
+      <div class="vd-legend">
+        <span class="vd-legend-label">左: 数量分布</span>
+        <span class="vd-legend-label">┃</span>
+        <span class="vd-legend-label">右: 已结算胜率</span>
+      </div>
+      <div class="vd-list">
+        ${rows.map(rowHTML).join('')}
+      </div>
     </div>
   `;
 }
@@ -4336,11 +4225,9 @@ function pickerFooterHTML() {
     ${disciplineHTML}
     ${winRateTrendHTML()}
     ${checklistBacktestPanelHTML()}
-    ${verdictWinRatePanelHTML()}
+    ${verdictSparklineHTML()}
     ${tickerWinRatePanelHTML()}
     ${exploreHTML}
-    ${watchlistPanelHTML()}
-    ${verdictSparklineHTML()}
     <div class="picker-stats">
       <div class="picker-stat" title="过去 7 天 snapshot 总数">
         <div class="picker-stat-num" data-anim-num="${weekTotal}" data-anim-key="wk-total" data-anim-format="int">${weekTotal}</div>
@@ -4493,53 +4380,6 @@ function mantraHTML() {
   return '';
 }
 
-function verdictWinRatePanelHTML() {
-  const history = getActiveHistory();
-  if (history.length === 0) return '';
-  // Group by verdict class
-  const buckets = { CLEAR: [], SOFT: [], PENDING: [], BLOCKED: [] };
-  history.forEach(e => {
-    const v = e.verdict || '';
-    let bucket = null;
-    if (v === 'BLOCKED') bucket = 'BLOCKED';
-    else if (v.includes('软执行')) bucket = 'SOFT';
-    else if (v.startsWith('CLEAR')) bucket = 'CLEAR';
-    else if (v === 'PENDING') bucket = 'PENDING';
-    if (bucket) buckets[bucket].push(e);
-  });
-  // Compute win rate for each bucket (only settled)
-  const rows = Object.entries(buckets).map(([k, arr]) => {
-    const wins = arr.filter(e => e.outcome === 'win').length;
-    const losses = arr.filter(e => e.outcome === 'loss').length;
-    const settled = wins + losses;
-    const wr = settled > 0 ? Math.round(wins / settled * 100) : null;
-    return { verdict: k, total: arr.length, wins, losses, settled, wr };
-  });
-  const anySettled = rows.some(r => r.settled > 0);
-  if (!anySettled) return '';  // Skip if no data
-  return `
-    <div class="picker-panel">
-      <div class="picker-panel-header">
-        <div class="picker-panel-title">Verdict 胜率对比</div>
-        <div class="picker-panel-sub">CLEAR / 软执行 / 硬冲 各自的实际胜率</div>
-      </div>
-      <div class="verdict-winrate-grid">
-        ${rows.map(r => {
-          const wrCls = r.wr == null ? 'text-faint' : r.wr >= 60 ? 'pass' : r.wr >= 40 ? 'pending' : 'fail';
-          const vCls = r.verdict === 'BLOCKED' ? 'fail' : r.verdict === 'PENDING' ? 'pending' : 'pass';
-          return `
-            <div class="verdict-winrate-row">
-              <div class="vwr-tag ${vCls}">${r.verdict}</div>
-              <div class="vwr-total">${r.total} 笔</div>
-              <div class="vwr-outcome">${r.settled > 0 ? `盈 ${r.wins} · 亏 ${r.losses}` : '无结算'}</div>
-              <div class="vwr-rate ${wrCls}">${r.wr != null ? r.wr + '%' : '—'}</div>
-            </div>
-          `;
-        }).join('')}
-      </div>
-    </div>
-  `;
-}
 
 // User-selected trend range (persisted)
 const TREND_RANGE_KEY = 'pretrade_trend_range';
@@ -4650,7 +4490,7 @@ function winRateTrendHTML() {
 
   const spansYears = new Set(buckets.map(b => new Date(b.end).getFullYear())).size > 1;
 
-  const W = 640, H = 180, padL = 32, padR = 16, padT = 20, padB = 30;
+  const W = 640, H = 200, padL = 40, padR = 16, padT = 20, padB = 34;
   const chartW = W - padL - padR;
   const chartH = H - padT - padB;
   const barGap = 6;
@@ -4664,7 +4504,7 @@ function winRateTrendHTML() {
   const yGridLines = yLabels.map(v => {
     const y = padT + chartH - (v / yMax) * chartH;
     return `<line x1="${padL}" y1="${y}" x2="${W - padR}" y2="${y}" stroke="var(--border)" stroke-width="0.5" stroke-dasharray="2 3"/>
-            <text x="${padL - 6}" y="${y + 3}" font-size="9" fill="var(--text-faint)" text-anchor="end" font-family="var(--mono)">${v}</text>`;
+            <text x="${padL - 6}" y="${y + 4}" font-size="12" fill="var(--text-faint)" text-anchor="end" font-family="var(--mono)">${v}</text>`;
   }).join('');
 
   const fmtLabel = (date) => {
@@ -4712,12 +4552,14 @@ function winRateTrendHTML() {
     if (nForced > 0) parts.push(`硬冲 ${nForced}`);
     const overActive = p.total > avgNum * 1.5 && p.total >= 5;
     const tip = `${dateLabel} · ${parts.join(' · ')}${overActive ? ' · 过度活跃' : ''}`;
-    // Count label above bar
+    // Count label above bar (bumped for mobile legibility)
     const countLabel = p.total >= 1
-      ? `<text x="${(x + barW / 2).toFixed(1)}" y="${(yTop - 4).toFixed(1)}" font-size="9.5" fill="var(--text-dim)" text-anchor="middle" font-family="var(--mono)" font-weight="600">${p.total}</text>`
+      ? `<text x="${(x + barW / 2).toFixed(1)}" y="${(yTop - 5).toFixed(1)}" font-size="13" fill="var(--text-dim)" text-anchor="middle" font-family="var(--mono)" font-weight="600">${p.total}</text>`
       : '';
+    // Escape for onclick attribute
+    const safeTip = tip.replace(/"/g, '&quot;').replace(/'/g, "\\'");
     return `
-      <g class="activity-bar">
+      <g class="activity-bar" onclick="showActivityDetail('${safeTip}')" style="cursor: pointer;">
         ${segSVG}
         <rect x="${x.toFixed(1)}" y="${yTop.toFixed(1)}" width="${barW.toFixed(1)}" height="${totalH.toFixed(1)}"
               fill="transparent" stroke="transparent" pointer-events="all">
@@ -4734,7 +4576,7 @@ function winRateTrendHTML() {
   for (let i = 0; i < numXLabels; i++) xLabelIdxs.push(Math.round(i * (points.length - 1) / (numXLabels - 1)));
   const xTicks = xLabelIdxs.map(idx => {
     const x = padL + idx * (barW + barGap) + barGap / 2 + barW / 2;
-    return `<text x="${x.toFixed(1)}" y="${H - 10}" font-size="9" fill="var(--text-faint)" text-anchor="middle" font-family="var(--mono)">${fmtLabel(new Date(buckets[idx].end))}</text>`;
+    return `<text x="${x.toFixed(1)}" y="${H - 12}" font-size="12" fill="var(--text-faint)" text-anchor="middle" font-family="var(--mono)">${fmtLabel(new Date(buckets[idx].end))}</text>`;
   }).join('');
 
   // Average line
@@ -4742,7 +4584,7 @@ function winRateTrendHTML() {
   const avgLine = avgNum > 0 ? `
     <line x1="${padL}" y1="${avgY.toFixed(1)}" x2="${W - padR}" y2="${avgY.toFixed(1)}"
           stroke="var(--text-faint)" stroke-width="1" stroke-dasharray="4 3" opacity="0.6"/>
-    <text x="${W - padR - 4}" y="${(avgY - 4).toFixed(1)}" font-size="9" fill="var(--text-faint)"
+    <text x="${W - padR - 4}" y="${(avgY - 5).toFixed(1)}" font-size="11" fill="var(--text-faint)"
           text-anchor="end" font-family="var(--mono)" font-style="italic">均值 ${avgCount}</text>
   ` : '';
 
@@ -4783,10 +4625,20 @@ function winRateTrendHTML() {
           ${avgLine}
           ${xTicks}
         </svg>
+        <div class="activity-detail" id="activity-detail">
+          <span class="activity-detail-hint">点击柱子查看详情 · 或悬停</span>
+        </div>
       </div>
     </div>
   `;
 }
+
+// Show tapped bar's breakdown in the detail line below the chart
+window.showActivityDetail = function(text) {
+  const el = document.getElementById('activity-detail');
+  if (!el) return;
+  el.innerHTML = `<span class="activity-detail-selected">▸ ${text}</span>`;
+};
 
 function checklistBacktestPanelHTML() {
   const history = getActiveHistory();
@@ -8423,14 +8275,13 @@ async function githubFetch(url, options = {}) {
   return resp.json();
 }
 
-// Build full sync payload — includes history + watchlist + user settings.
+// Build full sync payload — history + user settings.
 // This is what gets uploaded to Gist so all devices share the same state.
 function buildSyncPayload() {
   const payload = {
-    version: 3,   // v3 = includes watchlist + settings
+    version: 3,   // v3 = includes settings
     syncedAt: new Date().toISOString(),
     history: loadHistory(),
-    watchlist: loadWatchlist(),
     settings: {
       nav: loadSavedNav() || '',
       density: (function() { try { return localStorage.getItem(DENSITY_KEY) || ''; } catch (e) { return ''; } })(),
@@ -8442,36 +8293,12 @@ function buildSyncPayload() {
   return payload;
 }
 
-// Apply downloaded payload to local storage. Handles both v2 (history only) and v3 (full) formats.
-// For watchlist: id-based tombstone-aware merge (like history).
+// Apply downloaded payload to local storage. Handles both v2 (history only) and v3 formats.
 // For settings: last-write-wins (remote overwrites local).
+// Note: legacy remote.watchlist field is silently ignored (feature removed).
 function applyRemotePayload(remote, mode) {
   // mode: 'overwrite' (download) OR 'merge' (merge push/pull)
-  // History handling is done by caller (needs merge logic); this handles watchlist + settings only
-
-  // === Watchlist ===
-  if (Array.isArray(remote.watchlist)) {
-    if (mode === 'overwrite') {
-      saveWatchlist(remote.watchlist);
-    } else {
-      // Merge by id · last-write-wins by updatedAt
-      const local = loadWatchlist();
-      const map = new Map();
-      [...local, ...remote.watchlist].forEach(w => {
-        if (!w || !w.id) return;
-        const cur = map.get(w.id);
-        if (!cur) { map.set(w.id, w); return; }
-        // tombstone-aware
-        if (cur._deleted && !w._deleted) return;
-        if (!cur._deleted && w._deleted) { map.set(w.id, w); return; }
-        const curTs = cur.updatedAt || cur.addedAt || 0;
-        const wTs = w.updatedAt || w.addedAt || 0;
-        if (wTs > curTs) map.set(w.id, w);
-      });
-      const merged = Array.from(map.values()).filter(w => !w._deleted);
-      saveWatchlist(merged);
-    }
-  }
+  // History handling is done by caller (needs merge logic); this handles settings only
 
   // === Settings === (all last-write-wins from remote if present)
   const s = remote.settings || {};
@@ -8534,14 +8361,13 @@ async function syncUpload() {
     const cfg = loadSyncConfig();
     saveSyncConfig({ ...cfg, lastSyncAt: payload.syncedAt });
     const activeCount = payload.history.filter(e => !e._deleted).length;
-    const wlCount = (payload.watchlist || []).length;
-    showToast('已上传', 'success', `${activeCount} 条历史 · ${wlCount} 条 watchlist · 设置 → Gist`);
+    showToast('已上传', 'success', `${activeCount} 条历史 · 设置 → Gist`);
     hideSyncModal();
   } catch (e) { showToast('上传失败', 'error', e.message); }
 }
 
 async function syncDownload() {
-  if (!confirm('下载会覆盖本地历史 · watchlist · 设置。继续?')) return;
+  if (!confirm('下载会覆盖本地历史 · 设置。继续?')) return;
   try {
     showToast('下载中...', 'info');
     const remote = await pullFromGist();
@@ -8551,8 +8377,7 @@ async function syncDownload() {
     const cfg = loadSyncConfig();
     saveSyncConfig({ ...cfg, lastSyncAt: new Date().toISOString() });
     const activeCount = remote.history.filter(e => !e._deleted).length;
-    const wlCount = Array.isArray(remote.watchlist) ? remote.watchlist.length : 0;
-    showToast('已下载', 'success', `${activeCount} 条历史 · ${wlCount} 条 watchlist → 本地`);
+    showToast('已下载', 'success', `${activeCount} 条历史 → 本地`);
     hideSyncModal();
     if (!state.strategy) render();
   } catch (e) { showToast('下载失败', 'error', e.message); }
@@ -8602,10 +8427,10 @@ async function syncMergeCore() {
 
   safeSetItem(HISTORY_KEY, JSON.stringify(merged));
 
-  // Merge watchlist + apply remote settings (last-write-wins from remote)
+  // Apply remote settings (last-write-wins from remote)
   applyRemotePayload(remote, 'merge');
 
-  // Build fresh payload from now-updated local state (includes merged history + merged watchlist + local settings)
+  // Build fresh payload from now-updated local state (includes merged history + local settings)
   const payload = buildSyncPayload();
   payload.history = merged;
   await pushToGist(payload);
@@ -9291,6 +9116,7 @@ loadTrendRange();
 loadDensity();
 // Clean up deprecated panel collapse state (feature was removed)
 try { localStorage.removeItem('pretrade_panel_collapse'); } catch (e) {}
+try { localStorage.removeItem('pretrade_watchlist'); } catch (e) {}
 render();
 // Warn user if localStorage is unavailable
 showStorageWarningIfNeeded();
