@@ -294,6 +294,9 @@
   .trend-chart-wrap { padding: 6px 0 0; overflow-x: auto; }
   .trend-chart { width: 100%; height: 180px; display: block; }
   .trend-legend { display: inline-flex; align-items: center; gap: 5px; font-family: var(--mono); font-size: 11px; color: var(--text-dim); margin-right: 12px; }
+  .activity-summary { font-family: var(--mono); font-size: 11px; color: var(--text-dim); letter-spacing: 0.02em; margin-right: 8px; }
+  .activity-bar rect { transition: opacity 0.15s; }
+  .activity-bar:hover rect { opacity: 0.75; cursor: help; }
   .trend-dot { display: inline-block; width: 10px; height: 2px; border-radius: 1px; }
 
   /* Edit modal R:R + position check computed display */
@@ -4590,7 +4593,7 @@ function winRateTrendHTML() {
   for (let i = numBuckets - 1; i >= 0; i--) {
     const end = now - i * bucketMs;
     const start = end - bucketMs;
-    buckets.push({ start, end, snapshots: [], settledByCreation: [] });
+    buckets.push({ start, end, snapshots: [] });
   }
 
   history.forEach(e => {
@@ -4599,20 +4602,19 @@ function winRateTrendHTML() {
     for (const b of buckets) {
       if (ts >= b.start && ts < b.end) {
         b.snapshots.push(e);
-        if (e.outcome === 'win' || e.outcome === 'loss') b.settledByCreation.push(e);
         break;
       }
     }
   });
 
+  // Per-bucket stats
   const points = buckets.map(b => {
     const total = b.snapshots.length;
-    const clearOrSoft = b.snapshots.filter(e => (e.verdict || '').startsWith('CLEAR')).length;
-    const clearRate = total > 0 ? clearOrSoft / total * 100 : null;
-    const wins = b.settledByCreation.filter(e => e.outcome === 'win').length;
-    const settledCount = b.settledByCreation.length;
-    const winRate = settledCount > 0 ? wins / settledCount * 100 : null;
-    return { total, clearRate, winRate, settledCount, wins, losses: settledCount - wins };
+    const clear = b.snapshots.filter(e => (e.verdict || '').startsWith('CLEAR')).length;
+    const blocked = b.snapshots.filter(e => e.verdict === 'BLOCKED').length;
+    const pending = b.snapshots.filter(e => e.verdict === 'PENDING').length;
+    const forced = b.snapshots.filter(e => e.forcedReason).length;
+    return { total, clear, blocked, pending, forced };
   });
 
   const rangePicker = `
@@ -4623,12 +4625,18 @@ function winRateTrendHTML() {
     </div>
   `;
 
-  if (points.every(p => p.clearRate == null && p.winRate == null)) {
+  const totalCounts = points.map(p => p.total);
+  const maxCount = Math.max(...totalCounts);
+  const totalSum = totalCounts.reduce((a, b) => a + b, 0);
+  const nonEmpty = totalCounts.filter(c => c > 0);
+  const avgCount = nonEmpty.length > 0 ? (totalSum / nonEmpty.length).toFixed(1) : '0';
+
+  if (maxCount === 0) {
     return `
       <div class="picker-panel trend-panel">
         <div class="picker-panel-header trend-header">
           <div>
-            <div class="picker-panel-title">胜率 &amp; CLEAR 率</div>
+            <div class="picker-panel-title">月度活动量 · Monthly Activity</div>
             <div class="picker-panel-sub">${rangeText}区间无数据</div>
           </div>
           ${rangePicker}
@@ -4639,30 +4647,19 @@ function winRateTrendHTML() {
 
   const spansYears = new Set(buckets.map(b => new Date(b.end).getFullYear())).size > 1;
 
-  const W = 640, H = 180, padL = 36, padR = 20, padT = 20, padB = 30;
+  const W = 640, H = 180, padL = 32, padR = 16, padT = 20, padB = 30;
   const chartW = W - padL - padR;
   const chartH = H - padT - padB;
-  const xStep = points.length > 1 ? chartW / (points.length - 1) : chartW;
+  const barGap = 6;
+  const barW = Math.max(6, (chartW / points.length) - barGap);
 
-  const buildPath = (getValue) => {
-    // Connect all data points, skipping empty buckets (no line breaks on gaps)
-    const dataPoints = [];
-    points.forEach((p, i) => {
-      const val = getValue(p);
-      if (val == null) return;
-      const x = padL + i * xStep;
-      const y = padT + chartH - (val / 100) * chartH;
-      dataPoints.push({ x, y });
-    });
-    if (dataPoints.length === 0) return '';
-    return 'M ' + dataPoints.map(d => `${d.x.toFixed(1)} ${d.y.toFixed(1)}`).join(' L ');
-  };
-  const clearPath = buildPath(p => p.clearRate);
-  const winPath = buildPath(p => p.winRate);
-
-  const yLabels = [0, 25, 50, 75, 100];
+  // Y-axis: dynamic based on maxCount, aim for ~4 grid lines
+  const yTickStep = maxCount <= 4 ? 1 : maxCount <= 8 ? 2 : maxCount <= 16 ? 4 : Math.ceil(maxCount / 4);
+  const yMax = Math.ceil(maxCount / yTickStep) * yTickStep;
+  const yLabels = [];
+  for (let v = 0; v <= yMax; v += yTickStep) yLabels.push(v);
   const yGridLines = yLabels.map(v => {
-    const y = padT + chartH - (v / 100) * chartH;
+    const y = padT + chartH - (v / yMax) * chartH;
     return `<line x1="${padL}" y1="${y}" x2="${W - padR}" y2="${y}" stroke="var(--border)" stroke-width="0.5" stroke-dasharray="2 3"/>
             <text x="${padL - 6}" y="${y + 3}" font-size="9" fill="var(--text-faint)" text-anchor="end" font-family="var(--mono)">${v}</text>`;
   }).join('');
@@ -4674,39 +4671,77 @@ function winRateTrendHTML() {
     if (xFmt === 'q')  { const Q = Math.floor((M - 1) / 3) + 1; return `${Y % 100}Q${Q}`; }
     return `${M}/${D}`;
   };
-  const numXLabels = points.length <= 6 ? points.length : 5;
+
+  // Bars: depth scales with count relative to max — busiest = deepest tint
+  // Threshold: any bucket > 1.5× avg is highlighted red (over-activity warning)
+  const avgNum = parseFloat(avgCount) || 1;
+  const bars = points.map((p, i) => {
+    const x = padL + i * (barW + barGap) + barGap / 2;
+    if (p.total === 0) return '';
+    const h = (p.total / yMax) * chartH;
+    const y = padT + chartH - h;
+    // Depth: 25% for min, 90% for max
+    const depth = 25 + (p.total / maxCount) * 65;
+    const overActive = p.total > avgNum * 1.5 && p.total >= 5;
+    const barColor = overActive ? 'var(--fail)' : 'var(--accent)';
+    const bg = overActive
+      ? `color-mix(in srgb, var(--fail) ${depth}%, var(--panel-2))`
+      : `color-mix(in srgb, var(--accent) ${depth}%, var(--panel-2))`;
+    const strokeColor = overActive ? 'var(--fail)' : 'var(--accent)';
+    // Tooltip: date + breakdown
+    const dateLabel = fmtLabel(new Date(p.total > 0 ? buckets[i].end : buckets[i].end));
+    const parts = [];
+    parts.push(`共 ${p.total} 笔`);
+    if (p.clear > 0) parts.push(`CLEAR ${p.clear}`);
+    if (p.blocked > 0) parts.push(`BLOCKED ${p.blocked}`);
+    if (p.pending > 0) parts.push(`PENDING ${p.pending}`);
+    if (p.forced > 0) parts.push(`硬冲 ${p.forced}`);
+    const tip = `${dateLabel} · ${parts.join(' · ')}${overActive ? ' · 过度活跃' : ''}`;
+    // Bar with count label above
+    const countLabel = p.total >= 1
+      ? `<text x="${(x + barW / 2).toFixed(1)}" y="${(y - 4).toFixed(1)}" font-size="9.5" fill="var(--text-dim)" text-anchor="middle" font-family="var(--mono)" font-weight="600">${p.total}</text>`
+      : '';
+    return `
+      <g class="activity-bar">
+        <rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}"
+              fill="${bg}" stroke="${strokeColor}" stroke-width="0.5" rx="2">
+          <title>${tip}</title>
+        </rect>
+        ${countLabel}
+      </g>
+    `;
+  }).join('');
+
+  // X-axis labels: show at most 6, evenly spaced
+  const numXLabels = points.length <= 6 ? points.length : 6;
   const xLabelIdxs = [];
   for (let i = 0; i < numXLabels; i++) xLabelIdxs.push(Math.round(i * (points.length - 1) / (numXLabels - 1)));
   const xTicks = xLabelIdxs.map(idx => {
-    const x = padL + idx * xStep;
-    return `<text x="${x}" y="${H - 10}" font-size="9" fill="var(--text-faint)" text-anchor="middle" font-family="var(--mono)">${fmtLabel(new Date(buckets[idx].end))}</text>`;
+    const x = padL + idx * (barW + barGap) + barGap / 2 + barW / 2;
+    return `<text x="${x.toFixed(1)}" y="${H - 10}" font-size="9" fill="var(--text-faint)" text-anchor="middle" font-family="var(--mono)">${fmtLabel(new Date(buckets[idx].end))}</text>`;
   }).join('');
 
-  const dotDate = (i) => fmtLabel(new Date(buckets[i].end));
-  const clearDots = points.map((p, i) => {
-    if (p.clearRate == null) return '';
-    const x = padL + i * xStep;
-    const y = padT + chartH - (p.clearRate / 100) * chartH;
-    return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3" fill="var(--accent)" stroke="var(--bg)" stroke-width="1.5"><title>${dotDate(i)} · CLEAR/软执行 ${p.clearRate.toFixed(0)}% (${p.total} 单)</title></circle>`;
-  }).join('');
-  const winDots = points.map((p, i) => {
-    if (p.winRate == null) return '';
-    const x = padL + i * xStep;
-    const y = padT + chartH - (p.winRate / 100) * chartH;
-    const clearY = p.clearRate != null ? padT + chartH - (p.clearRate / 100) * chartH : null;
-    const yOffset = (clearY != null && Math.abs(clearY - y) < 4) ? 4 : 0;
-    return `<circle cx="${x.toFixed(1)}" cy="${(y + yOffset).toFixed(1)}" r="3" fill="var(--pass)" stroke="var(--bg)" stroke-width="1.5"><title>${dotDate(i)} · 胜率 ${p.winRate.toFixed(0)}% (${p.wins}胜 ${p.losses}负)</title></circle>`;
-  }).join('');
+  // Average line
+  const avgY = padT + chartH - (avgNum / yMax) * chartH;
+  const avgLine = avgNum > 0 ? `
+    <line x1="${padL}" y1="${avgY.toFixed(1)}" x2="${W - padR}" y2="${avgY.toFixed(1)}"
+          stroke="var(--text-faint)" stroke-width="1" stroke-dasharray="4 3" opacity="0.6"/>
+    <text x="${W - padR - 4}" y="${(avgY - 4).toFixed(1)}" font-size="9" fill="var(--text-faint)"
+          text-anchor="end" font-family="var(--mono)" font-style="italic">均值 ${avgCount}</text>
+  ` : '';
+
+  // Peak identification
+  const peakIdx = points.findIndex(p => p.total === maxCount);
+  const peakLabel = peakIdx >= 0 ? fmtLabel(new Date(buckets[peakIdx].end)) : '';
 
   return `
     <div class="picker-panel trend-panel">
       <div class="picker-panel-header trend-header">
         <div>
-          <div class="picker-panel-title">胜率 &amp; CLEAR 率 <span class="trend-range-label">· ${rangeText}</span></div>
+          <div class="picker-panel-title">月度活动量 · Monthly Activity <span class="trend-range-label">· ${rangeText}</span></div>
           <div class="picker-panel-sub">
-            <span class="trend-legend"><span class="trend-dot" style="background: var(--accent)"></span>CLEAR/软执行</span>
-            <span class="trend-legend"><span class="trend-dot" style="background: var(--pass)"></span>胜率</span>
-            <span class="trend-note" title="胜率按 snapshot 创建日期分桶, 不按结算日期. 悬停数据点看具体值.">ⓘ</span>
+            <span class="activity-summary">共 ${totalSum} 笔 · 峰值 ${maxCount} (${esc(peakLabel)}) · 均值 ${avgCount}/期</span>
+            <span class="trend-note" title="每根柱=该时间桶内创建的 snapshot 数. 红色柱=活跃度超均值 1.5×, 可能过度交易. 悬停看分布.">ⓘ</span>
           </div>
         </div>
         ${rangePicker}
@@ -4714,10 +4749,8 @@ function winRateTrendHTML() {
       <div class="trend-chart-wrap">
         <svg class="trend-chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
           ${yGridLines}
-          <path d="${clearPath}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>
-          <path d="${winPath}" fill="none" stroke="var(--pass)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>
-          ${clearDots}
-          ${winDots}
+          ${bars}
+          ${avgLine}
           ${xTicks}
         </svg>
       </div>
