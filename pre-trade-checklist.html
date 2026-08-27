@@ -295,8 +295,11 @@
   .trend-chart { width: 100%; height: 180px; display: block; }
   .trend-legend { display: inline-flex; align-items: center; gap: 5px; font-family: var(--mono); font-size: 11px; color: var(--text-dim); margin-right: 12px; }
   .activity-summary { font-family: var(--mono); font-size: 11px; color: var(--text-dim); letter-spacing: 0.02em; margin-right: 8px; }
+  .activity-legend { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 5px; }
+  .al-item { display: inline-flex; align-items: center; gap: 5px; font-family: var(--mono); font-size: 10.5px; color: var(--text-dim); letter-spacing: 0.02em; }
+  .al-swatch { display: inline-block; width: 10px; height: 10px; border-radius: 2px; border: 1px solid var(--border); }
   .activity-bar rect { transition: opacity 0.15s; }
-  .activity-bar:hover rect { opacity: 0.75; cursor: help; }
+  .activity-bar:hover rect { opacity: 0.85; cursor: help; }
   .trend-dot { display: inline-block; width: 10px; height: 2px; border-radius: 1px; }
 
   /* Edit modal R:R + position check computed display */
@@ -4672,39 +4675,52 @@ function winRateTrendHTML() {
     return `${M}/${D}`;
   };
 
-  // Bars: depth scales with count relative to max — busiest = deepest tint
-  // Threshold: any bucket > 1.5× avg is highlighted red (over-activity warning)
+  // Bars: 4-segment stacked (CLEAR / PENDING / BLOCKED-respected / FORCED)
+  // Semantic colors carry the story — no need for over-active red border
   const avgNum = parseFloat(avgCount) || 1;
   const bars = points.map((p, i) => {
     const x = padL + i * (barW + barGap) + barGap / 2;
     if (p.total === 0) return '';
-    const h = (p.total / yMax) * chartH;
-    const y = padT + chartH - h;
-    // Depth: 25% for min, 90% for max
-    const depth = 25 + (p.total / maxCount) * 65;
+    // Segment counts (bottom to top: quality decreasing)
+    const nClear = p.clear;
+    const nPending = p.pending;
+    const blockedRespected = Math.max(0, p.blocked - p.forced);  // BLOCKED but not forced
+    const nForced = p.forced;
+    const totalH = (p.total / yMax) * chartH;
+    const yTop = padT + chartH - totalH;
+    // Stack from bottom (CLEAR) to top (FORCED)
+    const segments = [
+      { count: nClear,          fill: 'var(--pass)',                                          label: 'CLEAR' },
+      { count: nPending,        fill: 'var(--pending)',                                       label: 'PENDING' },
+      { count: blockedRespected,fill: 'color-mix(in srgb, var(--fail) 40%, var(--panel-2))',  label: 'BLOCKED (未硬冲)' },
+      { count: nForced,         fill: 'var(--fail)',                                          label: 'FORCED · 硬冲' },
+    ];
+    let cursorY = padT + chartH;
+    const segSVG = segments.map(seg => {
+      if (seg.count === 0) return '';
+      const segH = (seg.count / yMax) * chartH;
+      const segY = cursorY - segH;
+      cursorY = segY;
+      return `<rect x="${x.toFixed(1)}" y="${segY.toFixed(1)}" width="${barW.toFixed(1)}" height="${segH.toFixed(1)}" fill="${seg.fill}" stroke="var(--panel)" stroke-width="0.5"/>`;
+    }).join('');
+    // Tooltip: complete breakdown
+    const dateLabel = fmtLabel(new Date(buckets[i].end));
+    const parts = [`共 ${p.total} 笔`];
+    if (nClear > 0) parts.push(`CLEAR ${nClear}`);
+    if (nPending > 0) parts.push(`PENDING ${nPending}`);
+    if (blockedRespected > 0) parts.push(`BLOCKED ${blockedRespected}`);
+    if (nForced > 0) parts.push(`硬冲 ${nForced}`);
     const overActive = p.total > avgNum * 1.5 && p.total >= 5;
-    const barColor = overActive ? 'var(--fail)' : 'var(--accent)';
-    const bg = overActive
-      ? `color-mix(in srgb, var(--fail) ${depth}%, var(--panel-2))`
-      : `color-mix(in srgb, var(--accent) ${depth}%, var(--panel-2))`;
-    const strokeColor = overActive ? 'var(--fail)' : 'var(--accent)';
-    // Tooltip: date + breakdown
-    const dateLabel = fmtLabel(new Date(p.total > 0 ? buckets[i].end : buckets[i].end));
-    const parts = [];
-    parts.push(`共 ${p.total} 笔`);
-    if (p.clear > 0) parts.push(`CLEAR ${p.clear}`);
-    if (p.blocked > 0) parts.push(`BLOCKED ${p.blocked}`);
-    if (p.pending > 0) parts.push(`PENDING ${p.pending}`);
-    if (p.forced > 0) parts.push(`硬冲 ${p.forced}`);
     const tip = `${dateLabel} · ${parts.join(' · ')}${overActive ? ' · 过度活跃' : ''}`;
-    // Bar with count label above
+    // Count label above bar
     const countLabel = p.total >= 1
-      ? `<text x="${(x + barW / 2).toFixed(1)}" y="${(y - 4).toFixed(1)}" font-size="9.5" fill="var(--text-dim)" text-anchor="middle" font-family="var(--mono)" font-weight="600">${p.total}</text>`
+      ? `<text x="${(x + barW / 2).toFixed(1)}" y="${(yTop - 4).toFixed(1)}" font-size="9.5" fill="var(--text-dim)" text-anchor="middle" font-family="var(--mono)" font-weight="600">${p.total}</text>`
       : '';
     return `
       <g class="activity-bar">
-        <rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}"
-              fill="${bg}" stroke="${strokeColor}" stroke-width="0.5" rx="2">
+        ${segSVG}
+        <rect x="${x.toFixed(1)}" y="${yTop.toFixed(1)}" width="${barW.toFixed(1)}" height="${totalH.toFixed(1)}"
+              fill="transparent" stroke="transparent" pointer-events="all">
           <title>${tip}</title>
         </rect>
         ${countLabel}
@@ -4734,14 +4750,28 @@ function winRateTrendHTML() {
   const peakIdx = points.findIndex(p => p.total === maxCount);
   const peakLabel = peakIdx >= 0 ? fmtLabel(new Date(buckets[peakIdx].end)) : '';
 
+  // Aggregate quality distribution across the whole range
+  const totalClear = points.reduce((s, p) => s + p.clear, 0);
+  const totalPending = points.reduce((s, p) => s + p.pending, 0);
+  const totalBlocked = points.reduce((s, p) => s + p.blocked, 0);
+  const totalForced = points.reduce((s, p) => s + p.forced, 0);
+  const blockedRespectedSum = Math.max(0, totalBlocked - totalForced);
+  const clearPct = totalSum > 0 ? Math.round(totalClear / totalSum * 100) : 0;
+
   return `
     <div class="picker-panel trend-panel">
       <div class="picker-panel-header trend-header">
         <div>
           <div class="picker-panel-title">月度活动量 · Monthly Activity <span class="trend-range-label">· ${rangeText}</span></div>
           <div class="picker-panel-sub">
-            <span class="activity-summary">共 ${totalSum} 笔 · 峰值 ${maxCount} (${esc(peakLabel)}) · 均值 ${avgCount}/期</span>
-            <span class="trend-note" title="每根柱=该时间桶内创建的 snapshot 数. 红色柱=活跃度超均值 1.5×, 可能过度交易. 悬停看分布.">ⓘ</span>
+            <span class="activity-summary">共 ${totalSum} 笔 · 峰值 ${maxCount} (${esc(peakLabel)}) · 均值 ${avgCount}/期 · CLEAR 率 ${clearPct}%</span>
+            <span class="trend-note" title="堆叠柱按品质从底到顶: CLEAR (绿) → PENDING (琥珀) → BLOCKED 未硬冲 (淡红) → FORCED 硬冲 (深红). 悬停看具体分布.">ⓘ</span>
+          </div>
+          <div class="activity-legend">
+            <span class="al-item"><span class="al-swatch" style="background: var(--pass);"></span>CLEAR ${totalClear}</span>
+            ${totalPending > 0 ? `<span class="al-item"><span class="al-swatch" style="background: var(--pending);"></span>PENDING ${totalPending}</span>` : ''}
+            ${blockedRespectedSum > 0 ? `<span class="al-item"><span class="al-swatch" style="background: color-mix(in srgb, var(--fail) 40%, var(--panel-2));"></span>BLOCKED ${blockedRespectedSum}</span>` : ''}
+            ${totalForced > 0 ? `<span class="al-item"><span class="al-swatch" style="background: var(--fail);"></span>硬冲 ${totalForced}</span>` : ''}
           </div>
         </div>
         ${rangePicker}
