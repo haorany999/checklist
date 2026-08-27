@@ -682,6 +682,44 @@
   .forced-time { font-family: var(--mono); font-size: 11px; color: var(--text-faint); }
   .forced-reason { font-size: 12px; color: var(--text-dim); font-style: italic; line-height: 1.5; padding-left: 8px; border-left: 2px solid var(--fail); margin-top: 3px; }
 
+  /* Search input inside forced tracker */
+  .forced-search-row { display: flex; align-items: center; gap: 6px; margin: 8px 0 10px; position: relative; }
+  .forced-search-input { flex: 1; background: var(--panel-2); border: 1px solid var(--border); color: var(--text); font-family: var(--mono); font-size: 12.5px; padding: 6px 10px; border-radius: 4px; letter-spacing: 0.03em; }
+  .forced-search-input:focus { outline: none; border-color: var(--accent); }
+  .forced-search-input::placeholder { color: var(--text-faint); }
+  .forced-search-clear { background: transparent; border: none; color: var(--text-faint); font-size: 16px; cursor: pointer; padding: 2px 8px; border-radius: 3px; line-height: 1; }
+  .forced-search-clear:hover { color: var(--fail); background: var(--fail-bg); }
+
+  /* Stale reminder — top of main page when forced entries need attention */
+  .stale-reminder-panel {
+    margin: 0 0 14px;
+    padding: 12px 14px;
+    background: color-mix(in srgb, var(--pending-bg) 55%, var(--panel));
+    border: 1px solid color-mix(in srgb, var(--pending) 45%, transparent);
+    border-left: 3px solid var(--pending);
+    border-radius: var(--radius, 8px);
+  }
+  .stale-reminder-head { margin-bottom: 10px; }
+  .stale-reminder-title { display: block; font-family: var(--mono); font-size: 13px; font-weight: 700; color: var(--pending); letter-spacing: 0.05em; line-height: 1.4; }
+  .stale-reminder-sub { display: block; font-size: 11.5px; color: var(--text-dim); margin-top: 2px; font-style: italic; }
+  .stale-reminder-list { display: flex; flex-direction: column; gap: 10px; }
+  .stale-reminder-row {
+    padding: 10px 12px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .stale-reminder-row.urgent { border-color: color-mix(in srgb, var(--fail) 50%, transparent); background: color-mix(in srgb, var(--fail-bg) 30%, var(--panel)); }
+  .stale-reminder-meta { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .stale-reminder-ticker { font-family: var(--mono); font-weight: 700; font-size: 13.5px; color: var(--text); letter-spacing: 0.03em; }
+  .stale-reminder-strategy { font-family: var(--mono); font-size: 11.5px; color: var(--text-dim); background: var(--panel-2); padding: 1px 6px; border-radius: 3px; }
+  .stale-reminder-age { font-family: var(--mono); font-size: 11px; color: var(--pending); margin-left: auto; letter-spacing: 0.03em; }
+  .stale-reminder-age.urgent { color: var(--fail); font-weight: 600; }
+  .stale-reminder-reason { font-size: 11.5px; color: var(--text-dim); font-style: italic; line-height: 1.5; padding-left: 6px; border-left: 2px solid var(--border); }
+  .stale-reminder-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 2px; }
+  .stale-reminder-actions .btn { flex: 1; min-width: 90px; padding: 5px 10px; font-size: 11.5px; }
+
   /* Forced trade reminder banner */
   .forced-reminder-banner { display: flex; gap: 12px; align-items: center; background: var(--pending-bg); border: 1px solid var(--pending); border-color: rgba(210, 153, 34, 0.4); border-radius: 8px; padding: 12px 14px; margin: 16px 0; cursor: pointer; transition: all 0.15s ease; }
   .forced-reminder-banner:hover { border-color: var(--pending); background: rgba(210, 153, 34, 0.15); }
@@ -1791,6 +1829,8 @@
   }
 </script>
 <script>
+
+
 
 
 "use strict";
@@ -3386,6 +3426,49 @@ function formatTimeAgo(ts) {
 }
 
 /* ==========================================================
+ * FORCED TRADES · search + stale reminder actions
+ * ========================================================== */
+let __forcedSearchQuery = '';
+window.setForcedSearchQuery = function(q) {
+  __forcedSearchQuery = q || '';
+  render();
+};
+
+// Mark forced entry as still holding — snooze reminder for 15 days
+window.stillHoldingForced = function(id) {
+  const history = loadHistory();
+  const idx = history.findIndex(e => e.id === id);
+  if (idx === -1) return;
+  history[idx] = {
+    ...history[idx],
+    outcome: 'open',
+    _reminderSnoozeUntil: Date.now() + 15 * 24 * 60 * 60 * 1000,
+    updatedAt: Date.now()
+  };
+  try { safeSetItem(HISTORY_KEY, JSON.stringify(history)); } catch (e) {}
+  render();
+  scheduleAutoPushToGist();
+  showToast('已标记为持仓', 'info', '15 天后再次提醒');
+};
+
+// Dismiss reminder permanently (record stays in tracker, but no more alerts)
+window.dismissForcedReminder = function(id) {
+  if (!confirm('停止对该笔硬冲的提醒?\n\n(记录仍会保留在硬冲跟踪面板, 只是不再打扰)')) return;
+  const history = loadHistory();
+  const idx = history.findIndex(e => e.id === id);
+  if (idx === -1) return;
+  history[idx] = {
+    ...history[idx],
+    _reminderDismissed: true,
+    updatedAt: Date.now()
+  };
+  try { safeSetItem(HISTORY_KEY, JSON.stringify(history)); } catch (e) {}
+  render();
+  scheduleAutoPushToGist();
+  showToast('已停止提醒', 'info');
+};
+
+/* ==========================================================
  * DISCIPLINE PROFILE · HARD rejection analysis
  * ========================================================== */
 let __disciplineFilter = 'blocked';  // 'all' | 'blocked' | 'pending'
@@ -3898,35 +3981,97 @@ function pickerFooterHTML() {
   const disciplineHTML = renderDisciplineProfileHTML(history);
 
   // Forced trades (硬冲跟踪): entries with forcedReason
-  const forced = history.filter(e => e.forcedReason).slice(0, 8);
-  const forcedHTML = forced.length > 0 ? `
-    <div class="picker-panel forced-panel">
-      <div class="picker-panel-head">
-        <span>硬冲跟踪 · Forced Trades</span>
-        <span class="picker-panel-count">${forced.length}</span>
+  const allForced = history.filter(e => e.forcedReason);
+  const forcedSearchQ = (__forcedSearchQuery || '').trim().toUpperCase();
+  const filteredForced = forcedSearchQ
+    ? allForced.filter(e => (e.ticker || '').toUpperCase().includes(forcedSearchQ))
+    : allForced;
+  const forced = filteredForced.slice(0, 5);
+
+  // Stale reminder: forced trades older than 15 days without settled outcome
+  const now = Date.now();
+  const STALE_15 = 15 * 24 * 60 * 60 * 1000;
+  const STALE_30 = 30 * 24 * 60 * 60 * 1000;
+  const staleForced = allForced.filter(e => {
+    const ageMs = now - (e.timestampSort || 0);
+    if (ageMs < STALE_15) return false;
+    if (e.outcome === 'win' || e.outcome === 'loss' || e.outcome === 'skipped') return false;
+    if (e._reminderDismissed) return false;
+    if (e._reminderSnoozeUntil && e._reminderSnoozeUntil > now) return false;
+    return true;
+  });
+  const staleReminderHTML = staleForced.length > 0 ? `
+    <div class="stale-reminder-panel">
+      <div class="stale-reminder-head">
+        <span class="stale-reminder-title">⚠ 硬冲跟踪提醒 · ${staleForced.length} 笔未结算</span>
+        <span class="stale-reminder-sub">超 15 天未记录结果 · 需人工确认</span>
       </div>
-      <div style="font-size: 11px; color: var(--text-faint); margin-bottom: 8px; line-height: 1.4;">BLOCKED 但你选择硬冲 · 复盘代价 vs 判断</div>
-      <div class="picker-panel-list">
-        ${forced.map(e => {
-          const outcomeLabel = e.outcome ? OUTCOME_LABEL[e.outcome] : '待跟踪';
-          const outcomeCls = e.outcome === 'win' ? 'pass'
-            : e.outcome === 'loss' ? 'fail'
-            : e.outcome === 'open' ? 'pending'
-            : e.outcome === 'skipped' ? 'text-faint'
-            : 'pending';
+      <div class="stale-reminder-list">
+        ${staleForced.map(e => {
+          const ageMs = now - (e.timestampSort || 0);
+          const ageDays = Math.floor(ageMs / (24 * 60 * 60 * 1000));
+          const urgent = ageMs >= STALE_30;
           return `
-            <div class="forced-row" onclick="showEditModal('${e.id}')" data-preview-id="${e.id}">
-              <div class="forced-header">
-                <span class="forced-ticker">${esc(e.ticker || '—')}</span>
-                <span class="forced-strategy">${esc(e.strategy)}</span>
-                <span class="forced-outcome ${outcomeCls}">${esc(outcomeLabel)}</span>
-                <span class="forced-time">${formatTimeAgo(e.timestampSort)}</span>
+            <div class="stale-reminder-row ${urgent ? 'urgent' : ''}">
+              <div class="stale-reminder-meta">
+                <span class="stale-reminder-ticker">${esc(e.ticker || '—')}</span>
+                <span class="stale-reminder-strategy">${esc(e.strategy || '')}</span>
+                <span class="stale-reminder-age ${urgent ? 'urgent' : ''}">${ageDays} 天前${urgent ? ' · 逾期严重' : ''}</span>
               </div>
-              <div class="forced-reason">"${esc(e.forcedReason)}"</div>
+              <div class="stale-reminder-reason">"${esc(e.forcedReason)}"</div>
+              <div class="stale-reminder-actions">
+                <button class="btn ghost small" onclick="stillHoldingForced('${e.id}')" title="标记为持仓 · 15 天后再提醒">还在持仓</button>
+                <button class="btn ghost small" onclick="showEditModal('${e.id}')" title="打开编辑记录盈亏">记录盈亏</button>
+                <button class="btn ghost small" onclick="dismissForcedReminder('${e.id}')" title="不再提醒 (记录仍保留)">不再提醒</button>
+              </div>
             </div>
           `;
         }).join('')}
       </div>
+    </div>
+  ` : '';
+
+  const forcedHTML = allForced.length > 0 ? `
+    <div class="picker-panel forced-panel">
+      <div class="picker-panel-head">
+        <span>硬冲跟踪 · Forced Trades</span>
+        <span class="picker-panel-count">${allForced.length}</span>
+      </div>
+      <div style="font-size: 11px; color: var(--text-faint); margin-bottom: 8px; line-height: 1.4;">BLOCKED 但你选择硬冲 · 复盘代价 vs 判断${allForced.length > 5 ? ' · 显示最近 5 笔' : ''}</div>
+      <div class="forced-search-row">
+        <input type="text" class="forced-search-input" id="forced-search"
+               placeholder="按 ticker 搜索 (如 MSFT)" value="${esc(forcedSearchQ)}"
+               autocomplete="off" spellcheck="false" oninput="setForcedSearchQuery(this.value)">
+        ${forcedSearchQ ? `<button class="forced-search-clear" onclick="setForcedSearchQuery('')" title="清空">×</button>` : ''}
+      </div>
+      ${filteredForced.length === 0 ? `
+        <div style="font-size: 12px; color: var(--text-faint); padding: 12px 4px; font-style: italic;">
+          未找到匹配 "${esc(forcedSearchQ)}" 的硬冲记录
+        </div>
+      ` : `
+        <div class="picker-panel-list">
+          ${forced.map(e => {
+            const outcomeLabel = e.outcome ? OUTCOME_LABEL[e.outcome] : '待跟踪';
+            const outcomeCls = e.outcome === 'win' ? 'pass'
+              : e.outcome === 'loss' ? 'fail'
+              : e.outcome === 'open' ? 'pending'
+              : e.outcome === 'skipped' ? 'text-faint'
+              : 'pending';
+            return `
+              <div class="forced-row" onclick="showEditModal('${e.id}')" data-preview-id="${e.id}">
+                <div class="forced-header">
+                  <span class="forced-ticker">${esc(e.ticker || '—')}</span>
+                  <span class="forced-strategy">${esc(e.strategy)}</span>
+                  <span class="forced-outcome ${outcomeCls}">${esc(outcomeLabel)}</span>
+                  <span class="forced-time">${formatTimeAgo(e.timestampSort)}</span>
+                </div>
+                <div class="forced-reason">"${esc(e.forcedReason)}"</div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+        ${filteredForced.length > 5 ? `<div style="font-size: 11px; color: var(--text-faint); text-align: center; padding: 6px 0; font-style: italic;">还有 ${filteredForced.length - 5} 笔 · 用搜索定位</div>` : ''}
+      `}
     </div>
   ` : '';
 
@@ -4040,6 +4185,7 @@ function pickerFooterHTML() {
   const winRateCls = winRate30d == null ? '' : winRate30d >= 60 ? 'pass' : winRate30d >= 40 ? 'pending' : 'fail';
 
   return `
+    ${staleReminderHTML}
     ${openHTML}
     ${forcedHTML}
     ${overridesHTML}
@@ -8995,6 +9141,8 @@ window.addEventListener('scroll', updateScrolledState, { passive: true });
   // Delay 800ms so UI renders + user sees the app before any sync toast
   setTimeout(() => { syncMergeSilent(); }, 800);
 })();
+
+
 
 
 
