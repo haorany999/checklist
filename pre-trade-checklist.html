@@ -2939,7 +2939,7 @@ function ccItems() {
     // No cost basis yet → item shows locked, verdict forced to pending
     base.push({ group: 'Short call selection · 短 call 选择', id: 'strike_above_cost',
       title: '先填底仓成本 → 才能校验 strike > 成本',
-      desc: '未填写底仓成本, 该 HARD 项无法校验, checklist 保持 PENDING.',
+      desc: '未填写底仓成本, 该 HARD 项无法校验, checklist 保持"条件不足".',
       hard: true,
       locked: true });
   }
@@ -3266,6 +3266,13 @@ function overallVerdict() {
   }
 
   return { status, pass, fail, pending, hardFail, softFail, combined: softFail + pending, note, total: items.length };
+}
+
+// Display translation for verdict strings. Raw stored value stays 'PENDING' for
+// backward compat; UI shows "条件不足" so users don't misread as "还在等待选择".
+function displayVerdict(status) {
+  if (status === 'PENDING') return '条件不足';
+  return status;
 }
 
 /* ==========================================================
@@ -3685,15 +3692,15 @@ function renderDisciplineProfileHTML(history) {
   let counts, filterLabelZh, filterLabelHead;
   if (filterMode === 'pending') {
     counts = pendingCounts;
-    filterLabelZh = '最常 PENDING 的 items';
+    filterLabelZh = '最常"条件不足"的 items';
     filterLabelHead = '（未确认最多的检查）';
   } else if (filterMode === 'all') {
     // Merge both
     counts = {};
     Object.keys(hardFailCounts).forEach(k => { counts[k] = (counts[k] || 0) + hardFailCounts[k]; });
     Object.keys(pendingCounts).forEach(k => { counts[k] = (counts[k] || 0) + pendingCounts[k]; });
-    filterLabelZh = '最常失败或 PENDING 的 items';
-    filterLabelHead = '（合并 BLOCKED HARD + PENDING）';
+    filterLabelZh = '最常失败或"条件不足"的 items';
+    filterLabelHead = '（合并 BLOCKED HARD + 条件不足）';
   } else {
     // blocked (default)
     counts = hardFailCounts;
@@ -3722,7 +3729,7 @@ function renderDisciplineProfileHTML(history) {
   const insight = (() => {
     if (filterMode === 'pending') {
       if (topItems.length === 0) return null;
-      return `PENDING 最多的是: ${esc(topItems[0][0])} · 提示: 定期回顾未完成的 snapshot, 补齐或关闭`;
+      return `"条件不足" 最多的是: ${esc(topItems[0][0])} · 提示: 定期回顾未完成的 snapshot, 补齐或关闭`;
     }
     if (topItems.length === 0) return '过去 3 月未被 HARD 拦下 · 保持警觉';
     const [top, cnt] = topItems[0];
@@ -3752,14 +3759,14 @@ function renderDisciplineProfileHTML(history) {
         </div>
         <div class="dp-stat">
           <div class="dp-stat-num pending">${stats.pending}</div>
-          <div class="dp-stat-label">PENDING</div>
+          <div class="dp-stat-label">条件不足</div>
         </div>
       </div>
       <div class="dp-filter-row">
         <span class="dp-filter-label">分析模式:</span>
         <div class="dp-filter-tabs">
           <button class="dp-filter-tab ${filterMode === 'blocked' ? 'active' : ''}" onclick="setDisciplineFilter('blocked')">BLOCKED</button>
-          <button class="dp-filter-tab ${filterMode === 'pending' ? 'active' : ''}" onclick="setDisciplineFilter('pending')">PENDING</button>
+          <button class="dp-filter-tab ${filterMode === 'pending' ? 'active' : ''}" onclick="setDisciplineFilter('pending')">条件不足</button>
           <button class="dp-filter-tab ${filterMode === 'all' ? 'active' : ''}" onclick="setDisciplineFilter('all')">合并</button>
         </div>
       </div>
@@ -3826,7 +3833,7 @@ function verdictSparklineHTML() {
   const rows = [
     { key: 'CLEAR',   label: 'CLEAR',   cls: 'pass',      arr: buckets.CLEAR },
     { key: 'SOFT',    label: '软执行',   cls: 'pass-soft', arr: buckets.SOFT },
-    { key: 'PENDING', label: 'PENDING', cls: 'pending',   arr: buckets.PENDING },
+    { key: 'PENDING', label: '条件不足', cls: 'pending',   arr: buckets.PENDING },
     { key: 'BLOCKED', label: 'BLOCKED', cls: 'fail',      arr: buckets.BLOCKED },
     { key: 'FORCED',  label: '↳ 硬冲',   cls: 'fail',      arr: forced, isSubset: true },
   ];
@@ -4123,7 +4130,7 @@ function pickerFooterHTML() {
             <div class="override-row" onclick="showEditModal('${e.id}')" data-preview-id="${e.id}">
               <div class="override-header">
                 <span class="override-ticker">${esc(e.ticker || '—')}</span>
-                <span class="override-strategy">${esc(e.strategy)} · ${esc(e.verdict)}</span>
+                <span class="override-strategy">${esc(e.strategy)} · ${esc(displayVerdict(e.verdict))}</span>
                 <span class="override-time">${formatTimeAgo(e.timestampSort)}</span>
               </div>
               ${e.notes ? `<div class="override-notes">${esc(e.notes)}</div>` : '<div class="override-notes-empty">未填放弃原因</div>'}
@@ -4297,7 +4304,7 @@ function renderExploreResultsFor(matches) {
   `;
   const rowsHTML = matches.slice(0, 500).map(e => {
     const cls = e.verdict.startsWith('CLEAR') ? 'pass' : e.verdict === 'BLOCKED' ? 'fail' : 'pending';
-    const verdictShort = e.verdict.startsWith('CLEAR') ? 'CLEAR' : e.verdict === 'BLOCKED' ? 'BLOCK' : 'PEND';
+    const verdictShort = e.verdict.startsWith('CLEAR') ? 'CLEAR' : e.verdict === 'BLOCKED' ? 'BLOCK' : 'SHORT';
     const outcomeLabel = e.outcome ? OUTCOME_LABEL[e.outcome] : null;
     // Extract STK + contracts for identification (works for CSP + LEAPS both)
     const idInfo = extractStrikeInfo(e);
@@ -4556,7 +4563,7 @@ function winRateTrendHTML() {
     // Stack from bottom (CLEAR) to top (FORCED)
     const segments = [
       { count: nClear,          fill: 'var(--pass)',                                          label: 'CLEAR' },
-      { count: nPending,        fill: 'var(--pending)',                                       label: 'PENDING' },
+      { count: nPending,        fill: 'var(--pending)',                                       label: '条件不足' },
       { count: blockedRespected,fill: 'color-mix(in srgb, var(--fail) 40%, var(--panel-2))',  label: 'BLOCKED (未硬冲)' },
       { count: nForced,         fill: 'var(--fail)',                                          label: 'FORCED · 硬冲' },
     ];
@@ -4572,7 +4579,7 @@ function winRateTrendHTML() {
     const dateLabel = fmtLabel(new Date(buckets[i].end));
     const parts = [`共 ${p.total} 笔`];
     if (nClear > 0) parts.push(`CLEAR ${nClear}`);
-    if (nPending > 0) parts.push(`PENDING ${nPending}`);
+    if (nPending > 0) parts.push(`条件不足 ${nPending}`);
     if (blockedRespected > 0) parts.push(`BLOCKED ${blockedRespected}`);
     if (nForced > 0) parts.push(`硬冲 ${nForced}`);
     const overActive = p.total > avgNum * 1.5 && p.total >= 5;
@@ -4632,11 +4639,11 @@ function winRateTrendHTML() {
           <div class="picker-panel-title">月度活动量 · Monthly Activity <span class="trend-range-label">· ${rangeText}</span></div>
           <div class="picker-panel-sub">
             <span class="activity-summary">共 ${totalSum} 笔 · 峰值 ${maxCount} (${esc(peakLabel)}) · 均值 ${avgCount}/期 · CLEAR 率 ${clearPct}%</span>
-            <span class="trend-note" title="堆叠柱按品质从底到顶: CLEAR (绿) → PENDING (琥珀) → BLOCKED 未硬冲 (淡红) → FORCED 硬冲 (深红). 悬停看具体分布.">ⓘ</span>
+            <span class="trend-note" title="堆叠柱按品质从底到顶: CLEAR (绿) → 条件不足 (琥珀) → BLOCKED 未硬冲 (淡红) → FORCED 硬冲 (深红). 悬停看具体分布.">ⓘ</span>
           </div>
           <div class="activity-legend">
             <span class="al-item"><span class="al-swatch" style="background: var(--pass);"></span>CLEAR ${totalClear}</span>
-            ${totalPending > 0 ? `<span class="al-item"><span class="al-swatch" style="background: var(--pending);"></span>PENDING ${totalPending}</span>` : ''}
+            ${totalPending > 0 ? `<span class="al-item"><span class="al-swatch" style="background: var(--pending);"></span>条件不足 ${totalPending}</span>` : ''}
             ${blockedRespectedSum > 0 ? `<span class="al-item"><span class="al-swatch" style="background: color-mix(in srgb, var(--fail) 40%, var(--panel-2));"></span>BLOCKED ${blockedRespectedSum}</span>` : ''}
             ${totalForced > 0 ? `<span class="al-item"><span class="al-swatch" style="background: var(--fail);"></span>硬冲 ${totalForced}</span>` : ''}
           </div>
@@ -4720,7 +4727,7 @@ function checklistBacktestPanelHTML() {
   let conclusion = '';
   if (strictRate != null && actualTotal > 0) {
     if (strictRate > actualRate + 5) {
-      conclusion = `<b>严格 CLEAR 策略较当前做法胜率高 ${strictRate - actualRate} 个百分点</b> · 硬冲拖累整体表现, 建议未来跳过 PENDING / BLOCKED.`;
+      conclusion = `<b>严格 CLEAR 策略较当前做法胜率高 ${strictRate - actualRate} 个百分点</b> · 硬冲拖累整体表现, 建议未来跳过"条件不足"/ BLOCKED.`;
     } else if (strictRate < actualRate - 5) {
       conclusion = `硬冲反而给你带来了额外的赢面? 可能是你 checklist 太严, 或者硬冲样本极小 (${forcedTotal} 笔). 谨慎解读.`;
     } else {
@@ -4751,7 +4758,7 @@ function checklistBacktestPanelHTML() {
           <div class="backtest-detail">${strictRate != null && strictRate > actualRate ? '严格 > 实际' : strictRate != null && strictRate < actualRate ? '严格 < 实际' : '持平'}</div>
         </div>
         <div class="backtest-cell forced">
-          <div class="backtest-label">硬冲表现 (PENDING/BLOCKED)</div>
+          <div class="backtest-label">硬冲表现 (条件不足/BLOCKED)</div>
           <div class="backtest-value ${forcedRate != null && forcedRate < 40 ? 'fail' : ''}" ${forcedRate != null ? `data-anim-num="${forcedRate}" data-anim-key="bt-forced" data-anim-format="percent"` : ''}>${forcedRate != null ? forcedRate + '%' : '—'}</div>
           <div class="backtest-detail">${forcedWins} 胜 · ${forcedLosses} 负 · ${forcedTotal} 笔</div>
         </div>
@@ -5333,7 +5340,7 @@ function bottomSummaryHTML() {
         <div class="sab-ring-num" id="sab-ring-num">${pct}%</div>
       </div>
       <div class="sab-status-block">
-        <div class="sab-status ${cls}" id="bottom-status-main">${esc(v.status)}</div>
+        <div class="sab-status ${cls}" id="bottom-status-main">${esc(displayVerdict(v.status))}</div>
         <div class="sab-note" id="bottom-status-note">${esc(v.note)}</div>
       </div>
       <div class="sab-actions">
@@ -5356,7 +5363,7 @@ function statusBarHTML() {
   return `
     <div class="status-bar ${barCls}">
       <div class="status-row">
-        <div class="status-main ${cls}" id="status-main">${esc(v.status)}</div>
+        <div class="status-main ${cls}" id="status-main">${esc(displayVerdict(v.status))}</div>
         <div class="status-meta">
           <strong>${esc(STRAT_LABEL[state.strategy])}</strong><br>
           ${esc(subtypeString())}
@@ -5395,7 +5402,7 @@ function stickyVerdictBarHTML() {
     : v.status.startsWith('CLEAR TO OPEN · 软执行') ? 'CLEAR · 软'
     : v.status.startsWith('CLEAR TO CLOSE · 软执行') ? 'CLEAR · 软'
     : v.status.startsWith('CLEAR') ? 'CLEAR'
-    : 'PENDING';
+    : '条件不足';
   return `
     <div class="sticky-verdict-bar" id="sticky-verdict-bar">
       <span class="verdict-pill ${pillCls}">${shortStatus}</span>
@@ -5892,7 +5899,7 @@ function updateVerdictsInPlace() {
     if (rrItem) {
       const rrV = itemVerdict(rrItem);
       $rrBadge.className = 'item-numeric-verdict' + (rrV === 'pass' ? ' pass' : rrV === 'fail' ? ' fail' : rrV === 'pending' ? ' pending' : '');
-      $rrBadge.textContent = rrV === 'pass' ? 'PASS' : rrV === 'fail' ? 'BLOCK' : rrV === 'pending' ? 'PENDING' : '';
+      $rrBadge.textContent = rrV === 'pass' ? 'PASS' : rrV === 'fail' ? 'BLOCK' : rrV === 'pending' ? 'SHORT' : '';
       const $rrItem = document.getElementById('item-rr_check');
       if ($rrItem) {
         $rrItem.classList.remove('pass', 'fail', 'pending');
@@ -5921,7 +5928,7 @@ function itemHTML(it) {
   if (it.id === 'rr_check') {
     const verdictText = v === 'pass' ? `<span class="item-numeric-verdict pass" id="badge-${esc(it.id)}">PASS</span>` :
                         v === 'fail' ? `<span class="item-numeric-verdict fail" id="badge-${esc(it.id)}">BLOCK</span>` :
-                        v === 'pending' ? `<span class="item-numeric-verdict pending" id="badge-${esc(it.id)}">PENDING</span>` :
+                        v === 'pending' ? `<span class="item-numeric-verdict pending" id="badge-${esc(it.id)}">SHORT</span>` :
                         `<span class="item-numeric-verdict" id="badge-${esc(it.id)}"></span>`;
     return `
       <div class="item ${v} ${hardClass}" id="item-${esc(it.id)}">
@@ -6471,7 +6478,7 @@ function renderEditItem(item, itemsMap) {
   if (item.id === 'rr_check') {
     const verdict = itemVerdict(item);  // Uses current tempState via withTempState wrap
     const descText = rrCheckDesc();
-    const badgeText = verdict === 'pass' ? 'PASS' : verdict === 'fail' ? 'BLOCK' : 'PENDING';
+    const badgeText = verdict === 'pass' ? 'PASS' : verdict === 'fail' ? 'BLOCK' : 'SHORT';
     return `
       <div class="edit-item edit-item-rr edit-verdict-${verdict}" data-rr-display>
         <div class="edit-item-title">
@@ -6486,7 +6493,7 @@ function renderEditItem(item, itemsMap) {
   // Position check items (CSP total, CSP ticker) — auto-computed, no input in edit modal
   if (item.positionCheck) {
     const verdict = itemVerdict(item);
-    const badgeText = verdict === 'pass' ? 'PASS' : verdict === 'fail' ? 'BLOCK' : 'PENDING';
+    const badgeText = verdict === 'pass' ? 'PASS' : verdict === 'fail' ? 'BLOCK' : 'SHORT';
     return `
       <div class="edit-item edit-verdict-${verdict}">
         <div class="edit-item-title">
@@ -6948,7 +6955,7 @@ function showEditModal(id) {
         descText = rrCheckDesc();
       });
       // Update DOM
-      const badgeText = verdict === 'pass' ? 'PASS' : verdict === 'fail' ? 'BLOCK' : 'PENDING';
+      const badgeText = verdict === 'pass' ? 'PASS' : verdict === 'fail' ? 'BLOCK' : 'SHORT';
       rrDisplay.className = `edit-item edit-item-rr edit-verdict-${verdict}`;
       const badge = rrDisplay.querySelector('[data-rr-badge]');
       if (badge) {
@@ -7320,7 +7327,7 @@ function renderHistoryPage() {
           <option value="">Verdict</option>
           <option value="CLEAR"${historyFilters.verdict === 'CLEAR' ? ' selected' : ''}>CLEAR</option>
           <option value="SOFT"${historyFilters.verdict === 'SOFT' ? ' selected' : ''}>软执行</option>
-          <option value="PENDING"${historyFilters.verdict === 'PENDING' ? ' selected' : ''}>PENDING</option>
+          <option value="PENDING"${historyFilters.verdict === 'PENDING' ? ' selected' : ''}>条件不足</option>
           <option value="BLOCKED"${historyFilters.verdict === 'BLOCKED' ? ' selected' : ''}>BLOCKED</option>
         </select>
         <select id="hf-outcome" onchange="updateHistoryFilter('outcome', this.value)">
@@ -7451,7 +7458,7 @@ function renderHistoryList() {
           <div class="history-time">${esc(e.timestamp)}${e.ticker ? ` · <span class="history-ticker">${esc(e.ticker)}</span>` : ''}${stkTag ? ' · ' + stkTag : ''}</div>
           <div class="history-title">${esc(e.strategy)} · ${esc(e.subtype)}</div>
           <div class="history-meta">
-            <span class="history-verdict ${cls}">${esc(e.verdict)}</span>
+            <span class="history-verdict ${cls}">${esc(displayVerdict(e.verdict))}</span>
             <span class="history-tally">${e.pass}/${e.fail}/${e.pending}</span>
             ${e.hardFails && e.hardFails.length ? `<span class="history-hard">HARD</span>` : ''}
             ${outcomeLabel ? `<span class="history-outcome ${outcomeCls}">${esc(outcomeLabel)}</span>` : ''}
