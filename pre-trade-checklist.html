@@ -3714,6 +3714,7 @@ function renderDisciplineProfileHTML(history) {
 
   const clearPct = recent.length > 0 ? Math.round(stats.clear / recent.length * 100) : 0;
   const blockedPct = recent.length > 0 ? Math.round(stats.blocked / recent.length * 100) : 0;
+  const pendingPct = recent.length > 0 ? Math.round(stats.pending / recent.length * 100) : 0;
 
   const topHTML = topItems.length > 0
     ? topItems.map(([title, count], i) => `
@@ -3759,14 +3760,14 @@ function renderDisciplineProfileHTML(history) {
         </div>
         <div class="dp-stat">
           <div class="dp-stat-num pending">${stats.pending}</div>
-          <div class="dp-stat-label">条件不足</div>
+          <div class="dp-stat-label">INSUFF · ${pendingPct}%</div>
         </div>
       </div>
       <div class="dp-filter-row">
         <span class="dp-filter-label">分析模式:</span>
         <div class="dp-filter-tabs">
           <button class="dp-filter-tab ${filterMode === 'blocked' ? 'active' : ''}" onclick="setDisciplineFilter('blocked')">BLOCKED</button>
-          <button class="dp-filter-tab ${filterMode === 'pending' ? 'active' : ''}" onclick="setDisciplineFilter('pending')">条件不足</button>
+          <button class="dp-filter-tab ${filterMode === 'pending' ? 'active' : ''}" onclick="setDisciplineFilter('pending')">INSUFF</button>
           <button class="dp-filter-tab ${filterMode === 'all' ? 'active' : ''}" onclick="setDisciplineFilter('all')">合并</button>
         </div>
       </div>
@@ -4249,8 +4250,8 @@ function pickerFooterHTML() {
 
   return `
     ${staleReminderHTML}
+    ${exploreHTML}
     ${openHTML}
-    ${forcedHTML}
     ${overridesHTML}
     ${lossesHTML}
     ${strategyHTML}
@@ -4259,7 +4260,7 @@ function pickerFooterHTML() {
     ${checklistBacktestPanelHTML()}
     ${verdictSparklineHTML()}
     ${tickerWinRatePanelHTML()}
-    ${exploreHTML}
+    ${forcedHTML}
     <div class="picker-stats">
       <div class="picker-stat" title="过去 7 天 snapshot 总数">
         <div class="picker-stat-num" data-anim-num="${weekTotal}" data-anim-key="wk-total" data-anim-format="int">${weekTotal}</div>
@@ -4304,7 +4305,7 @@ function renderExploreResultsFor(matches) {
   `;
   const rowsHTML = matches.slice(0, 500).map(e => {
     const cls = e.verdict.startsWith('CLEAR') ? 'pass' : e.verdict === 'BLOCKED' ? 'fail' : 'pending';
-    const verdictShort = e.verdict.startsWith('CLEAR') ? 'CLEAR' : e.verdict === 'BLOCKED' ? 'BLOCK' : 'SHORT';
+    const verdictShort = e.verdict.startsWith('CLEAR') ? 'CLEAR' : e.verdict === 'BLOCKED' ? 'BLOCK' : 'INSUFF';
     const outcomeLabel = e.outcome ? OUTCOME_LABEL[e.outcome] : null;
     // Extract STK + contracts for identification (works for CSP + LEAPS both)
     const idInfo = extractStrikeInfo(e);
@@ -5899,7 +5900,7 @@ function updateVerdictsInPlace() {
     if (rrItem) {
       const rrV = itemVerdict(rrItem);
       $rrBadge.className = 'item-numeric-verdict' + (rrV === 'pass' ? ' pass' : rrV === 'fail' ? ' fail' : rrV === 'pending' ? ' pending' : '');
-      $rrBadge.textContent = rrV === 'pass' ? 'PASS' : rrV === 'fail' ? 'BLOCK' : rrV === 'pending' ? 'SHORT' : '';
+      $rrBadge.textContent = rrV === 'pass' ? 'PASS' : rrV === 'fail' ? 'BLOCK' : rrV === 'pending' ? 'INSUFF' : '';
       const $rrItem = document.getElementById('item-rr_check');
       if ($rrItem) {
         $rrItem.classList.remove('pass', 'fail', 'pending');
@@ -5928,7 +5929,7 @@ function itemHTML(it) {
   if (it.id === 'rr_check') {
     const verdictText = v === 'pass' ? `<span class="item-numeric-verdict pass" id="badge-${esc(it.id)}">PASS</span>` :
                         v === 'fail' ? `<span class="item-numeric-verdict fail" id="badge-${esc(it.id)}">BLOCK</span>` :
-                        v === 'pending' ? `<span class="item-numeric-verdict pending" id="badge-${esc(it.id)}">SHORT</span>` :
+                        v === 'pending' ? `<span class="item-numeric-verdict pending" id="badge-${esc(it.id)}">INSUFF</span>` :
                         `<span class="item-numeric-verdict" id="badge-${esc(it.id)}"></span>`;
     return `
       <div class="item ${v} ${hardClass}" id="item-${esc(it.id)}">
@@ -6478,7 +6479,7 @@ function renderEditItem(item, itemsMap) {
   if (item.id === 'rr_check') {
     const verdict = itemVerdict(item);  // Uses current tempState via withTempState wrap
     const descText = rrCheckDesc();
-    const badgeText = verdict === 'pass' ? 'PASS' : verdict === 'fail' ? 'BLOCK' : 'SHORT';
+    const badgeText = verdict === 'pass' ? 'PASS' : verdict === 'fail' ? 'BLOCK' : 'INSUFF';
     return `
       <div class="edit-item edit-item-rr edit-verdict-${verdict}" data-rr-display>
         <div class="edit-item-title">
@@ -6493,7 +6494,7 @@ function renderEditItem(item, itemsMap) {
   // Position check items (CSP total, CSP ticker) — auto-computed, no input in edit modal
   if (item.positionCheck) {
     const verdict = itemVerdict(item);
-    const badgeText = verdict === 'pass' ? 'PASS' : verdict === 'fail' ? 'BLOCK' : 'SHORT';
+    const badgeText = verdict === 'pass' ? 'PASS' : verdict === 'fail' ? 'BLOCK' : 'INSUFF';
     return `
       <div class="edit-item edit-verdict-${verdict}">
         <div class="edit-item-title">
@@ -6955,7 +6956,7 @@ function showEditModal(id) {
         descText = rrCheckDesc();
       });
       // Update DOM
-      const badgeText = verdict === 'pass' ? 'PASS' : verdict === 'fail' ? 'BLOCK' : 'SHORT';
+      const badgeText = verdict === 'pass' ? 'PASS' : verdict === 'fail' ? 'BLOCK' : 'INSUFF';
       rrDisplay.className = `edit-item edit-item-rr edit-verdict-${verdict}`;
       const badge = rrDisplay.querySelector('[data-rr-badge]');
       if (badge) {
