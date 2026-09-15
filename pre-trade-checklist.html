@@ -1917,6 +1917,7 @@
 
 
 
+
 "use strict";
 
 /* ==========================================================
@@ -2678,6 +2679,12 @@ function cspItems() {
       return '选意图决定 IVP 门槛.';
     })(),
     numeric: { placeholder: 'IVP', unit: '%', min: ivpMin, comparator: '>' } });
+  base.push({ group: 'Contract structure · 合约结构', id: 'vrp',
+    title: 'VRP > 0 · IV 溢价定价 (soft)',
+    desc: 'VRP = IV - RV. > 0 表示卖方溢价定价, 有 edge. 参考: Barchart / MarketChameleon / ORATS. ✓ 已确认正值 · ✗ 负或未确认 (无溢价, 考虑观望).' });
+  base.push({ group: 'Contract structure · 合约结构', id: 'vrp_pct',
+    title: 'VRP Percentile > 50 · 相对自身高位 (soft)',
+    desc: 'VRP 在自身历史的百分位. > 50 表明当前溢价水平位于本标的历史中位以上, 消除跨标的 baseline 差异. ✓ Percentile > 50 · ✗ ≤ 50 (溢价相对稀薄).' });
   base.push({ group: 'Contract structure · 合约结构', id: 'dte',
     title: 'DTE 20-45 天',
     desc: '20-45 天区间可用. 20-30 delta 敏感度高但 theta 快; 30-45 最平衡; > 45 资金占用久且 ROC 偏低.',
@@ -2766,6 +2773,12 @@ function cspSniperItems() {
     desc: '狙击依赖高 IV 支撑权利金厚度, 从而压低 breakeven. IV 不足则收益比不合算.',
     hard: true,
     numeric: { placeholder: 'IVP', unit: '%', min: sniperIvpMin, comparator: '>' } });
+  base.push({ group: '枪响 · The Shot', id: 'vrp',
+    title: 'VRP 明显为正 · 恐慌溢价成立 (soft)',
+    desc: '狙击场景 IVP 通常已 > 60. 再确认 VRP 明显正值 (最好 > 3 vol points) 说明恐慌是真溢价, 不是 IV/RV 双高. ✓ VRP 明显正 · ✗ 边际或负值 (可能 IV/RV 同步高, 无 edge).' });
+  base.push({ group: '枪响 · The Shot', id: 'vrp_pct',
+    title: 'VRP Percentile > 70 · 自身罕见高位 (soft)',
+    desc: '狙击门槛更严. Percentile > 70 表明本标的自身历史里当前 VRP 罕见地高, 增加狙击胜算. ✓ Percentile > 70 · ✗ ≤ 70.' });
 
   // === 合约 · Contract ===
   base.push({ group: '合约 · Contract', id: 'dte_60_90',
@@ -2863,6 +2876,12 @@ function pmccItems() {
     title: 'IVP > 40%',
     desc: '保底仓场景 IV 门槛 40%. 低于此权利金厚度不足.',
     numeric: { placeholder: 'IVP', unit: '%', min: 40, comparator: '>' } });
+  base.push({ group: 'Short call selection · 短 call 选择', id: 'vrp',
+    title: 'Short call VRP > 0 · IV 溢价定价 (soft)',
+    desc: '短 call 是卖方结构. IVP > 40 已确认后, 再确认 VRP 正值 = 定价溢价, 权利金有 edge. ✓ 已确认 · ✗ 未确认或负 (考虑等 IV 抬升再卖).' });
+  base.push({ group: 'Short call selection · 短 call 选择', id: 'vrp_pct',
+    title: 'Short call VRP Percentile > 50 · 相对自身高位 (soft)',
+    desc: '底仓自身 VRP 历史百分位 > 50 = 当前溢价水平高于本标的历史中位, 短 call 权利金定价相对更优. ✓ Percentile > 50 · ✗ ≤ 50.' });
   base.push({ group: 'Short call selection · 短 call 选择', id: 'delta',
     title: 'Short call Delta ≤ 15',
     desc: 'Δ ≤ 15 (= 0.15). 低 assign 概率, 保护底仓. 整数.',
@@ -2936,6 +2955,12 @@ function ccItems() {
       return '选模式决定 IVP 门槛.';
     })(),
     numeric: { placeholder: 'IVP', unit: '%', min: ccIvpMinV, comparator: '>' } });
+  base.push({ group: 'Short call selection · 短 call 选择', id: 'vrp',
+    title: 'VRP > 0 · IV 溢价定价 (soft)',
+    desc: 'CC 是卖方结构, 短 call 权利金厚度依赖 VRP. > 0 表明卖方有 edge. ✓ 已确认 · ✗ 未确认或负 (可考虑不卖 call, 等 IV 抬升).' });
+  base.push({ group: 'Short call selection · 短 call 选择', id: 'vrp_pct',
+    title: 'VRP Percentile > 50 · 相对自身高位 (soft)',
+    desc: '本底仓 VRP 在自身历史中位以上, 短 call 定价相对更优. ✓ Percentile > 50 · ✗ ≤ 50.' });
 
   const ccDelta = ccDeltaSpec();
   if (ccDelta) {
@@ -9166,6 +9191,7 @@ window.addEventListener('scroll', updateScrolledState, { passive: true });
   // Delay 800ms so UI renders + user sees the app before any sync toast
   setTimeout(() => { syncMergeSilent(); }, 800);
 })();
+
 
 
 
