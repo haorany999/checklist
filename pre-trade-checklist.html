@@ -1596,6 +1596,30 @@
     .main-nav-hint { font-size: 10.5px; }
   }
 
+  /* ===== Market Signal · VTV/QQQ ROC regime (layer 1) ===== */
+  .ms-panel { padding: 12px 14px; margin: 0 0 12px; background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius, 6px); }
+  .ms-panel.ms-needs-attention { border-color: color-mix(in srgb, var(--pending) 55%, var(--border)); }
+  .ms-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+  .ms-title { font-family: var(--mono); font-size: 11px; color: var(--text-faint); letter-spacing: 0.06em; text-transform: uppercase; }
+  .ms-age { font-family: var(--mono); font-size: 10.5px; color: var(--text-faint); }
+  .ms-age.stale { color: var(--pending); font-weight: 600; }
+  .ms-btns { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .ms-btn { padding: 7px 4px; background: var(--panel-2); border: 1px solid var(--border); border-radius: 4px;
+    color: var(--text-dim); font-family: var(--mono); font-size: 12px; cursor: pointer; white-space: nowrap; transition: all 0.12s; }
+  .ms-btn:hover { border-color: var(--text-faint); color: var(--text); }
+  .ms-btn.active { font-weight: 700; color: var(--panel); }
+  .ms-btn.ms-pass.active    { background: var(--pass);    border-color: var(--pass); }
+  .ms-btn.ms-pending.active { background: var(--pending); border-color: var(--pending); }
+  .ms-btn.ms-fail.active    { background: var(--fail);    border-color: var(--fail); }
+  .ms-btn.ms-accent.active  { background: var(--accent);  border-color: var(--accent); }
+  .ms-meaning { margin-top: 9px; font-size: 12px; color: var(--text-dim); line-height: 1.5; }
+  .ms-t-pass { color: var(--pass); } .ms-t-pending { color: var(--pending); } .ms-t-fail { color: var(--fail); } .ms-t-accent { color: var(--accent); }
+  @media (max-width: 640px) {
+    .ms-btns { grid-template-columns: repeat(2, 1fr); }
+    .ms-btn { font-size: 13px; padding: 9px 4px; }
+    .ms-meaning { font-size: 13px; }
+  }
+
   /* ===== Portfolio Risk layer · summary / simulation / holdings ===== */
   .pr-panel {
     padding: 12px 14px; margin: -4px 0 12px;
@@ -2330,10 +2354,7 @@ function leapsOpenItems() {
   base.push({ group: 'Discipline · 交易前提', id: 'discipline',
     title: '本笔非临时起意 · 前一天已计划',
     desc: '前一日已计划, 非临时反应. 排除报复 / FOMO / 回本 / 无聊性动机.' });
-  base.push({ group: 'Market environment · 宏观环境', id: 'vtv_qqq_roc',
-    title: 'VTV/QQQ ROC 状态 · 非红灯 (未冲高 · 未穿零轴向上)',
-    desc: 'VTV/QQQ 相对强度. 冲高或上穿零轴 = 风格 risk-off, QQQ 承压, 禁止开仓. 高位钝化后拐头向下 = 风格回流成长, 允许入场. 优先级高于个股技术信号.',
-    hard: true });
+  base.push(rocRegimeItem('leaps'));
   base.push({ group: 'Market environment · 宏观环境', id: 'fg',
     title: 'Fear & Greed ≤ 45  (不追高)',
     desc: 'CNN F&G Index. ≤ 45 (Fear) 允许; > 45 (Greed) 慎入, 避免追高.',
@@ -2669,9 +2690,7 @@ function cspItems() {
   base.push({ group: 'Discipline · 交易前提', id: 'discipline',
     title: '本笔非临时起意 · 前一天已计划',
     desc: '前一日已计划, 非临时反应. 排除报复 / FOMO / 回本 / 无聊性动机.' });
-  base.push({ group: 'Market environment · 宏观环境', id: 'vtv_qqq_roc',
-    title: 'VTV/QQQ ROC 状态观察 (soft)',
-    desc: 'VTV/QQQ 深底位 (负值区) 反映风格极端偏成长, 警惕反转杀跌, 左侧加仓 CSP 需谨慎. 底部企稳可作情绪底部辅助信号. 极端读数时不勾, 触发再评估.' });
+  base.push(rocRegimeItem('csp'));
   base.push({ group: 'Market environment · 宏观环境', id: 'macro',
     title: '宏观事件已核对',
     desc: 'CSP DTE 20-45 天通常覆盖至少一次 FOMC / CPI / NFP. 勾选 = 已在日历核对事件时点.' });
@@ -2771,9 +2790,7 @@ function cspSniperItems() {
   base.push({ group: 'Discipline · 交易前提', id: 'discipline',
     title: '本笔非临时起意 · 平时排查已就位',
     desc: '标的池已在平静市排查完毕 (业务清晰 + 长持意愿). 大跌日出击为预设动作, 非临时反应.' });
-  base.push({ group: 'Market environment · 宏观环境', id: 'vtv_qqq_roc',
-    title: 'VTV/QQQ ROC 状态观察 (soft)',
-    desc: 'VTV/QQQ 深底位 (负值区) 反映风格极端偏成长, 警惕反转杀跌, 狙击不宜过激. 底部企稳 = 情绪底部辅助信号, 增加狙击胜算.' });
+  base.push(rocRegimeItem('sniper'));
 
   // === 战前 · Pre-battle ===
   base.push({ group: '战前 · Pre-battle', id: 'quality_stock',
@@ -2880,6 +2897,7 @@ function pmccItems() {
     numeric: { placeholder: 'e.g. 15', unit: '%', min: 10, comparator: '≥' } });
 
   // === Market environment ===
+  base.push(rocRegimeItem('call'));
   base.push({ group: 'Market environment · 宏观环境', id: 'macro',
     title: '未来 short call DTE 内无重大宏观事件',
     desc: 'FOMC / CPI / PPI / NFP 已在日历核对. 大跌 IV spike 时 short call 溢价失灵.' });
@@ -2937,6 +2955,7 @@ function ccItems() {
     title: '本笔非临时起意 · 前一天已计划',
     desc: '前一日已计划, 非临时反应. 排除报复 / FOMO / 回本 / 无聊性动机.' });
 
+  base.push(rocRegimeItem('call'));
   base.push({ group: 'Market environment · 宏观环境', id: 'macro',
     title: '未来 short call DTE 内无重大宏观事件',
     desc: 'FOMC / CPI / PPI / NFP 已在日历核对. 大跌 IV spike 时 short call 溢价失灵.' });
@@ -3087,6 +3106,8 @@ function rrCheckDesc() {
 function itemVerdict(item) {
   // R:R computed item
   if (item.id === 'rr_check') return rrCheckVerdict();
+  // Market regime (VTV/QQQ ROC) — global signal, not a per-trade checkbox
+  if (item.regimeCheck) return rocRegimeVerdict(item);
 
   // Locked items (dependency not met) → always pending
   if (item.locked) return 'pending';
@@ -5071,6 +5092,7 @@ function renderPicker() {
       <div class="picker-title">选择要检查的策略</div>
       <div class="picker-sub">Trading in the Zone</div>
       ${syncStatusMiniHTML()}
+      ${marketSignalHTML()}
       ${mainNavWidgetHTML()}
       ${portfolioRiskHTML()}
       ${daysSinceLastSnapshotHTML()}
@@ -5743,7 +5765,7 @@ function renderChecklist() {
   }
 
   items.forEach(it => {
-    if (it.positionCheck) return;
+    if (it.positionCheck || it.regimeCheck) return;
     if (it.numeric) {
       const el = document.getElementById(`num-${it.id}`);
       if (el) {
@@ -6032,6 +6054,18 @@ function itemHTML(it) {
       </div>
     `;
   }
+  if (it.regimeCheck) {
+    return `
+      <div class="item ${v} ${hardClass}" id="item-${esc(it.id)}">
+        <div class="item-head">
+          <div class="item-text">
+            <div class="item-title">${esc(it.title)} ${hardBadge}</div>
+            ${it.desc ? `<div class="item-desc">${esc(it.desc)} <em style="color:var(--text-faint);">— 由首页 Market Signal 自动判定</em></div>` : ''}
+          </div>
+        </div>
+      </div>
+    `;
+  }
   if (it.positionCheck) {
     return `
       <div class="item ${v} ${hardClass}" id="item-${esc(it.id)}">
@@ -6283,6 +6317,7 @@ function restoreStateFromStorage(saved) {
   if (saved.items) state.items = { ...saved.items };
   // Legacy snapshots have no flags: empty field → auto, filled field → keep as manual
   state._autoExposure = _normalizeAutoFlags(saved);
+  delete state.rocPhaseAtSave;   // live checklist always reads today's Market Signal
 }
 
 let __draftSaveTimer = null;
@@ -6427,6 +6462,10 @@ function saveToHistory() {
       notes: '',
       fullState: snapshotStateForStorage()
     };
+    const rocNow = loadRocPhase();
+    entry.rocPhase = rocNow ? rocNow.phase : null;
+    entry.fullState.rocPhaseAtSave = rocNow ? rocNow.phase : null;
+    if (rocNow) entry.inputs = (entry.inputs ? entry.inputs + '; ' : '') + `roc=${rocNow.phase}`;
     history.unshift(entry);
     if (history.length > HISTORY_MAX) history.length = HISTORY_MAX;
     safeSetItem(HISTORY_KEY, JSON.stringify(history));
@@ -6475,14 +6514,20 @@ function deleteHistoryEntry(id) {
 
 // Temporarily swap global state to a snapshot state, run fn, restore.
 // Used by edit modal to recompute verdict using a modified fullState.
+// >0 while a saved snapshot is being evaluated. Global signals (market regime) must use
+// the value recorded in the snapshot, never today's — otherwise editing an old snapshot
+// would silently re-judge it against the current market.
+let __tempStateDepth = 0;
 function withTempState(tempState, fn) {
   const backup = JSON.parse(JSON.stringify(state));
   const clone = JSON.parse(JSON.stringify(tempState || {}));
   Object.keys(state).forEach(k => delete state[k]);
   Object.assign(state, clone);
+  __tempStateDepth++;
   try {
     return fn();
   } finally {
+    __tempStateDepth--;
     Object.keys(state).forEach(k => delete state[k]);
     Object.assign(state, backup);
   }
@@ -6552,6 +6597,25 @@ function renderEditItem(item, itemsMap) {
           <span class="edit-item-verdict-badge edit-verdict-badge-${verdict}" data-rr-badge>${badgeText}</span>
         </div>
         <div class="edit-item-desc" data-rr-desc>${esc(descText)}</div>
+      </div>
+    `;
+  }
+
+  // Market regime — judged by the phase recorded when the snapshot was saved.
+  // Legacy snapshots (saved before the regime layer) fall through to the normal checkbox.
+  if (item.regimeCheck && !item.legacy) {
+    const verdict = itemVerdict(item);
+    const badgeText = verdict === 'pass' ? 'PASS' : verdict === 'fail' ? 'BLOCK' : 'INSUFF';
+    return `
+      <div class="edit-item edit-verdict-${verdict}">
+        <div class="edit-item-title">
+          ${esc(item.title)} ${hardBadge}
+          <span class="edit-item-verdict-badge edit-verdict-badge-${verdict}">${badgeText}</span>
+        </div>
+        ${desc}
+        <div style="font-size: 11px; color: var(--text-faint); font-style: italic; margin-top: 4px;">
+          按保存时的市场阶段判定
+        </div>
       </div>
     `;
   }
@@ -8385,6 +8449,7 @@ function buildSyncPayload() {
       nav: loadSavedNav() || '',
       cash: loadSavedCash() || '',
       swvxx: loadSavedSwvxx() || '',
+      rocPhase: (function() { try { return localStorage.getItem(ROC_PHASE_KEY) || ''; } catch (e) { return ''; } })(),
       density: (function() { try { return localStorage.getItem(DENSITY_KEY) || ''; } catch (e) { return ''; } })(),
       trendRange: (function() { try { return localStorage.getItem(TREND_RANGE_KEY) || ''; } catch (e) { return ''; } })(),
       themeCustom: (function() { try { return localStorage.getItem(THEME_CUSTOM_KEY) || ''; } catch (e) { return ''; } })(),
@@ -8407,6 +8472,7 @@ function applyRemotePayload(remote, mode) {
     if (typeof s.nav === 'string' && s.nav) localStorage.setItem(NAV_KEY, s.nav);
     if (typeof s.cash === 'string' && s.cash) localStorage.setItem(CASH_KEY, s.cash);
     if (typeof s.swvxx === 'string' && s.swvxx) localStorage.setItem(SWVXX_KEY, s.swvxx);
+    if (typeof s.rocPhase === 'string' && s.rocPhase) _mergeRemoteRocPhase(s.rocPhase);
     if (typeof s.density === 'string' && s.density) localStorage.setItem(DENSITY_KEY, s.density);
     if (typeof s.trendRange === 'string' && s.trendRange) localStorage.setItem(TREND_RANGE_KEY, s.trendRange);
     if (typeof s.themeCustom === 'string' && s.themeCustom) localStorage.setItem(THEME_CUSTOM_KEY, s.themeCustom);
@@ -9632,6 +9698,151 @@ function cashReserveDesc(base) {
   const after = (t && !t.incomplete) ? r.pct(r.freeCash - t.amount) : null;
   return base + def + ` Portfolio · 当前 ${_fmtPct(now)}` + (after != null ? ` · 本笔后 ${_fmtPct(after)}` : '');
 }
+
+/* ==========================================================
+ * MARKET SIGNAL · VTV/QQQ ROC regime
+ * Layer 1 of Signal → Portfolio Risk → Pre-Trade. Set once on the main page;
+ * every checklist reads it. Four phases split one ROC cycle:
+ *   ① 负区·下行  ② 负区·掉头向上 (S1)  ③ 正区·上行 (after S2)  ④ 正区·掉头向下 (S3)
+ * S4 (下穿零轴) returns the cycle to ①.
+ * ========================================================== */
+const ROC_PHASE_KEY = 'pretrade_roc_phase';
+const ROC_STALE_DAYS = 7;
+const ROC_PHASES = {
+  1: { short: '① 负区 ↓',   label: '① 负区 · 下行',     meaning: '成长领涨 · 涨势确认或持续',           cls: 'pass' },
+  2: { short: '② 负区 ↑拐', label: '② 负区 · 掉头向上', meaning: '早期顶部预警 · 噪音大, 历史约一半对一半', cls: 'pending' },
+  3: { short: '③ 正区 ↑',   label: '③ 正区 · 上行',     meaning: '下跌确认 · 方向准, 时机滞后',          cls: 'fail' },
+  4: { short: '④ 正区 ↓拐', label: '④ 正区 · 掉头向下', meaning: '早期底部预警 · 历史最准, 后续多为大涨',   cls: 'accent' },
+};
+// strategy × phase → 'pass' | 'soft' (soft fail) | 'hard' (hard fail)
+const ROC_MATRIX = {
+  leaps:  { 1: 'pass', 2: 'soft', 3: 'hard', 4: 'pass' },
+  csp:    { 1: 'pass', 2: 'soft', 3: 'soft', 4: 'pass' },
+  sniper: { 1: 'pass', 2: 'soft', 3: 'soft', 4: 'pass' },
+  call:   { 1: 'pass', 2: 'pass', 3: 'pass', 4: 'soft' },   // PMCC / CC short call
+};
+const ROC_DESC = {
+  leaps: {
+    1: '负区下行: 成长风格领涨, 涨势确认或持续. 允许入场.',
+    2: '负区掉头向上: 早期顶部预警, 历史样本约一半继续上涨、一半随即下跌. 不否决, 记为软执行, 可降低仓位或等待确认. RSI 无法区分此信号的后续方向.',
+    3: '正区上行: 下跌确认, 历史样本 4/4 后续继续下跌或处于下跌中继. 禁止开仓 / 加仓, 等待 ④. 该信号滞后, 出现时可能已接近底部.',
+    4: '正区掉头向下: 早期底部预警, 历史样本 4/4 后续大涨. LEAPS 最佳窗口. QQQ RSI ≤ 40 时底部时机最准.',
+  },
+  csp: {
+    1: '负区下行: 成长风格领涨, 卖 put 环境正常.',
+    2: '负区掉头向上: 早期顶部预警, 噪音大 (约一半对一半). 软执行, 可降低 Delta 或仓位.',
+    3: '正区上行: 下跌确认, 后续多为下跌中继. 软执行: 卖 put 易在下跌中接刀, strike 应更深、仓位更小.',
+    4: '正区掉头向下: 早期底部预警, 历史样本 4/4 后续大涨. 卖 put 有利窗口.',
+  },
+  sniper: {
+    1: '负区下行: 成长风格领涨. 狙击机会较少, 其余门槛照常执行.',
+    2: '负区掉头向上: 早期顶部预警, 噪音大. 软执行: 下跌可能才刚开始, 不宜过激.',
+    3: '正区上行: 下跌确认, 可能处于下跌中继. 软执行: 接刀风险高, breakeven 应更深于强支撑.',
+    4: '正区掉头向下: 早期底部预警, 历史样本 4/4 后续大涨. 狙击最佳窗口. QQQ RSI ≤ 40 时底部时机最准.',
+  },
+  call: {
+    1: '负区下行: 涨势中卖 call, 按现有 Delta / KDJ 门槛执行.',
+    2: '负区掉头向上: 早期顶部预警, 回调前卖 call 有利.',
+    3: '正区上行: 下跌确认, 卖 call 环境有利.',
+    4: '正区掉头向下: 早期底部预警, 后续大概率大涨 (历史样本 4/4). 软执行: short call 易被穿或封顶上行, 可降低 Delta 或暂缓.',
+  },
+};
+
+function loadRocPhase() {
+  try {
+    const o = JSON.parse(localStorage.getItem(ROC_PHASE_KEY) || 'null');
+    if (o && ROC_PHASES[o.phase] && Number.isFinite(o.updatedAt)) return { phase: o.phase, updatedAt: o.updatedAt };
+  } catch (e) {}
+  return null;
+}
+function saveRocPhase(phase) {
+  if (!ROC_PHASES[phase]) return null;
+  const o = { phase, updatedAt: Date.now() };
+  try { localStorage.setItem(ROC_PHASE_KEY, JSON.stringify(o)); } catch (e) {}
+  return o;
+}
+function rocAgeDays(o) { return o ? Math.max(0, Math.floor((Date.now() - o.updatedAt) / 86400000)) : null; }
+// Sync: keep whichever device confirmed the phase most recently
+function _mergeRemoteRocPhase(raw) {
+  try {
+    const r = JSON.parse(raw);
+    if (!r || !ROC_PHASES[r.phase] || !Number.isFinite(r.updatedAt)) return;
+    const l = loadRocPhase();
+    if (!l || r.updatedAt > l.updatedAt) localStorage.setItem(ROC_PHASE_KEY, JSON.stringify({ phase: r.phase, updatedAt: r.updatedAt }));
+  } catch (e) {}
+}
+
+// Which phase applies right now: today's (live checklist) or the one saved with a snapshot
+function _rocPhaseForEval() {
+  if (__tempStateDepth > 0) {
+    if (Object.prototype.hasOwnProperty.call(state, 'rocPhaseAtSave')) {
+      const p = state.rocPhaseAtSave;
+      return { phase: ROC_PHASES[p] ? p : null, legacy: false, fromSnapshot: true };
+    }
+    return { phase: null, legacy: true };   // saved before the regime layer → original checkbox
+  }
+  const o = loadRocPhase();
+  return { phase: o ? o.phase : null, legacy: false, age: rocAgeDays(o) };
+}
+
+function rocRegimeItem(kind) {
+  const base = { group: 'Market environment · 宏观环境', id: 'vtv_qqq_roc', regimeCheck: true, regimeKind: kind };
+  const ev = _rocPhaseForEval();
+  if (ev.legacy) {
+    return { ...base, legacy: true, hard: kind === 'leaps',
+      title: kind === 'leaps' ? 'VTV/QQQ ROC 状态 · 非红灯 (旧版勾选)' : 'VTV/QQQ ROC 状态观察 (旧版勾选)',
+      desc: '此快照保存于市场阶段功能之前, 按当时的勾选结果判定.' };
+  }
+  if (!ev.phase) {
+    return { ...base, hard: kind === 'leaps', title: 'VTV/QQQ ROC 阶段 · 未设置',
+      desc: '首页 Market Signal 尚未设置 VTV/QQQ ROC 阶段, 本项无法判定.' };
+  }
+  const rule = ROC_MATRIX[kind][ev.phase];
+  let desc = ROC_DESC[kind][ev.phase];
+  if (!ev.fromSnapshot && ev.age >= ROC_STALE_DAYS) desc += ` ⚠ 阶段已 ${ev.age} 天未确认, 请到首页确认是否仍然有效.`;
+  return { ...base, hard: kind === 'leaps' && rule !== 'soft',
+    title: `VTV/QQQ ROC 阶段 · ${ROC_PHASES[ev.phase].label}`, desc };
+}
+function rocRegimeVerdict(item) {
+  if (item.legacy) {
+    const s = state.items ? state.items[item.id] : null;
+    return s === 'pass' ? 'pass' : s === 'fail' ? 'fail' : 'pending';
+  }
+  const ev = _rocPhaseForEval();
+  if (!ev.phase) return 'pending';
+  const rule = (ROC_MATRIX[item.regimeKind] || {})[ev.phase];
+  if (!rule) return 'pending';
+  return rule === 'pass' ? 'pass' : 'fail';
+}
+
+/* ---------- Main page · Market Signal panel ---------- */
+function marketSignalHTML() {
+  const o = loadRocPhase();
+  const age = rocAgeDays(o);
+  const stale = !!o && age >= ROC_STALE_DAYS;
+  const btns = [1, 2, 3, 4].map(n => `
+    <button class="ms-btn ms-${ROC_PHASES[n].cls} ${o && o.phase === n ? 'active' : ''}" onclick="setRocPhase(${n})"
+      title="${esc(ROC_PHASES[n].label)} · ${esc(ROC_PHASES[n].meaning)}">${ROC_PHASES[n].short}</button>`).join('');
+  const status = !o
+    ? `<span class="ms-age stale">未设置 · LEAPS 会显示条件不足</span>`
+    : `<span class="ms-age ${stale ? 'stale' : ''}">${age === 0 ? '今天确认' : age + ' 天前确认'}${stale ? ' · 点当前阶段续期' : ''}</span>`;
+  const meaning = o
+    ? `<div class="ms-meaning"><b class="ms-t-${ROC_PHASES[o.phase].cls}">${ROC_PHASES[o.phase].label}</b> — ${ROC_PHASES[o.phase].meaning}</div>`
+    : `<div class="ms-meaning">选择 VTV/QQQ ROC 当前所处阶段 · 所有 checklist 自动读取</div>`;
+  return `
+    <div class="ms-panel ${stale || !o ? 'ms-needs-attention' : ''}">
+      <div class="ms-head"><span class="ms-title">Market Signal · VTV/QQQ ROC</span>${status}</div>
+      <div class="ms-btns">${btns}</div>
+      ${meaning}
+    </div>`;
+}
+window.setRocPhase = (n) => {
+  const prev = loadRocPhase();
+  if (!saveRocPhase(n)) return;
+  render();
+  showToast(prev && prev.phase === n ? `已确认 ${ROC_PHASES[n].label} 仍然有效` : `市场阶段 → ${ROC_PHASES[n].label}`, 'info');
+  if (typeof scheduleAutoPushToGist === 'function') scheduleAutoPushToGist();
+};
 
 /* Boot */
 loadTheme();
