@@ -1596,6 +1596,100 @@
     .main-nav-hint { font-size: 10.5px; }
   }
 
+  /* ===== Portfolio Risk layer · summary / simulation / holdings ===== */
+  .pr-panel {
+    padding: 12px 14px; margin: -4px 0 12px;
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: var(--radius, 6px);
+  }
+  .pr-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 10px; }
+  .pr-title { font-family: var(--mono); font-size: 11px; color: var(--text-faint); letter-spacing: 0.06em; text-transform: uppercase; }
+  .pr-source { font-family: var(--mono); font-size: 10.5px; color: var(--text-faint); background: var(--panel-2); padding: 2px 7px; border-radius: 3px; cursor: help; }
+  .pr-inputs { display: flex; gap: 10px; margin-bottom: 10px; }
+  .pr-input-field { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; }
+  .pr-input-field span { font-family: var(--mono); font-size: 11px; color: var(--text-faint); letter-spacing: 0.04em; flex-shrink: 0; }
+  .pr-input-field input {
+    flex: 1; min-width: 0; padding: 5px 9px;
+    background: var(--panel-2); border: 1px solid var(--border); border-radius: 4px;
+    color: var(--text); font-family: var(--mono); font-size: 13px; font-weight: 600; outline: none;
+  }
+  .pr-input-field input:focus { border-color: var(--accent); }
+  .pr-rows { display: flex; flex-direction: column; }
+  .pr-row {
+    display: grid; grid-template-columns: 1fr auto 60px 110px; gap: 10px; align-items: baseline;
+    padding: 5px 0; border-top: 1px solid var(--border);
+    font-family: var(--mono); font-size: 12.5px;
+  }
+  .pr-row:first-child { border-top: none; }
+  .pr-label { color: var(--text-dim); display: flex; flex-direction: column; }
+  .pr-sub { font-size: 10.5px; color: var(--text-faint); margin-top: 1px; }
+  .pr-usd { color: var(--text); text-align: right; font-variant-numeric: tabular-nums; }
+  .pr-pct { color: var(--text-dim); text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .pr-pct.pass, .pr-sim-after.pass { color: var(--pass); }
+  .pr-pct.pending, .pr-sim-after.pending { color: var(--pending); }
+  .pr-pct.fail, .pr-sim-after.fail { color: var(--fail); }
+  .pr-lim { color: var(--text-faint); font-size: 10.5px; text-align: right; }
+  .pr-missing { color: var(--text-faint); font-style: italic; font-size: 11px; }
+  .pr-empty { font-family: var(--mono); font-size: 12px; color: var(--text-faint); font-style: italic; padding: 6px 0; }
+  .pr-detail-btn {
+    margin-top: 8px; width: 100%; padding: 6px;
+    background: transparent; border: 1px dashed var(--border); border-radius: 4px;
+    color: var(--text-dim); font-family: var(--mono); font-size: 11.5px; cursor: pointer;
+  }
+  .pr-detail-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* Post-trade simulation · lives inside the checklist position-sizing box */
+  .pr-sim:empty { display: none; }
+  .pr-sim {
+    margin-top: 12px; padding: 10px 12px;
+    background: var(--bg); border-radius: var(--radius, 6px);
+    border-left: 3px solid var(--accent); font-family: var(--mono);
+  }
+  .pr-sim-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px; margin-bottom: 8px; }
+  .pr-sim-title { font-size: 11px; color: var(--text-faint); letter-spacing: 0.06em; text-transform: uppercase; }
+  .pr-sim-trade { font-size: 12px; color: var(--text); font-weight: 600; }
+  .pr-sim-cols, .pr-sim-row {
+    display: grid; grid-template-columns: 1fr 58px 16px 58px 120px; gap: 6px; align-items: baseline;
+  }
+  .pr-sim-cols { font-size: 9.5px; color: var(--text-faint); letter-spacing: 0.06em; padding-bottom: 3px; }
+  .pr-sim-cols span:nth-child(2), .pr-sim-cols span:nth-child(4) { text-align: right; }
+  .pr-sim-row { font-size: 12.5px; padding: 4px 0; border-top: 1px solid var(--border); }
+  .pr-sim-label { color: var(--text-dim); }
+  .pr-sim-before { color: var(--text-faint); text-align: right; font-variant-numeric: tabular-nums; }
+  .pr-sim-arrow { color: var(--text-faint); text-align: center; }
+  .pr-sim-after { color: var(--text); text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .pr-sim-lim { color: var(--text-faint); font-size: 10.5px; text-align: right; }
+  .pr-sim-verdict { margin-top: 8px; padding: 6px 9px; border-radius: 4px; font-size: 12px; font-weight: 600; }
+  .pr-sim-verdict.pass { color: var(--pass); background: color-mix(in srgb, var(--pass) 10%, transparent); }
+  .pr-sim-verdict.fail { color: var(--fail); background: color-mix(in srgb, var(--fail) 10%, transparent); }
+  .pr-sim-note { margin-top: 6px; font-size: 10px; color: var(--text-faint); font-style: italic; }
+  .pr-sim-override { margin-top: 6px; padding: 6px 9px; border-radius: 4px; font-size: 11.5px; line-height: 1.5;
+    color: var(--pending); background: color-mix(in srgb, var(--pending) 10%, transparent); }
+  /* Existing-exposure inputs that are following Portfolio automatically */
+  input.auto-exposure { color: var(--accent); background: color-mix(in srgb, var(--accent) 6%, var(--panel-2)) !important; }
+
+  /* Holdings modal */
+  .hd-ticker { padding: 8px 0; border-top: 1px solid var(--border); font-family: var(--mono); }
+  .hd-ticker:first-child { border-top: none; }
+  .hd-ticker-head { display: grid; grid-template-columns: 1fr auto 60px; gap: 10px; font-size: 13px; margin-bottom: 3px; }
+  .hd-ticker-name { font-weight: 700; color: var(--text); letter-spacing: 0.03em; }
+  .hd-ticker-exp { color: var(--text); text-align: right; font-variant-numeric: tabular-nums; }
+  .hd-ticker-pct { color: var(--accent); text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .hd-pos { display: grid; grid-template-columns: 78px 1fr auto; gap: 10px; font-size: 11.5px; padding: 2px 0 2px 12px; color: var(--text-dim); }
+  .hd-pos-kind { color: var(--text-faint); }
+  .hd-pos-val { text-align: right; font-variant-numeric: tabular-nums; }
+  .hd-note { margin-top: 10px; font-family: var(--mono); font-size: 10.5px; color: var(--text-faint); font-style: italic; }
+
+  @media (max-width: 640px) {
+    .pr-inputs { flex-direction: column; gap: 6px; }
+    .pr-input-field span { width: 46px; }
+    .pr-row { grid-template-columns: 1fr auto 56px; font-size: 13px; }
+    .pr-lim { display: none; }
+    .pr-sim-cols, .pr-sim-row { grid-template-columns: 1fr 52px 14px 52px; }
+    .pr-sim-lim, .pr-sim-cols span:nth-child(5) { display: none; }
+    .pr-sim-row { font-size: 13px; }
+  }
+
   /* MB2 · Swipe gestures for history rows (mobile) */
   .history-item.swipeable { position: relative; overflow: hidden; }
   .history-item.swipeable .history-main {
@@ -1918,6 +2012,7 @@
 
 
 
+
 "use strict";
 
 /* ==========================================================
@@ -2075,85 +2170,19 @@ function cspTickerSoftTarget() {
   return { medium: 10, high: 8 }[state.cspVolTier] || null;
 }
 
-// Auto-compute existing CSP nominal from history (all `open` outcome CSP snapshots)
-function autoComputeCspExistingTotal() {
-  const history = getActiveHistory();
-  let total = 0;
-  const items = [];
-  history.forEach(e => {
-    if (!e.strategy || !e.strategy.startsWith('CSP')) return;
-    if (e.outcome !== 'open') return;  // Only open positions
-    const inp = e.inputs || '';
-    const strikeMatch = inp.match(/strike=(\d+\.?\d*)/);
-    const contractsMatch = inp.match(/contracts=(\d+)/) || inp.match(/cn=(\d+)/);
-    let val = 0;
-    if (strikeMatch) {
-      const strike = parseFloat(strikeMatch[1]);
-      const contracts = contractsMatch ? parseFloat(contractsMatch[1]) : 1;
-      val = strike * 100 * contracts;
-    } else if (e.fullState && e.fullState.cspThisNominal) {
-      val = parseFloat(e.fullState.cspThisNominal) || 0;
-    }
-    if (val > 0) { total += val; items.push({ ticker: e.ticker || '?', val }); }
-  });
-  return { total, items };
+// Existing-exposure lookups. All four delegate to the single Portfolio source
+// (getPortfolio → _historyPositions in Phase 0, Schwab in Phase 1), so the Auto
+// buttons, the auto-filled fields, the summary and the simulation can never disagree.
+// Return shape is unchanged: { total, items: [{ ticker, val }] }.
+function _exposureOf(kind, ticker) {
+  const t = ticker === undefined ? null : _normTicker(ticker);
+  const list = getPortfolio().positions.filter(x => x.kind === kind && (t === null || x.ticker === t));
+  return { total: list.reduce((s, x) => s + x.exposure, 0), items: list.map(x => ({ ticker: x.ticker, val: x.exposure })) };
 }
-function autoComputeCspTickerExisting(ticker) {
-  if (!ticker) return { total: 0, items: [] };
-  const history = getActiveHistory();
-  let total = 0;
-  const items = [];
-  history.forEach(e => {
-    if (!e.strategy || !e.strategy.startsWith('CSP')) return;
-    if (e.outcome !== 'open') return;
-    if ((e.ticker || '').toUpperCase() !== ticker.toUpperCase()) return;
-    const inp = e.inputs || '';
-    const strikeMatch = inp.match(/strike=(\d+\.?\d*)/);
-    const contractsMatch = inp.match(/contracts=(\d+)/) || inp.match(/cn=(\d+)/);
-    let val = 0;
-    if (strikeMatch) {
-      const strike = parseFloat(strikeMatch[1]);
-      const contracts = contractsMatch ? parseFloat(contractsMatch[1]) : 1;
-      val = strike * 100 * contracts;
-    } else if (e.fullState && e.fullState.cspThisNominal) {
-      val = parseFloat(e.fullState.cspThisNominal) || 0;
-    }
-    if (val > 0) { total += val; items.push({ ticker: e.ticker || '?', val }); }
-  });
-  return { total, items };
-}
-function autoComputeLeapsExistingExposure() {
-  const history = getActiveHistory();
-  let total = 0;
-  const items = [];
-  history.forEach(e => {
-    if (!e.strategy || !e.strategy.startsWith('LEAPS')) return;
-    if (e.outcome !== 'open') return;
-    let val = 0;
-    if (e.fullState && e.fullState.budget) {
-      val = parseFloat(e.fullState.budget) || 0;
-    }
-    if (val > 0) { total += val; items.push({ ticker: e.ticker || '?', val }); }
-  });
-  return { total, items };
-}
-function autoComputeLeapsTickerExposure(ticker) {
-  if (!ticker) return { total: 0, items: [] };
-  const history = getActiveHistory();
-  let total = 0;
-  const items = [];
-  history.forEach(e => {
-    if (!e.strategy || !e.strategy.startsWith('LEAPS')) return;
-    if (e.outcome !== 'open') return;
-    if ((e.ticker || '').toUpperCase() !== ticker.toUpperCase()) return;
-    let val = 0;
-    if (e.fullState && e.fullState.budget) {
-      val = parseFloat(e.fullState.budget) || 0;
-    }
-    if (val > 0) { total += val; items.push({ ticker: e.ticker || '?', val }); }
-  });
-  return { total, items };
-}
+function autoComputeCspExistingTotal()          { return _exposureOf('short_put'); }
+function autoComputeCspTickerExisting(ticker)   { return _normTicker(ticker) ? _exposureOf('short_put', ticker) : { total: 0, items: [] }; }
+function autoComputeLeapsExistingExposure()     { return _exposureOf('leaps'); }
+function autoComputeLeapsTickerExposure(ticker) { return _normTicker(ticker) ? _exposureOf('leaps', ticker) : { total: 0, items: [] }; }
 
 /* ==========================================================
  * SOP QUICK REFERENCE
@@ -2275,6 +2304,8 @@ const state = {
   cspStrike: '',         // 本笔 strike price (STK) — new input, auto-computes nominal
   cspContracts: '',      // 本笔 张数 — default 1
   cspTickerExisting: '', // 本 ticker 现有 CSP nominal
+  // Existing-exposure fields: true = follow Portfolio automatically, false = user override
+  _autoExposure: { existingExposure: true, cspExistingTotal: true, cspTickerExisting: true },
   // LEAPS identification — strike + contracts to distinguish trades on same ticker
   leapsStrike: '',       // LEAPS strike (informational, for identification)
   leapsContracts: '',    // LEAPS contract count (informational)
@@ -2384,7 +2415,7 @@ function leapsOpenItems() {
     hard: true, positionCheck: true });
   base.push({ group: 'Position sizing · 仓位控制', id: 'cash_reserve',
     title: '当前自由 cash / NAV ≥ 10% (目标 20%, 绝对底线 10%)',
-    desc: '目标 20%, 底线 10%. < 10% 一律 BLOCKED. LEAPS / CSP 敞口可弹性调整, 组合现金红线不变.',
+    desc: cashReserveDesc('目标 20%, 底线 10%. < 10% 一律 BLOCKED. LEAPS / CSP 敞口可弹性调整, 组合现金红线不变.'),
     hard: true,
     numeric: { placeholder: 'e.g. 22', unit: '%', min: 10, comparator: '≥', step: 0.5 } });
 
@@ -2704,7 +2735,7 @@ function cspItems() {
   const psGroup = 'Position sizing · 仓位控制';
   base.push({ group: psGroup, id: 'cash_reserve',
     title: '当前自由 cash / NAV ≥ 10% (目标 20%, 绝对底线 10%)',
-    desc: '目标 20%, 底线 10%. < 10% 一律 BLOCKED. LEAPS / CSP 敞口可弹性调整, 组合现金红线不变.',
+    desc: cashReserveDesc('目标 20%, 底线 10%. < 10% 一律 BLOCKED. LEAPS / CSP 敞口可弹性调整, 组合现金红线不变.'),
     hard: true,
     numeric: { placeholder: 'e.g. 22', unit: '%', min: 10, comparator: '≥', step: 0.5 } });
   base.push({ group: psGroup, id: 'csp_total_check',
@@ -2808,7 +2839,7 @@ function cspSniperItems() {
   const psGroup = 'Position sizing · 仓位控制';
   base.push({ group: psGroup, id: 'cash_reserve',
     title: '当前自由 cash / NAV ≥ 10%',
-    desc: '狙击后自由 cash ≥ 10% NAV. 底线不因狙击突破.',
+    desc: cashReserveDesc('狙击后自由 cash ≥ 10% NAV. 底线不因狙击突破.'),
     hard: true,
     numeric: { placeholder: 'e.g. 15', unit: '%', min: 10, comparator: '≥', step: 0.5 } });
   base.push({ group: psGroup, id: 'csp_total_check',
@@ -5041,6 +5072,7 @@ function renderPicker() {
       <div class="picker-sub">Trading in the Zone</div>
       ${syncStatusMiniHTML()}
       ${mainNavWidgetHTML()}
+      ${portfolioRiskHTML()}
       ${daysSinceLastSnapshotHTML()}
       ${draftContinueBannerHTML()}
       ${forcedTradeReminderHTML()}
@@ -5423,6 +5455,7 @@ function toggleQref() {
 }
 
 function renderChecklist() {
+  syncAutoExposure();
   const items = currentItems();
   const groups = [];
   const seen = {};
@@ -5455,7 +5488,7 @@ function renderChecklist() {
             <button class="autofill-btn" onclick="autoFillLeapsTicker()" title="仅汇总当前 ticker 的 outcome=持仓 LEAPS budget">Auto</button>
             <button class="autofill-btn" onclick="autoFillLeapsExisting()" title="汇总所有 ticker 的 outcome=持仓 LEAPS 总敞口" style="margin-left: 4px; opacity: 0.7;">总</button>
           </label>
-            <input inputmode="decimal" type="number" id="in-ex" placeholder="0" value="${esc(state.existingExposure)}"></div>
+            <input inputmode="decimal" type="number" id="in-ex" placeholder="0" value="${esc(state.existingExposure)}"${_autoAttr('existingExposure')}></div>
           <div class="num-field"><label class="num-field-label">本次预算</label>
             <input inputmode="decimal" type="number" id="in-bg" placeholder="e.g. 8000" value="${esc(state.budget)}"></div>
           <div class="num-field"><label class="num-field-label">Strike ($) · STK</label>
@@ -5489,6 +5522,7 @@ function renderChecklist() {
             `;
           })()}
         </div>
+        ${portfolioSimHTML()}
       </div>
     `;
   }
@@ -5517,7 +5551,7 @@ function renderChecklist() {
           <div class="num-field"><label class="num-field-label">现有 CSP 总名义
             <button class="autofill-btn" onclick="autoFillCspExisting()" title="从 history 里 outcome=持仓 的 CSP 快照自动汇总">Auto</button>
           </label>
-            <input inputmode="decimal" type="number" id="in-csp-ex-total" placeholder="0" value="${esc(state.cspExistingTotal)}"></div>
+            <input inputmode="decimal" type="number" id="in-csp-ex-total" placeholder="0" value="${esc(state.cspExistingTotal)}"${_autoAttr('cspExistingTotal')}></div>
           <div class="num-field"><label class="num-field-label">本笔 Strike ($) · STK</label>
             <input inputmode="decimal" type="number" id="in-csp-strike" placeholder="e.g. 50" value="${esc(state.cspStrike)}"></div>
           <div class="num-field"><label class="num-field-label">张数</label>
@@ -5527,21 +5561,23 @@ function renderChecklist() {
           <div class="num-field"><label class="num-field-label">本 ticker 现有 CSP
             <button class="autofill-btn" onclick="autoFillCspTicker()" title="从 history 里 outcome=持仓 且相同 ticker 的 CSP 快照自动汇总">Auto</button>
           </label>
-            <input inputmode="decimal" type="number" id="in-csp-ticker-ex" placeholder="0" value="${esc(state.cspTickerExisting)}"></div>
+            <input inputmode="decimal" type="number" id="in-csp-ticker-ex" placeholder="0" value="${esc(state.cspTickerExisting)}"${_autoAttr('cspTickerExisting')}></div>
           <div class="num-field"><label class="num-field-label">波动性类型</label>
             <div class="segmented" id="csp-vol-seg" style="margin-top: 0;">
               <button data-v="medium">中波动 (≤12%)</button>
               <button data-v="high">高波动 (≤10%)</button>
             </div></div>
         </div>
-        <div class="position-summary ${totalCls}">
+        ${(() => { const cs = _cspSummaryState(); return `
+        <div class="position-summary ${cs.totalCls}" id="csp-total-summary">
           <span class="position-summary-label">CSP 总敞口 / NAV</span>
-          <span class="position-summary-val ${totalCls}">${totalPctDisp} <span style="color:var(--text-faint); font-weight:400;"> / 目标 40% · 硬顶 50%</span></span>
+          <span class="position-summary-val ${cs.totalCls}">${cs.totalHTML}</span>
         </div>
-        <div class="position-summary ${tickerCls}" style="margin-top: 8px;">
+        <div class="position-summary ${cs.tickerCls}" id="csp-ticker-summary" style="margin-top: 8px;">
           <span class="position-summary-label">单 ticker 敞口 / NAV</span>
-          <span class="position-summary-val ${tickerCls}">${tickerPctDisp} <span style="color:var(--text-faint); font-weight:400;"> ${tickerCap ? '/ 目标 ' + cspTickerSoftTarget() + '% · 硬顶 ' + tickerCap + '%' : '/ 先选波动性'}</span></span>
-        </div>
+          <span class="position-summary-val ${cs.tickerCls}">${cs.tickerHTML}</span>
+        </div>`; })()}
+        ${portfolioSimHTML()}
       </div>
     `;
   }
@@ -5603,6 +5639,7 @@ function renderChecklist() {
       el.addEventListener('input', e => {
         state[key] = e.target.value;
         if (key === 'nav') saveNav(e.target.value);
+        _onExposureFieldInput(key, e.target.value);
         updateVerdictsInPlace();
       });
       el.addEventListener('blur', () => scheduleFullRender());
@@ -5630,6 +5667,7 @@ function renderChecklist() {
       el.addEventListener('input', e => {
         state[key] = e.target.value;
         if (key === 'nav') saveNav(e.target.value);
+        _onExposureFieldInput(key, e.target.value);
         updateVerdictsInPlace();
       });
       el.addEventListener('blur', () => scheduleFullRender());
@@ -5688,7 +5726,9 @@ function renderChecklist() {
         e.target.value = v;
         try { e.target.setSelectionRange(pos, pos); } catch (err) {}
       }
+      const prevTicker = _normTicker(state.ticker);
       state.ticker = v;
+      if (_normTicker(v) !== prevTicker) _resetTickerAutoFlags();
       // Live toggle empty highlight state without full re-render
       const bar = document.getElementById('ticker-bar');
       if (bar) {
@@ -5697,7 +5737,7 @@ function renderChecklist() {
         const label = bar.querySelector('.ticker-label');
         if (label) label.textContent = v ? 'Ticker' : 'Ticker · 请填写';
       }
-      scheduleSaveDraft();
+      updateVerdictsInPlace();  // auto exposure + simulation + verdicts follow the ticker (saves draft)
     });
     tickerEl.addEventListener('blur', () => scheduleFullRender());
   }
@@ -5746,6 +5786,8 @@ function cancelFullRender() {
 }
 
 function updateVerdictsInPlace() {
+  syncAutoExposure();
+  _applyAutoExposureToDOM();
   const items = currentItems();
   const v = overallVerdict();
 
@@ -5891,6 +5933,18 @@ function updateVerdictsInPlace() {
     }
   }
 
+  // CSP position summaries (live — previously only refreshed on blur)
+  if (state.strategy === 'csp') {
+    const cs = _cspSummaryState();
+    [['csp-total-summary', cs.totalCls, cs.totalHTML], ['csp-ticker-summary', cs.tickerCls, cs.tickerHTML]].forEach(([id, cls, html]) => {
+      const box = document.getElementById(id);
+      if (!box) return;
+      box.className = 'position-summary ' + cls;
+      const val = box.querySelector('.position-summary-val');
+      if (val) { val.className = 'position-summary-val ' + cls; val.innerHTML = html; }
+    });
+  }
+
   // R:R desc + badge live update
   const $rrDesc = document.getElementById('rr-desc');
   if ($rrDesc) $rrDesc.textContent = rrCheckDesc();
@@ -5908,6 +5962,10 @@ function updateVerdictsInPlace() {
       }
     }
   }
+
+  // Post-trade simulation live refresh (Portfolio Risk layer)
+  const $sim = document.getElementById('portfolio-sim');
+  if ($sim) $sim.innerHTML = portfolioSimInnerHTML();
 
   // Save draft after any state change
   scheduleSaveDraft();
@@ -6021,6 +6079,8 @@ function itemHTML(it) {
 function pickStrategy(s) {
   state.strategy = s;
   state.items = {};
+  // New checklist: exposure fields follow Portfolio (a previous trade's manual value is stale)
+  state._autoExposure = _defaultAutoFlags();
   // Prefill NAV from saved global NAV
   const savedNav = loadSavedNav();
   if (savedNav && !state.nav) state.nav = savedNav;
@@ -6040,6 +6100,7 @@ function resetAll(silent) {
   state.cspIntent = null;
   state.cspVolTier = null;
   state.cspExistingTotal = ''; state.cspThisNominal = ''; state.cspTickerExisting = '';
+  state._autoExposure = _defaultAutoFlags();
   state.pmccUnderlyingPurpose = null; state.pmccMode = 'standard';
   state.ccMode = null;
   state.ticker = '';
@@ -6205,6 +6266,7 @@ function snapshotStateForStorage() {
     tradeStrike: state.tradeStrike,
     tradeContracts: state.tradeContracts,
     tradeExpiry: state.tradeExpiry,
+    _autoExposure: { ...(state._autoExposure || _defaultAutoFlags()) },
     items: { ...state.items }
   };
 }
@@ -6219,6 +6281,8 @@ function restoreStateFromStorage(saved) {
   }
   Object.assign(state, saved);
   if (saved.items) state.items = { ...saved.items };
+  // Legacy snapshots have no flags: empty field → auto, filled field → keep as manual
+  state._autoExposure = _normalizeAutoFlags(saved);
 }
 
 let __draftSaveTimer = null;
@@ -6307,6 +6371,7 @@ function getActiveHistory() {
 }
 function saveToHistory() {
   if (!state.strategy) return;
+  syncAutoExposure();
   try {
     const history = loadHistory();
     const items = currentItems();
@@ -7869,6 +7934,7 @@ function ensureSnapshotModal() {
 
 function showSnapshot() {
   if (!state.strategy) return;
+  syncAutoExposure();  // text preview + saved verdict must use current exposure
   // Emit particle burst from Snapshot button (visual feedback regardless of verdict)
   const snapBtn = document.querySelector('.sab-btn-snapshot') || document.querySelector('.btn.ghost[onclick*="showSnapshot"]');
   if (snapBtn && typeof emitSnapshotParticles === 'function') {
@@ -8317,6 +8383,8 @@ function buildSyncPayload() {
     history: loadHistory(),
     settings: {
       nav: loadSavedNav() || '',
+      cash: loadSavedCash() || '',
+      swvxx: loadSavedSwvxx() || '',
       density: (function() { try { return localStorage.getItem(DENSITY_KEY) || ''; } catch (e) { return ''; } })(),
       trendRange: (function() { try { return localStorage.getItem(TREND_RANGE_KEY) || ''; } catch (e) { return ''; } })(),
       themeCustom: (function() { try { return localStorage.getItem(THEME_CUSTOM_KEY) || ''; } catch (e) { return ''; } })(),
@@ -8337,6 +8405,8 @@ function applyRemotePayload(remote, mode) {
   const s = remote.settings || {};
   try {
     if (typeof s.nav === 'string' && s.nav) localStorage.setItem(NAV_KEY, s.nav);
+    if (typeof s.cash === 'string' && s.cash) localStorage.setItem(CASH_KEY, s.cash);
+    if (typeof s.swvxx === 'string' && s.swvxx) localStorage.setItem(SWVXX_KEY, s.swvxx);
     if (typeof s.density === 'string' && s.density) localStorage.setItem(DENSITY_KEY, s.density);
     if (typeof s.trendRange === 'string' && s.trendRange) localStorage.setItem(TREND_RANGE_KEY, s.trendRange);
     if (typeof s.themeCustom === 'string' && s.themeCustom) localStorage.setItem(THEME_CUSTOM_KEY, s.themeCustom);
@@ -9103,6 +9173,7 @@ function _formatAutoDetail(items) {
 window.autoFillCspExisting = () => {
   const { total, items } = autoComputeCspExistingTotal();
   state.cspExistingTotal = total > 0 ? String(Math.round(total)) : '';
+  _setAutoFlag('cspExistingTotal', true);
   render();
   if (total > 0) {
     showToast(`已汇总: $${Math.round(total).toLocaleString()}  (${items.length} 笔持仓)`, 'success', _formatAutoDetail(items));
@@ -9113,6 +9184,7 @@ window.autoFillCspExisting = () => {
 window.autoFillCspTicker = () => {
   const { total, items } = autoComputeCspTickerExisting(state.ticker);
   state.cspTickerExisting = total > 0 ? String(Math.round(total)) : '';
+  _setAutoFlag('cspTickerExisting', true);
   render();
   if (!state.ticker) { showToast('先填 ticker', 'error'); return; }
   if (total > 0) {
@@ -9124,6 +9196,7 @@ window.autoFillCspTicker = () => {
 window.autoFillLeapsExisting = () => {
   const { total, items } = autoComputeLeapsExistingExposure();
   state.existingExposure = total > 0 ? String(Math.round(total)) : '';
+  _setAutoFlag('existingExposure', !(total > 0));  // 总 = deliberate all-ticker total → manual
   render();
   if (total > 0) {
     showToast(`总 LEAPS 敞口: $${Math.round(total).toLocaleString()}  (${items.length} 笔持仓)`, 'success', _formatAutoDetail(items));
@@ -9135,6 +9208,7 @@ window.autoFillLeapsTicker = () => {
   if (!state.ticker) { showToast('先填 ticker', 'error'); return; }
   const { total, items } = autoComputeLeapsTickerExposure(state.ticker);
   state.existingExposure = total > 0 ? String(Math.round(total)) : '';
+  _setAutoFlag('existingExposure', true);
   render();
   if (total > 0) {
     showToast(`${state.ticker} 敞口: $${Math.round(total).toLocaleString()}  (${items.length} 笔持仓)`, 'success', _formatAutoDetail(items));
@@ -9142,6 +9216,422 @@ window.autoFillLeapsTicker = () => {
     showToast(`${state.ticker} 无 outcome=持仓 的 LEAPS`, 'info');
   }
 };
+
+/* ==========================================================
+ * PORTFOLIO RISK LAYER · Phase 0
+ * One portfolio object → risk metrics → post-trade simulation.
+ * Phase 0 source: manual NAV / Cash / SWVXX + local history
+ *   (outcome = 持仓 snapshots). Phase 1 swaps in Schwab data with
+ *   the same object shape, so everything below stays unchanged.
+ *
+ * Definitions (agreed):
+ *   Liquid     = Cash + SWVXX
+ *   Free Cash  = Cash + SWVXX − CSP assignment exposure   (10% floor / 20% target)
+ *   CSP exp.   = Σ strike × 100 × contracts                (50% cap / 40% target)
+ *   LEAPS      = cost basis (budget), not market value
+ *   Ticker exp = stock cost + LEAPS cost + CSP nominal; short calls excluded.
+ *                Display only, no cap.
+ * ========================================================== */
+const CASH_KEY = 'pretrade_account_cash';
+const SWVXX_KEY = 'pretrade_account_swvxx';
+function loadSavedCash()  { try { return localStorage.getItem(CASH_KEY)  || ''; } catch (e) { return ''; } }
+function loadSavedSwvxx() { try { return localStorage.getItem(SWVXX_KEY) || ''; } catch (e) { return ''; } }
+function _saveNumKey(key, val) {
+  try {
+    if (val != null && String(val).trim()) localStorage.setItem(key, String(val).trim());
+    else localStorage.removeItem(key);
+  } catch (e) {}
+}
+function _num(v) { const n = parseFloat(v); return isFinite(n) ? n : null; }
+function _normTicker(t) { return String(t == null ? '' : t).trim().toUpperCase(); }
+
+/* ---------- Existing-exposure auto-fill ----------
+ * Rule: a field follows Portfolio until you type in it; clearing it hands it back.
+ * Sync runs only at live-checklist entry points (render, in-place update, snapshot,
+ * save) — never inside withTempState(), so editing a saved snapshot is untouched. */
+function _autoExposureFields() { return ['existingExposure', 'cspExistingTotal', 'cspTickerExisting']; }
+function _defaultAutoFlags() { return { existingExposure: true, cspExistingTotal: true, cspTickerExisting: true }; }
+function _isBlank(v) { return v == null || String(v).trim() === ''; }
+function _normalizeAutoFlags(src) {
+  const saved = src && src._autoExposure && typeof src._autoExposure === 'object' ? src._autoExposure : null;
+  const flags = {};
+  _autoExposureFields().forEach(k => {
+    if (!src || _isBlank(src[k])) flags[k] = true;                        // empty → auto
+    else flags[k] = saved && typeof saved[k] === 'boolean' ? saved[k] : false;  // filled, no flag → manual
+  });
+  return flags;
+}
+function _ensureAutoFlags() {
+  if (!state._autoExposure || typeof state._autoExposure !== 'object') state._autoExposure = _normalizeAutoFlags(state);
+}
+function _setAutoFlag(field, isAuto) { _ensureAutoFlags(); state._autoExposure[field] = !!isAuto; }
+function _resetTickerAutoFlags() {
+  // Per-ticker overrides belong to the ticker they were typed for
+  _setAutoFlag('existingExposure', true);
+  _setAutoFlag('cspTickerExisting', true);
+}
+function _autoFieldsForStrategy() {
+  if (state.strategy === 'leaps' && state.leapsDirection === 'open') return ['existingExposure'];
+  if (state.strategy === 'csp') return ['cspExistingTotal', 'cspTickerExisting'];
+  return [];
+}
+function _autoExposureFor(field) {
+  if (field === 'existingExposure')  return autoComputeLeapsTickerExposure(state.ticker).total;
+  if (field === 'cspExistingTotal')  return autoComputeCspExistingTotal().total;
+  if (field === 'cspTickerExisting') return autoComputeCspTickerExisting(state.ticker).total;
+  return 0;
+}
+function syncAutoExposure() {
+  if (!state.strategy || state._view === 'history') return;
+  _ensureAutoFlags();
+  _autoFieldsForStrategy().forEach(k => {
+    if (state._autoExposure[k] !== true) return;   // manual → never touched
+    const v = _autoExposureFor(k);
+    state[k] = v > 0 ? String(Math.round(v)) : '';
+  });
+}
+function _onExposureFieldInput(key, raw) {
+  if (!_autoExposureFields().includes(key)) return;
+  _setAutoFlag(key, _isBlank(raw));   // typed → manual · cleared → auto
+}
+const _EXPOSURE_INPUT_ID = { existingExposure: 'in-ex', cspExistingTotal: 'in-csp-ex-total', cspTickerExisting: 'in-csp-ticker-ex' };
+function _applyAutoExposureToDOM() {
+  _ensureAutoFlags();
+  Object.entries(_EXPOSURE_INPUT_ID).forEach(([k, id]) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const auto = state._autoExposure[k] === true;
+    el.classList.toggle('auto-exposure', auto);
+    el.title = auto ? '自动 · 来自 Portfolio · 手动输入即覆盖, 清空恢复自动' : '手动值 · 清空即恢复自动';
+    if (auto && document.activeElement !== el) el.value = state[k] || '';   // never rewrite while typing
+  });
+}
+function _autoAttr(field) {
+  const auto = !!(state._autoExposure && state._autoExposure[field] === true);
+  return auto ? ' class="auto-exposure" title="自动 · 来自 Portfolio · 手动输入即覆盖, 清空恢复自动"'
+              : ' title="手动值 · 清空即恢复自动"';
+}
+const _EXPOSURE_LABEL = { existingExposure: '已有敞口 (本 ticker)', cspExistingTotal: '现有 CSP 总名义', cspTickerExisting: '本 ticker 现有 CSP' };
+function _manualOverrides() {
+  _ensureAutoFlags();
+  return _autoFieldsForStrategy().filter(k => state._autoExposure[k] === false).map(k => {
+    const manual = Math.round(parseFloat(state[k]) || 0);
+    const auto = Math.round(_autoExposureFor(k));
+    return manual !== auto ? { k, manual, auto } : null;
+  }).filter(Boolean);
+}
+function _cspSummaryState() {
+  const totalPct = cspTotalPct();
+  const tickerPct = cspTickerPct();
+  const tickerCap = cspTickerCap();
+  const totalCls = totalPct == null ? '' : (totalPct > 50 ? 'fail' : totalPct > 40 ? 'pending' : 'pass');
+  const tickerCls = (tickerPct == null || tickerCap == null) ? '' : (tickerPct > tickerCap ? 'fail' : tickerPct > cspTickerSoftTarget() ? 'pending' : 'pass');
+  const faint = '<span style="color:var(--text-faint); font-weight:400;">';
+  return {
+    totalCls, tickerCls,
+    totalHTML: `${totalPct == null ? '—' : totalPct.toFixed(1) + '%'} ${faint} / 目标 40% · 硬顶 50%</span>`,
+    tickerHTML: `${tickerPct == null ? '—' : tickerPct.toFixed(1) + '%'} ${faint} ${tickerCap ? '/ 目标 ' + cspTickerSoftTarget() + '% · 硬顶 ' + tickerCap + '%' : '/ 先选波动性'}</span>`,
+  };
+}
+function _fmtUsd(v) { return v == null ? '—' : (v < 0 ? '−$' : '$') + Math.round(Math.abs(v)).toLocaleString(); }
+function _fmtPct(v) { return v == null ? '—' : v.toFixed(1) + '%'; }
+
+// Open positions from local history. Parsing mirrors autoCompute* exactly,
+// so the totals shown here always match the existing Auto buttons.
+// Cached on the raw history string: any write to history changes the string, so the
+// cache can never serve stale positions (safer than time- or call-based caching).
+let _hpCacheRaw = null, _hpCacheOut = null;
+function _historyPositions() {
+  let raw = '';
+  try { raw = localStorage.getItem(HISTORY_KEY) || ''; } catch (e) { raw = ''; }
+  if (_hpCacheOut && raw === _hpCacheRaw) return _hpCacheOut.slice();
+  let parsed = [];
+  try { parsed = raw ? JSON.parse(raw) : []; } catch (e) { parsed = []; }
+  if (!Array.isArray(parsed)) parsed = [];
+  const out = [];
+  parsed.filter(e => e && !e._deleted).forEach(e => {
+    if (e.outcome !== 'open' || !e.strategy) return;
+    const ticker = _normTicker(e.ticker) || '?';
+    const inp = e.inputs || '';
+    const fs = e.fullState || {};
+    const expiry = fs.tradeExpiry || null;
+    if (e.strategy.startsWith('CSP')) {
+      const sm = inp.match(/strike=(\d+\.?\d*)/);
+      const cm = inp.match(/contracts=(\d+)/) || inp.match(/cn=(\d+)/);
+      const qty = cm ? parseFloat(cm[1]) : 1;
+      let nominal = 0;
+      if (sm) nominal = parseFloat(sm[1]) * 100 * qty;
+      else if (fs.cspThisNominal) nominal = parseFloat(fs.cspThisNominal) || 0;
+      if (nominal > 0) out.push({ kind: 'short_put', ticker, strike: sm ? parseFloat(sm[1]) : null,
+        qty: sm ? qty : null, expiry, exposure: nominal, snapshotId: e.id });
+    } else if (e.strategy.startsWith('LEAPS')) {
+      const cost = parseFloat(fs.budget) || 0;
+      if (cost > 0) out.push({ kind: 'leaps', ticker, strike: _num(fs.leapsStrike),
+        qty: _num(fs.leapsContracts), expiry, exposure: cost, snapshotId: e.id });
+    } else if (e.strategy.startsWith('PMCC') || e.strategy.startsWith('CC')) {
+      out.push({ kind: 'short_call', ticker, strike: _num(fs.tradeStrike),
+        qty: _num(fs.tradeContracts), expiry, exposure: 0, snapshotId: e.id });
+    }
+  });
+  _hpCacheRaw = raw; _hpCacheOut = out;
+  return out.slice();
+}
+
+// The single seam. Phase 1: return Schwab-sourced object of the same shape.
+function getPortfolio() {
+  return {
+    source: 'manual',   // 'manual' (Phase 0) | 'schwab' (Phase 1)
+    asOf: null,
+    nav: _num(state.nav || loadSavedNav()),
+    cash: _num(loadSavedCash()),
+    swvxx: _num(loadSavedSwvxx()),
+    positions: _historyPositions(),
+  };
+}
+
+function portfolioRisk(p = getPortfolio()) {
+  const pct = v => (p.nav && p.nav > 0 && v != null) ? v / p.nav * 100 : null;
+  const sumKind = kind => p.positions.filter(x => x.kind === kind).reduce((s, x) => s + x.exposure, 0);
+  const hasLiquid = p.cash != null || p.swvxx != null;
+  const liquid = hasLiquid ? (p.cash || 0) + (p.swvxx || 0) : null;
+  const cspNominal = sumKind('short_put');
+  const leapsCost = sumKind('leaps');
+  const freeCash = liquid != null ? liquid - cspNominal : null;
+  const map = {};
+  p.positions.forEach(x => {
+    if (!map[x.ticker]) map[x.ticker] = { ticker: x.ticker, exposure: 0, positions: [] };
+    map[x.ticker].exposure += x.exposure;
+    map[x.ticker].positions.push(x);
+  });
+  const tickers = Object.values(map).sort((a, b) => b.exposure - a.exposure);
+  const largest = tickers.find(t => t.exposure > 0) || null;
+  return { p, pct, liquid, cspNominal, leapsCost, freeCash, tickers, largest };
+}
+
+// Status against a limit: floor (min) or cap (max), with optional soft target.
+function _limitStatus(pctVal, lim) {
+  if (pctVal == null || !lim) return '';
+  if (lim.min != null) {
+    if (pctVal < lim.min) return 'fail';
+    if (lim.target != null && pctVal < lim.target) return 'pending';
+    return 'pass';
+  }
+  if (lim.max != null) {
+    if (pctVal > lim.max) return 'fail';
+    if (lim.target != null && pctVal > lim.target) return 'pending';
+    return 'pass';
+  }
+  return '';
+}
+function _limitText(lim) {
+  if (!lim) return '';
+  if (lim.min != null) return `≥ ${lim.min}%` + (lim.target != null ? ` · 目标 ${lim.target}%` : '');
+  if (lim.max != null) return `≤ ${lim.max}%` + (lim.target != null ? ` · 目标 ${lim.target}%` : '');
+  return '';
+}
+
+/* ---------- Main page · Portfolio Risk summary ---------- */
+function portfolioRowsHTML() {
+  const r = portfolioRisk();
+  const p = r.p;
+  const row = (label, usd, pctVal, lim, sub) => {
+    const st = _limitStatus(pctVal, lim);
+    return `
+      <div class="pr-row">
+        <span class="pr-label">${label}${sub ? `<span class="pr-sub">${sub}</span>` : ''}</span>
+        <span class="pr-usd">${usd}</span>
+        <span class="pr-pct ${st}">${pctVal === undefined ? '' : _fmtPct(pctVal)}</span>
+        <span class="pr-lim">${_limitText(lim)}</span>
+      </div>`;
+  };
+  if (!p.nav) {
+    return `<div class="pr-empty">先在上方填 Account NAV</div>`;
+  }
+  const liquidSub = r.liquid != null ? `Cash ${_fmtUsd(p.cash || 0)} + SWVXX ${_fmtUsd(p.swvxx || 0)}` : '';
+  const largest = r.largest;
+  return [
+    row('NAV', _fmtUsd(p.nav), undefined, null),
+    row('Cash + SWVXX', r.liquid != null ? _fmtUsd(r.liquid) : '<span class="pr-missing">未填</span>', r.pct(r.liquid), null, liquidSub),
+    row('CSP Assignment Exp.', _fmtUsd(r.cspNominal), r.pct(r.cspNominal), { max: 50, target: 40 }),
+    row('Free Cash', r.freeCash != null ? _fmtUsd(r.freeCash) : '<span class="pr-missing">需填 Cash / SWVXX</span>', r.pct(r.freeCash), { min: 10, target: 20 }),
+    row('LEAPS (cost)', _fmtUsd(r.leapsCost), r.pct(r.leapsCost), null),
+    row('Largest Ticker', largest ? esc(largest.ticker) : '—', largest ? r.pct(largest.exposure) : null, null),
+  ].join('');
+}
+
+function portfolioRiskHTML() {
+  return `
+    <div class="pr-panel">
+      <div class="pr-head">
+        <span class="pr-title">Portfolio Risk</span>
+        <span class="pr-source" title="Phase 0: NAV / Cash / SWVXX 手填 · 持仓来自 history 里 outcome = 持仓 的 snapshot">手动 + 本地历史</span>
+      </div>
+      <div class="pr-inputs">
+        <label class="pr-input-field"><span>Cash</span>
+          <input type="number" inputmode="decimal" id="pr-cash-input" value="${esc(loadSavedCash())}" placeholder="0" oninput="updatePortfolioCash(this.value)"></label>
+        <label class="pr-input-field"><span>SWVXX</span>
+          <input type="number" inputmode="decimal" id="pr-swvxx-input" value="${esc(loadSavedSwvxx())}" placeholder="0" oninput="updatePortfolioSwvxx(this.value)"></label>
+      </div>
+      <div class="pr-rows" id="pr-rows">${portfolioRowsHTML()}</div>
+      <button class="pr-detail-btn" onclick="showHoldingsModal()">查看持仓 ▸</button>
+    </div>
+  `;
+}
+// In-place refresh so typing doesn't lose focus
+function _refreshPortfolioRows() {
+  const el = document.getElementById('pr-rows');
+  if (el) el.innerHTML = portfolioRowsHTML();
+}
+window.updatePortfolioCash  = (val) => { _saveNumKey(CASH_KEY, val);  _refreshPortfolioRows(); };
+window.updatePortfolioSwvxx = (val) => { _saveNumKey(SWVXX_KEY, val); _refreshPortfolioRows(); };
+
+/* ---------- Holdings modal ---------- */
+const _KIND_LABEL = { stock: '正股', leaps: 'LEAPS', short_put: 'CSP', short_call: 'Short call' };
+function holdingsModalBodyHTML() {
+  const r = portfolioRisk();
+  if (r.tickers.length === 0) {
+    return `<div class="pr-empty">暂无持仓 · Phase 0 读取 history 里 outcome = 持仓 的 snapshot</div>`;
+  }
+  return r.tickers.map(t => `
+    <div class="hd-ticker">
+      <div class="hd-ticker-head">
+        <span class="hd-ticker-name">${esc(t.ticker)}</span>
+        <span class="hd-ticker-exp">${_fmtUsd(t.exposure)}</span>
+        <span class="hd-ticker-pct">${_fmtPct(r.pct(t.exposure))}</span>
+      </div>
+      ${t.positions.map(x => {
+        const parts = [];
+        if (x.strike != null) parts.push(`${x.strike}${x.kind === 'short_put' ? 'P' : x.kind === 'stock' ? '' : 'C'}`);
+        if (x.expiry) parts.push(esc(x.expiry));
+        if (x.qty != null) parts.push(`× ${x.qty}`);
+        return `
+          <div class="hd-pos">
+            <span class="hd-pos-kind">${_KIND_LABEL[x.kind] || x.kind}</span>
+            <span class="hd-pos-desc">${parts.join('  ') || '<span class="pr-missing">未记录 strike</span>'}</span>
+            <span class="hd-pos-val">${x.kind === 'short_call' ? '<span class="pr-missing">不计入</span>' : _fmtUsd(x.exposure)}</span>
+          </div>`;
+      }).join('')}
+    </div>
+  `).join('') + `<div class="hd-note">敞口 = 正股成本 + LEAPS 成本 + CSP nominal · short call 不计入</div>`;
+}
+window.showHoldingsModal = () => {
+  let modal = document.getElementById('holdings-modal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'holdings-modal';
+    modal.className = 'modal-overlay';
+    modal.addEventListener('click', ev => { if (ev.target === modal) hideHoldingsModal(); });
+    document.body.appendChild(modal);
+  }
+  modal.innerHTML = `
+    <div class="modal-card">
+      <div class="modal-head">
+        <div class="modal-title">持仓明细 · 按单标的敞口排序</div>
+        <button class="modal-close" onclick="hideHoldingsModal()" aria-label="Close">×</button>
+      </div>
+      <div class="modal-body">${holdingsModalBodyHTML()}</div>
+    </div>`;
+  modal.style.display = 'flex';
+};
+window.hideHoldingsModal = () => {
+  const modal = document.getElementById('holdings-modal');
+  if (modal) modal.style.display = 'none';
+};
+
+/* ---------- Post-trade simulation (checklist page, live) ---------- */
+function pendingTrade() {
+  const ticker = (state.ticker || '').trim().toUpperCase();
+  if (state.strategy === 'csp') {
+    const s = parseFloat(state.cspStrike) || 0;
+    const c = parseFloat(state.cspContracts) || 0;
+    if (!(s > 0 && c > 0)) return { kind: 'short_put', ticker, incomplete: '填 Strike + 张数后显示' };
+    return { kind: 'short_put', ticker, strike: s, qty: c, amount: s * 100 * c,
+      label: `${ticker || '本 ticker'} ${s}P × ${c}` };
+  }
+  if (state.strategy === 'leaps' && state.leapsDirection === 'open') {
+    const b = parseFloat(state.budget) || 0;
+    if (!(b > 0)) return { kind: 'leaps', ticker, incomplete: '填本次预算后显示' };
+    const stk = parseFloat(state.leapsStrike) || 0;
+    return { kind: 'leaps', ticker, amount: b,
+      label: `${ticker || '本 ticker'} LEAPS${stk ? ' ' + stk + 'C' : ''}` };
+  }
+  return null;
+}
+
+function simulateTrade(t, r = portfolioRisk()) {
+  const tk = t.ticker || '';
+  const tNow = r.tickers.find(x => x.ticker === tk) || { exposure: 0, positions: [] };
+  const tickerKind = kind => tNow.positions.filter(x => x.kind === kind).reduce((s, x) => s + x.exposure, 0);
+  const name = tk || '本 ticker';
+  const rows = [];
+  rows.push({ label: 'Free Cash', before: r.freeCash,
+    after: r.freeCash != null ? r.freeCash - t.amount : null,
+    lim: { min: 10, target: 20 }, missing: r.freeCash == null ? '首页填 Cash + SWVXX' : null });
+  if (t.kind === 'short_put') {
+    rows.push({ label: 'CSP 总敞口', before: r.cspNominal, after: r.cspNominal + t.amount,
+      lim: { max: 50, target: 40 } });
+    const cap = cspTickerCap();
+    rows.push({ label: `${name} CSP`, before: tickerKind('short_put'), after: tickerKind('short_put') + t.amount,
+      lim: cap ? { max: cap, target: cspTickerSoftTarget() } : null, missing: cap ? null : '先选波动性' });
+  }
+  if (t.kind === 'leaps') {
+    rows.push({ label: `${name} LEAPS`, before: tickerKind('leaps'), after: tickerKind('leaps') + t.amount,
+      lim: { max: positionCapPct() } });
+  }
+  rows.push({ label: `${name} 总敞口`, before: tNow.exposure, after: tNow.exposure + t.amount, lim: null });
+  return rows;
+}
+
+function portfolioSimInnerHTML() {
+  const t = pendingTrade();
+  if (!t) return '';
+  const r = portfolioRisk();
+  const head = (extra) => `
+    <div class="pr-sim-head">
+      <span class="pr-sim-title">本笔对组合的影响</span>
+      ${extra || ''}
+    </div>`;
+  if (!r.p.nav) return head() + `<div class="pr-empty">先填 Account NAV</div>`;
+  if (t.incomplete) return head() + `<div class="pr-empty">${t.incomplete}</div>`;
+  const rows = simulateTrade(t, r);
+  const breaches = [];
+  const rowHTML = rows.map(x => {
+    const bPct = r.pct(x.before), aPct = r.pct(x.after);
+    const st = _limitStatus(aPct, x.lim);
+    if (st === 'fail') breaches.push(`${x.label} ${_fmtPct(aPct)} (${_limitText(x.lim).split(' · ')[0]})`);
+    return `
+      <div class="pr-sim-row">
+        <span class="pr-sim-label">${esc(x.label)}</span>
+        <span class="pr-sim-before">${_fmtPct(bPct)}</span>
+        <span class="pr-sim-arrow">→</span>
+        <span class="pr-sim-after ${st}">${_fmtPct(aPct)}</span>
+        <span class="pr-sim-lim">${x.missing ? `<span class="pr-missing">${x.missing}</span>` : _limitText(x.lim)}</span>
+      </div>`;
+  }).join('');
+  const verdict = breaches.length > 0
+    ? `<div class="pr-sim-verdict fail">⛔ ${breaches.length} 项超限 · ${breaches.map(esc).join(' · ')}</div>`
+    : `<div class="pr-sim-verdict pass">组合限制内 ✓</div>`;
+  return head(`<span class="pr-sim-trade">${esc(t.label)} · ${_fmtUsd(t.amount)}</span>`) + `
+    <div class="pr-sim-cols"><span></span><span>BEFORE</span><span></span><span>AFTER</span><span>限制</span></div>
+    ${rowHTML}
+    ${verdict}
+    ${_manualOverrides().map(o => `<div class="pr-sim-override">⚠ 「${_EXPOSURE_LABEL[o.k]}」手动填 ${_fmtUsd(o.manual)}, Portfolio 为 ${_fmtUsd(o.auto)} · HARD 项按手动值判断 · 清空该框恢复自动</div>`).join('')}
+    <div class="pr-sim-note">基于 Portfolio 数据 (手动 + 本地历史) · 超限只提示, 不阻断</div>`;
+}
+function portfolioSimHTML() {
+  return `<div class="pr-sim" id="portfolio-sim">${portfolioSimInnerHTML()}</div>`;
+}
+
+// cash_reserve desc hint: shows the definition + current / post-trade Free Cash
+function cashReserveDesc(base) {
+  const r = portfolioRisk();
+  const def = ' 自由 cash = Cash + SWVXX − CSP assignment exposure.';
+  if (!r.p.nav || r.freeCash == null) return base + def + ' (首页填 Cash + SWVXX 后这里显示当前值)';
+  const now = r.pct(r.freeCash);
+  const t = pendingTrade();
+  const after = (t && !t.incomplete) ? r.pct(r.freeCash - t.amount) : null;
+  return base + def + ` Portfolio · 当前 ${_fmtPct(now)}` + (after != null ? ` · 本笔后 ${_fmtPct(after)}` : '');
+}
 
 /* Boot */
 loadTheme();
@@ -9199,6 +9689,7 @@ window.addEventListener('scroll', updateScrolledState, { passive: true });
   // Delay 800ms so UI renders + user sees the app before any sync toast
   setTimeout(() => { syncMergeSilent(); }, 800);
 })();
+
 
 
 
