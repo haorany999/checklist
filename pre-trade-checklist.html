@@ -3661,6 +3661,21 @@ function tickerChipsHTML(entries, searchQ, setterName) {
   `;
 }
 
+// Single source of truth for "this forced trade still needs a check-in".
+// Used by the top banner, the stale-reminder panel and the edit-modal save, so
+// confirming in any one place clears all of them.
+const FORCED_REMINDER_DAYS = 15;   // first reminder
+const FORCED_URGENT_DAYS = 30;     // top banner (urgent tier)
+const FORCED_SNOOZE_DAYS = 15;     // "still holding" pauses the reminder this long
+function forcedNeedsReminder(e, now = Date.now()) {
+  if (!e || e._deleted || !e.forcedReason) return false;
+  if (e.outcome && e.outcome !== 'open') return false;       // settled, skipped or opted out
+  if ((now - (e.timestampSort || 0)) < FORCED_REMINDER_DAYS * 86400000) return false;
+  if (e._reminderDismissed) return false;
+  if (e._reminderSnoozeUntil && e._reminderSnoozeUntil > now) return false;
+  return true;
+}
+
 // Mark forced entry as still holding — snooze reminder for 15 days
 window.stillHoldingForced = function(id) {
   const history = loadHistory();
@@ -4068,14 +4083,7 @@ function pickerFooterHTML() {
   const now = Date.now();
   const STALE_15 = 15 * 24 * 60 * 60 * 1000;
   const STALE_30 = 30 * 24 * 60 * 60 * 1000;
-  const staleForced = allForced.filter(e => {
-    const ageMs = now - (e.timestampSort || 0);
-    if (ageMs < STALE_15) return false;
-    if (e.outcome === 'win' || e.outcome === 'loss' || e.outcome === 'skipped') return false;
-    if (e._reminderDismissed) return false;
-    if (e._reminderSnoozeUntil && e._reminderSnoozeUntil > now) return false;
-    return true;
-  });
+  const staleForced = allForced.filter(e => forcedNeedsReminder(e, now));
   const staleReminderHTML = staleForced.length > 0 ? `
     <div class="stale-reminder-panel">
       <div class="stale-reminder-head">
@@ -4932,13 +4940,11 @@ function tickerWinRatePanelHTML() {
 
 function forcedTradeReminderHTML() {
   const history = getActiveHistory();
-  const thirtyDaysAgo = Date.now() - 30 * 86400000;
-  // Find forced trades from 30+ days ago that still need outcome update
-  const needReview = history.filter(e => {
-    if (!e.forcedReason) return false;
-    if (e.timestampSort >= thirtyDaysAgo) return false;
-    return !e.outcome || e.outcome === 'open';
-  });
+  const now = Date.now();
+  // Forced trades 30+ days old that still need a check-in (same rule as the reminder panel,
+  // so "还在持仓" / "不再提醒" / saving the edit modal clears this banner too)
+  const needReview = history.filter(e => forcedNeedsReminder(e, now)
+    && (now - (e.timestampSort || 0)) >= FORCED_URGENT_DAYS * 86400000);
   if (needReview.length === 0) return '';
   const first = needReview[0];
   return `
@@ -7232,11 +7238,15 @@ function showEditModal(id) {
 
     // Save closure — reused by all three paths
     const performSave = (extraFields = {}) => {
+      const finalForcedReason = extraFields.forcedReason || modal.querySelector('#edit-forced-reason')?.value.trim() || entry.forcedReason || '';
+      // Reviewed a due forced trade and left it unsettled → treat as "还在持仓": pause the reminder
+      const ackStillHolding = forcedNeedsReminder(entry) && !!finalForcedReason && (!newOutcome || newOutcome === 'open');
       editHistoryEntry(id, {
         ticker: newTicker,
         outcome: newOutcome,
         notes: newNotes,
-        forcedReason: extraFields.forcedReason || modal.querySelector('#edit-forced-reason')?.value.trim() || entry.forcedReason || '',
+        forcedReason: finalForcedReason,
+        ...(ackStillHolding ? { _reminderSnoozeUntil: Date.now() + FORCED_SNOOZE_DAYS * 86400000 } : {}),
         nav: (isLeapsOpen || isCsp) ? newNav : entry.nav,
         existing: isLeapsOpen ? newExisting : entry.existing,
         budget: isLeapsOpen ? newBudget : entry.budget,
@@ -7247,7 +7257,9 @@ function showEditModal(id) {
       const toastMsg = verdictChanged
         ? `已保存 · verdict: ${entry.verdict} → ${recomputed.verdict}`
         : '已保存';
-      showToast(toastMsg, 'success', '页面已更新 · 稍后 Sync 同步到另一端');
+      showToast(toastMsg, 'success', ackStillHolding
+        ? `已确认仍持仓 · 硬冲提醒暂停 ${FORCED_SNOOZE_DAYS} 天`
+        : '页面已更新 · 稍后 Sync 同步到另一端');
     };
 
     // If verdict got worse AND still holding → show choice modal
