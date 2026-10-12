@@ -1662,6 +1662,42 @@
   }
   .pr-detail-btn:hover { border-color: var(--accent); color: var(--accent); }
 
+  /* Schwab data source (Phase 1) */
+  .pr-inputs[hidden] { display: none; }
+  .pr-source.live  { color: var(--pass);    background: color-mix(in srgb, var(--pass) 12%, var(--panel-2)); }
+  .pr-source.stale { color: var(--pending); background: color-mix(in srgb, var(--pending) 12%, var(--panel-2)); }
+  .pr-schwab { margin-top: 8px; }
+  .pr-schwab-line { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;
+    padding-top: 7px; border-top: 1px solid var(--border); font-family: var(--mono); font-size: 11.5px; color: var(--text-dim); }
+  .pr-schwab-line.warn { color: var(--pending); }
+  .pr-schwab-line.bad  { color: var(--fail); }
+  .pr-schwab-line a { color: var(--accent); }
+  .pr-schwab-actions { display: flex; gap: 6px; }
+  .pr-mini-btn { padding: 3px 9px; background: var(--panel-2); border: 1px solid var(--border); border-radius: 4px;
+    color: var(--text-dim); font-family: var(--mono); font-size: 11.5px; cursor: pointer; }
+  .pr-mini-btn:hover { border-color: var(--accent); color: var(--text); }
+  .pr-mini-btn:disabled { opacity: 0.5; cursor: default; }
+  .pr-mini-btn.primary { background: var(--accent); border-color: var(--accent); color: var(--panel); }
+  .pr-mini-btn.danger { color: var(--fail); }
+  .pr-link-btn { width: 100%; padding: 6px; background: transparent; border: 1px dashed var(--accent); border-radius: 4px;
+    color: var(--accent); font-family: var(--mono); font-size: 11.5px; cursor: pointer; }
+  .pr-setup { padding: 10px; background: var(--panel-2); border-radius: 4px; display: flex; flex-direction: column; gap: 8px; }
+  .pr-setup-field { display: flex; align-items: center; gap: 8px; }
+  .pr-setup-field span { width: 72px; flex-shrink: 0; font-family: var(--mono); font-size: 11px; color: var(--text-faint); }
+  .pr-setup-field input { flex: 1; min-width: 0; padding: 5px 8px; background: var(--panel); border: 1px solid var(--border);
+    border-radius: 4px; color: var(--text); font-family: var(--mono); font-size: 12.5px; outline: none; }
+  .pr-setup-field input:focus { border-color: var(--accent); }
+  .pr-setup-note { font-size: 10.5px; color: var(--text-faint); font-style: italic; }
+  .pr-setup-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+  .pr-setup-msg { font-size: 11.5px; color: var(--fail); min-height: 1em; }
+  .main-nav-readonly { color: var(--text-dim); cursor: default; }
+  @media (max-width: 640px) {
+    .pr-setup-field { flex-direction: column; align-items: stretch; gap: 4px; }
+    .pr-setup-field span { width: auto; }
+    .pr-schwab-line { font-size: 12.5px; }
+    .pr-mini-btn { padding: 6px 12px; font-size: 13px; }
+  }
+
   /* Post-trade simulation · lives inside the checklist position-sizing box */
   .pr-sim:empty { display: none; }
   .pr-sim {
@@ -5014,6 +5050,15 @@ window.updateGlobalNav = (val) => {
 };
 
 function mainNavWidgetHTML() {
+  const pf = typeof getPortfolio === 'function' ? getPortfolio() : null;
+  if (pf && pf.source === 'schwab' && pf.nav) {
+    return `
+    <div class="main-nav-widget">
+      <label class="main-nav-label">Account NAV</label>
+      <input type="text" id="main-nav-input" class="main-nav-input main-nav-readonly" value="${esc('$' + Math.round(pf.nav).toLocaleString())}" readonly tabindex="-1">
+      <span class="main-nav-hint">来自 Schwab · 自动同步到 LEAPS / CSP 表单</span>
+    </div>`;
+  }
   const nav = loadSavedNav();
   const display = nav ? '$' + Number(nav).toLocaleString() : '未设置';
   return `
@@ -6121,9 +6166,13 @@ function pickStrategy(s) {
   state.items = {};
   // New checklist: exposure fields follow Portfolio (a previous trade's manual value is stale)
   state._autoExposure = _defaultAutoFlags();
-  // Prefill NAV from saved global NAV
-  const savedNav = loadSavedNav();
-  if (savedNav && !state.nav) state.nav = savedNav;
+  // Prefill NAV: Schwab when active (source of truth), else saved global NAV
+  const pfNav = getPortfolio();
+  if (pfNav.source === 'schwab' && pfNav.nav) state.nav = String(Math.round(pfNav.nav));
+  else {
+    const savedNav = loadSavedNav();
+    if (savedNav && !state.nav) state.nav = savedNav;
+  }
   render();
 }
 function switchStrategy() {
@@ -9455,10 +9504,93 @@ function _historyPositions() {
   return out.slice();
 }
 
-// The single seam. Phase 1: return Schwab-sourced object of the same shape.
+/* ---------- Schwab data source (Phase 1) ----------
+ * Worker URL + CHECKLIST_TOKEN and the cached portfolio live on THIS device only —
+ * they are not part of the Gist sync payload. Schwab data is used while it is less
+ * than 24 h old; missing or older → automatic fallback to manual + local history. */
+const SCHWAB_CFG_KEY = 'pretrade_schwab_cfg';
+const SCHWAB_CACHE_KEY = 'pretrade_schwab_cache';
+const SCHWAB_DEFAULT_URL = 'https://checklist.haorany999.workers.dev';
+const SCHWAB_AUTO_REFRESH_MIN = 5;    // page load / resume refetch at most this often
+const SCHWAB_STALE_MIN = 15;          // source badge turns amber after this
+const SCHWAB_MAX_AGE_H = 24;          // older → not used, fall back to manual + history
+const SCHWAB_KINDS = ['stock', 'leaps', 'short_put', 'short_call', 'long_put'];
+let __schwabStatus = { state: 'idle' };   // idle | loading | ok | reauth | unauthorized | error
+let __schwabInflight = null;
+let __schwabSetupOpen = false;
+
+function loadSchwabCfg() {
+  try {
+    const c = JSON.parse(localStorage.getItem(SCHWAB_CFG_KEY) || 'null');
+    if (c && typeof c.url === 'string' && /^https:\/\//i.test(c.url) && typeof c.token === 'string' && c.token) return c;
+  } catch (e) {}
+  return null;
+}
+let _scCacheRaw = null, _scCacheVal = null;
+function loadSchwabCache() {
+  let raw = '';
+  try { raw = localStorage.getItem(SCHWAB_CACHE_KEY) || ''; } catch (e) {}
+  if (raw === _scCacheRaw) return _scCacheVal;
+  let v = null;
+  try {
+    const c = JSON.parse(raw || 'null');
+    if (c && c.data && c.data.source === 'schwab' && Number.isFinite(c.fetchedAt)) v = c;
+  } catch (e) {}
+  _scCacheRaw = raw; _scCacheVal = v;
+  return v;
+}
+function _schwabAgeMin(c) { return c ? Math.max(0, (Date.now() - c.fetchedAt) / 60000) : Infinity; }
+function _schwabUsable() {
+  if (!loadSchwabCfg()) return null;
+  const c = loadSchwabCache();
+  return c && _schwabAgeMin(c) <= SCHWAB_MAX_AGE_H * 60 ? c : null;
+}
+// Days until Schwab's 7-day refresh token expires (null if unknown).
+// Newer Worker sends an exact reauthAt; older sends a floored reauthInDays → use the window midpoint.
+function _schwabReauthDaysLeft(c) {
+  const auth = c && c.data && c.data.auth;
+  if (!auth) return null;
+  if (Number.isFinite(auth.reauthAt)) return (auth.reauthAt - Date.now()) / 86400000;
+  if (Number.isFinite(auth.reauthInDays)) return auth.reauthInDays + 0.5 - (Date.now() - c.fetchedAt) / 86400000;
+  return null;
+}
+function _schwabAgeText(c) {
+  const m = _schwabAgeMin(c);
+  if (m < 1) return '刚刚';
+  if (m < 60) return `${Math.floor(m)} 分钟前`;
+  return `${Math.floor(m / 60)} 小时前`;
+}
+// Worker positions → Portfolio positions with the agreed exposure rules:
+// stock cost · LEAPS cost · CSP strike × 100 × contracts · short call / long put = 0
+function _schwabPositions(data) {
+  return (Array.isArray(data.positions) ? data.positions : [])
+    .filter(p => p && SCHWAB_KINDS.includes(p.kind))
+    .map(p => {
+      const rawQty = Number(p.qty) || 0, qty = Math.abs(rawQty);
+      const strike = _num(p.strike), cost = _num(p.cost);
+      let exposure = 0;
+      if (p.kind === 'short_put') exposure = (strike || 0) * 100 * qty;
+      else if (p.kind === 'leaps') exposure = cost || 0;
+      else if (p.kind === 'stock') exposure = rawQty > 0 ? (cost || 0) : 0;
+      return { kind: p.kind, ticker: _normTicker(p.ticker) || '?', strike, qty, expiry: p.expiry || null,
+        exposure, cost, marketValue: _num(p.marketValue), unparsed: p.kind === 'short_put' && strike == null };
+    });
+}
+
+// The single seam: Schwab when fresh, otherwise manual inputs + local history.
 function getPortfolio() {
+  const sc = _schwabUsable();
+  if (sc) {
+    const d = sc.data;
+    return {
+      source: 'schwab', asOf: sc.fetchedAt,
+      nav: _num(d.nav), cash: _num(d.cash), swvxx: _num(d.swvxx),
+      positions: _schwabPositions(d),
+      unclassified: Array.isArray(d.unclassified) ? d.unclassified.length : 0,
+    };
+  }
   return {
-    source: 'manual',   // 'manual' (Phase 0) | 'schwab' (Phase 1)
+    source: 'manual',
     asOf: null,
     nav: _num(state.nav || loadSavedNav()),
     cash: _num(loadSavedCash()),
@@ -9466,6 +9598,148 @@ function getPortfolio() {
     positions: _historyPositions(),
   };
 }
+
+async function refreshSchwab({ force = false } = {}) {
+  const cfg = loadSchwabCfg();
+  if (!cfg) return;
+  if (!force && __schwabStatus.state !== 'error' && _schwabAgeMin(loadSchwabCache()) < SCHWAB_AUTO_REFRESH_MIN) return;
+  if (__schwabInflight) return __schwabInflight;
+  __schwabStatus = { state: 'loading' };
+  _afterSchwabChange(false);
+  __schwabInflight = (async () => {
+    const ctrl = typeof AbortController === 'function' ? new AbortController() : null;
+    const timer = ctrl ? setTimeout(() => ctrl.abort(), 12000) : null;
+    let dataChanged = false;
+    try {
+      const res = await fetch(cfg.url.replace(/\/+$/, '') + '/portfolio', {
+        headers: { Authorization: 'Bearer ' + cfg.token }, cache: 'no-store', signal: ctrl ? ctrl.signal : undefined });
+      let body = null;
+      try { body = await res.json(); } catch (e) {}
+      if (res.ok && body && body.source === 'schwab') {
+        try { localStorage.setItem(SCHWAB_CACHE_KEY, JSON.stringify({ data: body, fetchedAt: Date.now() })); } catch (e) {}
+        const nav = _num(body.nav);
+        if (nav && nav > 0) {               // keep the manual fallback close to reality too
+          saveNav(String(Math.round(nav)));
+          if (!state.strategy) state.nav = String(Math.round(nav));
+        }
+        __schwabStatus = { state: 'ok' };
+        dataChanged = true;
+      } else if (res.status === 401 && body && body.error === 'reauth_required') {
+        __schwabStatus = { state: 'reauth' };
+      } else if (res.status === 401) {
+        __schwabStatus = { state: 'unauthorized' };
+      } else {
+        __schwabStatus = { state: 'error', message: body && body.message ? String(body.message).slice(0, 120) : `HTTP ${res.status}` };
+      }
+    } catch (e) {
+      __schwabStatus = { state: 'error', message: e && e.name === 'AbortError' ? '请求超时' : '网络错误, 无法连接 Worker' };
+    } finally {
+      if (timer) clearTimeout(timer);
+      __schwabInflight = null;
+    }
+    _afterSchwabChange(dataChanged);
+  })();
+  return __schwabInflight;
+}
+// Repaint what depends on the data without stealing focus from an input
+function _afterSchwabChange(dataChanged) {
+  if (state._view === 'history') return;
+  if (!state.strategy) {
+    const ae = document.activeElement;
+    // Never wipe the setup form or steal focus from an input being typed into
+    if (__schwabSetupOpen || (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA'))) { _refreshSchwabBlocks({ status: !__schwabSetupOpen }); return; }
+    render();
+  } else if (dataChanged) {
+    updateVerdictsInPlace();   // auto-filled exposure + post-trade simulation pick up Schwab data
+  }
+}
+function _refreshSchwabBlocks({ status = true } = {}) {
+  const src = document.getElementById('pr-source');
+  if (src) { const i = _prSourceInfo(); src.textContent = i.text; src.className = 'pr-source ' + i.cls; src.title = i.title; }
+  const st = document.getElementById('pr-schwab');
+  if (st && status) st.innerHTML = _schwabStatusInnerHTML();
+  _refreshPortfolioRows();
+}
+function _prSourceInfo() {
+  const p = getPortfolio();
+  if (p.source === 'schwab') {
+    const c = loadSchwabCache();
+    return { text: `Schwab · ${_schwabAgeText(c)}`, cls: _schwabAgeMin(c) > SCHWAB_STALE_MIN ? 'stale' : 'live',
+      title: 'Schwab 持仓 · 超过 15 分钟变黄 · 超过 24 小时自动改用手动 + 本地历史' };
+  }
+  if (loadSchwabCfg()) return { text: '手动 + 本地历史 · Schwab 无可用数据', cls: 'stale', title: 'Schwab 已配置, 但没有 24 小时内的数据' };
+  return { text: '手动 + 本地历史', cls: '', title: 'NAV / Cash / SWVXX 手填 · 持仓来自 history 里 outcome = 持仓 的 snapshot' };
+}
+function _schwabStatusInnerHTML() {
+  const cfg = loadSchwabCfg();
+  if (__schwabSetupOpen) return _schwabSetupFormHTML(cfg);
+  if (!cfg) return `<button class="pr-link-btn" onclick="openSchwabSetup()">连接 Schwab 实时数据 ▸</button>`;
+  const s = __schwabStatus.state;
+  const cache = loadSchwabCache();
+  const usable = !!_schwabUsable();
+  const link = `<a href="${esc(cfg.url.replace(/\/+$/, '') + '/connect')}" target="_blank" rel="noopener noreferrer">打开连接页 ↗</a>`;
+  const fallback = usable ? ` · 暂用 ${_schwabAgeText(cache)}的数据` : ' · 暂用手动 + 本地历史';
+  let msg = '', cls = '';
+  if (s === 'loading') msg = '读取 Schwab 中…';
+  else if (s === 'reauth') { msg = `Schwab 授权已过期 · ${link} 重新连接${fallback}`; cls = 'warn'; }
+  else if (s === 'unauthorized') { msg = `口令不对 · 点「设置」重新填写${fallback}`; cls = 'bad'; }
+  else if (s === 'error') { msg = `读取失败: ${esc(__schwabStatus.message || '')}${fallback}`; cls = 'warn'; }
+  else {
+    const left = _schwabReauthDaysLeft(cache);
+    if (left == null) msg = cache ? 'Schwab 已连接' : 'Schwab 已配置 · 尚未读取';
+    else if (left <= 0) { msg = `Schwab 授权已到期 · ${link} 重新连接`; cls = 'warn'; }
+    else if (left < 1) { msg = `Schwab 授权 ${Math.max(1, Math.round(left * 24))} 小时内到期 · ${link}`; cls = 'warn'; }
+    else if (left < 1.5) { msg = `Schwab 授权约 1 天后到期 · ${link}`; cls = 'warn'; }
+    else msg = `Schwab 已连接 · 授权 ${Math.floor(left)} 天后到期`;
+  }
+  return `<div class="pr-schwab-line ${cls}"><span class="pr-schwab-msg">${msg}</span>
+    <span class="pr-schwab-actions">
+      <button class="pr-mini-btn" onclick="refreshSchwab({ force: true })" ${s === 'loading' ? 'disabled' : ''} title="立即刷新">⟳</button>
+      <button class="pr-mini-btn" onclick="openSchwabSetup()">设置</button>
+    </span></div>`;
+}
+function _schwabSetupFormHTML(cfg) {
+  // The saved token is never written back into the page
+  return `<div class="pr-setup">
+    <label class="pr-setup-field"><span>Worker 地址</span>
+      <input type="url" id="sc-url" value="${esc(cfg ? cfg.url : SCHWAB_DEFAULT_URL)}" autocomplete="off" spellcheck="false"></label>
+    <label class="pr-setup-field"><span>口令</span>
+      <input type="password" id="sc-token" placeholder="${cfg ? '已保存 · 留空保持不变' : '粘贴 CHECKLIST_TOKEN'}" autocomplete="current-password"></label>
+    <div class="pr-setup-note">只保存在这台设备, 不会同步到 Gist · 每台设备各填一次</div>
+    <div class="pr-setup-actions">
+      <button class="pr-mini-btn primary" onclick="saveSchwabSetup()">保存并读取</button>
+      <button class="pr-mini-btn" onclick="closeSchwabSetup()">取消</button>
+      ${cfg ? '<button class="pr-mini-btn danger" onclick="disconnectSchwab()">断开</button>' : ''}
+    </div>
+    <div class="pr-setup-msg" id="sc-msg"></div>
+  </div>`;
+}
+window.openSchwabSetup = () => {
+  __schwabSetupOpen = true; _refreshSchwabBlocks();
+  const t = document.getElementById('sc-token'); if (t) t.focus();
+};
+window.closeSchwabSetup = () => { __schwabSetupOpen = false; _refreshSchwabBlocks(); };
+window.saveSchwabSetup = async () => {
+  const url = ((document.getElementById('sc-url') || {}).value || '').trim().replace(/\/+$/, '');
+  const typed = ((document.getElementById('sc-token') || {}).value || '').trim();
+  const prev = loadSchwabCfg();
+  const token = typed || (prev && prev.token) || '';
+  const msg = document.getElementById('sc-msg');
+  if (!/^https:\/\/[^\s\/]+/i.test(url)) { if (msg) msg.textContent = 'Worker 地址必须以 https:// 开头'; return; }
+  if (!token) { if (msg) msg.textContent = '请填写口令'; return; }
+  try { localStorage.setItem(SCHWAB_CFG_KEY, JSON.stringify({ url, token })); }
+  catch (e) { if (msg) msg.textContent = '保存失败'; return; }
+  if (!prev || prev.url !== url || prev.token !== token) { try { localStorage.removeItem(SCHWAB_CACHE_KEY); } catch (e) {} }
+  __schwabSetupOpen = false;
+  await refreshSchwab({ force: true });
+  if (__schwabStatus.state === 'ok') showToast('已连接 Schwab', 'success', '持仓 / 现金 / NAV 改用 Schwab 数据');
+};
+window.disconnectSchwab = () => {
+  if (!confirm('断开 Schwab?\n\n这台设备会删除 Worker 地址、口令和缓存的持仓, 改回手动 + 本地历史.')) return;
+  try { localStorage.removeItem(SCHWAB_CFG_KEY); localStorage.removeItem(SCHWAB_CACHE_KEY); } catch (e) {}
+  __schwabSetupOpen = false; __schwabStatus = { state: 'idle' };
+  render();
+};
 
 function portfolioRisk(p = getPortfolio()) {
   const pct = v => (p.nav && p.nav > 0 && v != null) ? v / p.nav * 100 : null;
@@ -9538,19 +9812,22 @@ function portfolioRowsHTML() {
 }
 
 function portfolioRiskHTML() {
+  const src = _prSourceInfo();
+  const isSchwab = getPortfolio().source === 'schwab';
   return `
     <div class="pr-panel">
       <div class="pr-head">
         <span class="pr-title">Portfolio Risk</span>
-        <span class="pr-source" title="Phase 0: NAV / Cash / SWVXX 手填 · 持仓来自 history 里 outcome = 持仓 的 snapshot">手动 + 本地历史</span>
+        <span class="pr-source ${src.cls}" id="pr-source" title="${esc(src.title)}">${esc(src.text)}</span>
       </div>
-      <div class="pr-inputs">
+      <div class="pr-inputs" ${isSchwab ? 'hidden' : ''}>
         <label class="pr-input-field"><span>Cash</span>
           <input type="number" inputmode="decimal" id="pr-cash-input" value="${esc(loadSavedCash())}" placeholder="0" oninput="updatePortfolioCash(this.value)"></label>
         <label class="pr-input-field"><span>SWVXX</span>
           <input type="number" inputmode="decimal" id="pr-swvxx-input" value="${esc(loadSavedSwvxx())}" placeholder="0" oninput="updatePortfolioSwvxx(this.value)"></label>
       </div>
       <div class="pr-rows" id="pr-rows">${portfolioRowsHTML()}</div>
+      <div class="pr-schwab" id="pr-schwab">${_schwabStatusInnerHTML()}</div>
       <button class="pr-detail-btn" onclick="showHoldingsModal()">查看持仓 ▸</button>
     </div>
   `;
@@ -9564,11 +9841,11 @@ window.updatePortfolioCash  = (val) => { _saveNumKey(CASH_KEY, val);  _refreshPo
 window.updatePortfolioSwvxx = (val) => { _saveNumKey(SWVXX_KEY, val); _refreshPortfolioRows(); };
 
 /* ---------- Holdings modal ---------- */
-const _KIND_LABEL = { stock: '正股', leaps: 'LEAPS', short_put: 'CSP', short_call: 'Short call' };
+const _KIND_LABEL = { stock: '正股', leaps: 'LEAPS', short_put: 'CSP', short_call: 'Short call', long_put: 'Long put' };
 function holdingsModalBodyHTML() {
   const r = portfolioRisk();
   if (r.tickers.length === 0) {
-    return `<div class="pr-empty">暂无持仓 · Phase 0 读取 history 里 outcome = 持仓 的 snapshot</div>`;
+    return `<div class="pr-empty">${r.p.source === 'schwab' ? 'Schwab 账户里没有持仓' : '暂无持仓 · 读取 history 里 outcome = 持仓 的 snapshot'}</div>`;
   }
   return r.tickers.map(t => `
     <div class="hd-ticker">
@@ -9579,7 +9856,7 @@ function holdingsModalBodyHTML() {
       </div>
       ${t.positions.map(x => {
         const parts = [];
-        if (x.strike != null) parts.push(`${x.strike}${x.kind === 'short_put' ? 'P' : x.kind === 'stock' ? '' : 'C'}`);
+        if (x.strike != null) parts.push(`${x.strike}${x.kind === 'short_put' || x.kind === 'long_put' ? 'P' : x.kind === 'stock' ? '' : 'C'}`);
         if (x.expiry) parts.push(esc(x.expiry));
         if (x.qty != null) parts.push(`× ${x.qty}`);
         return `
@@ -9590,7 +9867,9 @@ function holdingsModalBodyHTML() {
           </div>`;
       }).join('')}
     </div>
-  `).join('') + `<div class="hd-note">敞口 = 正股成本 + LEAPS 成本 + CSP nominal · short call 不计入</div>`;
+  `).join('') + `<div class="hd-note">敞口 = 正股成本 + LEAPS 成本 + CSP nominal · short call / long put 不计入${
+      r.p.positions.some(x => x.unparsed) ? ' · ⚠ 有 CSP 未能解析 strike, 敞口按 0 计' : ''}${
+      r.p.unclassified ? ` · ${r.p.unclassified} 项其他资产未计入` : ''}</div>`;
 }
 window.showHoldingsModal = () => {
   let modal = document.getElementById('holdings-modal');
@@ -9604,7 +9883,7 @@ window.showHoldingsModal = () => {
   modal.innerHTML = `
     <div class="modal-card">
       <div class="modal-head">
-        <div class="modal-title">持仓明细 · 按单标的敞口排序</div>
+        <div class="modal-title">持仓明细 · ${esc(_prSourceInfo().text)}</div>
         <button class="modal-close" onclick="hideHoldingsModal()" aria-label="Close">×</button>
       </div>
       <div class="modal-body">${holdingsModalBodyHTML()}</div>
@@ -9694,7 +9973,7 @@ function portfolioSimInnerHTML() {
     ${rowHTML}
     ${verdict}
     ${_manualOverrides().map(o => `<div class="pr-sim-override">⚠ 「${_EXPOSURE_LABEL[o.k]}」手动填 ${_fmtUsd(o.manual)}, Portfolio 为 ${_fmtUsd(o.auto)} · HARD 项按手动值判断 · 清空该框恢复自动</div>`).join('')}
-    <div class="pr-sim-note">基于 Portfolio 数据 (手动 + 本地历史) · 超限只提示, 不阻断</div>`;
+    <div class="pr-sim-note">基于 ${esc(_prSourceInfo().text)} · 超限只提示, 不阻断</div>`;
 }
 function portfolioSimHTML() {
   return `<div class="pr-sim" id="portfolio-sim">${portfolioSimInnerHTML()}</div>`;
@@ -9911,6 +10190,16 @@ window.addEventListener('scroll', updateScrolledState, { passive: true });
   if (!cfg || !cfg.token) return;
   // Delay 800ms so UI renders + user sees the app before any sync toast
   setTimeout(() => { syncMergeSilent(); }, 800);
+})();
+
+// Schwab portfolio: fetch on launch, and on resume if older than a few minutes
+(function bootSchwab() {
+  if (loadSchwabCfg()) setTimeout(() => { refreshSchwab(); }, 300);
+  // Always listen: Schwab may be configured later in this session
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && loadSchwabCfg()
+        && _schwabAgeMin(loadSchwabCache()) >= SCHWAB_AUTO_REFRESH_MIN) refreshSchwab();
+  });
 })();
 
 
