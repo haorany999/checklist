@@ -1972,8 +1972,6 @@
   body.sf-lock { overflow: hidden; }
   .sf-panel.fs { position: fixed; inset: 0; z-index: 1000; margin: 0; padding: max(12px, env(safe-area-inset-top)) 16px 16px;
     background: var(--panel); overflow-y: auto; }
-  .sf-panel.fs .sf-stage { height: max(320px, calc(100vh - 300px)) !important; }
-  .sf-panel.fs .sf-stage:has(.sf-grid:not([hidden])) { height: auto !important; }
   .gl-band { fill: var(--accent); opacity: 0.08; }
   .gl-band-lab { fill: var(--accent); }
   .gl-vline { stroke-width: 1; }
@@ -2039,7 +2037,6 @@
     .gl-head { border-radius: 0; padding-top: max(14px, env(safe-area-inset-top)); }
     .gl-body { padding: 10px 12px 28px; }
     .gl-grid4 { grid-template-columns: 1fr; }
-    .gl-lab { font-size: 15px; } .gl-exp text, .gl-dot text { font-size: 15px; }
   }
   .gk-card { margin: -4px 0 12px; padding: 10px 16px 12px; background: var(--panel); border: 1px solid var(--border);
     border-radius: var(--radius, 6px); cursor: pointer; transition: border-color 0.15s; }
@@ -2106,6 +2103,36 @@
   .gh-pop p { margin: 6px 0 0; }
   .gh-pop p span { display: inline-block; min-width: 36px; margin-right: 6px; font-weight: 600; color: var(--text); }
   .gh-own { color: var(--text); } .gh-other { opacity: 0.75; }
+  /* chart labels: --fs is set per SVG so text renders at ~11px on any screen */
+  .gl-lab, .rk-ch-lab { font-size: var(--fs, 10px); }
+  .gl-exp text, .gl-dot text { font-size: var(--fs-s, 9.5px); }
+  .sf-grid-svg .gl-lab { font-size: var(--fs, 10px); }
+  /* 3D gestures */
+  .sf-hint span { display: none; }
+  .sf-panel:not(.sf-touch) .sf-hint-mouse { display: inline; }
+  .sf-panel.sf-touch:not(.sf-active) .sf-hint-touch { display: inline; }
+  .sf-panel.sf-touch.sf-active .sf-hint-on { display: inline; color: var(--accent); }
+  .sf-panel.sf-active:not(.fs) .sf-wrap { box-shadow: inset 0 0 0 2px var(--accent); }
+  .sf-panel.fs.sf-touch .sf-hint-on, .sf-panel.fs.sf-touch .sf-hint-touch { display: none; }
+  .sf-panel.fs.sf-touch .sf-hint-fs { display: inline; }
+  .sf-fs-read, .sf-rotate { display: none; }
+  /* true fullscreen: toolbar + 3D only */
+  .sf-panel.fs { display: flex; flex-direction: column; padding: max(8px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left)); }
+  .sf-panel.fs .sf-bar { flex: none; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-bottom: 4px; }
+  .sf-panel.fs .sf-bar::-webkit-scrollbar { display: none; }
+  .sf-panel.fs .sf-bar .rk-presets, .sf-panel.fs .sf-tools { flex-wrap: nowrap; flex: none; }
+  .sf-panel.fs .sf-stage { flex: 1; height: auto !important; min-height: 0; }
+  .sf-panel.fs .sf-pin, .sf-panel.fs .sf-desc { display: none; }
+  .sf-panel.fs .sf-fs-read { display: block; position: absolute; left: 10px; bottom: 8px; padding: 4px 8px; border-radius: 4px;
+    background: color-mix(in srgb, var(--panel) 85%, transparent); font-size: 12px; color: var(--text-dim); pointer-events: none; }
+  .sf-panel.fs .sf-fs-read:empty { display: none; }
+  .sf-panel.fs .sf-fs-read b { font-family: var(--mono); font-size: 14px; color: var(--accent); margin-left: 6px; }
+  .sf-panel.fs .sf-grid { overflow: auto; height: 100%; }
+  .sf-panel.fs:fullscreen, .sf-panel.fs:-webkit-full-screen { width: 100vw; height: 100vh; background: var(--panel); }
+  @media (orientation: portrait) and (max-width: 560px) {
+    .sf-panel.fs .sf-rotate { display: block; position: absolute; top: 8px; left: 50%; transform: translateX(-50%); padding: 4px 10px; border-radius: 12px;
+      background: var(--accent); color: var(--panel); font-size: 12px; white-space: nowrap; pointer-events: none; }
+  }
   .pr-sim-risk { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 10px; margin-top: 8px; padding: 6px 9px;
     border-radius: 4px; background: var(--panel-2); font-size: 12px; color: var(--text-dim); }
   .pr-sim-risk span { font-size: 10.5px; color: var(--text-faint); margin-left: auto; }
@@ -2123,7 +2150,6 @@
     .rk-card-num { font-size: 26px; }
     .rk-name { font-size: 14px; } .rk-val { font-size: 16px; }
     .rk-desc { font-size: 12.5px; } .rk-row-foot { flex-direction: column; gap: 2px; }
-    .rk-ch-lab { font-size: 17px; }   /* chart is scaled ~0.55× on phones */
     .rk-stress-head { font-size: 15px; }
   }
 
@@ -11174,11 +11200,12 @@ function _stressOutHTML(c) {
   const series = ms.map(m => { const r = stressScenario(c, m, _ivFor(m)); return [m, pct(r.pnl), r.cashAfterPct]; });
   const ys = series.flatMap(r => [r[1], r[2]]).filter(v => v != null).concat([0, 10]);
   const yMin = Math.floor(Math.min(...ys) / 10) * 10, yMax = Math.ceil(Math.max(...ys) / 10) * 10 || 10;
-  const W = 640, H = 200, L = 40, Rr = 12, T = 12, B = 26;
+  const W = _chartW(), H = 210, L = 44, Rr = 12, T = 12, B = 26;
   const X = m => L + (m + 0.4) / 0.6 * (W - L - Rr), Y = v => T + (yMax - v) / (yMax - yMin) * (H - T - B);
   const line = idx => series.filter(r => r[idx] != null).map(r => `${X(r[0]).toFixed(1)},${Y(r[idx]).toFixed(1)}`).join(' ');
   const grid = []; for (let v = yMin; v <= yMax; v += 10) grid.push(`<line x1="${L}" x2="${W - Rr}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}" class="rk-ch-grid${v === 0 ? ' zero' : ''}"/><text x="${L - 6}" y="${(Y(v) + 4).toFixed(1)}" text-anchor="end" class="rk-ch-lab">${v}%</text>`);
-  const xt = [-40, -30, -20, -10, 0, 10, 20].map(v => `<text x="${X(v / 100).toFixed(1)}" y="${H - 8}" text-anchor="middle" class="rk-ch-lab">${v > 0 ? '+' : ''}${v}%</text>`).join('');
+  const xtv = W >= 480 ? [-40, -30, -20, -10, 0, 10, 20] : [-40, -20, 0, 20];
+  const xt = xtv.map((v, k) => `<text x="${X(v / 100).toFixed(1)}" y="${H - 8}" text-anchor="${k === 0 ? 'start' : k === xtv.length - 1 ? 'end' : 'middle'}" class="rk-ch-lab">${v > 0 ? '+' : ''}${v}%</text>`).join('');
   const cur = series.reduce((a, r) => Math.abs(r[0] - __stressM) < Math.abs(a[0] - __stressM) ? r : a, series[0]);
   return `
     <div class="rk-figs">
@@ -11234,6 +11261,7 @@ window.setStressMove = (v, fromSlider) => {
   const out = document.getElementById('rk-stress-out');
   if (!out) return;
   out.innerHTML = _stressOutHTML(computeRisk().c);
+  _fitChartText();
   const lab = document.getElementById('rk-stress-val'); if (lab) lab.textContent = `${__stressM > 0 ? '+' : ''}${Math.round(__stressM * 100)}%`;
   const rng = document.getElementById('rk-stress-range'); if (rng && !fromSlider) rng.value = Math.round(__stressM * 100);
   document.querySelectorAll('.rk-preset:not(.rk-iv)').forEach(b => b.classList.toggle('active', b.textContent === `${Math.round(__stressM * 100)}%`));
@@ -11729,6 +11757,7 @@ function optionSurface(m, entry, metric, horizon = m.dte) {
 const __surf = {};
 let __surfSeq = 0;
 const SF_VIEWS = { def: [-0.62, 0.92], front: [0, 0.14], side: [-Math.PI / 2, 0.14], top: [0, 1.5] };
+const SF_TOUCH = typeof window !== 'undefined' && (('ontouchstart' in window) || (navigator.maxTouchPoints || 0) > 0);
 function surfacePanelHTML({ metrics, build, def = 'pnl', height = 320 }) {
   const id = 'sp' + (++__surfSeq);
   const data = build(def);
@@ -11747,7 +11776,9 @@ function surfacePanelHTML({ metrics, build, def = 'pnl', height = 320 }) {
         </div>
       </div>
       <div class="sf-stage" style="height:${height}px">
-        <div class="sf-wrap"><canvas class="sf-canvas" aria-label="3D 曲面"></canvas><div class="sf-tip" hidden></div><div class="sf-hint">拖动旋转 · 点击锁定</div></div>
+        <div class="sf-wrap"><canvas class="sf-canvas" aria-label="3D 曲面"></canvas><div class="sf-tip" hidden></div>
+          <div class="sf-hint"><span class="sf-hint-mouse">拖动旋转 · 点击锁定</span><span class="sf-hint-touch">点一下开始操作 · 单指旋转 · 双指缩放 · 双击复位</span><span class="sf-hint-on">操作中 · 点外部结束</span><span class="sf-hint-fs">单指旋转 · 双指缩放 · 双击复位</span></div>
+          <div class="sf-fs-read"></div><div class="sf-rotate">横过手机看得更清楚</div></div>
         <div class="sf-grid" hidden></div>
       </div>
       <div class="sf-pin"></div>
@@ -11796,7 +11827,7 @@ function drawSurface(id) {
   for (const X of [-1, 1]) for (const Y of [-1, 1]) for (const Z of [-0.62, 0.62]) fitPts.push([X, Y, Z]);
   for (const s of [-1, 1]) for (const t of [-1, 1]) fitPts.push([s * 1.22, t, -0.62], [s, t * 1.22, -0.62]);
   fitPts.forEach(p => { const q = P0(...p); bx0 = Math.min(bx0, q[0]); bx1 = Math.max(bx1, q[0]); by0 = Math.min(by0, q[1]); by1 = Math.max(by1, q[1]); });
-  const scale = Math.min((W - 80) / (bx1 - bx0), (H - 28) / (by1 - by0));
+  const scale = Math.min((W - 80) / (bx1 - bx0), (H - 28) / (by1 - by0)) * (st.zoom || 1);
   const ox = W / 2 - (bx0 + bx1) / 2 * scale, oy = H / 2 - (by0 + by1) / 2 * scale;
   const P = (X, Y, Z) => { const q = P0(X, Y, Z); return [ox + q[0] * scale, oy + q[1] * scale, q[2]]; };
   const Xw = i => -1 + 2 * i / (nx - 1), Yw = j => -1 + 2 * j / (ny - 1);
@@ -11894,6 +11925,8 @@ function _sfRefresh(id) {
   el.querySelector('.sf-stage').style.height = st.mode === 'grid' ? 'auto' : (el.classList.contains('fs') ? '' : st.height + 'px');
   if (st.mode === 'grid') g.innerHTML = _sfGridSVG(id); else drawSurface(id);
   el.querySelector('.sf-pin').innerHTML = _sfPinHTML(id);
+  const fr = el.querySelector('.sf-fs-read');
+  if (fr) fr.innerHTML = st.pin ? `${esc(st.data.xTitle)} ${esc(st.data.xFmt(st.data.xs[st.pin.i]))} · ${esc(st.data.yFmt(st.data.ys[st.pin.j]))} <b>${esc(st.data.fmt(st.data.z[st.pin.i][st.pin.j]))}</b>` : '';
   const meta = GRID_METRICS[st.metric];
   el.querySelector('.sf-desc').textContent = (st.data.scope === 'S' ? meta.S : meta.P) + (st.data.modeled != null ? ` ${st.data.modeled}/${st.data.total} 个仓位建模.` : '');
 }
@@ -11909,12 +11942,12 @@ window.sfMode = (id, mode) => { const st = __surf[id]; if (!st) return; st.mode 
 window.sfView = (id, v) => {
   const st = __surf[id], tgt = SF_VIEWS[v]; if (!st || !tgt) return;
   const el = document.getElementById(id); el.querySelectorAll('.sf-v').forEach(b => b.classList.toggle('active', b.dataset.v === v));
-  const y0 = st.yaw, p0 = st.pitch, t0 = performance.now();
+  const y0 = st.yaw, p0 = st.pitch, z0 = st.zoom || 1, t0 = performance.now();
   let dy = tgt[0] - y0; dy = Math.atan2(Math.sin(dy), Math.cos(dy));       // shortest way round
   const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const step = now => {
     const k = reduce ? 1 : Math.min(1, (now - t0) / 380), e = 1 - Math.pow(1 - k, 3);
-    st.yaw = y0 + dy * e; st.pitch = p0 + (tgt[1] - p0) * e; drawSurface(id);
+    st.yaw = y0 + dy * e; st.pitch = p0 + (tgt[1] - p0) * e; if (v === 'def') st.zoom = z0 + (1 - z0) * e; drawSurface(id);
     if (k < 1) requestAnimationFrame(step);
   };
   requestAnimationFrame(step);
@@ -11934,54 +11967,122 @@ window.sfKey = (e, id) => {
 window.sfFullscreen = id => {
   const el = document.getElementById(id); if (!el) return;
   const on = !el.classList.contains('fs');
+  _sfSetFs(el, on);
+  if (on) {
+    const req = el.requestFullscreen || el.webkitRequestFullscreen;
+    if (req) {
+      try {
+        const p = req.call(el, { navigationUI: 'hide' });
+        if (p && p.then) p.then(() => { try { const o = screen.orientation; if (o && o.lock) o.lock('landscape').catch(() => {}); } catch (e) {} }).catch(() => {});
+      } catch (e) {}
+    }
+  } else if (document.fullscreenElement || document.webkitFullscreenElement) {
+    try { (document.exitFullscreen || document.webkitExitFullscreen).call(document); } catch (e) {}
+  }
+};
+function _sfSetFs(el, on) {
+  const st = __surf[el.id];
   el.classList.toggle('fs', on); document.body.classList.toggle('sf-lock', on);
   el.querySelector('.sf-fs-btn').textContent = on ? '⤡' : '⤢';
-  _sfRefresh(id);
+  if (st) st.active = on ? true : false;
+  _sfApplyTouch(el);
+  if (!on) { try { const o = screen.orientation; if (o && o.unlock) o.unlock(); } catch (e) {} }
+  _sfRefresh(el.id);
+  requestAnimationFrame(() => drawSurface(el.id));
   if (on) el.focus();
-};
+}
+// leaving system fullscreen by gesture / back button also leaves our fullscreen layout
+['fullscreenchange', 'webkitfullscreenchange'].forEach(ev => document.addEventListener(ev, () => {
+  if (document.fullscreenElement || document.webkitFullscreenElement) return;
+  const fs = document.querySelector('.sf-panel.fs'); if (fs) _sfSetFs(fs, false);
+}));
+window.addEventListener('orientationchange', () => setTimeout(() => Object.keys(__surf).forEach(drawSurface), 250));
 document.addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;
   const fs = document.querySelector('.sf-panel.fs');
-  if (fs) { e.stopImmediatePropagation(); e.preventDefault(); sfFullscreen(fs.id); }
+  if (fs) { e.stopImmediatePropagation(); e.preventDefault(); if (document.fullscreenElement) { try { document.exitFullscreen(); } catch (er) {} } else _sfSetFs(fs, false); }
 }, true);
+function _sfApplyTouch(el) {
+  const st = __surf[el.id], cv = el.querySelector('canvas');
+  if (!st || !cv) return;
+  cv.style.touchAction = st.active ? 'none' : 'pan-y';     // inactive: the page keeps scrolling over the chart
+  el.classList.toggle('sf-active', !!st.active);
+  el.classList.toggle('sf-touch', SF_TOUCH);
+}
 function _bindSurface(id) {
   const st = __surf[id], el = document.getElementById(id);
   if (!st || !el || st.bound === el) return;
   st.bound = el;
   const cv = el.querySelector('canvas'), tip = el.querySelector('.sf-tip');
-  let drag = null, raf = 0;
+  const pts = new Map();          // active pointers
+  let drag = null, pinch = null, raf = 0, lastTap = 0;
   const redraw = () => { if (!raf) raf = requestAnimationFrame(() => { raf = 0; drawSurface(id); }); };
-  const nearest = e => {
-    const r = cv.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top;
-    let best = null, bd = 24 * 24;
+  const nearest = (cx, cy, rad = 24) => {
+    const r = cv.getBoundingClientRect(), mx = cx - r.left, my = cy - r.top;
+    let best = null, bd = rad * rad;
     (st.verts || []).forEach(v => { const d = (v.x - mx) ** 2 + (v.y - my) ** 2; if (d < bd || (best && d === bd && v.d < best.d)) { bd = d; best = v; } });
     return best;
   };
-  cv.addEventListener('pointerdown', e => { drag = { x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY, t: e.pointerType }; cv.setPointerCapture(e.pointerId); el.classList.add('dragging'); tip.hidden = true; });
+  const dist2 = () => { const [a, b] = [...pts.values()]; return Math.hypot(a.x - b.x, a.y - b.y); };
+  cv.addEventListener('pointerdown', e => {
+    pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    try { cv.setPointerCapture(e.pointerId); } catch (er) {}
+    tip.hidden = true;
+    if (pts.size === 2 && (st.active || e.pointerType !== 'touch')) { pinch = { d: dist2(), z: st.zoom || 1 }; drag = null; return; }
+    drag = { x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY, t: e.pointerType, moved: 0 };
+    el.classList.add('dragging');
+  });
   cv.addEventListener('pointermove', e => {
+    if (pts.has(e.pointerId)) pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pinch && pts.size === 2) { st.zoom = Math.max(0.6, Math.min(3, pinch.z * dist2() / pinch.d)); redraw(); return; }
     if (drag) {
-      st.yaw += (e.clientX - drag.x) * 0.012;
-      if (drag.t !== 'touch') st.pitch = Math.max(0.12, Math.min(1.5, st.pitch + (e.clientY - drag.y) * 0.01));
+      const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+      drag.moved += Math.abs(dx) + Math.abs(dy);
+      st.yaw += dx * 0.012;
+      // touch when inactive: only horizontal rotation (vertical swipes belong to page scroll)
+      if (drag.t !== 'touch' || st.active) st.pitch = Math.max(0.12, Math.min(1.5, st.pitch + dy * 0.01));
       drag.x = e.clientX; drag.y = e.clientY; redraw(); return;
     }
-    const best = nearest(e);
+    if (e.pointerType === 'touch') return;
+    const best = nearest(e.clientX, e.clientY);
     if (!best) { tip.hidden = true; return; }
     const D = st.data;
     tip.innerHTML = `${esc(D.xTitle)} ${esc(D.xFmt(D.xs[best.i]))} · ${esc(D.yFmt(D.ys[best.j]))}<b>${esc(D.fmt(D.z[best.i][best.j]))}</b>`;
     const wrap = el.querySelector('.sf-wrap');
     tip.hidden = false; tip.style.left = Math.min(best.x + 12, wrap.clientWidth - 150) + 'px'; tip.style.top = Math.max(0, best.y - 34) + 'px';
   });
-  cv.addEventListener('pointerup', e => {
-    const moved = drag ? Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0) : 99;
-    drag = null; el.classList.remove('dragging');
-    if (moved < 5) { const best = nearest(e); if (best) _sfSetPin(id, best.i, best.j); }
-  });
-  cv.addEventListener('pointercancel', () => { drag = null; el.classList.remove('dragging'); });
+  const end = e => {
+    pts.delete(e.pointerId);
+    if (pinch) { if (pts.size < 2) pinch = null; drag = null; el.classList.remove('dragging'); return; }
+    const d = drag; drag = null; el.classList.remove('dragging');
+    if (!d || e.type === 'pointercancel') return;
+    const moved = Math.hypot(e.clientX - d.x0, e.clientY - d.y0);
+    if (moved >= 8) return;
+    const now = Date.now();
+    if (now - lastTap < 320) { lastTap = 0; sfView(id, 'def'); return; }      // double tap: reset view + zoom
+    lastTap = now;
+    if (d.t === 'touch' && !st.active) { st.active = true; _sfApplyTouch(el); }
+    const best = nearest(e.clientX, e.clientY, d.t === 'touch' ? 34 : 24);
+    if (best) _sfSetPin(id, best.i, best.j);
+  };
+  cv.addEventListener('pointerup', end);
+  cv.addEventListener('pointercancel', end);
   cv.addEventListener('pointerleave', () => { if (!drag) tip.hidden = true; });
+  // mouse wheel zooms only in fullscreen (inline it must keep scrolling the page)
+  cv.addEventListener('wheel', e => { if (!el.classList.contains('fs')) return; e.preventDefault(); st.zoom = Math.max(0.6, Math.min(3, (st.zoom || 1) * (e.deltaY < 0 ? 1.1 : 0.9))); redraw(); }, { passive: false });
+  _sfApplyTouch(el);
   _sfRefresh(id);
 }
+// tapping anywhere outside an active (non-fullscreen) panel hands touch back to the page
+document.addEventListener('pointerdown', e => {
+  document.querySelectorAll('.sf-panel.sf-active:not(.fs)').forEach(el => {
+    if (el.contains(e.target)) return;
+    const st = __surf[el.id]; if (st) { st.active = false; _sfApplyTouch(el); }
+  });
+}, true);
 function mountSurfaces() {
   _pruneCharts();
+  _fitChartText();
   Object.keys(__surf).forEach(id => { if (document.getElementById(id)) _bindSurface(id); else delete __surf[id]; });
 }
 let __surfResize = 0;
@@ -12019,7 +12120,8 @@ function _lineChartSVG({ xs, series, xFmt, yFmt, tipFmt, marker, markerLabel, w 
   const pad = (hi - lo) * 0.08; lo -= pad; hi += pad;
   const X = i => L + i / (xs.length - 1) * (w - L - R), Y = v => T + (hi - v) / (hi - lo) * (h - T - B);
   const path = ys => ys.map((v, i) => v == null || !isFinite(v) ? null : `${X(i).toFixed(1)},${Y(v).toFixed(1)}`).filter(Boolean).join(' ');
-  const ticks = lo + pad < 0 && hi - pad > 0 ? [lo + pad, 0, hi - pad] : [lo + pad, (lo + hi) / 2, hi - pad];
+  const ticks = (lo + pad < 0 && hi - pad > 0 ? [lo + pad, 0, hi - pad] : [lo + pad, (lo + hi) / 2, hi - pad])
+    .filter((v, k, a) => v === 0 || a.length < 3 || !a.includes(0) || Math.abs(Y(v) - Y(0)) >= 16);   // no tick crowding the zero line
   const xi = []; for (let k = 0; k < xTicks; k++) xi.push(Math.round(k * (xs.length - 1) / (xTicks - 1)));
   const mi = marker != null ? xs.reduce((b, x, i) => Math.abs(x - marker) < Math.abs(xs[b] - marker) ? i : b, 0) : null;
   const Xv = v => X((v - xs[0]) / (xs[xs.length - 1] - xs[0]) * (xs.length - 1));
@@ -12073,6 +12175,16 @@ function _chartLeave(e) {
 document.addEventListener('pointermove', _chartHover);
 document.addEventListener('pointerdown', _chartHover);
 document.addEventListener('pointerleave', _chartLeave, true);
+function _fitChartText() {
+  document.querySelectorAll('svg.gl-chart, svg.rk-chart, svg.sf-grid-svg').forEach(svg => {
+    const vb = svg.viewBox && svg.viewBox.baseVal, w = svg.getBoundingClientRect().width;
+    if (!vb || !vb.width || !w) return;
+    const k = vb.width / w;                     // viewBox units per screen pixel
+    svg.style.setProperty('--fs', (11 * k).toFixed(2) + 'px');
+    svg.style.setProperty('--fs-s', (10 * k).toFixed(2) + 'px');
+  });
+}
+window.addEventListener('resize', () => { clearTimeout(_fitChartText._t); _fitChartText._t = setTimeout(_fitChartText, 150); });
 function _pruneCharts() { Object.keys(__charts).forEach(id => { if (!document.querySelector(`.gl-cw[data-ch="${id}"]`)) delete __charts[id]; }); }
 
 /* ---------- Greek help cards ---------- */
@@ -12205,10 +12317,12 @@ function _leapsReturn(x, mark) {
   return { ret, days, ann: days != null && days >= 30 ? (Math.pow(value / cost, 365 / days) - 1) * 100 : null };
 }
 
+// wide charts are drawn at (roughly) the width they'll be shown at, so 11px labels never crowd
+function _chartW() { return Math.round(Math.max(330, Math.min(640, (window.innerWidth || 640) - 48))); }
 function _thetaCalendarSVG(cal) {
   if (!cal.modeled) return '';
   const nStack = Math.max(1, ...Object.values(cal.expiries.reduce((m, e) => { m[e.d] = (m[e.d] || 0) + 1; return m; }, {})));
-  const W = 640, H = 200 + nStack * 10, L = 46, R = 46, T = 12, B = 24 + nStack * 10, n = cal.days.length;
+  const W = _chartW(), H = 200 + nStack * 12, L = 50, R = 46, T = 12, B = 26 + nStack * 12, n = cal.days.length;
   const maxBar = Math.max(1, ...cal.days.map(d => Math.max(d.sell, -d.buy, Math.abs(d.net))));
   const cums = cal.days.map(d => d.cum), cmin = Math.min(0, ...cums), cmax = Math.max(1, ...cums);
   const bw = (W - L - R) / n, Xc = d => L + (d + 0.5) * bw;
@@ -12220,11 +12334,11 @@ function _thetaCalendarSVG(cal) {
     ${d.sell > 0 ? `<rect x="${(Xc(d.d) - bw * 0.38).toFixed(1)}" y="${Y(d.sell).toFixed(1)}" width="${(bw * 0.76).toFixed(1)}" height="${(Y(0) - Y(d.sell)).toFixed(1)}" class="gl-bar-sell"><title>${lab(d.d)} 卖方 ${_fmtSigned(d.sell)}</title></rect>` : ''}
     ${d.buy < 0 ? `<rect x="${(Xc(d.d) - bw * 0.38).toFixed(1)}" y="${Y(0).toFixed(1)}" width="${(bw * 0.76).toFixed(1)}" height="${(Y(d.buy) - Y(0)).toFixed(1)}" class="gl-bar-buy"><title>${lab(d.d)} 买方 ${_fmtSigned(d.buy)}</title></rect>` : ''}`).join('');
   const line = cal.days.map(d => `${Xc(d.d).toFixed(1)},${Yc(d.cum).toFixed(1)}`).join(' ');
-  const step = Math.max(1, Math.round(n / 8));
+  const step = Math.max(1, Math.ceil(n / Math.max(3, Math.floor((W - L - R) / 52))));
   const xl = cal.days.filter(d => d.d % step === 0).map(d => `<text x="${Xc(d.d).toFixed(1)}" y="${H - B + 12}" text-anchor="middle" class="gl-lab">${lab(d.d)}</text>`).join('');
   const byDay = {}; cal.expiries.forEach(e => { (byDay[e.d] = byDay[e.d] || []).push(e); });
   const ex = Object.entries(byDay).map(([d, es]) => `<g class="gl-exp"><line x1="${Xc(+d).toFixed(1)}" x2="${Xc(+d).toFixed(1)}" y1="${T}" y2="${H - B}"/>`
-    + es.map((e, k) => `<text x="${Xc(+d).toFixed(1)}" y="${H - 5 - (es.length - 1 - k) * 10}" text-anchor="middle" class="${e.short ? '' : 'long'}">${esc(e.label)}</text>`).join('') + '</g>').join('');
+    + es.map((e, k) => `<text x="${Xc(+d).toFixed(1)}" y="${H - 5 - (es.length - 1 - k) * 12}" text-anchor="middle" class="${e.short ? '' : 'long'}">${esc(e.label)}</text>`).join('') + '</g>').join('');
   return `<svg class="rk-chart gl-cal" viewBox="0 0 ${W} ${H}" role="img" aria-label="Theta 日历">
     <line x1="${L}" x2="${W - R}" y1="${Y(0).toFixed(1)}" y2="${Y(0).toFixed(1)}" class="rk-ch-grid zero"/>
     <text x="${L - 6}" y="${(Y(maxBar * 0.95) + 3).toFixed(1)}" text-anchor="end" class="gl-lab">${_fmtSigned(maxBar)}</text>
@@ -12242,22 +12356,28 @@ function _thetaScatterSVG(pos) {
     return { x, m, p: g.pITM * 100, y: th * 365 / coll * 100, coll, th };
   }).filter(Boolean);
   if (pts.length < 1) return '';
-  const W = 640, H = 220, L = 46, R = 14, T = 12, B = 30;
+  const W = _chartW(), H = 230, L = 46, R = 14, T = 14, B = 32;
   const xmax = Math.max(50, ...pts.map(p => p.p)) * 1.05, ymax = Math.max(10, ...pts.map(p => p.y)) * 1.15;
   const X = v => L + v / xmax * (W - L - R), Y = v => T + (ymax - v) / ymax * (H - T - B);
   const cmax = Math.max(...pts.map(p => p.coll));
   const dcls = d => d <= 7 ? 'danger' : d <= 21 ? 'watch' : 'safe';
-  const gx = [0, 10, 20, 30, 40, 50, 60, 70, 80].filter(v => v <= xmax), gy = [0, ymax / 3, ymax * 2 / 3].map(v => Math.round(v));
+  const gx = [0, 10, 20, 30, 40, 50, 60, 70, 80].filter(v => v <= xmax).filter((v, i, a) => W >= 480 || i % 2 === 0 || i === a.length - 1), gy = [0, ymax / 3, ymax * 2 / 3].map(v => Math.round(v));
   return `<svg class="rk-chart gl-scatter" viewBox="0 0 ${W} ${H}" role="img" aria-label="Theta 效率">
     ${gy.map(v => `<line x1="${L}" x2="${W - R}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}" class="rk-ch-grid${v === 0 ? ' zero' : ''}"/><text x="${L - 6}" y="${(Y(v) + 3).toFixed(1)}" text-anchor="end" class="gl-lab">${v}%</text>`).join('')}
     ${gx.map(v => `<text x="${X(v).toFixed(1)}" y="${H - 12}" text-anchor="middle" class="gl-lab">${v}%</text>`).join('')}
-    <text x="${W - R}" y="${(Y(0) - 5).toFixed(1)}" text-anchor="end" class="gl-lab">到期价内概率 →</text>
+    <text x="${W - R}" y="${(Y(0) - 6).toFixed(1)}" text-anchor="end" class="gl-lab">价内概率 →</text>
     <text x="${L + 4}" y="${T + 9}" class="gl-lab">↑ 年化 Theta / 保证金</text>
+    ${(() => { const placed = []; pts.slice().sort((a, b) => a.p - b.p).forEach(p => {
+        const r = 5 + 13 * Math.sqrt(p.coll / cmax), w = p.x.ticker.length * 7 + 4, x = X(p.p);
+        let y = Y(p.y) - r - 3;
+        for (let k = 0; k < 6 && placed.some(q => Math.abs(q.x - x) < (q.w + w) / 2 && Math.abs(q.y - y) < 12); k++) y -= 12;
+        placed.push({ x, y, w }); p._ly = y; });
+      return ''; })()}
     ${pts.map(p => {
       const r = 5 + 13 * Math.sqrt(p.coll / cmax), idx = pos.indexOf(p.x);
       return `<g class="gl-dot gl-${dcls(p.m.dte)}" role="button" tabindex="0" onclick="openOptionLab(${idx})" onkeydown="if(event.key==='Enter')openOptionLab(${idx})">
         <circle cx="${X(p.p).toFixed(1)}" cy="${Y(p.y).toFixed(1)}" r="${r.toFixed(1)}"/>
-        <text x="${X(p.p).toFixed(1)}" y="${(Y(p.y) - r - 3).toFixed(1)}" text-anchor="middle">${esc(p.x.ticker)}</text>
+        <text x="${X(p.p).toFixed(1)}" y="${p._ly.toFixed(1)}" text-anchor="middle">${esc(p.x.ticker)}</text>
         <title>${esc(_posLabel(p.x))} · 价内概率 ${p.p.toFixed(0)}% · 年化 ${p.y.toFixed(1)}% · ${_fmtSigned(p.th)}/天</title></g>`;
     }).join('')}
   </svg>`;
@@ -12359,7 +12479,7 @@ function _optionLabBodyHTML(x) {
   const n = 41, xsP = []; for (let k = 0; k < n; k++) xsP.push(m.S * (0.7 + 0.6 * k / (n - 1)));
   const G = (S1, d, dv = 0) => bsGreeks(S1, m.K, Math.max(0, m.T - d / 365), Math.max(0.01, m.sigma + dv / 100), m.type, BS_RATE, m.q);
   const pnlAt = (S1, days) => (G(S1, days).price - entry) * m.mult;
-  const payoff = _lineChartSVG({ xs: xsP, w: 640, h: 220, marker: m.S, markerLabel: `现价 ${m.S.toFixed(2)}`, xFmt: v => v.toFixed(0), yFmt: _fmtK, tipFmt: _fmtSigned,
+  const payoff = _lineChartSVG({ xs: xsP, w: _chartW(), h: 220, marker: m.S, markerLabel: `现价 ${m.S.toFixed(2)}`, xFmt: v => v.toFixed(0), yFmt: _fmtK, tipFmt: _fmtSigned,
     band: [m.S - sd, m.S + sd, '±1σ'],
     vlines: [{ x: m.S - 2 * sd, cls: 'sd2' }, { x: m.S + 2 * sd, cls: 'sd2' }, { x: useExit ? lx.be : be, cls: 'be' }].filter(l => l.x != null),
     series: [{ ys: xsP.map(S1 => pnlAt(S1, 0)), cls: 'gl-l1', label: '今天' }, { ys: xsP.map(S1 => pnlAt(S1, half)), cls: 'gl-l2', label: `${half} 天后` }, { ys: xsP.map(S1 => pnlAt(S1, H)), cls: 'gl-l3', label: Hlabel }] });
@@ -12671,7 +12791,7 @@ function _comboLabBodyHTML(cm, kind) {
     extra.push(stat('保本价', (cb - credit).toFixed(2)));
     extra.push(stat('被行权概率', (bsGreeks(S, Ks, sh.m.T, sh.m.sigma, 'call', BS_RATE, sh.m.q).pITM * 100).toFixed(0) + '%'));
   }
-  const payoff = _lineChartSVG({ xs: xsP, w: 640, h: 210, marker: S, xFmt: v => v.toFixed(0), yFmt: _fmtK,
+  const payoff = _lineChartSVG({ xs: xsP, w: _chartW(), h: 220, marker: S, xFmt: v => v.toFixed(0), yFmt: _fmtK,
     band: [S - sd, S + sd, '±1σ'], vlines: bes.map(b => ({ x: b, cls: 'be' })).concat(Ks ? [{ x: Ks, cls: 'sd2' }] : []),
     markerLabel: `现价 ${S.toFixed(2)}`, tipFmt: _fmtSigned,
     series: [{ ys: xsP.map(S1 => cm.pnl(S1, 0)), cls: 'gl-l1', label: '今天' }, { ys: xsP.map(S1 => cm.pnl(S1, half)), cls: 'gl-l2', label: `${half} 天后` }, { ys: atH, cls: 'gl-l3', label: '短腿到期' }] });
