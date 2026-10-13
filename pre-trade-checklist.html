@@ -1698,6 +1698,153 @@
     .pr-mini-btn { padding: 6px 12px; font-size: 13px; }
   }
 
+  /* ===== Risk monitor · analog gauge + variable panel ===== */
+  /* defined on body: theme colors (--pass / --fail …) live on body.theme-*, so :root can't resolve them */
+  body { --rk-safe: var(--pass); --rk-watch: var(--pending); --rk-alert: color-mix(in srgb, var(--pending) 45%, var(--fail)); --rk-danger: var(--fail); }
+  .rk-t-safe { color: var(--rk-safe) !important; } .rk-t-watch { color: var(--rk-watch) !important; }
+  .rk-t-alert { color: var(--rk-alert) !important; } .rk-t-danger { color: var(--rk-danger) !important; }
+  .rk-t-safe.rg-score { fill: var(--rk-safe); } .rk-t-watch.rg-score { fill: var(--rk-watch); }
+  .rk-t-alert.rg-score { fill: var(--rk-alert); } .rk-t-danger.rg-score { fill: var(--rk-danger); }
+
+  /* gauge */
+  .rg-svg { display: block; width: 100%; height: auto; overflow: visible; }
+  .rg-track { fill: none; stroke: var(--panel-2); stroke-width: 18; }
+  .rg-zone { fill: none; stroke-width: 14; opacity: 0.9; }
+  .rg-safe { stroke: var(--rk-safe); } .rg-watch { stroke: var(--rk-watch); } .rg-alert { stroke: var(--rk-alert); } .rg-danger { stroke: var(--rk-danger); }
+  .rg-tick { stroke: var(--text-faint); stroke-width: 1; opacity: 0.6; }
+  .rg-tick.major { stroke: var(--text-dim); stroke-width: 2; opacity: 1; }
+  .rg-tick-label { font-family: var(--mono); font-size: 9.5px; fill: var(--text-faint); }
+  .rg-needle, .rg-sway { transform-box: view-box; transform-origin: 120px 118px; }
+  .rg-needle { transition: transform 1.25s cubic-bezier(0.3, 1.55, 0.5, 1); }
+  .rg-sway { animation: rgSway var(--sway-dur, 4s) ease-in-out infinite; }
+  @keyframes rgSway { 0%, 100% { transform: rotate(calc(-1 * var(--sway-amp, 1deg))); } 50% { transform: rotate(var(--sway-amp, 1deg)); } }
+  .rg-needle-line { stroke: var(--text); stroke-width: 3; stroke-linecap: round; }
+  .rg-needle-tail { stroke: var(--text); stroke-width: 6; stroke-linecap: round; }
+  .rg-hub { fill: var(--text); stroke: var(--panel); stroke-width: 3; }
+  .rg-idle { opacity: 0.25; }
+  .rg-idle .rg-sway { animation: none; }
+  .rg-score { font-family: var(--mono); font-size: 34px; font-weight: 700; fill: var(--text); font-variant-numeric: tabular-nums; }
+  @media (prefers-reduced-motion: reduce) { .rg-sway { animation: none; } .rg-needle { transition: none; } }
+
+  /* main page card */
+  .rk-card { display: grid; grid-template-columns: 168px 1fr; gap: 14px; align-items: center; margin: 12px 0;
+    padding: 12px 16px 12px 10px; background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius, 6px);
+    cursor: pointer; transition: border-color 0.15s; }
+  .rk-card:hover, .rk-card:focus-visible { border-color: var(--accent); }
+  .rk-card-top { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .rk-card-title { font-size: 13px; color: var(--text-dim); }
+  .rk-card-num { font-family: var(--mono); font-size: 30px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+  .rk-card-lvl { font-size: 14px; font-weight: 600; }
+  .rk-card-drivers { display: flex; flex-wrap: wrap; gap: 6px; margin: 9px 0 7px; }
+  .rk-chip { font-size: 11.5px; padding: 2px 8px; border-radius: 10px; border: 1px solid currentColor; font-variant-numeric: tabular-nums; }
+  .rk-c-safe { color: var(--rk-safe); } .rk-c-watch { color: var(--rk-watch); } .rk-c-alert { color: var(--rk-alert); } .rk-c-danger { color: var(--rk-danger); }
+  .rk-quiet { font-size: 12px; color: var(--text-faint); }
+  .rk-card-meta { font-size: 11px; color: var(--text-faint); }
+
+  /* dashboard page */
+  .rk-page { padding: 8px 0 48px; }
+  .rk-hero { display: grid; grid-template-columns: minmax(240px, 340px) 1fr; gap: 24px; align-items: center;
+    padding: 18px 20px; margin: 12px 0 18px; background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius, 8px); }
+  .rk-hero-level { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; margin-bottom: 8px; }
+  .rk-hero-line { font-size: 14px; color: var(--text-dim); line-height: 1.6; margin-bottom: 12px; max-width: 46ch; }
+  .rk-hero-meta { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; font-size: 11.5px; color: var(--text-faint); }
+  .rk-groups { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; }
+  .rk-group { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius, 8px); padding: 12px 14px 4px; }
+  .rk-group-title { display: flex; justify-content: space-between; align-items: baseline; font-size: 14px; font-weight: 600;
+    color: var(--text); margin-bottom: 6px; }
+  .rk-group-score { font-family: var(--mono); font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .rk-row { padding: 10px 0 12px; border-top: 1px solid var(--border); }
+  .rk-group-title + .rk-row { border-top: none; }
+  .rk-row-head { display: flex; align-items: baseline; gap: 10px; }
+  .rk-name { flex: 1; font-size: 13.5px; color: var(--text); }
+  .rk-val { font-family: var(--mono); font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .rk-pill { font-size: 11px; padding: 1px 7px; border-radius: 9px; border: 1px solid currentColor; white-space: nowrap; }
+  .rk-row-off .rk-name { color: var(--text-dim); }
+  .rk-off { font-size: 11.5px; color: var(--text-faint); font-style: italic; text-align: right; }
+  .rk-scale { margin: 9px 0 3px; }
+  .rk-scale-bar { position: relative; display: flex; height: 6px; border-radius: 3px; overflow: visible; }
+  .rk-z { flex: 1; height: 100%; opacity: 0.32; }
+  .rk-z:first-child { border-radius: 3px 0 0 3px; } .rk-z:nth-child(4) { border-radius: 0 3px 3px 0; }
+  .rk-z.rk-safe { background: var(--rk-safe); } .rk-z.rk-watch { background: var(--rk-watch); }
+  .rk-z.rk-alert { background: var(--rk-alert); } .rk-z.rk-danger { background: var(--rk-danger); }
+  .rk-mark { position: absolute; top: -4px; width: 4px; height: 14px; margin-left: -2px; border-radius: 2px;
+    box-shadow: 0 0 0 2px var(--panel); transition: left 0.6s cubic-bezier(0.3, 1.4, 0.5, 1); }
+  .rk-m-safe { background: var(--rk-safe); } .rk-m-watch { background: var(--rk-watch); } .rk-m-alert { background: var(--rk-alert); } .rk-m-danger { background: var(--rk-danger); }
+  .rk-scale-labels { position: relative; height: 14px; margin-top: 3px; }
+  .rk-scale-labels span { position: absolute; transform: translateX(-50%); font-family: var(--mono); font-size: 10px; color: var(--text-faint); }
+  .rk-row-foot { display: flex; justify-content: space-between; gap: 10px; margin-top: 4px; font-size: 12px; }
+  .rk-detail { color: var(--text-dim); }
+  .rk-weight { color: var(--text-faint); white-space: nowrap; font-size: 11px; }
+  .rk-desc { margin-top: 4px; font-size: 11.5px; color: var(--text-faint); line-height: 1.5; }
+
+  .rk-block { margin-top: 14px; padding: 14px 16px; background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius, 8px); }
+  .rk-block-title { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 10px; }
+  details.rk-block > summary { cursor: pointer; margin-bottom: 0; list-style: none; }
+  details.rk-block > summary::-webkit-details-marker { display: none; }
+  details.rk-block > summary::before { content: '▸ '; color: var(--text-faint); }
+  details.rk-block[open] > summary { margin-bottom: 10px; }
+  details.rk-block[open] > summary::before { content: '▾ '; }
+  .rk-note { font-size: 11.5px; color: var(--text-faint); margin-top: 8px; line-height: 1.5; }
+  .rk-legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 11.5px; color: var(--text-dim); margin-bottom: 10px; }
+  .rk-legend span { display: inline-flex; align-items: center; gap: 5px; }
+  .rk-legend-note { color: var(--text-faint); }
+  .rk-sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; }
+  .rk-sw-stock { background: color-mix(in srgb, var(--accent) 45%, var(--panel-2)); }
+  .rk-sw-leaps { background: var(--accent); }
+  .rk-sw-csp { background: color-mix(in srgb, var(--pending) 70%, var(--panel-2)); }
+  .rk-bars { display: flex; flex-direction: column; gap: 7px; }
+  .rk-bar-row { display: grid; grid-template-columns: 58px 1fr 54px; gap: 10px; align-items: center; }
+  .rk-bar-name { font-family: var(--mono); font-size: 12.5px; font-weight: 600; color: var(--text); }
+  .rk-bar-track { position: relative; display: flex; height: 14px; background: var(--panel-2); border-radius: 3px; overflow: hidden; }
+  .rk-seg { height: 100%; }
+  .rk-guide { position: absolute; top: 0; bottom: 0; border-left: 1px dashed var(--text-faint); opacity: 0.6; }
+  .rk-guide.strong { border-left-color: var(--rk-danger); opacity: 0.8; }
+  .rk-bar-val { font-family: var(--mono); font-size: 12.5px; font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
+  .rk-cols { display: flex; gap: 8px; align-items: flex-end; overflow-x: auto; padding-bottom: 2px; }
+  .rk-col { flex: 1; min-width: 42px; max-width: 96px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .rk-col-val { font-family: var(--mono); font-size: 11.5px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .rk-col-track { position: relative; width: 100%; height: 110px; background: var(--panel-2); border-radius: 3px; display: flex; align-items: flex-end; }
+  .rk-col-fill { width: 100%; border-radius: 3px 3px 0 0; }
+  .rk-f-safe { background: var(--rk-safe); } .rk-f-watch { background: var(--rk-watch); } .rk-f-alert { background: var(--rk-alert); } .rk-f-danger { background: var(--rk-danger); }
+  .rk-col-guide { position: absolute; left: 0; right: 0; border-top: 1px dashed var(--text-faint); }
+  .rk-col-label { font-family: var(--mono); font-size: 11px; color: var(--text-dim); }
+  .rk-col-n { font-size: 10.5px; color: var(--text-faint); }
+  .rk-table-wrap { overflow-x: auto; }
+  .rk-table { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 12.5px; font-variant-numeric: tabular-nums; }
+  .rk-table th { text-align: left; font-family: var(--sans); font-weight: 500; font-size: 11.5px; color: var(--text-faint); padding: 4px 8px; border-bottom: 1px solid var(--border); }
+  .rk-table td { padding: 6px 8px; border-bottom: 1px solid var(--border); color: var(--text); white-space: nowrap; }
+  .rk-figs { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+  .rk-fig { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; background: var(--panel-2); border-radius: var(--radius, 6px); }
+  .rk-fig-val { font-family: var(--mono); font-size: 18px; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
+  .rk-fig-label { font-size: 12px; color: var(--text-dim); }
+  .rk-fig-sub { font-size: 11px; color: var(--text-faint); }
+  .rk-weights { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 24px; margin: 10px 0 12px; }
+  .rk-w-row { display: grid; grid-template-columns: 1fr 110px 24px; gap: 10px; align-items: center; font-size: 12.5px; color: var(--text); }
+  .rk-w-name em { font-style: normal; font-size: 11px; color: var(--text-faint); }
+  .rk-w-row input[type="range"] { width: 100%; accent-color: var(--accent); }
+  .rk-w-val { font-family: var(--mono); font-size: 12px; text-align: right; color: var(--text-dim); }
+  .rk-method p { font-size: 12.5px; color: var(--text-dim); line-height: 1.65; margin-bottom: 8px; max-width: 72ch; }
+  .rk-diag { display: grid; grid-template-columns: 100px 1fr; gap: 6px 12px; font-size: 12px; }
+  .rk-diag dt { color: var(--text-faint); } .rk-diag dd { color: var(--text-dim); word-break: break-word; }
+  .pr-sim-risk { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 10px; margin-top: 8px; padding: 6px 9px;
+    border-radius: 4px; background: var(--panel-2); font-size: 12px; color: var(--text-dim); }
+  .pr-sim-risk span { font-size: 10.5px; color: var(--text-faint); margin-left: auto; }
+
+  @media (max-width: 760px) {
+    .rk-hero { grid-template-columns: 1fr; gap: 6px; text-align: center; padding: 14px 12px 16px; }
+    .rk-hero-gauge { max-width: 300px; margin: 0 auto; width: 100%; }
+    .rk-hero-line { margin-left: auto; margin-right: auto; }
+    .rk-hero-meta { justify-content: center; }
+    .rk-groups { grid-template-columns: 1fr; }
+    .rk-weights { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 480px) {
+    .rk-card { grid-template-columns: 124px 1fr; gap: 10px; padding: 10px 12px 10px 6px; }
+    .rk-card-num { font-size: 26px; }
+    .rk-name { font-size: 14px; } .rk-val { font-size: 16px; }
+    .rk-desc { font-size: 12.5px; } .rk-row-foot { flex-direction: column; gap: 2px; }
+  }
+
   /* Post-trade simulation · lives inside the checklist position-sizing box */
   .pr-sim:empty { display: none; }
   .pr-sim {
@@ -3372,6 +3519,7 @@ function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;'
 let __prevViewKey = null;
 function _viewKey() {
   if (state._view === 'history') return 'history';
+  if (state._view === 'risk') return 'risk';
   if (!state.strategy) return 'picker';
   if (state.strategy === 'leaps') {
     if (!state.leapsStyle || !state.leapsPhase) return 'leaps-config';
@@ -3397,6 +3545,7 @@ function _triggerViewTransition() {
 function render() {
   _triggerViewTransition();
   if (state._view === 'history') { renderHistoryPage(); _postRender(); return; }
+  if (state._view === 'risk') { renderRiskPage(); _postRender(); return; }
   if (!state.strategy) { renderPicker(); _postRender(); return; }
   if (state.strategy === 'leaps') {
     // Always open — force direction to 'open' if not already set
@@ -3425,6 +3574,7 @@ function _postRender() {
     if (typeof updateStickyVerdictBar === 'function') updateStickyVerdictBar();
     if (typeof triggerVerdictAnimations === 'function') triggerVerdictAnimations();
     if (typeof applyLayoutMode === 'function') applyLayoutMode();
+    if (typeof animateRiskGauges === 'function') animateRiskGauges();
   });
 }
 
@@ -5143,6 +5293,7 @@ function renderPicker() {
       <div class="picker-title">选择要检查的策略</div>
       <div class="picker-sub">Trading in the Zone</div>
       ${syncStatusMiniHTML()}
+      ${riskCardHTML()}
       ${marketSignalHTML()}
       ${mainNavWidgetHTML()}
       ${portfolioRiskHTML()}
@@ -6521,6 +6672,10 @@ function saveToHistory() {
     entry.rocPhase = rocNow ? rocNow.phase : null;
     entry.fullState.rocPhaseAtSave = rocNow ? rocNow.phase : null;
     if (rocNow) entry.inputs = (entry.inputs ? entry.inputs + '; ' : '') + `roc=${rocNow.phase}`;
+    try {
+      const rk = computeRisk().composite;
+      if (rk != null) { entry.riskScore = Math.round(rk); entry.inputs = (entry.inputs ? entry.inputs + '; ' : '') + `risk=${entry.riskScore}`; }
+    } catch (e) {}
     history.unshift(entry);
     if (history.length > HISTORY_MAX) history.length = HISTORY_MAX;
     safeSetItem(HISTORY_KEY, JSON.stringify(history));
@@ -8511,6 +8666,7 @@ function buildSyncPayload() {
       cash: loadSavedCash() || '',
       swvxx: loadSavedSwvxx() || '',
       rocPhase: (function() { try { return localStorage.getItem(ROC_PHASE_KEY) || ''; } catch (e) { return ''; } })(),
+      riskWeights: (function() { try { return localStorage.getItem(RISK_WEIGHTS_KEY) || ''; } catch (e) { return ''; } })(),
       density: (function() { try { return localStorage.getItem(DENSITY_KEY) || ''; } catch (e) { return ''; } })(),
       trendRange: (function() { try { return localStorage.getItem(TREND_RANGE_KEY) || ''; } catch (e) { return ''; } })(),
       themeCustom: (function() { try { return localStorage.getItem(THEME_CUSTOM_KEY) || ''; } catch (e) { return ''; } })(),
@@ -8534,6 +8690,7 @@ function applyRemotePayload(remote, mode) {
     if (typeof s.cash === 'string' && s.cash) localStorage.setItem(CASH_KEY, s.cash);
     if (typeof s.swvxx === 'string' && s.swvxx) localStorage.setItem(SWVXX_KEY, s.swvxx);
     if (typeof s.rocPhase === 'string' && s.rocPhase) _mergeRemoteRocPhase(s.rocPhase);
+    if (typeof s.riskWeights === 'string' && s.riskWeights) { try { JSON.parse(s.riskWeights); localStorage.setItem(RISK_WEIGHTS_KEY, s.riskWeights); } catch (e) {} }
     if (typeof s.density === 'string' && s.density) localStorage.setItem(DENSITY_KEY, s.density);
     if (typeof s.trendRange === 'string' && s.trendRange) localStorage.setItem(TREND_RANGE_KEY, s.trendRange);
     if (typeof s.themeCustom === 'string' && s.themeCustom) localStorage.setItem(THEME_CUSTOM_KEY, s.themeCustom);
@@ -9573,7 +9730,9 @@ function _schwabPositions(data) {
       else if (p.kind === 'leaps') exposure = cost || 0;
       else if (p.kind === 'stock') exposure = rawQty > 0 ? (cost || 0) : 0;
       return { kind: p.kind, ticker: _normTicker(p.ticker) || '?', strike, qty, expiry: p.expiry || null,
-        exposure, cost, marketValue: _num(p.marketValue), unparsed: p.kind === 'short_put' && strike == null };
+        exposure, cost, marketValue: _num(p.marketValue), unparsed: p.kind === 'short_put' && strike == null,
+        side: rawQty < 0 ? -1 : 1, price: _num(p.price), delta: _num(p.delta), theta: _num(p.theta),
+        iv: _num(p.iv), und: _num(p.underlyingPrice), dte: _num(p.dte) };
     });
 }
 
@@ -9587,6 +9746,9 @@ function getPortfolio() {
       nav: _num(d.nav), cash: _num(d.cash), swvxx: _num(d.swvxx),
       positions: _schwabPositions(d),
       unclassified: Array.isArray(d.unclassified) ? d.unclassified.length : 0,
+      balances: _sumBalances(d.balancesRaw), accountTypes: Array.isArray(d.accountTypes) ? d.accountTypes : [],
+      isInCall: d.isInCall === true, workerVersion: _num(d.workerVersion) || 1,
+      quotesStatus: d.quotesStatus || null, quotesCoverage: d.quotesCoverage || null,
     };
   }
   return {
@@ -9644,6 +9806,11 @@ async function refreshSchwab({ force = false } = {}) {
 // Repaint what depends on the data without stealing focus from an input
 function _afterSchwabChange(dataChanged) {
   if (state._view === 'history') return;
+  if (state._view === 'risk') {
+    const ae = document.activeElement;
+    if (!(ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA'))) { const y = window.scrollY; render(); window.scrollTo(0, y); }
+    return;
+  }
   if (!state.strategy) {
     const ae = document.activeElement;
     // Never wipe the setup form or steal focus from an input being typed into
@@ -9659,6 +9826,7 @@ function _refreshSchwabBlocks({ status = true } = {}) {
   const st = document.getElementById('pr-schwab');
   if (st && status) st.innerHTML = _schwabStatusInnerHTML();
   _refreshPortfolioRows();
+  _refreshRiskCard();
 }
 function _prSourceInfo() {
   const p = getPortfolio();
@@ -9837,8 +10005,8 @@ function _refreshPortfolioRows() {
   const el = document.getElementById('pr-rows');
   if (el) el.innerHTML = portfolioRowsHTML();
 }
-window.updatePortfolioCash  = (val) => { _saveNumKey(CASH_KEY, val);  _refreshPortfolioRows(); };
-window.updatePortfolioSwvxx = (val) => { _saveNumKey(SWVXX_KEY, val); _refreshPortfolioRows(); };
+window.updatePortfolioCash  = (val) => { _saveNumKey(CASH_KEY, val);  _refreshPortfolioRows(); _refreshRiskCard(); };
+window.updatePortfolioSwvxx = (val) => { _saveNumKey(SWVXX_KEY, val); _refreshPortfolioRows(); _refreshRiskCard(); };
 
 /* ---------- Holdings modal ---------- */
 const _KIND_LABEL = { stock: '正股', leaps: 'LEAPS', short_put: 'CSP', short_call: 'Short call', long_put: 'Long put' };
@@ -9972,6 +10140,7 @@ function portfolioSimInnerHTML() {
     <div class="pr-sim-cols"><span></span><span>BEFORE</span><span></span><span>AFTER</span><span>限制</span></div>
     ${rowHTML}
     ${verdict}
+    ${_simCompositeHTML(t)}
     ${_manualOverrides().map(o => `<div class="pr-sim-override">⚠ 「${_EXPOSURE_LABEL[o.k]}」手动填 ${_fmtUsd(o.manual)}, Portfolio 为 ${_fmtUsd(o.auto)} · HARD 项按手动值判断 · 清空该框恢复自动</div>`).join('')}
     <div class="pr-sim-note">基于 ${esc(_prSourceInfo().text)} · 超限只提示, 不阻断</div>`;
 }
@@ -10135,7 +10304,688 @@ window.setRocPhase = (n) => {
   if (typeof scheduleAutoPushToGist === 'function') scheduleAutoPushToGist();
 };
 
+/* ==========================================================
+ * RISK MONITOR · weighted multi-factor risk gauge
+ * Each variable maps its own value onto 0–100 with its own thresholds
+ * (安全 0–25 · 关注 25–50 · 警戒 50–75 · 危险 75–100). The composite is the
+ * weighted mean, floored at (highest single score − 25) so one red item can't
+ * be averaged away. Variables without data are excluded and shown as such.
+ * Pure functions of a Portfolio object → the same code scores today's book
+ * and the simulated book after a pending trade.
+ * ========================================================== */
+const RISK_WEIGHTS_KEY = 'pretrade_risk_weights';
+const RISK_LEVELS = [
+  { upTo: 25,  key: 'safe',   label: '安全' },
+  { upTo: 50,  key: 'watch',  label: '关注' },
+  { upTo: 75,  key: 'alert',  label: '警戒' },
+  { upTo: 101, key: 'danger', label: '危险' },
+];
+function riskLevel(s) { return RISK_LEVELS.find(l => s < l.upTo) || RISK_LEVELS[3]; }
+const RISK_CATS = [
+  { id: 'liquidity',     label: '流动性' },
+  { id: 'leverage',      label: '杠杆与保证金' },
+  { id: 'assign',        label: '行权与到期' },
+  { id: 'concentration', label: '集中度' },
+  { id: 'time',          label: '时间与盈亏' },
+  { id: 'market',        label: '市场环境' },
+];
+
+/* ---------- helpers ---------- */
+function _scoreMax(v, th) {           // higher value = riskier · th = [安全上限, 关注上限, 警戒上限]
+  const [a, b, c] = th;
+  if (v <= a) return a > 0 ? 25 * Math.max(0, v) / a : 0;
+  if (v <= b) return 25 + 25 * (v - a) / (b - a);
+  if (v <= c) return 50 + 25 * (v - b) / (c - b);
+  return Math.min(100, 75 + 25 * (v - c) / (c - b));
+}
+function _scoreMin(v, th, worst = 0) {   // lower value = riskier · th = [安全下限, 关注下限, 警戒下限]
+  const [a, b, c] = th;                    // worst = lowest possible value → scores exactly 100
+  if (v >= a) return Math.max(0, 25 - 25 * (v - a) / a);
+  if (v >= b) return 25 + 25 * (a - v) / (a - b);
+  if (v >= c) return 50 + 25 * (b - v) / (b - c);
+  return Math.min(100, 75 + 25 * (c - v) / Math.max(1e-9, c - worst));
+}
+function _balPick(bal, keys) {
+  if (!bal) return null;
+  for (const k of keys) if (typeof bal[k] === 'number' && isFinite(bal[k])) return bal[k];
+  return null;
+}
+function _sumBalances(raw) {
+  if (!Array.isArray(raw) || !raw.length) return null;
+  const out = {};
+  raw.forEach(b => Object.entries(b || {}).forEach(([k, v]) => {
+    if (typeof v === 'number' && isFinite(v)) out[k] = (out[k] || 0) + v;
+  }));
+  return out;
+}
+function _isShortPos(x) { return x.kind === 'short_put' || x.kind === 'short_call'; }
+function _daysTo(expiry) {
+  const t = Date.parse(String(expiry) + 'T16:00:00');
+  return isFinite(t) ? Math.round((t - Date.now()) / 86400000) : null;
+}
+function _dteOf(x) { return x.dte != null ? x.dte : (x.expiry ? _daysTo(x.expiry) : null); }
+function _dollarDelta(x) {
+  if (x.kind === 'stock') {
+    const qty = Number(x.qty) || 0;
+    const px = x.price != null ? x.price : (x.marketValue != null && qty ? Math.abs(x.marketValue) / qty : null);
+    return px == null ? null : (x.side || 1) * qty * px;
+  }
+  if (x.delta == null || x.und == null) return null;
+  return x.delta * 100 * (Number(x.qty) || 0) * x.und * (_isShortPos(x) ? -1 : 1);
+}
+function _posPnl(x) {
+  if (x.marketValue == null || x.cost == null) return null;
+  return _isShortPos(x) ? x.cost - Math.abs(x.marketValue) : x.marketValue - x.cost;
+}
+function _weekKey(expiry) {
+  const d = new Date(String(expiry) + 'T12:00:00');
+  if (!isFinite(d)) return null;
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7));   // Monday of that week
+  return d.toISOString().slice(0, 10);
+}
+function _expiryWeeks(list) {
+  const m = {};
+  list.forEach(x => {
+    const k = _weekKey(x.expiry); if (!k) return;
+    if (!m[k]) m[k] = { key: k, total: 0, count: 0, items: [] };
+    m[k].total += x.exposure || 0; m[k].count++; m[k].items.push(x);
+  });
+  const md = s => { const d = new Date(s + 'T12:00:00'); return `${d.getMonth() + 1}/${d.getDate()}`; };
+  return Object.values(m).map(w => {
+    const dates = [...new Set(w.items.map(x => x.expiry))].sort();
+    return { ...w, label: dates.length === 1 ? md(dates[0]) : `${md(dates[0])}–${md(dates[dates.length - 1])}` };
+  });
+}
+function _needSchwab(c, what) {
+  if (!c.isSchwab) return '需要连接 Schwab';
+  return c.p.workerVersion >= 2 ? `报价未返回${what} (${c.p.quotesStatus || '未知'})` : '需要升级 Worker v2';
+}
+
+/* ---------- variable definitions ---------- */
+const RISK_VARS = [
+  { id: 'free_cash', cat: 'liquidity', label: '自由现金', unit: '%', dir: 'min', th: [20, 10, 5], w: 14,
+    desc: 'Cash + SWVXX − 全部 CSP 名义, 占 NAV. 你的规则是目标 20%, 底线 10%.',
+    calc: c => {
+      if (!c.nav) return { unavailable: '需要 NAV' };
+      if (c.r.freeCash == null) return { unavailable: c.isSchwab ? 'Schwab 未返回现金' : '首页填 Cash / SWVXX' };
+      return { value: c.pctNav(c.r.freeCash), detail: `${_fmtUsd(c.r.freeCash)} 可自由支配` };
+    } },
+  { id: 'option_bp', cat: 'liquidity', label: '期权购买力', unit: '%', dir: 'min', th: [40, 25, 10], w: 8,
+    desc: 'Schwab 的 Option Buying Power, 占 NAV. 越低, 再开仓或接行权时腾挪空间越小.',
+    calc: c => {
+      if (!c.isSchwab) return { unavailable: '需要连接 Schwab' };
+      if (!c.nav) return { unavailable: '需要 NAV' };
+      const v = _balPick(c.bal, ['optionBuyingPower']);
+      if (v == null) return { unavailable: '账户未返回 optionBuyingPower (可能是现金账户)' };
+      return { value: c.pctNav(v), detail: `${_fmtUsd(v)} 可用` };
+    } },
+  { id: 'margin_util', cat: 'leverage', label: '维持保证金占用', unit: '%', dir: 'max', th: [25, 40, 60], w: 12,
+    desc: '维持保证金 ÷ 账户净值. 到 100% 就是 margin call. 卖 put 越多越高.',
+    calc: c => {
+      if (!c.isSchwab) return { unavailable: '需要连接 Schwab' };
+      const m = _balPick(c.bal, ['maintenanceRequirement']);
+      const eq = _balPick(c.bal, ['equity', 'liquidationValue']) ?? c.nav;
+      if (m == null) return { unavailable: '账户未返回 maintenanceRequirement (可能是现金账户)' };
+      if (!eq) return { unavailable: '缺少账户净值' };
+      const call = !!c.p.isInCall || (_balPick(c.bal, ['maintenanceCall']) || 0) > 0 || (_balPick(c.bal, ['regTCall']) || 0) > 0;
+      return { value: m / eq * 100, detail: `${_fmtUsd(m)} / 净值 ${_fmtUsd(eq)}${call ? ' · ⛔ 账户正处于追保' : ''}`, force: call ? 100 : null };
+    } },
+  { id: 'margin_loan', cat: 'leverage', label: '融资借款', unit: '%', dir: 'max', th: [0, 10, 25], w: 8,
+    desc: '现金余额为负 = 正在用券商的钱并付利息. 占 NAV.',
+    calc: c => {
+      if (!c.isSchwab) return { unavailable: '需要连接 Schwab' };
+      if (!c.nav) return { unavailable: '需要 NAV' };
+      const cb = _balPick(c.bal, ['cashBalance']), mb = _balPick(c.bal, ['marginBalance']);
+      if (cb == null && mb == null) return { unavailable: '账户未返回现金余额' };
+      const loan = Math.max(0, -Math.min(cb ?? 0, mb ?? 0));
+      return { value: c.pctNav(loan), detail: loan > 0 ? `借款 ${_fmtUsd(loan)}` : '没有借款' };
+    } },
+  { id: 'gross_exposure', cat: 'leverage', label: '名义总敞口', unit: '%', dir: 'max', th: [100, 150, 200], w: 7,
+    desc: '正股市值 + 买入期权市值 + CSP 名义, 占 NAV. 超过 100% 说明现金不足以覆盖全部行权.',
+    calc: c => {
+      if (!c.nav) return { unavailable: '需要 NAV' };
+      let g = 0;
+      c.pos.forEach(x => {
+        if (x.kind === 'short_put') g += x.exposure || 0;
+        else if (x.kind !== 'short_call') g += Math.abs(x.marketValue ?? x.cost ?? x.exposure ?? 0);
+      });
+      return { value: c.pctNav(g), detail: _fmtUsd(g) + (c.isSchwab ? '' : ' · LEAPS 按成本') };
+    } },
+  { id: 'delta_exposure', cat: 'leverage', label: 'Delta 净敞口', unit: '%', dir: 'max', th: [80, 120, 160], w: 9,
+    desc: '按 Delta 折算成相当于持有多少正股, 占 NAV. 这是组合真实的方向性风险.',
+    calc: c => {
+      if (!c.nav) return { unavailable: '需要 NAV' };
+      if (!c.isSchwab) return { unavailable: '需要连接 Schwab' };
+      const opts = c.pos.filter(x => x.kind !== 'stock');
+      const withD = opts.filter(x => x.delta != null && x.und != null);
+      if (opts.length && !withD.length) return { unavailable: _needSchwab(c, ' Greeks') };
+      let d = 0; c.pos.forEach(x => { d += _dollarDelta(x) || 0; });
+      const cover = withD.length < opts.length ? ` · 覆盖 ${withD.length}/${opts.length} 个期权` : '';
+      return { value: Math.abs(c.pctNav(d)), detail: `${d >= 0 ? '净多头' : '净空头'} ${_fmtUsd(d)}${cover}` };
+    } },
+  { id: 'csp_exposure', cat: 'assign', label: 'CSP 行权敞口', unit: '%', dir: 'max', th: [40, 50, 60], w: 12,
+    desc: '全部 CSP 被行权所需资金 (strike × 100 × 张数), 占 NAV. 你的规则是目标 40%, 上限 50%.',
+    calc: c => {
+      if (!c.nav) return { unavailable: '需要 NAV' };
+      const n = c.pos.filter(x => x.kind === 'short_put').length;
+      return { value: c.pctNav(c.r.cspNominal), detail: n ? `${n} 笔 · ${_fmtUsd(c.r.cspNominal)}` : '没有 CSP' };
+    } },
+  { id: 'assign_near', cat: 'assign', label: '临近行权的 CSP', unit: '%', dir: 'max', th: [2, 10, 20], w: 9,
+    desc: '标的现价距行权价不到 5% (或已跌破) 的 CSP 名义, 占 NAV. 这部分最可能真的被行权.',
+    calc: c => {
+      const csps = c.pos.filter(x => x.kind === 'short_put');
+      if (!csps.length) return { na: '没有 CSP' };
+      if (!c.nav) return { unavailable: '需要 NAV' };
+      const known = csps.filter(x => x.und != null && x.strike != null);
+      if (!known.length) return { unavailable: _needSchwab(c, '标的价格') };
+      const near = known.filter(x => (x.und - x.strike) / x.und < 0.05);
+      const sum = near.reduce((s, x) => s + (x.exposure || 0), 0);
+      return { value: c.pctNav(sum), detail: near.length
+        ? near.map(x => `${x.ticker} ${x.strike}P ${x.und < x.strike ? '已 ITM' : '距 ' + ((x.und - x.strike) / x.und * 100).toFixed(1) + '%'}`).join(' · ')
+        : `${known.length} 笔都在 5% 以外` };
+    } },
+  { id: 'expiry_cluster', cat: 'assign', label: '到期集中', unit: '%', dir: 'max', th: [15, 25, 35], w: 6,
+    desc: '同一周到期的 CSP 名义最大值, 占 NAV. 集中到期, 一次行权的冲击更大.',
+    calc: c => {
+      const csps = c.pos.filter(x => x.kind === 'short_put');
+      if (!csps.length) return { na: '没有 CSP' };
+      if (!c.nav) return { unavailable: '需要 NAV' };
+      const weeks = _expiryWeeks(csps.filter(x => x.expiry)).sort((a, b) => b.total - a.total);
+      if (!weeks.length) return { unavailable: '持仓缺少到期日' };
+      const top = weeks[0];
+      return { value: c.pctNav(top.total), detail: `${top.label} 那周到期 ${top.count} 笔 · ${_fmtUsd(top.total)}` };
+    } },
+  { id: 'short_call_itm', cat: 'assign', label: '临近被行权的 short call', unit: 'count', dir: 'max', th: [0.5, 1.5, 2.5], w: 4,
+    desc: '标的现价已到行权价 97% 以上的 short call 张数. PMCC 短腿被行权会动到底仓.',
+    calc: c => {
+      const sc = c.pos.filter(x => x.kind === 'short_call');
+      if (!sc.length) return { na: '没有 short call' };
+      const known = sc.filter(x => x.und != null && x.strike != null);
+      if (!known.length) return { unavailable: _needSchwab(c, '标的价格') };
+      const hot = known.filter(x => x.und >= x.strike * 0.97);
+      return { value: hot.length, detail: hot.length ? hot.map(x => `${x.ticker} ${x.strike}C`).join(' · ') : `${known.length} 张都离得远` };
+    } },
+  { id: 'largest_ticker', cat: 'concentration', label: '最大单一标的', unit: '%', dir: 'max', th: [20, 30, 40], w: 10,
+    desc: '同一个标的上 正股成本 + LEAPS 成本 + CSP 名义之和, 占 NAV.',
+    calc: c => {
+      if (!c.nav) return { unavailable: '需要 NAV' };
+      const l = c.r.largest;
+      return l ? { value: c.pctNav(l.exposure), detail: l.ticker } : { value: 0, detail: '没有持仓' };
+    } },
+  { id: 'top3', cat: 'concentration', label: '前三大标的', unit: '%', dir: 'max', th: [50, 70, 90], w: 5,
+    desc: '敞口最大的三个标的合计, 占 NAV.',
+    calc: c => {
+      if (!c.nav) return { unavailable: '需要 NAV' };
+      const t = c.r.tickers.filter(x => x.exposure > 0).slice(0, 3);
+      return t.length ? { value: c.pctNav(t.reduce((s, x) => s + x.exposure, 0)), detail: t.map(x => x.ticker).join(' · ') }
+                      : { value: 0, detail: '没有持仓' };
+    } },
+  { id: 'eff_n', cat: 'concentration', label: '有效分散度', unit: 'n', dir: 'min', th: [8, 5, 3], worst: 1, w: 6,
+    desc: '1 ÷ HHI: 敞口相当于平均分在几个标的上. 数字越小越集中.',
+    calc: c => {
+      const t = c.r.tickers.filter(x => x.exposure > 0);
+      if (!t.length) return { na: '没有持仓' };
+      const tot = t.reduce((s, x) => s + x.exposure, 0);
+      const hhi = t.reduce((s, x) => s + (x.exposure / tot) ** 2, 0);
+      return { value: 1 / hhi, detail: `${t.length} 个标的 · HHI ${Math.round(hhi * 10000)}` };
+    } },
+  { id: 'leaps_dte', cat: 'time', label: 'LEAPS 临近到期', unit: '%', dir: 'max', th: [10, 30, 50], w: 5,
+    desc: '剩余不足 9 个月的 LEAPS 占 LEAPS 总成本. 你的 SOP: 不足 9 个月考虑 roll, 6 个月以内必退.',
+    calc: c => {
+      const L = c.pos.filter(x => x.kind === 'leaps');
+      if (!L.length) return { na: '没有 LEAPS' };
+      const dated = L.filter(x => _dteOf(x) != null);
+      if (!dated.length) return { unavailable: '持仓缺少到期日' };
+      const tot = L.reduce((s, x) => s + (x.exposure || 0), 0) || 1;
+      const soon = dated.filter(x => _dteOf(x) < 270), must = dated.filter(x => _dteOf(x) <= 180);
+      return {
+        value: soon.reduce((s, x) => s + (x.exposure || 0), 0) / tot * 100,
+        detail: soon.length ? soon.map(x => `${x.ticker} 剩 ${_dteOf(x)} 天`).join(' · ') + (must.length ? ' · ⛔ 已进入 6 个月必退区' : '') : '全部还有 9 个月以上',
+        force: must.length ? 80 : null,
+      };
+    } },
+  { id: 'unrealized_loss', cat: 'time', label: '浮亏合计', unit: '%', dir: 'max', th: [2, 5, 10], w: 5,
+    desc: '所有浮亏仓位的亏损加总, 占 NAV. 不用盈利仓位抵消.',
+    calc: c => {
+      if (!c.isSchwab) return { unavailable: '需要连接 Schwab' };
+      if (!c.nav) return { unavailable: '需要 NAV' };
+      const rows = c.pos.map(x => ({ x, pnl: _posPnl(x) })).filter(o => o.pnl != null);
+      if (!rows.length) return { na: '没有持仓' };
+      const loss = rows.filter(o => o.pnl < 0).reduce((s, o) => s + o.pnl, 0);
+      const worst = rows.slice().sort((a, b) => a.pnl - b.pnl)[0];
+      return { value: c.pctNav(-loss), detail: loss < 0 ? `${_fmtUsd(loss)} · 最大一笔 ${worst.x.ticker} ${_fmtUsd(worst.pnl)}` : '没有浮亏仓位' };
+    } },
+  { id: 'market_regime', cat: 'market', label: 'VTV/QQQ ROC 阶段', unit: 'phase', dir: 'score', w: 8,
+    desc: '首页 Market Signal 的阶段直接给分: ① 15 · ② 55 · ③ 80 · ④ 20.',
+    calc: c => {
+      const o = loadRocPhase();
+      if (!o) return { unavailable: '首页 Market Signal 还没选' };
+      const age = rocAgeDays(o);
+      return { value: o.phase, score: { 1: 15, 2: 55, 3: 80, 4: 20 }[o.phase],
+        detail: ROC_PHASES[o.phase].label + (age >= ROC_STALE_DAYS ? ` · ⚠ ${age} 天未确认` : '') };
+    } },
+];
+
+function loadRiskWeights() {
+  try { const o = JSON.parse(localStorage.getItem(RISK_WEIGHTS_KEY) || '{}'); return o && typeof o === 'object' ? o : {}; }
+  catch (e) { return {}; }
+}
+function saveRiskWeights(o) { try { localStorage.setItem(RISK_WEIGHTS_KEY, JSON.stringify(o)); } catch (e) {} }
+function _riskWeight(def, saved) {
+  const v = saved[def.id];
+  return typeof v === 'number' && isFinite(v) && v >= 0 ? v : def.w;
+}
+
+function computeRisk(p = getPortfolio()) {
+  const r = portfolioRisk(p);
+  const nav = p.nav && p.nav > 0 ? p.nav : null;
+  const c = { p, r, nav, isSchwab: p.source === 'schwab', bal: p.balances || null, pos: p.positions || [],
+              pctNav: v => (nav && v != null) ? v / nav * 100 : null };
+  const saved = loadRiskWeights();
+  const vars = RISK_VARS.map(def => {
+    const w = _riskWeight(def, saved);
+    let out;
+    try { out = def.calc(c) || {}; } catch (e) { out = { unavailable: '计算出错' }; }
+    if (out.na) return { def, w, available: false, na: out.na };
+    if (out.unavailable) return { def, w, available: false, reason: out.unavailable };
+    if (out.value == null || !isFinite(out.value)) return { def, w, available: false, reason: '数据不足' };
+    let score = out.score != null ? out.score : def.dir === 'min' ? _scoreMin(out.value, def.th, def.worst || 0) : _scoreMax(out.value, def.th);
+    const forced = out.force != null && out.force > score;
+    if (forced) score = out.force;
+    score = Math.max(0, Math.min(100, score));
+    return { def, w, available: true, value: out.value, detail: out.detail || '', score, level: riskLevel(score), forced };
+  });
+  const used = vars.filter(v => v.available && v.w > 0);
+  const wsum = used.reduce((s, v) => s + v.w, 0);
+  const mean = wsum > 0 ? used.reduce((s, v) => s + v.w * v.score, 0) / wsum : null;
+  used.forEach(v => { v.contrib = v.w * v.score / wsum; });
+  const top = used.slice().sort((a, b) => b.score - a.score)[0] || null;
+  const floor = top ? top.score - 25 : 0;
+  const composite = mean == null ? null : Math.max(mean, floor);
+  const applicable = vars.filter(v => !v.na && v.w > 0);
+  const aw = applicable.reduce((s, v) => s + v.w, 0);
+  return { c, vars, used, composite, mean, top, floorApplied: mean != null && floor > mean,
+           coverage: aw > 0 ? wsum / aw : 0 };
+}
+
+/* ---------- formatting ---------- */
+function _fmtRiskVal(v) {
+  const d = v.def;
+  if (d.unit === '%') return v.value.toFixed(1) + '%';
+  if (d.unit === 'count') return String(Math.round(v.value)) + ' 张';
+  if (d.unit === 'n') return v.value.toFixed(1);
+  if (d.unit === 'phase') return ROC_PHASES[v.value] ? ROC_PHASES[v.value].short : '—';
+  return String(v.value);
+}
+function _thLabel(def, x) {
+  if (def.unit === '%') return x + '%';
+  if (def.unit === 'count') return String(Math.ceil(x));
+  return String(x);
+}
+function _riskThText(def) {
+  if (def.dir === 'score') return '';
+  const [a, b, c] = def.th.map(x => _thLabel(def, x));
+  return def.dir === 'min'
+    ? `安全 ≥ ${a} · 关注 ≥ ${b} · 警戒 ≥ ${c} · 危险 < ${c}`
+    : `安全 ≤ ${a} · 关注 ≤ ${b} · 警戒 ≤ ${c} · 危险 > ${c}`;
+}
+
+/* ---------- analog gauge ---------- */
+const __gaugeLast = {};
+function _gaugeAngle(s) { return -90 + 1.8 * Math.max(0, Math.min(100, s)); }
+function riskGaugeSVG(score, key, compact) {
+  const cx = 120, cy = 118, R = 96;
+  const pt = (t, r) => { const a = Math.PI * (1 - t / 100); return [cx + r * Math.cos(a), cy - r * Math.sin(a)]; };
+  const arc = (t0, t1, r) => {
+    const [x0, y0] = pt(t0, r), [x1, y1] = pt(t1, r);
+    return `M${x0.toFixed(2)} ${y0.toFixed(2)} A${r} ${r} 0 0 1 ${x1.toFixed(2)} ${y1.toFixed(2)}`;
+  };
+  const zones = [[0, 25, 'safe'], [25, 50, 'watch'], [50, 75, 'alert'], [75, 100, 'danger']]
+    .map(([a, b, k]) => `<path class="rg-zone rg-${k}" d="${arc(a + 0.7, b - 0.7, R)}"/>`).join('');
+  let ticks = '';
+  for (let t = 0; t <= 100; t += 5) {
+    const major = t % 25 === 0;
+    const [x0, y0] = pt(t, R - 13), [x1, y1] = pt(t, major ? R - 25 : R - 19);
+    ticks += `<line class="rg-tick${major ? ' major' : ''}" x1="${x0.toFixed(2)}" y1="${y0.toFixed(2)}" x2="${x1.toFixed(2)}" y2="${y1.toFixed(2)}"/>`;
+    if (major && !compact) { const [lx, ly] = pt(t, R - 37); ticks += `<text class="rg-tick-label" x="${lx.toFixed(1)}" y="${(ly + 4).toFixed(1)}" text-anchor="middle">${t}</text>`; }
+  }
+  const has = score != null && isFinite(score);
+  const s = has ? score : 0;
+  const from = __gaugeLast[key] != null ? __gaugeLast[key] : 0;
+  const lvl = has ? riskLevel(s) : null;
+  const amp = (0.5 + 2.4 * s / 100).toFixed(2), dur = (4.6 - 3.0 * s / 100).toFixed(2);
+  return `
+    <svg class="rg-svg${compact ? ' rg-compact' : ''}" viewBox="0 0 240 ${compact ? 128 : 172}" role="img" aria-label="综合风险 ${has ? Math.round(s) : '暂无'}">
+      <path class="rg-track" d="${arc(0, 100, R)}"/>
+      ${zones}${ticks}
+      <g class="rg-needle${has ? '' : ' rg-idle'}" data-key="${esc(key)}" data-score="${has ? s.toFixed(2) : ''}" style="transform: rotate(${_gaugeAngle(from)}deg)">
+        <g class="rg-sway" style="--sway-amp:${amp}deg; --sway-dur:${dur}s">
+          <line class="rg-needle-tail" x1="${cx}" y1="${cy}" x2="${cx}" y2="${cy + 16}"/>
+          <line class="rg-needle-line" x1="${cx}" y1="${cy}" x2="${cx}" y2="${cy - R + 18}"/>
+          <circle class="rg-hub" cx="${cx}" cy="${cy}" r="7"/>
+        </g>
+      </g>
+      ${compact ? '' : `<text class="rg-score${lvl ? ' rk-t-' + lvl.key : ''}" x="${cx}" y="${cy + 50}" text-anchor="middle">${has ? Math.round(s) : '—'}</text>`}
+    </svg>`;
+}
+function animateRiskGauges() {
+  document.querySelectorAll('.rg-needle[data-key]').forEach(el => {
+    const raw = el.dataset.score;
+    if (raw === '' || raw == null) return;
+    const s = parseFloat(raw), key = el.dataset.key;
+    requestAnimationFrame(() => requestAnimationFrame(() => { el.style.transform = `rotate(${_gaugeAngle(s)}deg)`; }));
+    __gaugeLast[key] = s;
+  });
+}
+
+/* ---------- main page · compact card ---------- */
+function riskCardHTML() {
+  const R = computeRisk();
+  const s = R.composite, lvl = s != null ? riskLevel(s) : null;
+  const drivers = R.used.filter(v => v.score >= 25).sort((a, b) => b.score - a.score).slice(0, 3);
+  return `
+    <div class="rk-card" id="risk-card" role="button" tabindex="0" onclick="showRiskDashboard()"
+         onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showRiskDashboard();}">
+      <div class="rk-card-gauge">${riskGaugeSVG(s, 'composite', true)}</div>
+      <div class="rk-card-body">
+        <div class="rk-card-top">
+          <span class="rk-card-title">综合风险</span>
+          <span class="rk-card-num${lvl ? ' rk-t-' + lvl.key : ''}">${s != null ? Math.round(s) : '—'}</span>
+          <span class="rk-card-lvl${lvl ? ' rk-t-' + lvl.key : ''}">${lvl ? lvl.label : '数据不足'}</span>
+        </div>
+        <div class="rk-card-drivers">${drivers.length
+          ? drivers.map(v => `<span class="rk-chip rk-c-${v.level.key}">${esc(v.def.label)} ${esc(_fmtRiskVal(v))}</span>`).join('')
+          : `<span class="rk-quiet">${s != null ? '计入的各项都在安全区' : '连接 Schwab 或在下方填 NAV / Cash 后显示'}</span>`}</div>
+        <div class="rk-card-meta">${R.used.length} 项计入 · 数据覆盖 ${Math.round(R.coverage * 100)}% · 打开仪表盘 ▸</div>
+      </div>
+    </div>`;
+}
+function _refreshRiskCard() {
+  const el = document.getElementById('risk-card');
+  if (!el) return;
+  el.outerHTML = riskCardHTML();
+  animateRiskGauges();
+}
+
+/* ---------- full dashboard page ---------- */
+let __riskEditorOpen = false;
+window.showRiskDashboard = () => { state._view = 'risk'; render(); window.scrollTo(0, 0); };
+window.hideRiskDashboard = () => { state._view = null; render(); window.scrollTo(0, 0); };
+
+function _riskScaleHTML(v) {
+  const pos = Math.max(0, Math.min(100, v.score));
+  const labels = v.def.dir === 'score' ? '' : v.def.th.map((x, i) =>
+    `<span style="left:${(i + 1) * 25}%">${esc(_thLabel(v.def, x))}</span>`).join('');
+  return `
+    <div class="rk-scale">
+      <div class="rk-scale-bar"><i class="rk-z rk-safe"></i><i class="rk-z rk-watch"></i><i class="rk-z rk-alert"></i><i class="rk-z rk-danger"></i>
+        <b class="rk-mark rk-m-${v.level.key}" style="left:${pos.toFixed(1)}%"></b></div>
+      <div class="rk-scale-labels">${labels}</div>
+    </div>`;
+}
+function _riskRowHTML(v) {
+  const d = v.def;
+  if (!v.available) {
+    return `
+      <div class="rk-row rk-row-off">
+        <div class="rk-row-head"><span class="rk-name">${esc(d.label)}</span><span class="rk-off">${esc(v.na || v.reason)}</span></div>
+        <div class="rk-desc">${esc(d.desc)}</div>
+      </div>`;
+  }
+  return `
+    <div class="rk-row" data-var="${d.id}">
+      <div class="rk-row-head">
+        <span class="rk-name">${esc(d.label)}</span>
+        <span class="rk-val rk-t-${v.level.key}">${esc(_fmtRiskVal(v))}</span>
+        <span class="rk-pill rk-c-${v.level.key}">${v.level.label}${v.forced ? ' · 强制' : ''}</span>
+      </div>
+      ${_riskScaleHTML(v)}
+      <div class="rk-row-foot">
+        <span class="rk-detail">${esc(v.detail)}</span>
+        <span class="rk-weight">${v.w > 0 ? `权重 ${v.w} · 贡献 ${(v.contrib || 0).toFixed(1)} 分` : '权重 0 · 不计入'}</span>
+      </div>
+      <div class="rk-desc">${esc(d.desc)}${d.dir !== 'score' ? ' ' + esc(_riskThText(d)) + '.' : ''}</div>
+    </div>`;
+}
+function _riskHeadline(R) {
+  if (R.composite == null) return '还没有足够的数据. 连接 Schwab, 或在首页填 NAV 和 Cash / SWVXX.';
+  const hot = R.used.filter(v => v.score >= 50).sort((a, b) => b.score - a.score);
+  if (R.floorApplied && R.top) return `主要被「${R.top.def.label}」拉高 (${_fmtRiskVal(R.top)}, ${R.top.level.label}). 单项红灯不会被其他项平均掉.`;
+  if (hot.length) return `需要留意: ${hot.slice(0, 3).map(v => `${v.def.label} ${_fmtRiskVal(v)}`).join('、')}.`;
+  const watch = R.used.filter(v => v.score >= 25);
+  if (watch.length) return `整体可控. 偏高的是 ${watch.sort((a, b) => b.score - a.score).slice(0, 2).map(v => v.def.label).join('、')}.`;
+  return '计入的各项都在安全区.';
+}
+function _tickerChartHTML(R) {
+  const nav = R.c.nav;
+  const rows = R.c.r.tickers.filter(t => t.exposure > 0).slice(0, 10);
+  if (!nav || !rows.length) return '';
+  const part = (t, kind) => t.positions.filter(x => x.kind === kind).reduce((s, x) => s + (x.exposure || 0), 0) / nav * 100;
+  const maxPct = Math.max(40, ...rows.map(t => t.exposure / nav * 100)) * 1.05;
+  const W = x => (x / maxPct * 100).toFixed(2) + '%';
+  return `
+    <section class="rk-block">
+      <h3 class="rk-block-title">单一标的敞口</h3>
+      <div class="rk-legend"><span><i class="rk-sw rk-sw-stock"></i>正股</span><span><i class="rk-sw rk-sw-leaps"></i>LEAPS</span><span><i class="rk-sw rk-sw-csp"></i>CSP 名义</span><span class="rk-legend-note">虚线 20% / 30%</span></div>
+      <div class="rk-bars">
+        ${rows.map(t => {
+          const pct = t.exposure / nav * 100;
+          const lv = riskLevel(_scoreMax(pct, [20, 30, 40]));
+          return `
+            <div class="rk-bar-row">
+              <span class="rk-bar-name">${esc(t.ticker)}</span>
+              <div class="rk-bar-track">
+                <i class="rk-seg rk-sw-stock" style="width:${W(part(t, 'stock'))}"></i><i class="rk-seg rk-sw-leaps" style="width:${W(part(t, 'leaps'))}"></i><i class="rk-seg rk-sw-csp" style="width:${W(part(t, 'short_put'))}"></i>
+                <em class="rk-guide" style="left:${W(20)}"></em><em class="rk-guide strong" style="left:${W(30)}"></em>
+              </div>
+              <span class="rk-bar-val rk-t-${lv.key}">${pct.toFixed(1)}%</span>
+            </div>`;
+        }).join('')}
+      </div>
+    </section>`;
+}
+function _expiryChartHTML(R) {
+  const nav = R.c.nav;
+  const csps = R.c.pos.filter(x => x.kind === 'short_put' && x.expiry);
+  if (!nav || !csps.length) return '';
+  const weeks = _expiryWeeks(csps).sort((a, b) => a.key.localeCompare(b.key)).slice(0, 12);
+  const maxPct = Math.max(25, ...weeks.map(w => w.total / nav * 100)) * 1.1;
+  return `
+    <section class="rk-block">
+      <h3 class="rk-block-title">CSP 到期分布 (按周)</h3>
+      <div class="rk-cols">
+        ${weeks.map(w => {
+          const pct = w.total / nav * 100, lv = riskLevel(_scoreMax(pct, [15, 25, 35]));
+          return `
+            <div class="rk-col" title="${esc(w.items.map(x => `${x.ticker} ${x.strike}P × ${x.qty}`).join(', '))}">
+              <span class="rk-col-val rk-t-${lv.key}">${pct.toFixed(0)}%</span>
+              <div class="rk-col-track"><i class="rk-col-fill rk-f-${lv.key}" style="height:${(pct / maxPct * 100).toFixed(1)}%"></i>
+                <em class="rk-col-guide" style="bottom:${(15 / maxPct * 100).toFixed(1)}%"></em></div>
+              <span class="rk-col-label">${esc(w.label)}</span>
+              <span class="rk-col-n">${w.count} 笔</span>
+            </div>`;
+        }).join('')}
+      </div>
+      <div class="rk-note">虚线 = 单周 15% NAV. 悬停柱子看具体合约.</div>
+    </section>`;
+}
+function _moneynessHTML(R) {
+  const rows = R.c.pos.filter(x => (x.kind === 'short_put' || x.kind === 'short_call') && x.und != null && x.strike != null)
+    .map(x => {
+      const dist = x.kind === 'short_put' ? (x.und - x.strike) / x.und * 100 : (x.strike - x.und) / x.und * 100;
+      return { x, dist };
+    }).sort((a, b) => a.dist - b.dist);
+  if (!rows.length) return '';
+  const cls = d => d < 0 ? 'danger' : d < 5 ? 'alert' : d < 10 ? 'watch' : 'safe';
+  return `
+    <section class="rk-block">
+      <h3 class="rk-block-title">卖出期权离行权价多远</h3>
+      <div class="rk-table-wrap"><table class="rk-table">
+        <thead><tr><th>标的</th><th>合约</th><th>现价</th><th>距离</th><th>DTE</th><th>Delta</th><th>名义</th></tr></thead>
+        <tbody>${rows.map(({ x, dist }) => `
+          <tr>
+            <td>${esc(x.ticker)}</td>
+            <td>${x.strike}${x.kind === 'short_put' ? 'P' : 'C'} × ${x.qty}</td>
+            <td>${x.und.toFixed(2)}</td>
+            <td class="rk-t-${cls(dist)}">${dist < 0 ? '已 ITM ' : ''}${Math.abs(dist).toFixed(1)}%</td>
+            <td>${_dteOf(x) ?? '—'}</td>
+            <td>${x.delta != null ? x.delta.toFixed(2) : '—'}</td>
+            <td>${x.kind === 'short_put' ? _fmtUsd(x.exposure) : '—'}</td>
+          </tr>`).join('')}</tbody>
+      </table></div>
+      <div class="rk-note">距离 = 标的还要跌 (put) 或涨 (call) 多少才到行权价. 红色已价内.</div>
+    </section>`;
+}
+function _greeksHTML(R) {
+  const c = R.c;
+  if (!c.isSchwab) return '';
+  const opts = c.pos.filter(x => x.kind !== 'stock');
+  const withD = opts.filter(x => x.delta != null && x.und != null);
+  let delta = 0, theta = 0, pnl = 0, pnlN = 0, ivW = 0, ivN = 0;
+  c.pos.forEach(x => {
+    delta += _dollarDelta(x) || 0;
+    if (x.theta != null) theta += x.theta * 100 * (Number(x.qty) || 0) * (_isShortPos(x) ? -1 : 1);
+    const p = _posPnl(x); if (p != null) { pnl += p; pnlN++; }
+    if (_isShortPos(x) && x.iv != null && x.exposure) { ivW += x.iv * x.exposure; ivN += x.exposure; }
+  });
+  const fig = (label, val, sub) => `<div class="rk-fig"><span class="rk-fig-val">${val}</span><span class="rk-fig-label">${label}</span>${sub ? `<span class="rk-fig-sub">${sub}</span>` : ''}</div>`;
+  const noGreeks = opts.length > 0 && !withD.length;
+  return `
+    <section class="rk-block">
+      <h3 class="rk-block-title">组合 Greeks 与盈亏</h3>
+      ${noGreeks ? `<div class="rk-note">${esc(_needSchwab(c, ' Greeks'))} · 下方只显示不依赖报价的数字</div>` : ''}
+      <div class="rk-figs">
+        ${noGreeks ? '' : fig('净 Delta (美元)', _fmtUsd(delta), c.nav ? `相当于 ${(delta / c.nav * 100).toFixed(0)}% NAV 的正股` : '')}
+        ${noGreeks ? '' : fig('每日 Theta', (theta >= 0 ? '+' : '') + _fmtUsd(theta), theta >= 0 ? '时间站在你这边' : '每天的时间损耗')}
+        ${pnlN ? fig('未实现盈亏', (pnl >= 0 ? '+' : '') + _fmtUsd(pnl), `${pnlN} 个仓位`) : ''}
+        ${ivN ? fig('卖出期权平均 IV', (ivW / ivN).toFixed(1) + '%', '按名义加权') : ''}
+      </div>
+    </section>`;
+}
+function _weightsEditorHTML(R) {
+  return `
+    <details class="rk-block rk-editor" ${__riskEditorOpen ? 'open' : ''} ontoggle="__riskEditorOpen = this.open">
+      <summary class="rk-block-title">调整权重</summary>
+      <div class="rk-note">0 = 不计入. 拖完松手生效, 只保存在这台设备并随 Gist 同步.</div>
+      <div class="rk-weights">
+        ${R.vars.map(v => `
+          <label class="rk-w-row">
+            <span class="rk-w-name">${esc(v.def.label)}${v.available ? '' : ' <em>无数据</em>'}</span>
+            <input type="range" min="0" max="20" step="1" value="${v.w}" data-var="${v.def.id}"
+                   oninput="this.nextElementSibling.textContent = this.value" onchange="setRiskWeight('${v.def.id}', this.value)">
+            <span class="rk-w-val">${v.w}</span>
+          </label>`).join('')}
+      </div>
+      <button class="btn ghost small" onclick="resetRiskWeights()">恢复默认权重</button>
+    </details>`;
+}
+window.setRiskWeight = (id, val) => {
+  const o = loadRiskWeights(); o[id] = Math.max(0, Math.min(20, parseInt(val, 10) || 0));
+  saveRiskWeights(o);
+  const y = window.scrollY; renderRiskPage(); _postRender(); window.scrollTo(0, y);
+  if (typeof scheduleAutoPushToGist === 'function') scheduleAutoPushToGist();
+};
+window.resetRiskWeights = () => {
+  saveRiskWeights({});
+  const y = window.scrollY; renderRiskPage(); _postRender(); window.scrollTo(0, y);
+  showToast('已恢复默认权重', 'info');
+  if (typeof scheduleAutoPushToGist === 'function') scheduleAutoPushToGist();
+};
+function _riskDiagnosticsHTML(R) {
+  const p = R.c.p, cache = loadSchwabCache();
+  const balKeys = ['optionBuyingPower', 'maintenanceRequirement', 'equity', 'cashBalance', 'marginBalance', 'buyingPower'];
+  const lines = [
+    ['数据来源', _prSourceInfo().text],
+    ['Worker 版本', R.c.isSchwab ? (p.workerVersion ? 'v' + p.workerVersion : 'v1 (无报价)') : '—'],
+    ['报价', R.c.isSchwab ? `${p.quotesStatus || '未请求'}${p.quotesCoverage ? ` · Greeks ${p.quotesCoverage.withGreeks}/${p.quotesCoverage.options}` : ''}` : '—'],
+    ['账户类型', (p.accountTypes || []).join(', ') || '—'],
+    ['保证金字段', R.c.bal ? balKeys.map(k => `${k} ${typeof R.c.bal[k] === 'number' ? '✓' : '✗'}`).join(' · ') : '—'],
+    ['未计入的项', R.vars.filter(v => !v.available && !v.na).map(v => `${v.def.label} (${v.reason})`).join(' · ') || '无'],
+    ['不适用的项', R.vars.filter(v => v.na).map(v => `${v.def.label} (${v.na})`).join(' · ') || '无'],
+  ];
+  return `
+    <details class="rk-block">
+      <summary class="rk-block-title">数据诊断</summary>
+      <dl class="rk-diag">${lines.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}</dl>
+    </details>`;
+}
+function renderRiskPage() {
+  const R = computeRisk();
+  const s = R.composite, lvl = s != null ? riskLevel(s) : null;
+  const src = _prSourceInfo();
+  const groups = RISK_CATS.map(cat => {
+    const vs = R.vars.filter(v => v.def.cat === cat.id);
+    const scored = vs.filter(v => v.available && v.w > 0);
+    const catAvg = scored.length ? scored.reduce((a, v) => a + v.score * v.w, 0) / scored.reduce((a, v) => a + v.w, 0) : null;
+    const cl = catAvg != null ? riskLevel(catAvg) : null;
+    return `
+      <section class="rk-group">
+        <h3 class="rk-group-title">${esc(cat.label)}${cl ? `<span class="rk-group-score rk-t-${cl.key}">${Math.round(catAvg)}</span>` : ''}</h3>
+        ${vs.map(_riskRowHTML).join('')}
+      </section>`;
+  }).join('');
+  $app.innerHTML = `
+    <div class="header">
+      <div class="brand">Pre-Trade Checklist</div>
+      <div class="header-actions">
+        <button class="btn ghost" onclick="hideRiskDashboard()">← 返回</button>
+        ${loadSchwabCfg() ? `<button class="btn ghost" onclick="refreshSchwab({ force: true })">刷新 Schwab</button>` : ''}
+      </div>
+    </div>
+    <div class="rk-page">
+      <section class="rk-hero">
+        <div class="rk-hero-gauge">${riskGaugeSVG(s, 'composite', false)}</div>
+        <div class="rk-hero-text">
+          <h2 class="rk-hero-level${lvl ? ' rk-t-' + lvl.key : ''}">${lvl ? '综合风险 · ' + lvl.label : '综合风险 · 数据不足'}</h2>
+          <p class="rk-hero-line">${esc(_riskHeadline(R))}</p>
+          <div class="rk-hero-meta"><span class="pr-source ${src.cls}">${esc(src.text)}</span>
+            <span>${R.used.length} 项计入 · 数据覆盖 ${Math.round(R.coverage * 100)}%</span></div>
+        </div>
+      </section>
+      <div class="rk-groups">${groups}</div>
+      ${_tickerChartHTML(R)}
+      ${_expiryChartHTML(R)}
+      ${_moneynessHTML(R)}
+      ${_greeksHTML(R)}
+      ${_weightsEditorHTML(R)}
+      <details class="rk-block">
+        <summary class="rk-block-title">综合分怎么算</summary>
+        <div class="rk-method">
+          <p>每个变量按自己的阈值换算成 0–100 分: 安全 0–25, 关注 25–50, 警戒 50–75, 危险 75–100. 阈值之间线性过渡.</p>
+          <p>综合分 = 各项分数按权重平均. 再加一条保底: 综合分不低于最高单项减 25. 所以任何一项进入危险区, 指针至少会到警戒区, 不会被其他安全项平均掉.</p>
+          <p>没有数据的项不计入, 并按权重算出数据覆盖率. 不适用的项 (比如没有 LEAPS 时的 LEAPS 到期) 也不计入.</p>
+          <p>开仓前的模拟用同一套算法, 把这笔交易加进持仓后重新打分. 保证金类变量 Schwab 才算得准, 模拟时保持不变.</p>
+        </div>
+      </details>
+      ${_riskDiagnosticsHTML(R)}
+    </div>`;
+}
+
+/* ---------- post-trade: composite before → after ---------- */
+function _simulatedPortfolio(t) {
+  const p = getPortfolio();
+  const pos = p.positions.slice();
+  const und = (pos.find(x => x.ticker === t.ticker && x.und != null) || {}).und ?? null;
+  if (t.kind === 'short_put') pos.push({ kind: 'short_put', ticker: t.ticker || '?', strike: t.strike, qty: t.qty, expiry: null, exposure: t.amount, und });
+  if (t.kind === 'leaps') pos.push({ kind: 'leaps', ticker: t.ticker || '?', exposure: t.amount, cost: t.amount, marketValue: t.amount, expiry: null });
+  const q = { ...p, positions: pos };
+  if (t.kind === 'leaps') {
+    if (q.cash != null) q.cash = q.cash - t.amount;
+    else if (q.swvxx != null) q.swvxx = q.swvxx - t.amount;
+  }
+  return q;
+}
+function _simCompositeHTML(t) {
+  const a = computeRisk().composite;
+  const b = computeRisk(_simulatedPortfolio(t)).composite;
+  if (a == null || b == null) return '';
+  const la = riskLevel(a), lb = riskLevel(b);
+  return `<div class="pr-sim-risk">综合风险 <b class="rk-t-${la.key}">${Math.round(a)} ${la.label}</b> → <b class="rk-t-${lb.key}">${Math.round(b)} ${lb.label}</b>`
+    + `<span>${b - a >= 0.5 ? `+${(b - a).toFixed(0)}` : b - a <= -0.5 ? (b - a).toFixed(0) : '±0'} · 保证金类不模拟</span></div>`;
+}
+
 /* Boot */
+
 loadTheme();
 loadTrendRange();
 loadDensity();
