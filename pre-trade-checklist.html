@@ -1947,14 +1947,50 @@
   .rk-red-list { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 10px; }
   .rk-hero-text .rk-red-list { justify-content: inherit; }
   /* ===== Greeks lab ===== */
-  .sf-wrap { position: relative; width: 100%; margin: 6px 0 2px; border-radius: var(--radius, 6px);
+  .sf-panel { position: relative; margin: 6px 0 4px; outline: none; }
+  .sf-panel [hidden] { display: none !important; }
+  .sf-panel:focus-visible { box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 40%, transparent); border-radius: var(--radius, 6px); }
+  .sf-bar { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 12px; margin-bottom: 6px; }
+  .sf-bar .rk-presets { flex-wrap: wrap; gap: 4px; }
+  .sf-bar .rk-preset { padding: 3px 8px; font-size: 11.5px; }
+  .sf-tools { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .sf-fs-btn { width: 28px; height: 26px; border: 1px solid var(--border); border-radius: 4px; background: var(--panel-2);
+    color: var(--text-dim); font-size: 15px; line-height: 1; cursor: pointer; }
+  .sf-fs-btn:hover { color: var(--text); border-color: var(--accent); }
+  .sf-stage { position: relative; width: 100%; }
+  .sf-wrap { position: relative; width: 100%; height: 100%; border-radius: var(--radius, 6px);
     background: radial-gradient(ellipse at 50% 40%, color-mix(in srgb, var(--panel-2) 70%, transparent), transparent 75%); }
+  .sf-grid { overflow-x: auto; }
+  .sf-grid-svg { width: 100%; min-width: 520px; height: auto; display: block; cursor: pointer; }
+  .sf-grid-svg rect { stroke: transparent; stroke-width: 2; }
+  .sf-grid-svg rect.cross { opacity: 0.88; }
+  .sf-grid-svg rect.pin { stroke: var(--text); }
+  .sf-grid-svg text.v { font-family: var(--mono); font-size: 8.5px; fill: var(--text); pointer-events: none; opacity: 0.85; }
+  .sf-read { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; margin: 8px 0 4px; font-size: 12.5px; color: var(--text-dim); }
+  .sf-read b { font-family: var(--mono); font-size: 16px; color: var(--accent); font-variant-numeric: tabular-nums; }
+  .sf-slices { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 18px; }
+  body.sf-lock { overflow: hidden; }
+  .sf-panel.fs { position: fixed; inset: 0; z-index: 1000; margin: 0; padding: max(12px, env(safe-area-inset-top)) 16px 16px;
+    background: var(--panel); overflow-y: auto; }
+  .sf-panel.fs .sf-stage { height: max(320px, calc(100vh - 300px)) !important; }
+  .sf-panel.fs .sf-stage:has(.sf-grid:not([hidden])) { height: auto !important; }
+  .gl-band { fill: var(--accent); opacity: 0.08; }
+  .gl-band-lab { fill: var(--accent); }
+  .gl-vline { stroke-width: 1; }
+  .gl-vline.sd2 { stroke: var(--accent); stroke-dasharray: 4 3; opacity: 0.5; }
+  .gl-vline.be { stroke: var(--text-dim); stroke-dasharray: 1 3; }
+  .gl-sw-band { background: color-mix(in srgb, var(--accent) 25%, transparent); }
+  @media (max-width: 560px) {
+    .sf-slices { grid-template-columns: 1fr; }
+    .sf-grid-svg text.v { display: none; }
+    .sf-grid-svg { min-width: 0; }
+  }
   .sf-canvas { width: 100%; height: 100%; display: block; cursor: grab; touch-action: pan-y; }
   .sf-wrap.dragging .sf-canvas { cursor: grabbing; }
   .sf-tip { position: absolute; pointer-events: none; padding: 5px 8px; border-radius: 4px; font-size: 11px; line-height: 1.4;
     background: var(--text); color: var(--panel); white-space: nowrap; font-family: var(--mono); z-index: 2; }
   .sf-tip b { display: block; font-size: 13px; }
-  .sf-hint { position: absolute; right: 8px; top: 6px; font-size: 10.5px; color: var(--text-faint); pointer-events: none; }
+  .sf-hint { position: absolute; right: 8px; bottom: 6px; font-size: 10.5px; color: var(--text-faint); pointer-events: none; }
   .gl-title-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
   .gl-chart { width: 100%; height: auto; display: block; overflow: visible; }
   .gl-lab { font-family: var(--mono); font-size: 9.5px; fill: var(--text-faint); }
@@ -2005,6 +2041,36 @@
     .gl-grid4 { grid-template-columns: 1fr; }
     .gl-lab { font-size: 15px; } .gl-exp text, .gl-dot text { font-size: 15px; }
   }
+  .gk-card { margin: -4px 0 12px; padding: 10px 16px 12px; background: var(--panel); border: 1px solid var(--border);
+    border-radius: var(--radius, 6px); cursor: pointer; transition: border-color 0.15s; }
+  .gk-card:hover, .gk-card:focus-visible { border-color: var(--accent); }
+  .gk-title { display: flex; justify-content: space-between; font-size: 13px; color: var(--text-dim); margin-bottom: 6px; }
+  .gk-title span { font-size: 11.5px; color: var(--text-faint); }
+  .gk-cells { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .gk-cell { display: flex; flex-direction: column; gap: 1px; }
+  .gk-cell span { font-size: 11px; color: var(--text-faint); }
+  .gk-cell b { font-family: var(--mono); font-size: 16px; color: var(--text); font-variant-numeric: tabular-nums; }
+  .rk-linkrow { display: block; width: 100%; margin-top: 14px; padding: 12px 16px; text-align: left; font-size: 13.5px; font-weight: 600;
+    color: var(--text); background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius, 8px); cursor: pointer; }
+  .rk-linkrow:hover { border-color: var(--accent); }
+  @media (max-width: 480px) { .gk-cell b { font-size: 14px; } }
+  /* checklist: live quote + preview */
+  .cq { margin-top: 12px; padding: 9px 12px; border-radius: var(--radius, 6px); background: var(--bg); border: 1px solid var(--border); font-size: 12.5px; color: var(--text-dim); }
+  .cq-line { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; }
+  .cq-line > b { font-family: var(--mono); color: var(--text); }
+  .cq-line b b, .cq-line span b { font-family: var(--mono); color: var(--text); }
+  .cq-line .pr-mini-btn { margin-left: auto; }
+  .cq-note { margin-top: 4px; font-size: 11px; color: var(--text-faint); }
+  .cq-hint { color: var(--text-faint); }
+  .cq-manual { display: inline-flex; align-items: center; gap: 6px; margin-left: 8px; flex-wrap: wrap; }
+  .cq-manual input { width: 76px; padding: 3px 6px; font-family: var(--mono); font-size: 12px; border: 1px solid var(--border); border-radius: 4px; background: var(--panel); color: var(--text); }
+  .cq-preview { margin-top: 12px; border: 1px solid var(--border); border-radius: var(--radius, 6px); background: var(--panel); }
+  .cq-preview > summary { cursor: pointer; padding: 10px 12px; font-size: 13px; font-weight: 600; color: var(--text); list-style: none; }
+  .cq-preview > summary::-webkit-details-marker { display: none; }
+  .cq-preview > summary::before { content: '▸ '; color: var(--text-faint); }
+  .cq-preview[open] > summary::before { content: '▾ '; }
+  #csp-preview { padding: 0 12px 14px; }
+  .item-numeric-input.autofilled { border-style: dashed; border-color: var(--accent); }
   .pr-sim-risk { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 10px; margin-top: 8px; padding: 6px 9px;
     border-radius: 4px; background: var(--panel-2); font-size: 12px; color: var(--text-dim); }
   .pr-sim-risk span { font-size: 10.5px; color: var(--text-faint); margin-left: auto; }
@@ -2701,6 +2767,11 @@ const state = {
   tradeStrike: '',       // Strike / STK · shared field for LEAPS / PMCC / CC / CSP identification
   tradeContracts: '',    // Contracts / 张数 · used to compute nominal for CSP
   tradeExpiry: '',       // Optional: expiration date · YYYY-MM-DD
+  cspQuote: null,        // last /quote result for the CSP being checked
+  cspQuoteStatus: null,
+  quoteFill: {},         // values the quote auto-filled (so hand-typed ones are never overwritten)
+  cspManualMark: '', cspManualUnd: '',
+  cspPreviewOpen: false,
   // Checklist item state
   items: {},
   // Session context
@@ -3701,6 +3772,7 @@ let __prevViewKey = null;
 function _viewKey() {
   if (state._view === 'history') return 'history';
   if (state._view === 'risk') return 'risk';
+  if (state._view === 'greeks') return 'greeks';
   if (!state.strategy) return 'picker';
   if (state.strategy === 'leaps') {
     if (!state.leapsStyle || !state.leapsPhase) return 'leaps-config';
@@ -3727,6 +3799,7 @@ function render() {
   _triggerViewTransition();
   if (state._view === 'history') { renderHistoryPage(); _postRender(); return; }
   if (state._view === 'risk') { renderRiskPage(); _postRender(); return; }
+  if (state._view === 'greeks') { renderGreeksPage(); _postRender(); return; }
   if (!state.strategy) { renderPicker(); _postRender(); return; }
   if (state.strategy === 'leaps') {
     // Always open — force direction to 'open' if not already set
@@ -5476,6 +5549,7 @@ function renderPicker() {
       <div class="picker-sub">Trading in the Zone</div>
       ${syncStatusMiniHTML()}
       ${riskCardHTML()}
+      ${greeksCardHTML()}
       ${marketSignalHTML()}
       ${mainNavWidgetHTML()}
       ${portfolioRiskHTML()}
@@ -5963,6 +6037,8 @@ function renderChecklist() {
             <input inputmode="decimal" type="number" id="in-csp-strike" placeholder="e.g. 50" value="${esc(state.cspStrike)}"></div>
           <div class="num-field"><label class="num-field-label">张数</label>
             <input inputmode="numeric" type="number" id="in-csp-contracts" placeholder="1" value="${esc(state.cspContracts)}" min="1"></div>
+          <div class="num-field"><label class="num-field-label">到期日</label>
+            <input type="date" id="in-csp-expiry" value="${esc(state.tradeExpiry || '')}"></div>
           <div class="num-field"><label class="num-field-label">本笔 nominal (自动)</label>
             <div class="computed-value">${computedNominal > 0 ? '$' + Math.round(computedNominal).toLocaleString() : '<span style="color:var(--text-faint);">先填 STK + 张数</span>'}</div></div>
           <div class="num-field"><label class="num-field-label">本 ticker 现有 CSP
@@ -5984,8 +6060,13 @@ function renderChecklist() {
           <span class="position-summary-label">单 ticker 敞口 / NAV</span>
           <span class="position-summary-val ${cs.tickerCls}">${cs.tickerHTML}</span>
         </div>`; })()}
+        <div class="cq" id="csp-quote">${cspQuoteInnerHTML()}</div>
         ${state.strategy === 'csp' ? cspMaxHTML() : leapsMaxHTML()}
         ${portfolioSimHTML()}
+        <details class="cq-preview" id="csp-preview-box" ${state.cspPreviewOpen ? 'open' : ''} ontoggle="toggleCspPreview(this.open)">
+          <summary>预览这张合约 · 盈亏 / 曲面 / Greeks</summary>
+          <div id="csp-preview">${state.cspPreviewOpen ? cspPreviewInnerHTML() : ''}</div>
+        </details>
       </div>
     `;
   }
@@ -6113,6 +6194,7 @@ function renderChecklist() {
     };
     bindStrikeContract('in-csp-strike', 'cspStrike');
     bindStrikeContract('in-csp-contracts', 'cspContracts');
+    if (typeof _bindCspQuote === 'function') setTimeout(_bindCspQuote, 0);
     bind('in-csp-ticker-ex', 'cspTickerExisting');
     const vSeg = document.getElementById('csp-vol-seg');
     if (vSeg) {
@@ -6435,7 +6517,7 @@ function itemHTML(it) {
           </div>
         </div>
         <div class="item-numeric">
-          <input class="item-numeric-input" id="num-${esc(it.id)}" type="text" inputmode="decimal" autocomplete="off" autocorrect="off"
+          <input class="item-numeric-input${state.quoteFill && state.quoteFill[it.id] != null && state.quoteFill[it.id] === val ? ' autofilled' : ''}" id="num-${esc(it.id)}" type="text" inputmode="decimal" autocomplete="off" autocorrect="off"
                  placeholder="${esc(n.placeholder || '')}" value="${esc(val)}">
           <span class="item-numeric-req">${esc(req)}</span>
           ${verdictText}
@@ -6532,6 +6614,7 @@ function resetAll(silent) {
   state.ccMode = null;
   state.ticker = '';
   state.items = {};
+  state.cspQuote = null; state.cspQuoteStatus = null; state.quoteFill = {}; state.cspManualMark = ''; state.cspManualUnd = '';
   clearDraft();
   hideDraftBanner();
   render();
@@ -9997,7 +10080,7 @@ async function refreshSchwab({ force = false } = {}) {
 // Repaint what depends on the data without stealing focus from an input
 function _afterSchwabChange(dataChanged) {
   if (state._view === 'history') return;
-  if (state._view === 'risk') {
+  if (state._view === 'risk' || state._view === 'greeks') {
     const ae = document.activeElement;
     if (!(ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA'))) { const y = window.scrollY; render(); window.scrollTo(0, y); }
     return;
@@ -11506,32 +11589,348 @@ function _stockPx(x) {
   return x.price != null ? x.price : (x.marketValue != null && q ? Math.abs(x.marketValue) / q : null);
 }
 
-/* ---------- portfolio grids ---------- */
-const SURF_METRICS = {
-  pnl:   { label: '盈亏', unit: '$', fmt: v => _fmtSigned(v), axis: v => _fmtK(v) },
-  theta: { label: 'Theta', unit: '$/天', fmt: v => _fmtSigned(v) + '/天', axis: v => _fmtK(v) + '/天' },
-  delta: { label: 'Delta', unit: '$', fmt: v => _fmtSigned(v), axis: v => _fmtK(v) },
+/* ---------- metric catalogue (P = portfolio in $, S = single contract) ---------- */
+const _shares = v => `${v >= 0 ? '+' : '−'}${Math.abs(v) < 10 ? Math.abs(v).toFixed(1) : Math.round(Math.abs(v))} 股`;
+const _sharesAxis = v => `${v >= 0 ? '+' : '−'}${Math.abs(v) < 10 ? Math.abs(v).toFixed(1) : Math.round(Math.abs(v))}`;
+const GRID_METRICS = {
+  pnl:    { label: '盈亏',      P: '相对今天.', S: '相对开仓价.' },
+  pnl_iv: { label: '盈亏 × IV', P: '今天; 股价与 IV 同时变动, 相对今天.', S: '今天; 股价与 IV 同时变动, 相对开仓价.' },
+  theta:  { label: 'Theta',     P: '每日时间价值变化.', S: '每日时间价值变化.' },
+  delta:  { label: 'Delta',     P: '美元 Delta.', S: '股数等值.' },
+  gamma:  { label: 'Gamma',     P: '大盘 +1% 时美元 Delta 的变化.', S: '股价 +$1 时 Delta (股) 的变化.' },
+  vega:   { label: 'Vega',      P: 'IV +1 点的盈亏.', S: 'IV +1 点的盈亏.' },
+  charm:  { label: 'Charm',     P: '每过一天美元 Delta 的变化.', S: '每过一天 Delta (股) 的变化.' },
+  vanna:  { label: 'Vanna',     P: 'IV +1 点时美元 Delta 的变化.', S: 'IV +1 点时 Delta (股) 的变化.' },
+  prob:   { label: '价内概率',  S: '到期价内概率 (风险中性).' },
 };
+const P_METRICS = ['pnl', 'pnl_iv', 'theta', 'delta', 'gamma', 'vega', 'charm', 'vanna'];
+const S_METRICS = ['pnl', 'pnl_iv', 'theta', 'delta', 'gamma', 'vega', 'charm', 'vanna', 'prob'];
+function _gridFmt(metric, scope) {
+  const usd = { fmt: _fmtSigned, axis: _fmtK };
+  if (metric === 'theta') return { fmt: v => _fmtSigned(v) + '/天', axis: v => _fmtK(v) + '/天' };
+  if (metric === 'vega') return { fmt: v => _fmtSigned(v) + '/点', axis: v => _fmtK(v) + '/点' };
+  if (metric === 'prob') return { fmt: v => v.toFixed(1) + '%', axis: v => Math.round(v) + '%' };
+  if (scope === 'S' && ['delta', 'gamma', 'charm', 'vanna'].includes(metric)) return { fmt: _shares, axis: _sharesAxis };
+  return usd;
+}
+function _mEval(m, S1, d, dv, metric) {
+  const T0 = Math.max(0, m.T - d / 365), T1 = Math.max(0, m.T - (d + 1) / 365), sig = Math.max(0.01, m.sigma + dv / 100);
+  const G = (T, s) => bsGreeks(S1, m.K, T, s, m.type, BS_RATE, m.q);
+  switch (metric) {
+    case 'value': return G(T0, sig).price * m.mult;
+    case 'theta': return (G(T1, sig).price - G(T0, sig).price) * m.mult;
+    case 'delta': return G(T0, sig).delta * m.mult;
+    case 'gamma': return G(T0, sig).gamma * m.mult;
+    case 'vega':  return G(T0, sig).vega * m.mult;
+    case 'charm': return (G(T1, sig).delta - G(T0, sig).delta) * m.mult;
+    case 'vanna': return (G(T0, sig + 0.005).delta - G(T0, Math.max(0.005, sig - 0.005)).delta) * m.mult;   // central difference, per 1 vol point
+    case 'prob':  return G(T0, sig).pITM * 100;
+  }
+  return 0;
+}
+const _IV_SHIFTS = (() => { const a = []; for (let v = -10; v <= 30.001; v += 2.5) a.push(v); return a; })();
 function portfolioSurface(pos, metric) {
   const xs = []; for (let v = -30; v <= 20.001; v += 2.5) xs.push(v / 100);
-  const ys = []; for (let d = 0; d <= 45; d += 3) ys.push(d);
+  const ivMode = metric === 'pnl_iv';
+  const ys = ivMode ? _IV_SHIFTS : (() => { const a = []; for (let d = 0; d <= 45; d += 3) a.push(d); return a; })();
   const items = pos.map(x => x.kind === 'stock' ? { stock: x, px: _stockPx(x) } : { m: _optModel(x) }).filter(o => o.m || (o.stock && o.px != null));
   const base = items.map(o => o.m ? _mValue(o.m, o.m.S, 0) : 0);
-  const z = xs.map(mv => ys.map(d => items.reduce((s, o, k) => {
+  const z = xs.map(mv => ys.map(y => items.reduce((s, o, k) => {
     if (o.stock) {
       const q = (o.stock.side || 1) * (Number(o.stock.qty) || 0), S1 = o.px * (1 + mv);
-      return s + (metric === 'pnl' ? q * o.px * mv : metric === 'delta' ? q * S1 : 0);
+      return s + (metric === 'pnl' || ivMode ? q * o.px * mv : metric === 'delta' ? q * S1 : 0);
     }
-    const S1 = o.m.S * (1 + mv);
-    if (metric === 'pnl') return s + _mValue(o.m, S1, d) - base[k];
-    if (metric === 'theta') return s + _mValue(o.m, S1, d + 1) - _mValue(o.m, S1, d);
-    const g = bsGreeks(S1, o.m.K, Math.max(0, o.m.T - d / 365), o.m.sigma, o.m.type, BS_RATE, o.m.q);
-    return s + g.delta * o.m.mult * S1;
+    const m = o.m, S1 = m.S * (1 + mv), d = ivMode ? 0 : y, dv = ivMode ? y : 0;
+    if (metric === 'pnl' || ivMode) return s + _mEval(m, S1, d, dv, 'value') - base[k];
+    const v = _mEval(m, S1, d, dv, metric);
+    if (metric === 'delta' || metric === 'charm' || metric === 'vanna') return s + v * S1;
+    if (metric === 'gamma') return s + v * S1 * S1 * 0.01;
+    return s + v;
   }, 0)));
-  return { xs, ys, z, metric, modeled: items.length, total: pos.length,
-           xFmt: v => `${v > 0 ? '+' : ''}${Math.round(v * 100)}%`, yFmt: d => `${d} 天`, zFmt: SURF_METRICS[metric].fmt,
-           xTitle: '大盘', yTitle: '天数', origin: [xs.indexOf(0), 0] };
+  const f = _gridFmt(metric, 'P');
+  return { xs, ys, z, metric, scope: 'P', modeled: items.length, total: pos.length, fmt: f.fmt, zFmt: f.fmt, axis: f.axis,
+    xFmt: v => `${v > 0 ? '+' : ''}${Math.round(v * 100)}%`, xTitle: '大盘',
+    yFmt: ivMode ? v => `IV ${v > 0 ? '+' : ''}${v}` : d => `${d} 天`, yTitle: ivMode ? 'IV 变化' : '天数',
+    origin: [xs.indexOf(0), ivMode ? ys.indexOf(0) : 0], palette: 'diverge' };
 }
+function optionSurface(m, entry, metric) {
+  const xs = []; for (let v = -30; v <= 30.001; v += 3) xs.push(v / 100);
+  const ivMode = metric === 'pnl_iv';
+  let ys = _IV_SHIFTS;
+  if (!ivMode) { ys = []; const st = Math.max(1, Math.ceil(m.dte / 18)); for (let d = 0; d <= m.dte; d += st) ys.push(d); if (ys[ys.length - 1] !== m.dte) ys.push(m.dte); }
+  const z = xs.map(mv => ys.map(y => {
+    const S1 = m.S * (1 + mv), d = ivMode ? 0 : y, dv = ivMode ? y : 0;
+    if (metric === 'pnl' || ivMode) return _mEval(m, S1, d, dv, 'value') - entry * m.mult;
+    return _mEval(m, S1, d, dv, metric);
+  }));
+  const f = _gridFmt(metric, 'S');
+  return { xs, ys, z, metric, scope: 'S', fmt: f.fmt, zFmt: f.fmt, axis: f.axis,
+    xFmt: v => `${v > 0 ? '+' : ''}${Math.round(v * 100)}%`, xTitle: m.x.ticker,
+    yFmt: ivMode ? v => `IV ${v > 0 ? '+' : ''}${v}` : d => `${d} 天`, yTitle: ivMode ? 'IV 变化' : '天数',
+    origin: [xs.indexOf(0), ivMode ? ys.indexOf(0) : 0], palette: metric === 'prob' ? 'seq' : 'diverge' };
+}
+
+/* ---------- surface panel: 3D + matrix + pinned slices + preset views + fullscreen ---------- */
+const __surf = {};
+let __surfSeq = 0;
+const SF_VIEWS = { def: [-0.62, 0.92], front: [0, 0.14], side: [-Math.PI / 2, 0.14], top: [0, 1.5] };
+function surfacePanelHTML({ metrics, build, def = 'pnl', height = 320 }) {
+  const id = 'sp' + (++__surfSeq);
+  const data = build(def);
+  __surf[id] = { metrics, build, cache: { [def]: data }, metric: def, data, mode: '3d', yaw: SF_VIEWS.def[0], pitch: SF_VIEWS.def[1],
+                 pin: data.origin && data.origin[0] >= 0 ? { i: data.origin[0], j: Math.max(0, data.origin[1]) } : null, height, bound: null };
+  const scope = data.scope;
+  const tab = (cls, attr, v, label, on) => `<button class="rk-preset ${cls}${on ? ' active' : ''}" ${attr}="${v}" onclick="${cls === 'sf-m' ? `sfMetric('${id}','${v}')` : cls === 'sf-mode' ? `sfMode('${id}','${v}')` : `sfView('${id}','${v}')`}">${label}</button>`;
+  return `
+    <div class="sf-panel" id="${id}" tabindex="0" onkeydown="sfKey(event,'${id}')">
+      <div class="sf-bar">
+        <div class="rk-presets sf-metrics">${metrics.map(k => tab('sf-m', 'data-m', k, GRID_METRICS[k].label + (scope === 'S' && ['delta', 'gamma', 'charm', 'vanna'].includes(k) ? ' (股)' : ''), k === def)).join('')}</div>
+        <div class="sf-tools">
+          <span class="rk-presets">${tab('sf-mode', 'data-mode', '3d', '3D', true)}${tab('sf-mode', 'data-mode', 'grid', '矩阵', false)}</span>
+          <span class="rk-presets sf-views">${[['def', '默认'], ['front', '正面'], ['side', '侧面'], ['top', '俯视']].map(([k, l]) => tab('sf-v', 'data-v', k, l, k === 'def')).join('')}</span>
+          <button class="sf-fs-btn" onclick="sfFullscreen('${id}')" aria-label="全屏" title="全屏 (Esc 退出)">⤢</button>
+        </div>
+      </div>
+      <div class="sf-stage" style="height:${height}px">
+        <div class="sf-wrap"><canvas class="sf-canvas" aria-label="3D 曲面"></canvas><div class="sf-tip" hidden></div><div class="sf-hint">拖动旋转 · 点击锁定</div></div>
+        <div class="sf-grid" hidden></div>
+      </div>
+      <div class="sf-pin"></div>
+      <div class="rk-note sf-desc"></div>
+    </div>`;
+}
+function _cssColor(name) {
+  const v = getComputedStyle(document.body).getPropertyValue(name).trim();
+  const ctx = _cssColor._c || (_cssColor._c = document.createElement('canvas').getContext('2d'));
+  ctx.fillStyle = '#000'; ctx.fillStyle = v || '#888';
+  const s = ctx.fillStyle;
+  if (s[0] === '#') return [parseInt(s.slice(1, 3), 16), parseInt(s.slice(3, 5), 16), parseInt(s.slice(5, 7), 16)];
+  const m = s.match(/[\d.]+/g); return m ? m.slice(0, 3).map(Number) : [136, 136, 136];
+}
+function _mix(a, b, t) { return a.map((v, i) => v + (b[i] - v) * t); }
+function _sfPalette(st) {
+  const z = st.data.z;
+  let zmin = Infinity, zmax = -Infinity;
+  z.forEach(r => r.forEach(v => { if (v < zmin) zmin = v; if (v > zmax) zmax = v; }));
+  if (st.data.palette === 'diverge') { zmin = Math.min(zmin, 0); zmax = Math.max(zmax, 0); }
+  if (zmax - zmin < 1e-9) { zmax += 1; zmin -= 1; }
+  const absz = z.flat().map(Math.abs).sort((a, b) => a - b);
+  const zr = Math.max(absz[Math.floor(absz.length * 0.9)] || 0, Math.max(Math.abs(zmin), Math.abs(zmax)) * 0.15, 1e-9);
+  const neg = _cssColor('--fail'), pos = _cssColor('--pass'), mid = _cssColor('--panel-2'), acc = _cssColor('--accent');
+  const col = v => {
+    if (st.data.palette === 'seq') return _mix(mid, acc, Math.max(0, Math.min(1, (v - zmin) / (zmax - zmin))));
+    const t = v / zr; return t >= 0 ? _mix(mid, pos, Math.min(1, t)) : _mix(mid, neg, Math.min(1, -t));
+  };
+  return { zmin, zmax, col };
+}
+const _rgba = (c, a = 1) => `rgba(${c.map(Math.round).join(',')},${a})`;
+function drawSurface(id) {
+  const st = __surf[id], el = document.getElementById(id);
+  if (!st || !el || st.mode !== '3d') return;
+  const wrap = el.querySelector('.sf-wrap'), cv = wrap.querySelector('canvas'), ctx = cv.getContext('2d');
+  const W = wrap.clientWidth, H = wrap.clientHeight, dpr = window.devicePixelRatio || 1;
+  if (!W || !H) return;
+  cv.width = W * dpr; cv.height = H * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H);
+  const { xs, ys, z } = st.data, nx = xs.length, ny = ys.length;
+  const { zmin, zmax, col } = _sfPalette(st);
+  const Zw = v => -0.62 + (v - zmin) / (zmax - zmin) * 1.24;
+  const cy = Math.cos(st.yaw), sy = Math.sin(st.yaw), cp = Math.cos(st.pitch), sp = Math.sin(st.pitch);
+  const P0 = (X, Y, Z) => { const x1 = X * cy - Y * sy, y1 = X * sy + Y * cy; return [x1, -(Z * cp + y1 * sp), y1 * cp - Z * sp]; };
+  let bx0 = Infinity, bx1 = -Infinity, by0 = Infinity, by1 = -Infinity;
+  const fitPts = [];
+  for (const X of [-1, 1]) for (const Y of [-1, 1]) for (const Z of [-0.62, 0.62]) fitPts.push([X, Y, Z]);
+  for (const s of [-1, 1]) for (const t of [-1, 1]) fitPts.push([s * 1.22, t, -0.62], [s, t * 1.22, -0.62]);
+  fitPts.forEach(p => { const q = P0(...p); bx0 = Math.min(bx0, q[0]); bx1 = Math.max(bx1, q[0]); by0 = Math.min(by0, q[1]); by1 = Math.max(by1, q[1]); });
+  const scale = Math.min((W - 80) / (bx1 - bx0), (H - 28) / (by1 - by0));
+  const ox = W / 2 - (bx0 + bx1) / 2 * scale, oy = H / 2 - (by0 + by1) / 2 * scale;
+  const P = (X, Y, Z) => { const q = P0(X, Y, Z); return [ox + q[0] * scale, oy + q[1] * scale, q[2]]; };
+  const Xw = i => -1 + 2 * i / (nx - 1), Yw = j => -1 + 2 * j / (ny - 1);
+  const txt = _cssColor('--text-faint'), line = _cssColor('--border'), acc = _cssColor('--accent');
+  const zb = -0.62;
+  const box = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([X, Y]) => P(X, Y, zb));
+  ctx.strokeStyle = _rgba(line, 0.9); ctx.lineWidth = 1;
+  ctx.beginPath(); box.forEach((p, k) => k ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.closePath(); ctx.stroke();
+  if (st.data.palette === 'diverge' && zmin < 0 && zmax > 0) {
+    const z0 = Zw(0), q = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([X, Y]) => P(X, Y, z0));
+    ctx.setLineDash([3, 4]); ctx.strokeStyle = _rgba(txt, 0.45);
+    ctx.beginPath(); q.forEach((p, k) => k ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.closePath(); ctx.stroke(); ctx.setLineDash([]);
+  }
+  const quads = [];
+  for (let i = 0; i < nx - 1; i++) for (let j = 0; j < ny - 1; j++) {
+    const w = [[i, j], [i + 1, j], [i + 1, j + 1], [i, j + 1]].map(([a, b]) => [Xw(a), Yw(b), Zw(z[a][b])]);
+    const pr = w.map(p => P(...p));
+    const ux = w[2][0] - w[0][0], uy = w[2][1] - w[0][1], uz = w[2][2] - w[0][2], vx = w[3][0] - w[1][0], vy = w[3][1] - w[1][1], vz = w[3][2] - w[1][2];
+    let nx_ = uy * vz - uz * vy, ny_ = uz * vx - ux * vz, nz_ = ux * vy - uy * vx;
+    const nl = Math.hypot(nx_, ny_, nz_) || 1;
+    const light = Math.abs((nx_ * -0.35 + ny_ * -0.45 + nz_ * 0.82) / nl);
+    quads.push({ pr, depth: pr.reduce((s, p) => s + p[2], 0) / 4, c: col((z[i][j] + z[i + 1][j] + z[i + 1][j + 1] + z[i][j + 1]) / 4), light });
+  }
+  quads.sort((a, b) => b.depth - a.depth);
+  quads.forEach(q => {
+    ctx.beginPath(); q.pr.forEach((p, k) => k ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.closePath();
+    ctx.fillStyle = _rgba(q.c.map(v => v * (0.72 + 0.28 * q.light)), 0.96); ctx.fill();
+    ctx.strokeStyle = _rgba(line, 0.55); ctx.lineWidth = 0.6; ctx.stroke();
+  });
+  // pinned row / column and point
+  if (st.pin) {
+    const { i: pi, j: pj } = st.pin;
+    ctx.strokeStyle = _rgba(acc); ctx.lineWidth = 2.2;
+    ctx.beginPath(); for (let i = 0; i < nx; i++) { const p = P(Xw(i), Yw(pj), Zw(z[i][pj])); i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); } ctx.stroke();
+    ctx.beginPath(); for (let j = 0; j < ny; j++) { const p = P(Xw(pi), Yw(j), Zw(z[pi][j])); j ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); } ctx.stroke();
+    const p = P(Xw(pi), Yw(pj), Zw(z[pi][pj]));
+    ctx.fillStyle = _rgba(acc); ctx.strokeStyle = _rgba(_cssColor('--panel')); ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(p[0], p[1], 5, 0, 7); ctx.fill(); ctx.stroke();
+  }
+  // axes
+  ctx.fillStyle = _rgba(txt); ctx.font = `10px ${getComputedStyle(document.body).getPropertyValue('--mono') || 'monospace'}`; ctx.textAlign = 'center';
+  const front = P(0, -1, zb)[2] < P(0, 1, zb)[2] ? -1 : 1, side = P(1, 0, zb)[2] < P(-1, 0, zb)[2] ? 1 : -1;
+  const xStep = Math.max(1, Math.round((nx - 1) / 5)), yStep = Math.max(1, Math.round((ny - 1) / 4));
+  for (let i = 0; i < nx; i += xStep) { const p = P(Xw(i), front * 1.12, zb); ctx.fillText(st.data.xFmt(xs[i]), p[0], p[1] + 4); }
+  for (let j = yStep; j < ny; j += yStep) { const p = P(side * 1.14, Yw(j), zb); ctx.fillText(st.data.yFmt(ys[j]), p[0], p[1] + 4); }
+  const zc = [-side, -front], zlo = P(zc[0], zc[1], zb), zhi = P(zc[0], zc[1], 0.62);
+  ctx.strokeStyle = _rgba(line); ctx.beginPath(); ctx.moveTo(zlo[0], zlo[1]); ctx.lineTo(zhi[0], zhi[1]); ctx.stroke();
+  ctx.textAlign = zlo[0] < W / 2 ? 'right' : 'left';
+  const zoff = zlo[0] < W / 2 ? -6 : 6;
+  (zmin < 0 && zmax > 0 ? [zmin, 0, zmax] : [zmin, zmax]).forEach(v => { const p = P(zc[0], zc[1], Zw(v)); ctx.fillText(st.data.axis(v), p[0] + zoff, p[1] + 3); });
+  ctx.textAlign = 'center';
+  const xt = P(0, front * 1.32, zb), yt = P(side * 1.36, 0, zb);
+  ctx.fillStyle = _rgba(_cssColor('--text-dim')); ctx.fillText(st.data.xTitle, xt[0], xt[1] + 6); ctx.fillText(st.data.yTitle, yt[0], yt[1] + 6);
+  if (st.data.origin && st.data.origin[0] >= 0 && st.data.origin[1] >= 0) {
+    const [oi, oj] = st.data.origin, p = P(Xw(oi), Yw(oj), Zw(z[oi][oj]));
+    ctx.fillStyle = _rgba(_cssColor('--text')); ctx.beginPath(); ctx.arc(p[0], p[1], 3, 0, 7); ctx.fill();
+  }
+  st.verts = []; for (let i = 0; i < nx; i++) for (let j = 0; j < ny; j++) { const p = P(Xw(i), Yw(j), Zw(z[i][j])); st.verts.push({ i, j, x: p[0], y: p[1], d: p[2] }); }
+}
+function _sfGridSVG(id) {
+  const st = __surf[id], D = st.data, { xs, ys, z } = D, nx = xs.length, ny = ys.length;
+  const { col } = _sfPalette(st);
+  const W = 680, L = 58, R = 4, T = 4, ch = 18, B = 26, cw = (W - L - R) / nx, H = T + ny * ch + B;
+  const pin = st.pin;
+  let cells = '';
+  for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) {
+    const v = z[i][j], x = L + i * cw, y = T + j * ch, on = pin && pin.i === i && pin.j === j, cross = pin && (pin.i === i || pin.j === j);
+    cells += `<rect x="${x.toFixed(1)}" y="${y}" width="${(cw - 1).toFixed(1)}" height="${ch - 1}" fill="${_rgba(col(v))}" data-i="${i}" data-j="${j}" class="${on ? 'pin' : cross ? 'cross' : ''}"><title>${esc(D.xFmt(xs[i]))} · ${esc(D.yFmt(ys[j]))}: ${esc(D.fmt(v))}</title></rect>`
+      + `<text x="${(x + cw / 2 - 0.5).toFixed(1)}" y="${y + 12.5}" text-anchor="middle" class="v">${esc(D.axis(v).replace('/天', '').replace('/点', ''))}</text>`;
+  }
+  const xl = xs.map((v, i) => i % Math.max(1, Math.round(nx / 8)) === 0 ? `<text x="${(L + i * cw + cw / 2).toFixed(1)}" y="${H - 9}" text-anchor="middle" class="gl-lab">${esc(D.xFmt(v))}</text>` : '').join('');
+  const yl = ys.map((v, j) => `<text x="${L - 6}" y="${T + j * ch + 12.5}" text-anchor="end" class="gl-lab">${esc(D.yFmt(v))}</text>`).join('');
+  return `<svg class="sf-grid-svg" viewBox="0 0 ${W} ${H}" onclick="sfGridClick(event,'${id}')">${cells}${xl}${yl}</svg>`;
+}
+function _sfPinHTML(id) {
+  const st = __surf[id], D = st.data;
+  if (!st.pin) return '';
+  const { i, j } = st.pin;
+  const row = D.xs.map((_, k) => D.z[k][j]), colv = D.ys.map((_, k) => D.z[i][k]);
+  return `
+    <div class="sf-read"><span>${esc(D.xTitle)} ${esc(D.xFmt(D.xs[i]))} · ${esc(D.yFmt(D.ys[j]))}</span><b>${esc(D.fmt(D.z[i][j]))}</b><span class="rk-quiet">方向键移动</span></div>
+    <div class="sf-slices">
+      <div><div class="gl-mini-t">${esc(D.yFmt(D.ys[j]))} · 随${esc(D.xTitle)}</div>${_lineChartSVG({ xs: D.xs, series: [{ ys: row, cls: 'gl-l1' }], marker: D.xs[i], xFmt: D.xFmt, yFmt: D.axis, w: 320, h: 140, zero: D.palette === 'diverge', xTicks: 5 })}</div>
+      <div><div class="gl-mini-t">${esc(D.xFmt(D.xs[i]))} · 随${esc(D.yTitle)}</div>${_lineChartSVG({ xs: D.ys, series: [{ ys: colv, cls: 'gl-l2' }], marker: D.ys[j], xFmt: D.yFmt, yFmt: D.axis, w: 320, h: 140, zero: D.palette === 'diverge', xTicks: 4 })}</div>
+    </div>`;
+}
+function _sfRefresh(id) {
+  const st = __surf[id], el = document.getElementById(id);
+  if (!st || !el) return;
+  el.querySelectorAll('.sf-m').forEach(b => b.classList.toggle('active', b.dataset.m === st.metric));
+  el.querySelectorAll('.sf-mode').forEach(b => b.classList.toggle('active', b.dataset.mode === st.mode));
+  el.querySelector('.sf-views').hidden = st.mode !== '3d';
+  el.querySelector('.sf-wrap').hidden = st.mode !== '3d';
+  const g = el.querySelector('.sf-grid'); g.hidden = st.mode !== 'grid';
+  el.querySelector('.sf-stage').style.height = st.mode === 'grid' ? 'auto' : (el.classList.contains('fs') ? '' : st.height + 'px');
+  if (st.mode === 'grid') g.innerHTML = _sfGridSVG(id); else drawSurface(id);
+  el.querySelector('.sf-pin').innerHTML = _sfPinHTML(id);
+  const meta = GRID_METRICS[st.metric];
+  el.querySelector('.sf-desc').textContent = (st.data.scope === 'S' ? meta.S : meta.P) + (st.data.modeled != null ? ` ${st.data.modeled}/${st.data.total} 个仓位建模.` : '');
+}
+window.sfMetric = (id, metric) => {
+  const st = __surf[id]; if (!st) return;
+  st.metric = metric; st.data = st.cache[metric] || (st.cache[metric] = st.build(metric));
+  if (st.pin) st.pin = { i: Math.min(st.pin.i, st.data.xs.length - 1), j: Math.min(st.pin.j, st.data.ys.length - 1) };
+  if (st.data.ys !== (st._lastYs || st.data.ys) && st.data.origin) st.pin = { i: st.pin ? st.pin.i : st.data.origin[0], j: Math.max(0, st.data.origin[1]) };
+  st._lastYs = st.data.ys;
+  _sfRefresh(id);
+};
+window.sfMode = (id, mode) => { const st = __surf[id]; if (!st) return; st.mode = mode; _sfRefresh(id); };
+window.sfView = (id, v) => {
+  const st = __surf[id], tgt = SF_VIEWS[v]; if (!st || !tgt) return;
+  const el = document.getElementById(id); el.querySelectorAll('.sf-v').forEach(b => b.classList.toggle('active', b.dataset.v === v));
+  const y0 = st.yaw, p0 = st.pitch, t0 = performance.now();
+  let dy = tgt[0] - y0; dy = Math.atan2(Math.sin(dy), Math.cos(dy));       // shortest way round
+  const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const step = now => {
+    const k = reduce ? 1 : Math.min(1, (now - t0) / 380), e = 1 - Math.pow(1 - k, 3);
+    st.yaw = y0 + dy * e; st.pitch = p0 + (tgt[1] - p0) * e; drawSurface(id);
+    if (k < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+};
+function _sfSetPin(id, i, j) {
+  const st = __surf[id]; if (!st) return;
+  st.pin = { i: Math.max(0, Math.min(st.data.xs.length - 1, i)), j: Math.max(0, Math.min(st.data.ys.length - 1, j)) };
+  _sfRefresh(id);
+}
+window.sfGridClick = (e, id) => { const r = e.target.closest('rect[data-i]'); if (r) _sfSetPin(id, +r.dataset.i, +r.dataset.j); };
+window.sfKey = (e, id) => {
+  const st = __surf[id]; if (!st || !st.pin || e.target.closest('button')) return;
+  const mv = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, st.mode === 'grid' ? -1 : 1], ArrowDown: [0, st.mode === 'grid' ? 1 : -1] }[e.key];
+  if (!mv) return;
+  e.preventDefault(); _sfSetPin(id, st.pin.i + mv[0], st.pin.j + mv[1]);
+};
+window.sfFullscreen = id => {
+  const el = document.getElementById(id); if (!el) return;
+  const on = !el.classList.contains('fs');
+  el.classList.toggle('fs', on); document.body.classList.toggle('sf-lock', on);
+  el.querySelector('.sf-fs-btn').textContent = on ? '⤡' : '⤢';
+  _sfRefresh(id);
+  if (on) el.focus();
+};
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  const fs = document.querySelector('.sf-panel.fs');
+  if (fs) { e.stopImmediatePropagation(); e.preventDefault(); sfFullscreen(fs.id); }
+}, true);
+function _bindSurface(id) {
+  const st = __surf[id], el = document.getElementById(id);
+  if (!st || !el || st.bound === el) return;
+  st.bound = el;
+  const cv = el.querySelector('canvas'), tip = el.querySelector('.sf-tip');
+  let drag = null, raf = 0;
+  const redraw = () => { if (!raf) raf = requestAnimationFrame(() => { raf = 0; drawSurface(id); }); };
+  const nearest = e => {
+    const r = cv.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top;
+    let best = null, bd = 24 * 24;
+    (st.verts || []).forEach(v => { const d = (v.x - mx) ** 2 + (v.y - my) ** 2; if (d < bd || (best && d === bd && v.d < best.d)) { bd = d; best = v; } });
+    return best;
+  };
+  cv.addEventListener('pointerdown', e => { drag = { x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY, t: e.pointerType }; cv.setPointerCapture(e.pointerId); el.classList.add('dragging'); tip.hidden = true; });
+  cv.addEventListener('pointermove', e => {
+    if (drag) {
+      st.yaw += (e.clientX - drag.x) * 0.012;
+      if (drag.t !== 'touch') st.pitch = Math.max(0.12, Math.min(1.5, st.pitch + (e.clientY - drag.y) * 0.01));
+      drag.x = e.clientX; drag.y = e.clientY; redraw(); return;
+    }
+    const best = nearest(e);
+    if (!best) { tip.hidden = true; return; }
+    const D = st.data;
+    tip.innerHTML = `${esc(D.xTitle)} ${esc(D.xFmt(D.xs[best.i]))} · ${esc(D.yFmt(D.ys[best.j]))}<b>${esc(D.fmt(D.z[best.i][best.j]))}</b>`;
+    const wrap = el.querySelector('.sf-wrap');
+    tip.hidden = false; tip.style.left = Math.min(best.x + 12, wrap.clientWidth - 150) + 'px'; tip.style.top = Math.max(0, best.y - 34) + 'px';
+  });
+  cv.addEventListener('pointerup', e => {
+    const moved = drag ? Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0) : 99;
+    drag = null; el.classList.remove('dragging');
+    if (moved < 5) { const best = nearest(e); if (best) _sfSetPin(id, best.i, best.j); }
+  });
+  cv.addEventListener('pointercancel', () => { drag = null; el.classList.remove('dragging'); });
+  cv.addEventListener('pointerleave', () => { if (!drag) tip.hidden = true; });
+  _sfRefresh(id);
+}
+function mountSurfaces() {
+  Object.keys(__surf).forEach(id => { if (document.getElementById(id)) _bindSurface(id); else delete __surf[id]; });
+}
+let __surfResize = 0;
+window.addEventListener('resize', () => { clearTimeout(__surfResize); __surfResize = setTimeout(() => Object.keys(__surf).forEach(drawSurface), 120); });
+
 function thetaCalendar(pos, horizon) {
   const ms = pos.map(_optModel).filter(Boolean);
   const shortsMax = Math.max(0, ...ms.filter(m => m.sign < 0).map(m => m.dte));
@@ -11552,147 +11951,8 @@ function thetaCalendar(pos, horizon) {
   return { days, expiries, N, modeled: ms.length };
 }
 
-/* ---------- 3D surface renderer (canvas, no dependencies) ---------- */
-const __surf = {};
-let __surfSeq = 0;
-function surfaceHTML(data, opts = {}) {
-  const id = 'sf' + (++__surfSeq);
-  __surf[id] = { data, yaw: opts.yaw ?? -0.62, pitch: opts.pitch ?? 0.92, palette: opts.palette || 'diverge', mounted: false };
-  return `<div class="sf-wrap" id="${id}" style="height:${opts.height || 320}px">
-      <canvas class="sf-canvas" aria-label="3D 曲面"></canvas><div class="sf-tip" hidden></div>
-      <div class="sf-hint">拖动旋转</div></div>`;
-}
-function _cssColor(name) {
-  const v = getComputedStyle(document.body).getPropertyValue(name).trim();
-  const ctx = _cssColor._c || (_cssColor._c = document.createElement('canvas').getContext('2d'));
-  ctx.fillStyle = '#000'; ctx.fillStyle = v || '#888';
-  const s = ctx.fillStyle;
-  if (s[0] === '#') return [parseInt(s.slice(1, 3), 16), parseInt(s.slice(3, 5), 16), parseInt(s.slice(5, 7), 16)];
-  const m = s.match(/[\d.]+/g); return m ? m.slice(0, 3).map(Number) : [136, 136, 136];
-}
-function _mix(a, b, t) { return a.map((v, i) => v + (b[i] - v) * t); }
-function drawSurface(id) {
-  const st = __surf[id], el = document.getElementById(id);
-  if (!st || !el) return;
-  const cv = el.querySelector('canvas'), ctx = cv.getContext('2d');
-  const W = el.clientWidth, H = el.clientHeight, dpr = window.devicePixelRatio || 1;
-  if (!W || !H) return;
-  cv.width = W * dpr; cv.height = H * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H);
-  const { xs, ys, z } = st.data, nx = xs.length, ny = ys.length;
-  let zmin = Infinity, zmax = -Infinity;
-  z.forEach(r => r.forEach(v => { if (v < zmin) zmin = v; if (v > zmax) zmax = v; }));
-  if (st.palette === 'diverge') { zmin = Math.min(zmin, 0); zmax = Math.max(zmax, 0); }
-  if (zmax - zmin < 1e-9) { zmax += 1; zmin -= 1; }
-  const absz = z.flat().map(Math.abs).sort((a, b) => a - b);
-  const zr = Math.max(absz[Math.floor(absz.length * 0.9)] || 0, Math.max(Math.abs(zmin), Math.abs(zmax)) * 0.15, 1e-9);
-  const Zw = v => -0.62 + (v - zmin) / (zmax - zmin) * 1.24;
-  const cy = Math.cos(st.yaw), sy = Math.sin(st.yaw), cp = Math.cos(st.pitch), sp = Math.sin(st.pitch);
-  const P0 = (X, Y, Z) => { const x1 = X * cy - Y * sy, y1 = X * sy + Y * cy; return [x1, -(Z * cp + y1 * sp), y1 * cp - Z * sp]; };
-  let bx0 = Infinity, bx1 = -Infinity, by0 = Infinity, by1 = -Infinity;
-  const fitPts = [];
-  for (const X of [-1, 1]) for (const Y of [-1, 1]) for (const Z of [-0.62, 0.62]) fitPts.push([X, Y, Z]);   // the surface's own box
-  for (const s of [-1, 1]) for (const t of [-1, 1]) fitPts.push([s * 1.22, t, -0.62], [s, t * 1.22, -0.62]);   // axis-label ring
-  fitPts.forEach(p => { const q = P0(...p); bx0 = Math.min(bx0, q[0]); bx1 = Math.max(bx1, q[0]); by0 = Math.min(by0, q[1]); by1 = Math.max(by1, q[1]); });
-  const padX = 40, padY = 14;
-  const scale = Math.min((W - 2 * padX) / (bx1 - bx0), (H - 2 * padY) / (by1 - by0));
-  const ox = W / 2 - (bx0 + bx1) / 2 * scale, oy = H / 2 - (by0 + by1) / 2 * scale;
-  const P = (X, Y, Z) => { const q = P0(X, Y, Z); return [ox + q[0] * scale, oy + q[1] * scale, q[2]]; };
-  const Xw = i => -1 + 2 * i / (nx - 1), Yw = j => -1 + 2 * j / (ny - 1);
-  const neg = _cssColor('--fail'), pos = _cssColor('--pass'), mid = _cssColor('--panel-2'), acc = _cssColor('--accent');
-  const txt = _cssColor('--text-faint'), line = _cssColor('--border');
-  const col = v => {
-    if (st.palette === 'seq') return _mix(mid, acc, Math.max(0, Math.min(1, (v - zmin) / (zmax - zmin))));
-    const t = v / zr; return t >= 0 ? _mix(mid, pos, Math.min(1, t)) : _mix(mid, neg, Math.min(1, -t));
-  };
-  const rgba = (c, a = 1) => `rgba(${c.map(Math.round).join(',')},${a})`;
-  // base box
-  const zb = -0.62, corners = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([X, Y]) => P(X, Y, zb));
-  ctx.strokeStyle = rgba(line, 0.9); ctx.lineWidth = 1;
-  ctx.beginPath(); corners.forEach((p, k) => k ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.closePath(); ctx.stroke();
-  if (st.palette === 'diverge' && zmin < 0 && zmax > 0) {          // zero level outline
-    const z0 = Zw(0), q = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([X, Y]) => P(X, Y, z0));
-    ctx.setLineDash([3, 4]); ctx.strokeStyle = rgba(txt, 0.45);
-    ctx.beginPath(); q.forEach((p, k) => k ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.closePath(); ctx.stroke(); ctx.setLineDash([]);
-  }
-  // quads, painter's algorithm
-  const quads = [];
-  for (let i = 0; i < nx - 1; i++) for (let j = 0; j < ny - 1; j++) {
-    const w = [[i, j], [i + 1, j], [i + 1, j + 1], [i, j + 1]].map(([a, b]) => [Xw(a), Yw(b), Zw(z[a][b])]);
-    const pr = w.map(p => P(...p));
-    const ux = w[2][0] - w[0][0], uy = w[2][1] - w[0][1], uz = w[2][2] - w[0][2];
-    const vx = w[3][0] - w[1][0], vy = w[3][1] - w[1][1], vz = w[3][2] - w[1][2];
-    let nx_ = uy * vz - uz * vy, ny_ = uz * vx - ux * vz, nz_ = ux * vy - uy * vx;
-    const nl = Math.hypot(nx_, ny_, nz_) || 1; nx_ /= nl; ny_ /= nl; nz_ /= nl;
-    const light = Math.abs(nx_ * -0.35 + ny_ * -0.45 + nz_ * 0.82);
-    quads.push({ pr, depth: pr.reduce((s, p) => s + p[2], 0) / 4, c: col((z[i][j] + z[i + 1][j] + z[i + 1][j + 1] + z[i][j + 1]) / 4), light });
-  }
-  quads.sort((a, b) => b.depth - a.depth);
-  quads.forEach(q => {
-    ctx.beginPath(); q.pr.forEach((p, k) => k ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.closePath();
-    ctx.fillStyle = rgba(q.c.map(v => v * (0.72 + 0.28 * q.light)), 0.96); ctx.fill();
-    ctx.strokeStyle = rgba(line, 0.55); ctx.lineWidth = 0.6; ctx.stroke();
-  });
-  // axis labels: x along front edge, y along right edge, z on a back corner
-  ctx.fillStyle = rgba(txt); ctx.font = `10px ${getComputedStyle(document.body).getPropertyValue('--mono') || 'monospace'}`; ctx.textAlign = 'center';
-  const front = P(0, -1, zb)[2] < P(0, 1, zb)[2] ? -1 : 1, side = P(1, 0, zb)[2] < P(-1, 0, zb)[2] ? 1 : -1;
-  const xStep = Math.max(1, Math.round((nx - 1) / 5)), yStep = Math.max(1, Math.round((ny - 1) / 4));
-  for (let i = 0; i < nx; i += xStep) { const p = P(Xw(i), front * 1.12, zb); ctx.fillText(st.data.xFmt(xs[i]), p[0], p[1] + 4); }
-  for (let j = yStep; j < ny; j += yStep) { const p = P(side * 1.14, Yw(j), zb); ctx.fillText(st.data.yFmt(ys[j]), p[0], p[1] + 4); }
-  const zc = [-side, -front], zlo = P(zc[0], zc[1], zb), zhi = P(zc[0], zc[1], 0.62);
-  ctx.strokeStyle = rgba(line); ctx.beginPath(); ctx.moveTo(zlo[0], zlo[1]); ctx.lineTo(zhi[0], zhi[1]); ctx.stroke();
-  ctx.textAlign = zlo[0] < W / 2 ? 'right' : 'left';
-  const zoff = zlo[0] < W / 2 ? -6 : 6;
-  const zAxis = st.data.zAxis || (st.data.metric && SURF_METRICS[st.data.metric] ? SURF_METRICS[st.data.metric].axis : st.data.zFmt);
-  (zmin < 0 && zmax > 0 ? [zmin, 0, zmax] : [zmin, zmax]).forEach(v => { const p = P(zc[0], zc[1], Zw(v)); ctx.fillText(zAxis(v), p[0] + zoff, p[1] + 3); });
-  ctx.textAlign = 'center';
-  const xt = P(0, front * 1.32, zb), yt = P(side * 1.36, 0, zb);
-  ctx.fillStyle = rgba(_cssColor('--text-dim')); ctx.fillText(st.data.xTitle, xt[0], xt[1] + 6); ctx.fillText(st.data.yTitle, yt[0], yt[1] + 6);
-  // "today" marker
-  if (st.data.origin && st.data.origin[0] >= 0) {
-    const [oi, oj] = st.data.origin, p = P(Xw(oi), Yw(oj), Zw(z[oi][oj]));
-    ctx.fillStyle = rgba(_cssColor('--text')); ctx.beginPath(); ctx.arc(p[0], p[1], 3.5, 0, 7); ctx.fill();
-  }
-  st.verts = []; for (let i = 0; i < nx; i++) for (let j = 0; j < ny; j++) { const p = P(Xw(i), Yw(j), Zw(z[i][j])); st.verts.push({ i, j, x: p[0], y: p[1], d: p[2] }); }
-}
-function _mountSurface(id) {
-  const st = __surf[id], el = document.getElementById(id);
-  if (!st || !el || st.mounted === el) return;
-  st.mounted = el;
-  const cv = el.querySelector('canvas'), tip = el.querySelector('.sf-tip');
-  let drag = null, raf = 0;
-  const redraw = () => { if (!raf) raf = requestAnimationFrame(() => { raf = 0; drawSurface(id); }); };
-  cv.addEventListener('pointerdown', e => { drag = { x: e.clientX, y: e.clientY, t: e.pointerType }; cv.setPointerCapture(e.pointerId); el.classList.add('dragging'); tip.hidden = true; });
-  cv.addEventListener('pointermove', e => {
-    if (drag) {
-      st.yaw += (e.clientX - drag.x) * 0.012;
-      if (drag.t !== 'touch') st.pitch = Math.max(0.12, Math.min(1.5, st.pitch + (e.clientY - drag.y) * 0.01));
-      drag.x = e.clientX; drag.y = e.clientY; redraw(); return;
-    }
-    const r = cv.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top;
-    let best = null, bd = 20 * 20;
-    (st.verts || []).forEach(v => { const d = (v.x - mx) ** 2 + (v.y - my) ** 2; if (d < bd || (best && d === bd && v.d < best.d)) { bd = d; best = v; } });
-    if (!best) { tip.hidden = true; return; }
-    const D = st.data;
-    tip.innerHTML = `${esc(D.xTitle)} ${esc(D.xFmt(D.xs[best.i]))} · ${esc(D.yFmt(D.ys[best.j]))}<b>${esc(D.zFmt(D.z[best.i][best.j]))}</b>`;
-    tip.hidden = false; tip.style.left = Math.min(best.x + 12, el.clientWidth - 150) + 'px'; tip.style.top = Math.max(0, best.y - 34) + 'px';
-  });
-  const end = () => { drag = null; el.classList.remove('dragging'); };
-  cv.addEventListener('pointerup', end); cv.addEventListener('pointercancel', end);
-  cv.addEventListener('pointerleave', () => { if (!drag) tip.hidden = true; });
-  drawSurface(id);
-}
-function mountSurfaces() { Object.keys(__surf).forEach(id => { if (document.getElementById(id)) _mountSurface(id); else delete __surf[id]; }); }
-let __surfResize = 0;
-window.addEventListener('resize', () => { clearTimeout(__surfResize); __surfResize = setTimeout(() => Object.keys(__surf).forEach(drawSurface), 120); });
-window.setSurfaceMetric = (id, metric) => {
-  const st = __surf[id]; if (!st || !st.rebuild) return;
-  st.data = st.rebuild(metric); st.palette = metric === 'delta' ? 'diverge' : 'diverge';
-  drawSurface(id);
-  document.querySelectorAll(`[data-sf="${id}"]`).forEach(b => b.classList.toggle('active', b.dataset.m === metric));
-};
-
 /* ---------- 2D charts ---------- */
-function _lineChartSVG({ xs, series, xFmt, yFmt, marker, w = 300, h = 150, zero = true, xTicks = 5 }) {
+function _lineChartSVG({ xs, series, xFmt, yFmt, marker, w = 300, h = 150, zero = true, xTicks = 5, band = null, vlines = [] }) {
   const L = 50, R = 8, T = 8, B = 20;
   const all = series.flatMap(s => s.ys).filter(v => v != null && isFinite(v));
   let lo = Math.min(...all, zero ? 0 : Infinity), hi = Math.max(...all, zero ? 0 : -Infinity);
@@ -11706,9 +11966,12 @@ function _lineChartSVG({ xs, series, xFmt, yFmt, marker, w = 300, h = 150, zero 
   return `<svg class="gl-chart" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" role="img">
     ${ticks.map(v => `<line x1="${L}" x2="${w - R}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}" class="rk-ch-grid"/><text x="${L - 4}" y="${(Y(v) + 3).toFixed(1)}" text-anchor="end" class="gl-lab">${esc(yFmt(v))}</text>`).join('')}
     ${zero && lo < 0 && hi > 0 ? `<line x1="${L}" x2="${w - R}" y1="${Y(0).toFixed(1)}" y2="${Y(0).toFixed(1)}" class="rk-ch-grid zero"/>` : ''}
+    ${(() => { const Xv = v => X((v - xs[0]) / (xs[xs.length - 1] - xs[0]) * (xs.length - 1));
+      const bd = band ? `<rect x="${Xv(Math.max(xs[0], band[0])).toFixed(1)}" y="${T}" width="${(Xv(Math.min(xs[xs.length - 1], band[1])) - Xv(Math.max(xs[0], band[0]))).toFixed(1)}" height="${h - T - B}" class="gl-band"/>${band[2] ? `<text x="${Xv(Math.min(xs[xs.length - 1], band[1])).toFixed(1)}" y="${T + 9}" text-anchor="end" class="gl-lab gl-band-lab">${esc(band[2])}</text>` : ''}` : '';
+      return bd + vlines.filter(l => l.x >= xs[0] && l.x <= xs[xs.length - 1]).map(l => `<line x1="${Xv(l.x).toFixed(1)}" x2="${Xv(l.x).toFixed(1)}" y1="${T}" y2="${h - B}" class="gl-vline ${l.cls || ''}"/>`).join(''); })()}
     ${mi != null ? `<line x1="${X(mi).toFixed(1)}" x2="${X(mi).toFixed(1)}" y1="${T}" y2="${h - B}" class="rk-ch-cursor"/>` : ''}
     ${series.map(s => `<polyline points="${path(s.ys)}" class="gl-line ${s.cls || ''}"/>`).join('')}
-    ${xi.map(i => `<text x="${X(i).toFixed(1)}" y="${h - 6}" text-anchor="middle" class="gl-lab">${esc(xFmt(xs[i]))}</text>`).join('')}
+    ${xi.map((i, k) => `<text x="${X(i).toFixed(1)}" y="${h - 6}" text-anchor="${k === 0 ? 'start' : k === xi.length - 1 ? 'end' : 'middle'}" class="gl-lab">${esc(xFmt(xs[i]))}</text>`).join('')}
   </svg>`;
 }
 function _thetaCalendarSVG(cal) {
@@ -11826,18 +12089,13 @@ function _leapsLabHTML(R) {
 function _greeksVizHTML(R) {
   const pos = R.c.pos;
   if (!R.c.isSchwab || !pos.some(x => _optModel(x))) return '';
-  const surf = portfolioSurface(pos, 'pnl');
-  const sid = 'sf' + (__surfSeq + 1);
-  const html = surfaceHTML(surf, { height: 340 });
-  __surf[sid].rebuild = metric => portfolioSurface(pos, metric);
+  const panel = surfacePanelHTML({ metrics: P_METRICS, build: k => portfolioSurface(pos, k), height: 360 });
   const cal = thetaCalendar(pos);
   const sc = _thetaScatterSVG(pos);
-  const tabs = Object.entries(SURF_METRICS).map(([k, v]) => `<button class="rk-preset${k === 'pnl' ? ' active' : ''}" data-sf="${sid}" data-m="${k}" onclick="setSurfaceMetric('${sid}','${k}')">${v.label}</button>`).join('');
   const tot = cal.days.reduce((s, d) => s + d.sell, 0), cost = cal.days.reduce((s, d) => s + d.buy, 0);
   return `
-    <div class="rk-sub-title gl-title-row"><span>风险曲面 · 大盘 × 时间</span><span class="rk-presets">${tabs}</span></div>
-    ${html}
-    <div class="rk-note">相对今天. ${surf.modeled}/${surf.total} 个仓位建模.</div>
+    <div class="rk-sub-title">风险曲面</div>
+    ${panel}
     <div class="rk-sub-title">Theta 日历 · ${cal.N} 天</div>
     ${_thetaCalendarSVG(cal)}
     <div class="rk-legend"><span><i class="rk-sw gl-sw-sell"></i>卖方 ${_fmtSigned(tot)}</span><span><i class="rk-sw gl-sw-buy"></i>买方 ${_fmtSigned(cost)}</span><span><i class="rk-sw gl-sw-cum"></i>累计 ${_fmtSigned(tot + cost)}</span><span class="rk-legend-note">股价 / IV 不变</span></div>
@@ -11846,86 +12104,83 @@ function _greeksVizHTML(R) {
 }
 
 /* ---------- per-contract lab (modal) ---------- */
+function _probBeyond(m, X, above) {          // risk-neutral P(S_T > X) or P(S_T < X)
+  if (!(m.T > 0)) return (above ? m.S > X : m.S < X) ? 1 : 0;
+  const d2 = (Math.log(m.S / X) + (BS_RATE - m.q - m.sigma * m.sigma / 2) * m.T) / (m.sigma * Math.sqrt(m.T));
+  return above ? _ncdf(d2) : _ncdf(-d2);
+}
+function _optionLabBodyHTML(x) {
+  const m = _optModel(x);
+  if (!m) return `<div class="rk-quiet">缺报价 (现价 / 市价或 IV / 到期日), 无法建模.</div>`;
+  const g = bsGreeks(m.S, m.K, m.T, m.sigma, m.type, BS_RATE, m.q);
+  const short = _isShortPos(x), mu = Math.abs(m.mult);
+  const entry = x.avg != null ? x.avg : (m.mark != null ? m.mark : g.price);
+  const be = m.type === 'put' ? m.K - entry : m.K + entry;
+  const pop = _probBeyond(m, be, m.type === 'put' ? short : !short);
+  const sd = m.S * m.sigma * Math.sqrt(Math.max(m.T, 1 / 365));
+  const n = 41, xsP = []; for (let k = 0; k < n; k++) xsP.push(m.S * (0.7 + 0.6 * k / (n - 1)));
+  const pnlAt = (S1, days) => (bsGreeks(S1, m.K, Math.max(0, m.T - days / 365), m.sigma, m.type, BS_RATE, m.q).price - entry) * m.mult;
+  const half = Math.round(m.dte / 2);
+  const payoff = _lineChartSVG({ xs: xsP, w: 640, h: 210, marker: m.S, xFmt: v => v.toFixed(0), yFmt: _fmtK,
+    band: [m.S - sd, m.S + sd, '±1σ'], vlines: [{ x: m.S - 2 * sd, cls: 'sd2' }, { x: m.S + 2 * sd, cls: 'sd2' }, { x: be, cls: 'be' }],
+    series: [{ ys: xsP.map(S1 => pnlAt(S1, 0)), cls: 'gl-l1' }, { ys: xsP.map(S1 => pnlAt(S1, half)), cls: 'gl-l2' }, { ys: xsP.map(S1 => pnlAt(S1, m.dte)), cls: 'gl-l3' }] });
+  const G = (S1, d, dv = 0) => bsGreeks(S1, m.K, Math.max(0, m.T - d / 365), Math.max(0.01, m.sigma + dv / 100), m.type, BS_RATE, m.q);
+  const prof = (fn, f) => _lineChartSVG({ xs: xsP, marker: m.S, xFmt: v => v.toFixed(0), yFmt: f, zero: false, xTicks: 3,
+    series: [{ ys: xsP.map(S1 => fn(S1, 0)), cls: 'gl-l1' }, { ys: xsP.map(S1 => fn(S1, half)), cls: 'gl-l2' }] });
+  const panel = surfacePanelHTML({ metrics: S_METRICS, build: k => optionSurface(m, entry, k), height: 320 });
+  const stat = (l, v, cls) => `<div class="gl-stat"><span>${l}</span><b class="${cls || ''}">${v}</b></div>`;
+  const dl = x.delta != null ? x.delta : g.delta, th = x.theta != null ? x.theta : g.theta, vg = x.vega != null ? x.vega : g.vega, gm = x.gamma != null ? x.gamma : g.gamma;
+  const dist = _distPct(x), cap = _captured(x);
+  const coll = (m.type === 'put' ? m.K : m.S) * mu;
+  const extra = short ? [
+    stat('到期价内概率', (g.pITM * 100).toFixed(0) + '%', g.pITM > 0.35 ? 'rk-t-alert' : ''),
+    stat('已赚', cap != null ? cap.toFixed(0) + '%' : '—'),
+    stat('年化权利金', entry > 0 ? (entry * mu / coll * 365 / Math.max(1, m.dte) * 100).toFixed(1) + '%' : '—'),
+    stat('年化 Theta', (-th * mu * 365 / coll * 100).toFixed(1) + '%'),
+  ] : (() => { const s = _leapsStats(x) || {}; return m.type !== 'call' ? [] : [
+    stat('杠杆 λ', s.lambda != null ? s.lambda.toFixed(2) + '×' : '—'),
+    stat('时间价值', s.extrPct != null ? s.extrPct.toFixed(0) + '%' : '—'),
+    stat('年化成本', s.carry != null ? s.carry.toFixed(1) + '%' : '—'),
+    stat('+1% Δ 变化', s.dPer1 != null ? '+' + s.dPer1.toFixed(1) + ' 股' : '—'),
+  ]; })();
+  return `
+    <div class="gl-stats">
+      ${stat('现价', m.S.toFixed(2))}${stat('行权价', m.K)}${stat('DTE', m.dte)}
+      ${stat('IV', (m.sigma * 100).toFixed(1) + '%' + (m.schwabIv && Math.abs(m.schwabIv - m.sigma) > 0.05 ? ` <span class="rk-quiet">Schwab ${(m.schwabIv * 100).toFixed(1)}%</span>` : ''))}
+      ${stat('市价', m.mark != null ? m.mark.toFixed(2) : g.price.toFixed(2) + ' (模型)')}${m.q > 0 ? stat('隐含股息率', (m.q * 100).toFixed(2) + '%' + (m.q > 0.08 ? ' · 市价可能过时' : ''), m.q > 0.08 ? 'rk-t-alert' : '') : ''}
+      ${stat('距行权价', dist == null ? '—' : dist < 0 ? '价内 ' + Math.abs(dist).toFixed(1) + '%' : dist.toFixed(1) + '%', dist != null && dist < 0 ? (short ? 'rk-t-danger' : 'rk-t-safe') : '')}
+      ${stat('Δ', (dl * m.sign).toFixed(2) + ` · ${Math.round(dl * m.mult)} 股`)}${stat('Γ', gm.toFixed(4))}
+      ${stat('Θ / 天', _fmtSigned(th * m.mult))}${stat('Vega / 点', _fmtSigned(vg * m.mult))}
+      ${stat('盈亏平衡', `${be.toFixed(2)} (${((be - m.S) / m.S * 100) >= 0 ? '+' : ''}${((be - m.S) / m.S * 100).toFixed(1)}%)`)}
+      ${stat('盈利概率', (pop * 100).toFixed(0) + '%', pop < 0.5 ? 'rk-t-alert' : 'rk-t-safe')}
+      ${stat('±1σ 到期', `${(m.S - sd).toFixed(0)} – ${(m.S + sd).toFixed(0)}`)}
+      ${extra.join('')}
+    </div>
+    <div class="rk-sub-title">盈亏曲线</div>
+    ${payoff}
+    <div class="rk-legend"><span><i class="rk-sw gl-sw-l1"></i>今天</span><span><i class="rk-sw gl-sw-l2"></i>${half} 天后</span><span><i class="rk-sw gl-sw-l3"></i>到期</span><span><i class="rk-sw gl-sw-band"></i>±1σ</span><span class="rk-legend-note">虚线 ±2σ · 点线 盈亏平衡 · 相对开仓价 ${entry.toFixed(2)}</span></div>
+    <div class="rk-sub-title">曲面</div>
+    ${panel}
+    <div class="rk-sub-title">Greeks 随股价</div>
+    <div class="gl-grid4">
+      <div><div class="gl-mini-t">Delta (股)</div>${prof((S1, d) => G(S1, d).delta * m.mult, v => Math.round(v).toString())}</div>
+      <div><div class="gl-mini-t">Gamma (股 / $1)</div>${prof((S1, d) => G(S1, d).gamma * m.mult, v => (Math.abs(v) < 0.05 ? 0 : v).toFixed(1))}</div>
+      <div><div class="gl-mini-t">Theta ($/天)</div>${prof((S1, d) => G(S1, d).theta * m.mult, _fmtK)}</div>
+      <div><div class="gl-mini-t">Vega ($/点)</div>${prof((S1, d) => G(S1, d).vega * m.mult, _fmtK)}</div>
+      <div><div class="gl-mini-t">Charm (股 / 天)</div>${prof((S1, d) => (G(S1, d + 1).delta - G(S1, d).delta) * m.mult, v => (Math.abs(v) < 0.05 ? 0 : v).toFixed(1))}</div>
+      <div><div class="gl-mini-t">Vanna (股 / IV 点)</div>${prof((S1, d) => (G(S1, d, 0.5).delta - G(S1, d, -0.5).delta) * m.mult, v => (Math.abs(v) < 0.05 ? 0 : v).toFixed(1))}</div>
+    </div>
+    <div class="rk-legend"><span><i class="rk-sw gl-sw-l1"></i>今天</span><span><i class="rk-sw gl-sw-l2"></i>${half} 天后</span><span class="rk-legend-note">Black-Scholes-Merton · r 4% · ${m.q > 0 ? `股息率 ${(m.q * 100).toFixed(2)}% (由市价反推) · IV ${m.ivSrc}` : `IV 按${m.ivSrc}校准`} · 概率为风险中性</span></div>`;
+}
 window.openOptionLab = idx => {
-  const R = computeRisk(), x = R.c.pos[idx], m = _optModel(x);
+  const x = computeRisk().c.pos[idx];
   if (!x || x.kind === 'stock') return;
-  const g = m ? bsGreeks(m.S, m.K, m.T, m.sigma, m.type, BS_RATE, m.q) : null;
-  const short = _isShortPos(x);
-  let body;
-  if (!m) body = `<div class="rk-quiet">缺报价 (现价 / IV / 到期日), 无法建模.</div>`;
-  else {
-    const n = 41, xsP = []; for (let k = 0; k < n; k++) xsP.push(m.S * (0.7 + 0.6 * k / (n - 1)));
-    const entry = x.avg != null ? x.avg : m.mark;           // per share
-    const pnlAt = (S1, days) => (bsGreeks(S1, m.K, Math.max(0, m.T - days / 365), m.sigma, m.type, BS_RATE, m.q).price - entry) * m.mult;
-    const half = Math.round(m.dte / 2);
-    const payoff = _lineChartSVG({ xs: xsP, w: 640, h: 200, marker: m.S, xFmt: v => v.toFixed(0), yFmt: _fmtK,
-      series: [{ ys: xsP.map(S1 => pnlAt(S1, 0)), cls: 'gl-l1' }, { ys: xsP.map(S1 => pnlAt(S1, half)), cls: 'gl-l2' }, { ys: xsP.map(S1 => pnlAt(S1, m.dte)), cls: 'gl-l3' }] });
-    const prof = (fn, f) => _lineChartSVG({ xs: xsP, marker: m.S, xFmt: v => v.toFixed(0), yFmt: f, zero: false, xTicks: 3,
-      series: [{ ys: xsP.map(S1 => fn(bsGreeks(S1, m.K, m.T, m.sigma, m.type, BS_RATE, m.q))), cls: 'gl-l1' }, { ys: xsP.map(S1 => fn(bsGreeks(S1, m.K, Math.max(0, m.T - half / 365), m.sigma, m.type, BS_RATE, m.q))), cls: 'gl-l2' }] });
-    const mu = Math.abs(m.mult);
-    const ys = []; const stepD = Math.max(1, Math.ceil(m.dte / 18)); for (let d = 0; d <= m.dte; d += stepD) ys.push(d); if (ys[ys.length - 1] !== m.dte) ys.push(m.dte);
-    const xsS = []; for (let v = -30; v <= 30.001; v += 3) xsS.push(v / 100);
-    const build = metric => ({ xs: xsS, ys, metric, xFmt: v => `${v > 0 ? '+' : ''}${Math.round(v * 100)}%`, yFmt: d => `${d} 天`, xTitle: x.ticker, yTitle: '天数',
-      zFmt: metric === 'delta' ? v => `${v >= 0 ? '+' : ''}${Math.round(v)} 股` : SURF_METRICS[metric].fmt,
-      zAxis: metric === 'delta' ? v => `${v >= 0 ? '+' : ''}${Math.round(v)}` : SURF_METRICS[metric].axis, origin: [xsS.indexOf(0), 0],
-      z: xsS.map(mv => ys.map(d => {
-        const S1 = m.S * (1 + mv);
-        if (metric === 'pnl') return pnlAt(S1, d);
-        if (metric === 'theta') return _mValue(m, S1, Math.min(m.dte, d + 1)) - _mValue(m, S1, d);
-        return bsGreeks(S1, m.K, Math.max(0, m.T - d / 365), m.sigma, m.type, BS_RATE, m.q).delta * m.mult;
-      })) });
-    const sid = 'sf' + (__surfSeq + 1);
-    const surf = surfaceHTML(build('pnl'), { height: 300 });
-    __surf[sid].rebuild = build;
-    __surf[sid].data.zFmt = SURF_METRICS.pnl.fmt;
-    const tabs = [['pnl', '盈亏'], ['theta', 'Theta'], ['delta', 'Delta (股)']].map(([k, l]) => `<button class="rk-preset${k === 'pnl' ? ' active' : ''}" data-sf="${sid}" data-m="${k}" onclick="setSurfaceMetric('${sid}','${k}')">${l}</button>`).join('');
-    const stat = (l, v, cls) => `<div class="gl-stat"><span>${l}</span><b class="${cls || ''}">${v}</b></div>`;
-    const dl = x.delta != null ? x.delta : g.delta, th = x.theta != null ? x.theta : g.theta, vg = x.vega != null ? x.vega : g.vega, gm = x.gamma != null ? x.gamma : g.gamma;
-    const dist = _distPct(x), cap = _captured(x);
-    const coll = (m.type === 'put' ? m.K : m.S) * mu;
-    const extra = short ? [
-      stat('到期价内概率', (g.pITM * 100).toFixed(0) + '%', g.pITM > 0.35 ? 'rk-t-alert' : ''),
-      stat('盈亏平衡', (m.type === 'put' ? m.K - entry : m.K + entry).toFixed(2)),
-      stat('已赚', cap != null ? cap.toFixed(0) + '%' : '—'),
-      stat('年化权利金', entry > 0 ? (entry * mu / coll * 365 / Math.max(1, m.dte) * 100).toFixed(1) + '%' : '—'),
-      stat('年化 Theta', (-th * mu * 365 / coll * 100).toFixed(1) + '%'),
-    ] : (() => { const s = _leapsStats(x) || {}; return [
-      stat('杠杆 λ', s.lambda != null ? s.lambda.toFixed(2) + '×' : '—'),
-      stat('时间价值', s.extrPct != null ? s.extrPct.toFixed(0) + '%' : '—'),
-      stat('年化成本', s.carry != null ? s.carry.toFixed(1) + '%' : '—'),
-      stat('盈亏平衡', s.be != null ? `${s.be.toFixed(0)} (${s.beMove >= 0 ? '+' : ''}${s.beMove.toFixed(1)}%)` : '—'),
-      stat('+1% Δ 变化', s.dPer1 != null ? '+' + s.dPer1.toFixed(1) + ' 股' : '—'),
-    ]; })();
-    body = `
-      <div class="gl-stats">
-        ${stat('现价', m.S.toFixed(2))}${stat('行权价', m.K)}${stat('DTE', m.dte)}
-        ${stat('IV', (m.sigma * 100).toFixed(1) + '%' + (m.schwabIv && Math.abs(m.schwabIv - m.sigma) > 0.05 ? ` <span class="rk-quiet">Schwab ${(m.schwabIv * 100).toFixed(1)}%</span>` : ''))}
-        ${stat('市价', m.mark != null ? m.mark.toFixed(2) : g.price.toFixed(2) + ' (模型)')}${m.q > 0 ? stat('隐含股息率', (m.q * 100).toFixed(2) + '%' + (m.q > 0.08 ? ' · 市价可能过时' : ''), m.q > 0.08 ? 'rk-t-alert' : '') : ''}
-        ${stat('距行权价', dist == null ? '—' : dist < 0 ? '价内 ' + Math.abs(dist).toFixed(1) + '%' : dist.toFixed(1) + '%', dist != null && dist < 0 ? (short ? 'rk-t-danger' : 'rk-t-safe') : '')}
-        ${stat('Δ', (dl * m.sign).toFixed(2) + ` · ${Math.round(dl * m.mult)} 股`)}${stat('Γ', gm.toFixed(4))}
-        ${stat('Θ / 天', _fmtSigned(th * m.mult))}${stat('Vega / 点', _fmtSigned(vg * m.mult))}
-        ${extra.join('')}
-      </div>
-      <div class="rk-sub-title">盈亏曲线</div>
-      ${payoff}
-      <div class="rk-legend"><span><i class="rk-sw gl-sw-l1"></i>今天</span><span><i class="rk-sw gl-sw-l2"></i>${half} 天后</span><span><i class="rk-sw gl-sw-l3"></i>到期</span><span class="rk-legend-note">相对开仓价 ${entry.toFixed(2)}</span></div>
-      <div class="rk-sub-title gl-title-row"><span>曲面 · 股价 × 时间</span><span class="rk-presets">${tabs}</span></div>
-      ${surf}
-      <div class="rk-sub-title">Greeks 随股价</div>
-      <div class="gl-grid4">
-        <div><div class="gl-mini-t">Delta (股)</div>${prof(gg => gg.delta * m.mult, v => Math.round(v).toString())}</div>
-        <div><div class="gl-mini-t">Gamma (股 / $1)</div>${prof(gg => gg.gamma * m.mult, v => (Math.abs(v) < 0.05 ? 0 : v).toFixed(1))}</div>
-        <div><div class="gl-mini-t">Theta ($/天)</div>${prof(gg => gg.theta * m.mult, _fmtK)}</div>
-        <div><div class="gl-mini-t">Vega ($/点)</div>${prof(gg => gg.vega * m.mult, _fmtK)}</div>
-      </div>
-      <div class="rk-legend"><span><i class="rk-sw gl-sw-l1"></i>今天</span><span><i class="rk-sw gl-sw-l2"></i>${half} 天后</span><span class="rk-legend-note">Black-Scholes-Merton · r 4% · ${m.q > 0 ? `股息率 ${(m.q * 100).toFixed(2)}% (由市价反推) · IV ${m.ivSrc}` : `IV 按${m.ivSrc}校准`}</span></div>`;
-  }
   closeOptionLab();
   const ov = document.createElement('div');
   ov.className = 'gl-overlay'; ov.id = 'gl-overlay';
   ov.innerHTML = `<div class="gl-modal" role="dialog" aria-modal="true" aria-label="${esc(_posLabel(x))}">
       <div class="gl-head"><b>${esc(_posLabel(x))}</b><span class="rk-quiet">${esc(_KIND_LABEL[x.kind] || x.kind)}</span><button class="gl-x" onclick="closeOptionLab()" aria-label="关闭">×</button></div>
-      <div class="gl-body">${body}</div></div>`;
+      <div class="gl-body">${_optionLabBodyHTML(x)}</div></div>`;
   ov.addEventListener('click', e => { if (e.target === ov) closeOptionLab(); });
   document.body.appendChild(ov);
   document.body.classList.add('gl-lock');
@@ -11938,6 +12193,191 @@ window.closeOptionLab = () => {
 };
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('gl-overlay')) closeOptionLab(); });
 
+
+
+/* ---------- Greeks page (own view) + main-page entry ---------- */
+window.showGreeksPage = () => { closeOptionLab(); state._view = 'greeks'; render(); window.scrollTo(0, 0); };
+function _greeksSummary(c) {
+  let usd = 0, theta = 0, sell = 0, buy = 0, pnl = 0, pnlN = 0, opts = 0;
+  c.pos.forEach(x => {
+    const dd = _dollarDelta(x); if (dd != null) usd += dd;
+    if (x.kind !== 'stock') opts++;
+    if (x.theta != null && x.kind !== 'stock') { const v = x.theta * 100 * (Number(x.qty) || 0) * (_isShortPos(x) ? -1 : 1); theta += v; if (_isShortPos(x)) sell += v; else buy += v; }
+    const p = _posPnl(x); if (p != null) { pnl += p; pnlN++; }
+  });
+  return { usd, theta, sell, buy, pnl, pnlN, opts };
+}
+function greeksCardHTML() {
+  const R = computeRisk();
+  if (!R.c.isSchwab || !R.c.pos.some(x => x.kind !== 'stock')) return '';
+  const s = _greeksSummary(R.c);
+  const cell = (label, v, cls) => `<div class="gk-cell"><span>${label}</span><b class="${cls || ''}">${v}</b></div>`;
+  return `
+    <div class="gk-card" id="gk-card" role="button" tabindex="0" onclick="showGreeksPage()"
+         onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showGreeksPage();}">
+      <div class="gk-title">Greeks · 盈亏 <span>${s.opts} 个期权 ▸</span></div>
+      <div class="gk-cells">
+        ${cell('Delta 美元敞口', _fmtSigned(s.usd))}
+        ${cell('每日 Theta', _fmtSigned(s.theta), s.theta >= 0 ? 'rk-t-safe' : 'rk-t-alert')}
+        ${cell('未实现盈亏', s.pnlN ? _fmtSigned(s.pnl) : '—', s.pnl >= 0 ? 'rk-t-safe' : 'rk-t-danger')}
+      </div>
+    </div>`;
+}
+function renderGreeksPage() {
+  const R = computeRisk();
+  $app.innerHTML = `
+    <div class="header">
+      <div class="brand">Pre-Trade Checklist</div>
+      <div class="header-actions">
+        <button class="btn ghost" onclick="state._view = null; render(); window.scrollTo(0, 0)">← 返回</button>
+        ${loadSchwabCfg() ? `<button class="btn ghost" onclick="refreshSchwab({ force: true })">刷新 Schwab</button>` : ''}
+      </div>
+    </div>
+    <div class="rk-page">
+      ${_riskSourceNotice(R)}
+      ${R.c.isSchwab ? _greeksHTML(R) + _leapsLabHTML(R) : ''}
+    </div>`;
+}
+
+/* ---------- checklist: live quote + autofill + contract preview (CSP) ---------- */
+let __cqTimer = 0, __cqSeq = 0, __cqPrevTimer = 0;
+function _cspQuoteKey() {
+  const t = _normTicker(state.ticker), K = parseFloat(state.cspStrike), e = state.tradeExpiry;
+  return t && K > 0 && /^\d{4}-\d{2}-\d{2}$/.test(e || '') ? `${t}|${e}|${K}` : null;
+}
+function _cspQuoteFresh() {
+  const q = state.cspQuote;
+  return q && q.key === _cspQuoteKey() ? q.data : null;
+}
+function scheduleCspQuote() { clearTimeout(__cqTimer); __cqTimer = setTimeout(() => fetchCspQuote(false), 650); }
+async function fetchCspQuote(force) {
+  const key = _cspQuoteKey(), cfg = loadSchwabCfg();
+  if (!key || !cfg) { state.cspQuoteStatus = null; _cqLocalFill(); _cqRefresh(); return; }
+  if (!force && state.cspQuote && state.cspQuote.key === key && Date.now() - state.cspQuote.at < 60000) { _cqRefresh(); return; }
+  const [t, e, K] = key.split('|'), seq = ++__cqSeq;
+  state.cspQuoteStatus = { state: 'loading' }; _cqRefresh();
+  let status;
+  try {
+    const r = await fetch(`${cfg.url.replace(/\/+$/, '')}/quote?ticker=${encodeURIComponent(t)}&expiry=${e}&strike=${K}&type=P`,
+      { headers: { Authorization: 'Bearer ' + cfg.token }, cache: 'no-store' });
+    const b = await r.json().catch(() => ({}));
+    if (seq !== __cqSeq) return;
+    if (r.status === 404) status = { state: 'error', message: '需 Worker v5' };
+    else if (!r.ok) status = { state: 'error', message: b.message || `HTTP ${r.status}` };
+    else if (!b.found) status = { state: 'notfound', und: b.underlying ? b.underlying.price : null };
+    else { state.cspQuote = { key, at: Date.now(), data: b }; status = { state: 'ok' }; }
+  } catch (err) { if (seq !== __cqSeq) return; status = { state: 'error', message: '网络错误' }; }
+  state.cspQuoteStatus = status;
+  if (status.state === 'ok') _cqApplyFill(_cqValsFromQuote(state.cspQuote.data)); else _cqLocalFill();
+  _cqRefresh();
+}
+function _cqValsFromQuote(b) {
+  const o = b.option, K = parseFloat(state.cspStrike), v = {};
+  if (o.dte != null) v.dte = String(Math.round(o.dte));
+  if (o.delta != null) v.delta = String(Math.round(Math.abs(o.delta) * 100));
+  if (o.mark != null && K > 0 && o.dte > 0) v.roc = (o.mark / K * 30 / o.dte * 100).toFixed(2);
+  return v;
+}
+// Without a Schwab quote: DTE from the date; Delta / ROC from a hand-typed premium + price.
+function _cqLocalFill() {
+  if (_cspQuoteFresh()) return;
+  const v = {}, d = state.tradeExpiry ? _daysTo(state.tradeExpiry) : null;
+  if (d != null && d >= 0) v.dte = String(d);
+  const x = _cspPreviewPos(), m = x ? _optModel(x) : null;
+  if (m) {
+    v.delta = String(Math.round(Math.abs(bsGreeks(m.S, m.K, m.T, m.sigma, 'put', BS_RATE, m.q).delta) * 100));
+    if (m.dte > 0) v.roc = (m.mark / m.K * 30 / m.dte * 100).toFixed(2);
+  }
+  _cqApplyFill(v);
+}
+// Fill a field only if it is empty or still holds the value we filled last time — never over a hand-typed value.
+function _cqApplyFill(vals) {
+  state.quoteFill = state.quoteFill || {};
+  let changed = false;
+  Object.entries(vals).forEach(([id, v]) => {
+    const cur = state.items[id];
+    if (cur === '' || cur == null || cur === state.quoteFill[id]) {
+      if (cur !== v) {
+        state.items[id] = v; changed = true;
+        const el = document.getElementById('num-' + id);
+        if (el && document.activeElement !== el) { el.value = v; el.classList.add('autofilled'); }
+      }
+      state.quoteFill[id] = v;
+    }
+  });
+  if (changed) { updateVerdictsInPlace(); if (typeof scheduleSaveDraft === 'function') scheduleSaveDraft(); }
+}
+function _cspPreviewPos() {
+  const K = parseFloat(state.cspStrike), t = _normTicker(state.ticker), e = state.tradeExpiry, qty = parseFloat(state.cspContracts) || 1;
+  if (!(K > 0) || !t || !/^\d{4}-\d{2}-\d{2}$/.test(e || '')) return null;
+  const q = _cspQuoteFresh(), o = q && q.option;
+  const und = q ? (q.underlying.price ?? o.underlyingPrice) : parseFloat(state.cspManualUnd);
+  const mark = o ? o.mark : parseFloat(state.cspManualMark);
+  if (!(und > 0) || !(mark > 0)) return null;
+  return { kind: 'short_put', ticker: t, strike: K, qty, expiry: e, und, mark, avg: mark,
+    iv: o ? o.iv : null, delta: o ? o.delta : null, gamma: o ? o.gamma : null, theta: o ? o.theta : null, vega: o ? o.vega : null,
+    dte: o && o.dte != null ? o.dte : _daysTo(e), exposure: K * 100 * qty };
+}
+function cspQuoteInnerHTML() {
+  const key = _cspQuoteKey(), st = state.cspQuoteStatus || {}, cfg = loadSchwabCfg();
+  const manual = `<span class="cq-manual">权利金 <input id="in-cq-mark" inputmode="decimal" placeholder="mark" value="${esc(state.cspManualMark || '')}"
+      oninput="state.cspManualMark = this.value; _cqManualChanged()"> 现价 <input id="in-cq-und" inputmode="decimal" placeholder="price" value="${esc(state.cspManualUnd || '')}"
+      oninput="state.cspManualUnd = this.value; _cqManualChanged()"></span>`;
+  if (!key) return `<span class="cq-hint">填 Ticker · Strike · 到期日 → 自动读取报价</span>`;
+  if (!cfg) return `<span class="cq-hint">未连接 Schwab · 手填</span>${manual}`;
+  if (st.state === 'loading') return `<span class="cq-hint">读取报价…</span>`;
+  if (st.state === 'error') return `<span class="rk-t-danger">${esc(st.message)}</span> · 手填${manual}`;
+  if (st.state === 'notfound') return `<span class="rk-t-alert">无此合约: 检查到期日 / 行权价</span>${st.und ? ` · 现价 ${st.und}` : ''}`;
+  const q = _cspQuoteFresh();
+  if (!q) return `<span class="cq-hint">读取报价…</span>`;
+  const o = q.option, K = parseFloat(state.cspStrike), und = q.underlying.price ?? o.underlyingPrice;
+  const f = (v, d = 2) => v == null ? '—' : Number(v).toFixed(d);
+  const dist = und ? (und - K) / und * 100 : null;
+  return `<div class="cq-line">
+      <b>${esc(q.ticker)} ${K}P ${esc(_md(state.tradeExpiry))}</b>
+      <span>市价 <b>${f(o.mark)}</b> <span class="rk-quiet">${f(o.bid)} / ${f(o.ask)}</span></span>
+      <span>Δ ${f(o.delta)}</span><span>IV ${f(o.iv, 1)}%</span><span>${o.dte ?? '—'} 天</span>
+      <span>OI ${o.openInterest != null ? Math.round(o.openInterest).toLocaleString() : '—'}</span>
+      <span>现价 ${f(und)}${dist != null ? ` · 距 ${dist.toFixed(1)}%` : ''}</span>
+      ${o.mark && K && o.dte ? `<span>年化 ${(o.mark / K * 365 / o.dte * 100).toFixed(1)}%</span>` : ''}
+      <button class="pr-mini-btn" onclick="fetchCspQuote(true)" title="刷新报价">⟳</button>
+    </div><div class="cq-note">已自动填入 DTE · Delta · 30 天 ROC; 手改过的不覆盖.</div>`;
+}
+function cspPreviewInnerHTML() {
+  const x = _cspPreviewPos();
+  if (!x) return `<div class="rk-quiet">${_cspQuoteKey() ? '需要报价或手填权利金 + 现价.' : '填 Ticker · Strike · 到期日.'}</div>`;
+  return _optionLabBodyHTML(x);
+}
+function _cqRefresh() {
+  const el = document.getElementById('csp-quote');
+  if (el && !el.contains(document.activeElement)) el.innerHTML = cspQuoteInnerHTML();
+  _cqPreviewSoon();
+}
+function _cqPreviewSoon() {
+  clearTimeout(__cqPrevTimer);
+  __cqPrevTimer = setTimeout(() => {
+    const p = document.getElementById('csp-preview');
+    if (!p || !state.cspPreviewOpen) return;
+    p.innerHTML = cspPreviewInnerHTML(); mountSurfaces();
+  }, 250);
+}
+window._cqManualChanged = () => { _cqLocalFill(); _cqPreviewSoon(); };
+window.toggleCspPreview = open => {
+  state.cspPreviewOpen = !!open;
+  const p = document.getElementById('csp-preview');
+  if (p && open) { p.innerHTML = cspPreviewInnerHTML(); mountSurfaces(); }
+};
+window.fetchCspQuote = fetchCspQuote;
+function _bindCspQuote() {
+  ['in-ticker', 'in-csp-strike'].forEach(id => { const el = document.getElementById(id); if (el) el.addEventListener('input', scheduleCspQuote); });
+  const qty = document.getElementById('in-csp-contracts'); if (qty) qty.addEventListener('input', _cqPreviewSoon);
+  const ex = document.getElementById('in-csp-expiry');
+  if (ex) {
+    const on = e => { state.tradeExpiry = e.target.value; _cqLocalFill(); scheduleCspQuote(); updateVerdictsInPlace(); if (typeof scheduleSaveDraft === 'function') scheduleSaveDraft(); };
+    ex.addEventListener('input', on); ex.addEventListener('change', on);
+  }
+  if (_cspQuoteKey()) scheduleCspQuote();
+}
 
 /* ---------- composite decomposition ---------- */
 function _riskDecompHTML(R) {
@@ -11995,6 +12435,8 @@ function _refreshRiskCard() {
   const el = document.getElementById('risk-card');
   if (!el) return;
   el.outerHTML = riskCardHTML();
+  const gk = document.getElementById('gk-card');
+  if (gk) gk.outerHTML = greeksCardHTML() || '<span id="gk-card" hidden></span>';
   animateRiskGauges();
 }
 
@@ -12326,8 +12768,7 @@ function renderRiskPage() {
       ${_reconHTML()}
       <div class="rk-groups">${groups}</div>
       ${_stressHTML(R)}
-      ${_greeksHTML(R)}
-      ${_leapsLabHTML(R)}
+      ${R.c.isSchwab && R.c.pos.some(x => x.kind !== 'stock') ? `<button class="rk-linkrow" onclick="showGreeksPage()">Greeks · 盈亏 · LEAPS ▸</button>` : ''}
       ${_tickerChartHTML(R)}
       ${_expiryChartHTML(R)}
       ${_moneynessHTML(R)}
