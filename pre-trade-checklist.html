@@ -1942,6 +1942,10 @@
     .rk-dd-meta-m { display: block; } .rk-dd-meta-d { display: none; }
     .rk-mg { grid-template-columns: 76px 1fr; }
   }
+  .rk-red-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; font-weight: 600; padding: 2px 8px; border-radius: 10px;
+    color: var(--panel); background: var(--rk-danger); white-space: nowrap; }
+  .rk-red-list { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 10px; }
+  .rk-hero-text .rk-red-list { justify-content: inherit; }
   .pr-sim-risk { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 10px; margin-top: 8px; padding: 6px 9px;
     border-radius: 4px; background: var(--panel-2); font-size: 12px; color: var(--text-dim); }
   .pr-sim-risk span { font-size: 10.5px; color: var(--text-faint); margin-left: auto; }
@@ -10435,8 +10439,9 @@ window.setRocPhase = (n) => {
  * RISK MONITOR · weighted multi-factor risk gauge
  * Each variable maps its own value onto 0–100 with its own thresholds
  * (安全 0–25 · 关注 25–50 · 警戒 50–75 · 危险 75–100). The composite is the
- * weighted mean, floored at (highest single score − 25) so one red item can't
- * be averaged away. Variables without data are excluded and shown as such.
+ * weighted power mean (p = 3): high scores are amplified so a red item can't hide
+ * behind green ones, yet every weight always moves the needle (no hard floor).
+ * Items in 危险 are surfaced separately. Variables without data are excluded.
  * Pure functions of a Portfolio object → the same code scores today's book
  * and the simulated book after a pending trade.
  * ========================================================== */
@@ -10737,15 +10742,16 @@ function computeRisk(p = getPortfolio()) {
   });
   const used = vars.filter(v => v.available && v.w > 0);
   const wsum = used.reduce((s, v) => s + v.w, 0);
-  const mean = wsum > 0 ? used.reduce((s, v) => s + v.w * v.score, 0) / wsum : null;
-  used.forEach(v => { v.contrib = v.w * v.score / wsum; });
+  const mean = wsum > 0 ? used.reduce((s, v) => s + v.w * v.score, 0) / wsum : null;   // plain weighted mean, for reference
+  const cube = used.reduce((s, v) => s + v.w * v.score ** 3, 0);
+  const composite = wsum > 0 ? Math.cbrt(cube / wsum) : null;                       // weighted power mean, p = 3
+  // each item's share of the composite (shares of the cubed sum → they add up to the composite)
+  used.forEach(v => { v.contrib = cube > 0 ? composite * (v.w * v.score ** 3) / cube : 0; });
   const top = used.slice().sort((a, b) => b.score - a.score)[0] || null;
-  const floor = top ? top.score - 25 : 0;
-  const composite = mean == null ? null : Math.max(mean, floor);
+  const danger = used.filter(v => v.level.key === 'danger').sort((a, b) => b.score - a.score);
   const applicable = vars.filter(v => !v.na && v.w > 0);
   const aw = applicable.reduce((s, v) => s + v.w, 0);
-  return { c, vars, used, composite, mean, top, floorApplied: mean != null && floor > mean,
-           coverage: aw > 0 ? wsum / aw : 0 };
+  return { c, vars, used, composite, mean, top, danger, coverage: aw > 0 ? wsum / aw : 0 };
 }
 
 /* ---------- formatting ---------- */
@@ -11362,7 +11368,7 @@ function _riskDecompHTML(R) {
     <section class="rk-decomp">
       <div class="rk-decomp-bar">${parts.map(v => `<i class="rk-f-${v.level.key}" style="width:${(v.contrib / sum * 100).toFixed(2)}%" title="${esc(v.def.label)} · ${v.contrib.toFixed(1)} 分"></i>`).join('')}</div>
       <div class="rk-decomp-labels">${parts.slice(0, 4).map(v => `<span><i class="rk-dot rk-f-${v.level.key}"></i>${esc(v.def.label)} ${v.contrib.toFixed(1)}</span>`).join('')}${parts.length > 4 ? `<span class="rk-quiet">其余 ${parts.length - 4} 项 ${parts.slice(4).reduce((s, v) => s + v.contrib, 0).toFixed(1)}</span>` : ''}</div>
-      <div class="rk-note">加权平均 ${R.mean.toFixed(1)} 分由上面各项贡献组成.${R.floorApplied ? ` 综合分按保底规则取 ${R.top.def.label} ${Math.round(R.top.score)} − 25 = ${R.composite.toFixed(0)}, 高于加权平均.` : ''}</div>
+      <div class="rk-note">综合分 ${R.composite.toFixed(1)} 由上面各项组成. 高分项按立方放大, 所以红灯占的份额远大于它的权重. 作为对照, 普通加权平均是 ${R.mean.toFixed(1)}.</div>
     </section>`;
 }
 
@@ -11382,6 +11388,7 @@ function riskCardHTML() {
           <span class="rk-card-title">综合风险</span>
           <span class="rk-card-num${lvl ? ' rk-t-' + lvl.key : ''}">${s != null ? Math.round(s) : '—'}</span>
           <span class="rk-card-lvl${lvl ? ' rk-t-' + lvl.key : ''}">${lvl ? lvl.label : '数据不足'}</span>
+          ${R.danger && R.danger.length ? `<span class="rk-red-badge" title="${esc(R.danger.map(v => v.def.label).join('、'))}">⛔ ${R.danger.length} 项危险</span>` : ''}
           ${tr ? `<span class="rk-card-trend ${tr.delta > 0.5 ? 'up' : tr.delta < -0.5 ? 'down' : ''}">较${tr.label} ${tr.txt}</span>` : ''}
         </div>
         <div class="rk-card-drivers">${drivers.length
@@ -11454,7 +11461,7 @@ function _riskRowHTML(v, prev) {
 function _riskHeadline(R) {
   if (R.composite == null) return '还没有足够的数据. 连接 Schwab, 或在首页填 NAV 和 Cash / SWVXX.';
   const hot = R.used.filter(v => v.score >= 50).sort((a, b) => b.score - a.score);
-  if (R.floorApplied && R.top) return `主要被「${R.top.def.label}」拉高 (${_fmtRiskVal(R.top)}, ${R.top.level.label}). 单项红灯不会被其他项平均掉.`;
+  if (R.danger && R.danger.length) return `${R.danger.length} 项已进入危险区: ${R.danger.map(v => `${v.def.label} ${_fmtRiskVal(v)}`).join('、')}. 先处理这几项.`;
   if (hot.length) return `需要留意: ${hot.slice(0, 3).map(v => `${v.def.label} ${_fmtRiskVal(v)}`).join('、')}.`;
   const watch = R.used.filter(v => v.score >= 25);
   if (watch.length) return `整体可控. 偏高的是 ${watch.sort((a, b) => b.score - a.score).slice(0, 2).map(v => v.def.label).join('、')}.`;
@@ -11723,6 +11730,7 @@ function renderRiskPage() {
         <div class="rk-hero-text">
           <h2 class="rk-hero-level${lvl ? ' rk-t-' + lvl.key : ''}">${lvl ? '综合风险 · ' + lvl.label : '综合风险 · 数据不足'}
             ${tr ? `<span class="rk-card-trend ${tr.delta > 0.5 ? 'up' : tr.delta < -0.5 ? 'down' : ''}">较${tr.label} ${tr.txt}</span>` : ''}</h2>
+          ${R.danger && R.danger.length ? `<div class="rk-red-list">${R.danger.map(v => `<span class="rk-red-badge">⛔ ${esc(v.def.label)} ${esc(_fmtRiskVal(v))}</span>`).join('')}</div>` : ''}
           <p class="rk-hero-line">${esc(_riskHeadline(R))}</p>
           ${R.c.isSchwab ? _riskSparkHTML() : ''}
           <div class="rk-hero-meta"><span class="pr-source ${src.cls}">${esc(src.text)}</span>
@@ -11745,7 +11753,8 @@ function renderRiskPage() {
         <summary class="rk-block-title">综合分怎么算</summary>
         <div class="rk-method">
           <p>每个变量按自己的阈值换算成 0–100 分: 安全 0–25, 关注 25–50, 警戒 50–75, 危险 75–100, 阈值之间线性过渡. 低于警戒线后一直线性走到最差可能值 (比如购买力为 0) 才是 100 分.</p>
-          <p>综合分 = 各项分数按权重平均, 再加一条保底: 不低于最高单项减 25. 任何一项进入危险区, 指针至少会到警戒区, 不会被其他安全项平均掉.</p>
+          <p>综合分 = 各项分数的加权幂平均 (p = 3): 先把每项分数取立方再按权重平均, 最后开立方. 分数越高放大越多, 所以一个红灯不会被一堆绿灯平均掉; 同时每一项、每个权重都始终影响指针, 不存在把分数钉死的保底.</p>
+          <p>进入危险区的项会在指针旁边单独标出, 不靠指针位置来传达.</p>
           <p>有效分散度只在仓位够重时才有意义: 投入不足 NAV 50% 时按比例降权, 避免"只有一笔小仓位"被判成高度集中.</p>
           <p>没有数据的项、不适用的项 (比如没有 LEAPS 时的 LEAPS 到期) 不计入, 并算出数据覆盖率. 每天第一次打开会记录一次综合分和各项分数, 用来显示趋势和"新升级"的项; 只记录 Schwab 数据.</p>
           <p>开仓前的模拟用同一套算法, 把这笔交易加进持仓后重新打分. 保证金类变量模拟时保持不变.</p>
