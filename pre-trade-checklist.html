@@ -4507,7 +4507,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.13-v9';
+const APP_BUILD = '2026.10.13-v10';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
@@ -11278,6 +11278,7 @@ window.setStressIV = v => {
 
 
 /* ---------- position helpers (labels, management, sizing) ---------- */
+function _thCls(v) { return v == null || Math.abs(v) < 0.5 ? '' : v > 0 ? 'rk-t-safe' : 'rk-t-alert'; }
 function _fmtSigned(v) { if (v == null) return '—'; const a = Math.round(Math.abs(v)); return a === 0 ? '$0' : (v > 0 ? '+' : '−') + '$' + a.toLocaleString(); }
 function _fmtK(v) {             // compact axis label: +$29k, −$850, $0
   const a = Math.abs(v); if (a < 0.5) return '$0';
@@ -12440,7 +12441,7 @@ function _leapsLabHTML(R) {
             <td>${s.lambda != null ? s.lambda.toFixed(2) + '×' : '—'}</td><td>${s.extrPct != null ? s.extrPct.toFixed(0) + '%' : '—'}</td>
             <td>${s.carry.toFixed(1)}%</td>
             <td>${(() => { const rr = _leapsReturn(x, s.mark); return rr ? `<span class="${rr.ret >= 0 ? 'rk-t-safe' : 'rk-t-alert'}">${rr.ret >= 0 ? '+' : ''}${rr.ret.toFixed(0)}%</span> <span class="rk-quiet">${rr.ann != null ? (rr.ann >= 0 ? '+' : '') + rr.ann.toFixed(0) + '%/年' : '—'}</span>` : '—'; })()}</td>
-            <td class="rk-t-alert">${_fmtSigned(s.thetaMonth)}</td><td>${_fmtSigned(s.vegaUsd)}</td><td>${s.m.dte}</td></tr>`
+            <td class="${_thCls(s.thetaMonth)}">${_fmtSigned(s.thetaMonth)}</td><td>${_fmtSigned(s.vegaUsd)}</td><td>${s.m.dte}</td></tr>`
           : `<tr><td>${esc(_posLabel(x))}</td><td colspan="9" class="rk-quiet">缺报价</td></tr>`).join('')}</tbody>
       </table></div>
       <div class="rk-note">时间价值年化是成本 (可对比融资利率), 不是收益; 年化收益按对应 checklist 快照的开仓日计算. Δ &lt; 0.60 橙色. 点合约看止盈 / 止损先到概率.</div>
@@ -13288,7 +13289,7 @@ function _greeksHTML(R) {
               <td>${th[k].n}${th[k].miss ? ` <span class="rk-quiet">· 缺 Theta ${th[k].miss}</span>` : ''}</td></tr>
             ${ps.map(({ x, v }) => `<tr class="rk-dd-row gl-row" role="button" tabindex="0" onclick="openOptionLab(${c.pos.indexOf(x)})" onkeydown="if(event.key==='Enter')openOptionLab(${c.pos.indexOf(x)})"><td>${esc(_posLabel(x))}<div class="rk-dd-meta-m">${esc(_posMeta(x))}</div></td><td class="${v == null ? 'rk-quiet' : v >= 0 ? 'rk-t-safe' : 'rk-t-alert'}">${v == null ? '缺 Theta' : signed(v)}</td><td class="rk-dd-meta-d">${esc(_posMeta(x))}</td></tr>`).join('')}
           </tbody>`; }).join('')}
-        <tbody><tr class="rk-total"><td>合计</td><td>${signed(thetaNet)}</td><td></td></tr></tbody>
+        <tbody><tr class="rk-total"><td>合计</td><td class="${_thCls(thetaNet)}">${signed(thetaNet)}</td><td></td></tr></tbody>
       </table></div>
       <div class="rk-sub-title">Delta · 标的</div>
       <div class="rk-table-wrap"><table class="rk-table rk-dd-table" id="rk-delta-table">
@@ -13298,12 +13299,12 @@ function _greeksHTML(R) {
           return `<tbody class="rk-dd" data-ticker="${esc(t.t)}">
             <tr class="rk-dd-head" tabindex="0" role="button" onclick="this.parentElement.classList.toggle('open')" onkeydown="if(event.key==='Enter')this.click()">
               <td><span class="rk-caret">▸</span>${esc(t.t)} <span class="rk-quiet">${t.n}${t.miss ? ` · 缺 Greeks ${t.miss}` : ''}</span></td>
-              <td>${t.sh >= 0 ? '+' : ''}${Math.round(t.sh).toLocaleString()} Δ</td><td>${signed(t.usd)}</td><td>${t.theta ? signed(t.theta) : '—'}</td></tr>
+              <td>${t.sh >= 0 ? '+' : ''}${Math.round(t.sh).toLocaleString()} Δ</td><td>${signed(t.usd)}</td><td class="${_thCls(t.theta)}">${t.theta ? signed(t.theta) : '—'}</td></tr>
             ${ps.map(x => {
               const qty = Number(x.qty) || 0, sg = _isShortPos(x) ? -1 : 1;
               const sh = x.kind === 'stock' ? (x.side || 1) * qty : (x.delta != null ? x.delta * 100 * qty * sg : null);
               const dd = _dollarDelta(x), tv = x.theta != null ? x.theta * 100 * qty * sg : null;
-              return `<tr class="rk-dd-row${x.kind === 'stock' ? '' : ' gl-row'}"${x.kind === 'stock' ? '' : ` role="button" tabindex="0" onclick="openOptionLab(${c.pos.indexOf(x)})"`}><td>${esc(_posLabel(x))}</td><td>${sh == null ? '<span class="rk-quiet">缺 Delta</span>' : (sh >= 0 ? '+' : '') + Math.round(sh).toLocaleString() + ' Δ'}</td><td>${dd == null ? '—' : signed(dd)}</td><td>${tv == null ? '—' : signed(tv)}</td></tr>`;
+              return `<tr class="rk-dd-row${x.kind === 'stock' ? '' : ' gl-row'}"${x.kind === 'stock' ? '' : ` role="button" tabindex="0" onclick="openOptionLab(${c.pos.indexOf(x)})"`}><td>${esc(_posLabel(x))}</td><td>${sh == null ? '<span class="rk-quiet">缺 Delta</span>' : (sh >= 0 ? '+' : '') + Math.round(sh).toLocaleString() + ' Δ'}</td><td>${dd == null ? '—' : signed(dd)}</td><td class="${_thCls(tv)}">${tv == null ? '—' : signed(tv)}</td></tr>`;
             }).join('')}
           </tbody>`; }).join('')}
       </table></div>
