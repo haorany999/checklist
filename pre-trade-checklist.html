@@ -1748,7 +1748,8 @@
   .rk-hero-level { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; margin-bottom: 8px; }
   .rk-hero-line { font-size: 14px; color: var(--text-dim); line-height: 1.6; margin-bottom: 12px; max-width: 46ch; }
   .rk-hero-meta { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; font-size: 11.5px; color: var(--text-faint); }
-  .rk-groups { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; }
+  .rk-groups { column-count: 2; column-gap: 14px; }
+  .rk-groups > .rk-group { display: inline-block; width: 100%; break-inside: avoid; -webkit-column-break-inside: avoid; margin: 0 0 14px; }
   .rk-group { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius, 8px); padding: 12px 14px 4px; }
   .rk-group-title { display: flex; justify-content: space-between; align-items: baseline; font-size: 14px; font-weight: 600;
     color: var(--text); margin-bottom: 6px; }
@@ -1760,7 +1761,7 @@
   .rk-val { font-family: var(--mono); font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
   .rk-pill { font-size: 11px; padding: 1px 7px; border-radius: 9px; border: 1px solid currentColor; white-space: nowrap; }
   .rk-row-off .rk-name { color: var(--text-dim); }
-  .rk-off { font-size: 11.5px; color: var(--text-faint); font-style: italic; text-align: right; }
+  .rk-off { font-size: 11.5px; color: var(--text-faint); font-style: italic; text-align: right; flex: 1; }
   .rk-scale { margin: 9px 0 3px; }
   .rk-scale-bar { position: relative; display: flex; height: 6px; border-radius: 3px; overflow: visible; }
   .rk-z { flex: 1; height: 100%; opacity: 0.32; }
@@ -1775,7 +1776,16 @@
   .rk-row-foot { display: flex; justify-content: space-between; gap: 10px; margin-top: 4px; font-size: 12px; }
   .rk-detail { color: var(--text-dim); }
   .rk-weight { color: var(--text-faint); white-space: nowrap; font-size: 11px; }
-  .rk-desc { margin-top: 4px; font-size: 11.5px; color: var(--text-faint); line-height: 1.5; }
+  .rk-row[role="button"] { cursor: pointer; }
+  .rk-row[role="button"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+  .rk-more { display: none; margin-top: 6px; font-size: 11.5px; color: var(--text-faint); line-height: 1.55; }
+  .rk-row.open .rk-more { display: block; }
+  .rk-fix { margin-top: 6px; padding: 5px 8px; border-radius: 4px; font-size: 12px; line-height: 1.5;
+    color: var(--text); background: color-mix(in srgb, var(--rk-alert) 14%, transparent); border-left: 2px solid var(--rk-alert); }
+  .rk-up { margin-left: 6px; font-size: 10.5px; padding: 0 5px; border-radius: 8px; color: var(--rk-danger); border: 1px solid currentColor; vertical-align: 1px; }
+  .rk-row-off { display: flex; justify-content: space-between; gap: 10px; padding: 7px 0; }
+  .rk-row-off .rk-name { flex: 0 1 auto; font-size: 12.5px; }
+  .rk-groups-note { margin: -4px 0 0; }
 
   .rk-block { margin-top: 14px; padding: 14px 16px; background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius, 8px); }
   .rk-block-title { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 10px; }
@@ -1826,6 +1836,57 @@
   .rk-method p { font-size: 12.5px; color: var(--text-dim); line-height: 1.65; margin-bottom: 8px; max-width: 72ch; }
   .rk-diag { display: grid; grid-template-columns: 100px 1fr; gap: 6px 12px; font-size: 12px; }
   .rk-diag dt { color: var(--text-faint); } .rk-diag dd { color: var(--text-dim); word-break: break-word; }
+  /* data-source warning */
+  .rk-notice { margin: 12px 0 0; padding: 12px 14px; border-radius: var(--radius, 8px); font-size: 13px; line-height: 1.6; color: var(--text);
+    background: color-mix(in srgb, var(--pending) 14%, var(--panel)); border: 1px solid color-mix(in srgb, var(--pending) 55%, var(--border)); }
+  .rk-notice-why { margin-top: 4px; color: var(--text-dim); font-size: 12.5px; }
+  .rk-notice-act { margin-top: 8px; }
+  .rk-card-warn { font-size: 11.5px; color: var(--pending); margin-bottom: 5px; }
+  .rk-card-trend { font-size: 12px; font-weight: 600; color: var(--text-faint); margin-left: 4px; }
+  .rk-card-trend.up { color: var(--rk-danger); } .rk-card-trend.down { color: var(--rk-safe); }
+  .rk-hero-level .rk-card-trend { font-size: 13px; vertical-align: 3px; }
+  /* sparkline */
+  .rk-spark { display: flex; align-items: center; gap: 8px; margin: 0 0 12px; font-size: 11px; color: var(--text-faint); }
+  .rk-spark svg { width: 180px; height: 40px; }
+  .rk-spark-line { fill: none; stroke: var(--text-dim); stroke-width: 1.6; stroke-linejoin: round; }
+  .rk-spark-mid { stroke: var(--border); stroke-dasharray: 2 3; }
+  .rk-spark-dot { stroke: var(--panel); stroke-width: 1.5; }
+  .rk-f-safe.rk-spark-dot { fill: var(--rk-safe); } .rk-f-watch.rk-spark-dot { fill: var(--rk-watch); }
+  .rk-f-alert.rk-spark-dot { fill: var(--rk-alert); } .rk-f-danger.rk-spark-dot { fill: var(--rk-danger); }
+  .rk-spark-empty { font-size: 11.5px; color: var(--text-faint); margin-bottom: 12px; }
+  /* composite decomposition */
+  .rk-decomp { margin: -6px 0 18px; padding: 12px 16px; background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius, 8px); }
+  .rk-decomp-bar { display: flex; height: 12px; border-radius: 6px; overflow: hidden; gap: 2px; background: var(--panel-2); }
+  .rk-decomp-bar i { display: block; height: 100%; min-width: 2px; }
+  .rk-decomp-labels { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 8px; font-size: 12px; color: var(--text-dim); }
+  .rk-decomp-labels span { display: inline-flex; align-items: center; gap: 5px; }
+  .rk-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; }
+  /* stress test */
+  .rk-stress-head { font-size: 14px; color: var(--text); line-height: 1.6; margin-bottom: 12px; }
+  .rk-stress-head b { color: var(--rk-danger); font-family: var(--mono); }
+  .rk-stress-ctrl { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+  .rk-presets { display: flex; gap: 6px; }
+  .rk-preset { padding: 4px 10px; border-radius: 4px; border: 1px solid var(--border); background: var(--panel-2); color: var(--text-dim);
+    font-family: var(--mono); font-size: 12px; cursor: pointer; }
+  .rk-preset.active { background: var(--accent); border-color: var(--accent); color: var(--panel); font-weight: 700; }
+  #rk-stress-range { flex: 1; min-width: 160px; accent-color: var(--accent); }
+  .rk-stress-val { font-family: var(--mono); font-size: 15px; font-weight: 700; min-width: 48px; text-align: right; color: var(--text); }
+  .rk-chart { width: 100%; height: auto; margin-top: 12px; display: block; }
+  .rk-ch-grid { stroke: var(--border); stroke-width: 1; } .rk-ch-grid.zero { stroke: var(--text-faint); }
+  .rk-ch-lab { font-family: var(--mono); font-size: 10px; fill: var(--text-faint); }
+  .rk-ch-lab.rk-t-danger { fill: var(--rk-danger); }
+  .rk-ch-floor { stroke: var(--rk-danger); stroke-width: 1; stroke-dasharray: 4 3; }
+  .rk-ch-pnl { fill: none; stroke: var(--accent); stroke-width: 2.2; stroke-linejoin: round; }
+  .rk-ch-cash { fill: none; stroke: var(--pending); stroke-width: 2.2; stroke-linejoin: round; }
+  .rk-ch-cursor { stroke: var(--text-dim); stroke-width: 1; stroke-dasharray: 2 2; }
+  .rk-ch-pnl-dot { fill: var(--accent); stroke: var(--panel); stroke-width: 2; }
+  .rk-ch-cash-dot { fill: var(--pending); stroke: var(--panel); stroke-width: 2; }
+  .rk-sw-pnl { background: var(--accent); } .rk-sw-cash { background: var(--pending); }
+  .rk-stress .rk-legend { margin: 6px 0 0; }
+  /* tables */
+  .rk-sub-title { font-size: 12.5px; font-weight: 600; color: var(--text-dim); margin: 14px 0 4px; }
+  .rk-total td { font-weight: 700; border-bottom: none; }
+  .rk-col.empty .rk-col-label { color: var(--text-faint); opacity: 0.6; }
   .pr-sim-risk { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 10px; margin-top: 8px; padding: 6px 9px;
     border-radius: 4px; background: var(--panel-2); font-size: 12px; color: var(--text-dim); }
   .pr-sim-risk span { font-size: 10.5px; color: var(--text-faint); margin-left: auto; }
@@ -1835,7 +1896,7 @@
     .rk-hero-gauge { max-width: 300px; margin: 0 auto; width: 100%; }
     .rk-hero-line { margin-left: auto; margin-right: auto; }
     .rk-hero-meta { justify-content: center; }
-    .rk-groups { grid-template-columns: 1fr; }
+    .rk-groups { column-count: 1; }
     .rk-weights { grid-template-columns: 1fr; }
   }
   @media (max-width: 480px) {
@@ -1843,6 +1904,8 @@
     .rk-card-num { font-size: 26px; }
     .rk-name { font-size: 14px; } .rk-val { font-size: 16px; }
     .rk-desc { font-size: 12.5px; } .rk-row-foot { flex-direction: column; gap: 2px; }
+    .rk-ch-lab { font-size: 17px; }   /* chart is scaled ~0.55× on phones */
+    .rk-stress-head { font-size: 15px; }
   }
 
   /* Post-trade simulation · lives inside the checklist position-sizing box */
@@ -9732,7 +9795,7 @@ function _schwabPositions(data) {
       return { kind: p.kind, ticker: _normTicker(p.ticker) || '?', strike, qty, expiry: p.expiry || null,
         exposure, cost, marketValue: _num(p.marketValue), unparsed: p.kind === 'short_put' && strike == null,
         side: rawQty < 0 ? -1 : 1, price: _num(p.price), delta: _num(p.delta), theta: _num(p.theta),
-        iv: _num(p.iv), und: _num(p.underlyingPrice), dte: _num(p.dte) };
+        iv: _num(p.iv), und: _num(p.underlyingPrice), dte: _num(p.dte), gamma: _num(p.gamma) };
     });
 }
 
@@ -9749,6 +9812,7 @@ function getPortfolio() {
       balances: _sumBalances(d.balancesRaw), accountTypes: Array.isArray(d.accountTypes) ? d.accountTypes : [],
       isInCall: d.isInCall === true, workerVersion: _num(d.workerVersion) || 1,
       quotesStatus: d.quotesStatus || null, quotesCoverage: d.quotesCoverage || null,
+      balanceSections: Array.isArray(d.balanceSections) ? d.balanceSections : null, kindCounts: d.kindCounts || null,
     };
   }
   return {
@@ -10416,7 +10480,7 @@ const RISK_VARS = [
       if (!c.isSchwab) return { unavailable: '需要连接 Schwab' };
       if (!c.nav) return { unavailable: '需要 NAV' };
       const v = _balPick(c.bal, ['optionBuyingPower']);
-      if (v == null) return { unavailable: '账户未返回 optionBuyingPower (可能是现金账户)' };
+      if (v == null) return { unavailable: '余额里没有 optionBuyingPower 字段 · 见页面底部数据诊断' };
       return { value: c.pctNav(v), detail: `${_fmtUsd(v)} 可用` };
     } },
   { id: 'margin_util', cat: 'leverage', label: '维持保证金占用', unit: '%', dir: 'max', th: [25, 40, 60], w: 12,
@@ -10425,7 +10489,7 @@ const RISK_VARS = [
       if (!c.isSchwab) return { unavailable: '需要连接 Schwab' };
       const m = _balPick(c.bal, ['maintenanceRequirement']);
       const eq = _balPick(c.bal, ['equity', 'liquidationValue']) ?? c.nav;
-      if (m == null) return { unavailable: '账户未返回 maintenanceRequirement (可能是现金账户)' };
+      if (m == null) return { unavailable: '余额里没有 maintenanceRequirement 字段 · 见页面底部数据诊断' };
       if (!eq) return { unavailable: '缺少账户净值' };
       const call = !!c.p.isInCall || (_balPick(c.bal, ['maintenanceCall']) || 0) > 0 || (_balPick(c.bal, ['regTCall']) || 0) > 0;
       return { value: m / eq * 100, detail: `${_fmtUsd(m)} / 净值 ${_fmtUsd(eq)}${call ? ' · ⛔ 账户正处于追保' : ''}`, force: call ? 100 : null };
@@ -10468,13 +10532,13 @@ const RISK_VARS = [
     calc: c => {
       if (!c.nav) return { unavailable: '需要 NAV' };
       const n = c.pos.filter(x => x.kind === 'short_put').length;
-      return { value: c.pctNav(c.r.cspNominal), detail: n ? `${n} 笔 · ${_fmtUsd(c.r.cspNominal)}` : '没有 CSP' };
+      return { value: c.pctNav(c.r.cspNominal), detail: n ? `${n} 笔 · ${_fmtUsd(c.r.cspNominal)}` : _noneText(c, ' CSP') };
     } },
   { id: 'assign_near', cat: 'assign', label: '临近行权的 CSP', unit: '%', dir: 'max', th: [2, 10, 20], w: 9,
     desc: '标的现价距行权价不到 5% (或已跌破) 的 CSP 名义, 占 NAV. 这部分最可能真的被行权.',
     calc: c => {
       const csps = c.pos.filter(x => x.kind === 'short_put');
-      if (!csps.length) return { na: '没有 CSP' };
+      if (!csps.length) return { na: _noneText(c, ' CSP') };
       if (!c.nav) return { unavailable: '需要 NAV' };
       const known = csps.filter(x => x.und != null && x.strike != null);
       if (!known.length) return { unavailable: _needSchwab(c, '标的价格') };
@@ -10488,7 +10552,7 @@ const RISK_VARS = [
     desc: '同一周到期的 CSP 名义最大值, 占 NAV. 集中到期, 一次行权的冲击更大.',
     calc: c => {
       const csps = c.pos.filter(x => x.kind === 'short_put');
-      if (!csps.length) return { na: '没有 CSP' };
+      if (!csps.length) return { na: _noneText(c, ' CSP') };
       if (!c.nav) return { unavailable: '需要 NAV' };
       const weeks = _expiryWeeks(csps.filter(x => x.expiry)).sort((a, b) => b.total - a.total);
       if (!weeks.length) return { unavailable: '持仓缺少到期日' };
@@ -10499,7 +10563,7 @@ const RISK_VARS = [
     desc: '标的现价已到行权价 97% 以上的 short call 张数. PMCC 短腿被行权会动到底仓.',
     calc: c => {
       const sc = c.pos.filter(x => x.kind === 'short_call');
-      if (!sc.length) return { na: '没有 short call' };
+      if (!sc.length) return { na: _noneText(c, ' short call') };
       const known = sc.filter(x => x.und != null && x.strike != null);
       if (!known.length) return { unavailable: _needSchwab(c, '标的价格') };
       const hot = known.filter(x => x.und >= x.strike * 0.97);
@@ -10510,7 +10574,7 @@ const RISK_VARS = [
     calc: c => {
       if (!c.nav) return { unavailable: '需要 NAV' };
       const l = c.r.largest;
-      return l ? { value: c.pctNav(l.exposure), detail: l.ticker } : { value: 0, detail: '没有持仓' };
+      return l ? { value: c.pctNav(l.exposure), detail: l.ticker } : { value: 0, detail: _noneText(c, '持仓') };
     } },
   { id: 'top3', cat: 'concentration', label: '前三大标的', unit: '%', dir: 'max', th: [50, 70, 90], w: 5,
     desc: '敞口最大的三个标的合计, 占 NAV.',
@@ -10521,19 +10585,22 @@ const RISK_VARS = [
                       : { value: 0, detail: '没有持仓' };
     } },
   { id: 'eff_n', cat: 'concentration', label: '有效分散度', unit: 'n', dir: 'min', th: [8, 5, 3], worst: 1, w: 6,
-    desc: '1 ÷ HHI: 敞口相当于平均分在几个标的上. 数字越小越集中.',
+    desc: '1 ÷ HHI: 敞口相当于平均分在几个标的上, 数字越小越集中. 投入不足 NAV 50% 时按比例降权: 仓位很轻时, 集中也伤不到组合.',
     calc: c => {
       const t = c.r.tickers.filter(x => x.exposure > 0);
-      if (!t.length) return { na: '没有持仓' };
+      if (!t.length) return { na: _noneText(c, '持仓') };
       const tot = t.reduce((s, x) => s + x.exposure, 0);
       const hhi = t.reduce((s, x) => s + (x.exposure / tot) ** 2, 0);
-      return { value: 1 / hhi, detail: `${t.length} 个标的 · HHI ${Math.round(hhi * 10000)}` };
+      const deployed = c.nav ? tot / c.nav * 100 : null;
+      const scale = deployed != null ? Math.min(1, deployed / 50) : 1;
+      return { value: 1 / hhi, scale, detail: `${t.length} 个标的 · HHI ${Math.round(hhi * 10000)}`
+        + (scale < 1 ? ` · 只投入了 NAV 的 ${deployed.toFixed(1)}%, 按 ${(scale * 100).toFixed(0)}% 计分` : '') };
     } },
   { id: 'leaps_dte', cat: 'time', label: 'LEAPS 临近到期', unit: '%', dir: 'max', th: [10, 30, 50], w: 5,
     desc: '剩余不足 9 个月的 LEAPS 占 LEAPS 总成本. 你的 SOP: 不足 9 个月考虑 roll, 6 个月以内必退.',
     calc: c => {
       const L = c.pos.filter(x => x.kind === 'leaps');
-      if (!L.length) return { na: '没有 LEAPS' };
+      if (!L.length) return { na: _noneText(c, ' LEAPS') };
       const dated = L.filter(x => _dteOf(x) != null);
       if (!dated.length) return { unavailable: '持仓缺少到期日' };
       const tot = L.reduce((s, x) => s + (x.exposure || 0), 0) || 1;
@@ -10590,6 +10657,7 @@ function computeRisk(p = getPortfolio()) {
     if (out.unavailable) return { def, w, available: false, reason: out.unavailable };
     if (out.value == null || !isFinite(out.value)) return { def, w, available: false, reason: '数据不足' };
     let score = out.score != null ? out.score : def.dir === 'min' ? _scoreMin(out.value, def.th, def.worst || 0) : _scoreMax(out.value, def.th);
+    if (out.scale != null && isFinite(out.scale)) score *= Math.max(0, Math.min(1, out.scale));
     const forced = out.force != null && out.force > score;
     if (forced) score = out.force;
     score = Math.max(0, Math.min(100, score));
@@ -10678,11 +10746,231 @@ function animateRiskGauges() {
   });
 }
 
+
+/* ---------- data-source honesty ---------- */
+function _noneText(c, what) { return c.isSchwab ? `没有${what}` : `本地没有标为持仓的${what}`; }
+function _riskSourceNotice(R) {
+  if (R.c.isSchwab) return '';
+  const cfg = loadSchwabCfg(), cache = loadSchwabCache(), st = __schwabStatus.state;
+  const goSetup = `<button class="btn small" onclick="hideRiskDashboard(); setTimeout(() => { openSchwabSetup(); const el = document.getElementById('pr-schwab'); if (el) el.scrollIntoView({ block: 'center' }); }, 80)">去首页连接 Schwab</button>`;
+  const refresh = `<button class="btn small" onclick="refreshSchwab({ force: true })">刷新 Schwab</button>`;
+  let why, action;
+  if (!cfg) { why = '这台设备还没连接 Schwab. 口令每台设备各存一份, 手机和电脑要分别连接一次.'; action = goSetup; }
+  else if (st === 'loading') { why = '正在读取 Schwab…'; action = ''; }
+  else if (st === 'reauth') { why = 'Schwab 授权已过期, 需要到 Worker 的连接页重新连接.'; action = `<a class="btn small" href="${esc(cfg.url.replace(/\/+$/, '') + '/connect')}" target="_blank" rel="noopener noreferrer">打开连接页 ↗</a>`; }
+  else if (st === 'unauthorized') { why = '口令不对.'; action = goSetup; }
+  else if (st === 'error') { why = `读取失败: ${esc(__schwabStatus.message || '')}.`; action = refresh; }
+  else if (!cache) { why = '已配置 Schwab, 但还没读到数据.'; action = refresh; }
+  else { why = `Schwab 数据已经 ${_schwabAgeText(cache)}更新, 超过 24 小时不再使用.`; action = refresh; }
+  return `
+    <div class="rk-notice" role="alert">
+      <div><b>现在用的是本地 snapshot, 不是 Schwab 实时持仓.</b> 只有标了「持仓」的 snapshot 会算进来, 下面的结论可能严重不完整, 保证金和期权购买力也无法计算.</div>
+      <div class="rk-notice-why">${why}</div>
+      ${action ? `<div class="rk-notice-act">${action}</div>` : ''}
+    </div>`;
+}
+
+/* ---------- what to do when an item turns amber/red ---------- */
+const RISK_FIX = {
+  free_cash: '暂停新开 CSP / LEAPS, 让到期的 CSP 自然结束来释放现金.',
+  option_bp: '买回或 roll 走占用最多的 CSP, 或者补充现金.',
+  margin_util: '优先减少 CSP 张数, 或买回最接近行权价的 put.',
+  margin_loan: '先还借款: 卖出部分 SWVXX 或减仓.',
+  gross_exposure: '名义敞口过大: 暂停开新仓, 考虑减仓.',
+  delta_exposure: '方向性风险偏大: 卖 call 降 Delta, 或减少 LEAPS / CSP.',
+  csp_exposure: '已超过你 40% 的目标: 暂停新开 CSP.',
+  assign_near: '提前决定每一笔: 接股 / roll 到更低更远 / 买回止损.',
+  expiry_cluster: '新的 CSP 换到别的到期周.',
+  short_call_itm: '决定: roll 上去 / 买回 / 接受被行权 (PMCC 要先想好底仓怎么办).',
+  largest_ticker: '这个标的不再加仓, 考虑分批减.',
+  top3: '新仓选这三个以外的标的.',
+  eff_n: '持仓集中在少数几个标的上, 新仓优先分散.',
+  leaps_dte: 'SOP: 不足 9 个月 roll, 6 个月以内必须退出.',
+  unrealized_loss: '复盘浮亏最大的那一笔, 看是否已触发止损.',
+  market_regime: '阶段 ③: LEAPS 禁止开仓, CSP 软执行.',
+};
+function _levelIdx(key) { return RISK_LEVELS.findIndex(l => l.key === key); }
+
+/* ---------- daily history (Schwab data only, one entry per day) ---------- */
+const RISK_HIST_KEY = 'pretrade_risk_hist';
+function _dayKey(d = new Date()) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
+function loadRiskHist() {
+  try { const h = JSON.parse(localStorage.getItem(RISK_HIST_KEY) || '[]'); return Array.isArray(h) ? h.filter(e => e && e.d && isFinite(e.s)) : []; }
+  catch (e) { return []; }
+}
+function _recordRiskHistory(R) {
+  if (!R.c.isSchwab || R.composite == null) return;
+  const h = loadRiskHist(), d = _dayKey();
+  const v = {}; R.used.forEach(x => { v[x.def.id] = Math.round(x.score); });
+  const e = { d, s: Math.round(R.composite * 10) / 10, v };
+  if (h.length && h[h.length - 1].d === d) h[h.length - 1] = e; else h.push(e);
+  while (h.length > 400) h.shift();
+  try { localStorage.setItem(RISK_HIST_KEY, JSON.stringify(h)); } catch (e2) {}
+}
+function _riskPrev() {
+  const today = _dayKey();
+  const h = loadRiskHist().filter(e => e.d < today);
+  return h.length ? h[h.length - 1] : null;
+}
+function _riskTrend(R) {
+  if (!R.c.isSchwab || R.composite == null) return null;
+  const p = _riskPrev(); if (!p) return null;
+  const delta = R.composite - p.s;
+  const [, m, d] = p.d.split('-').map(Number);
+  const yesterday = _dayKey(new Date(Date.now() - 86400000)) === p.d;
+  return { delta, label: yesterday ? '昨日' : `${m}/${d}`, txt: Math.abs(delta) < 0.5 ? '持平' : (delta > 0 ? `↑ ${delta.toFixed(0)}` : `↓ ${Math.abs(delta).toFixed(0)}`) };
+}
+function _riskSparkHTML() {
+  const h = loadRiskHist().slice(-60);
+  if (h.length < 2) return `<div class="rk-spark-empty">从今天开始每天记录一次综合分, 明天起显示趋势.</div>`;
+  const W = 180, H = 40, n = h.length;
+  const xy = h.map((e, i) => [(i / (n - 1)) * (W - 4) + 2, H - 3 - (e.s / 100) * (H - 6)]);
+  const pts = xy.map(p => p.map(v => v.toFixed(1)).join(',')).join(' ');
+  const last = xy[xy.length - 1], lv = riskLevel(h[h.length - 1].s);
+  return `
+    <div class="rk-spark" title="${esc(h.map(e => `${e.d} ${Math.round(e.s)}`).join('\n'))}">
+      <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"><line x1="0" x2="${W}" y1="${(H - 3 - 0.5 * (H - 6)).toFixed(1)}" y2="${(H - 3 - 0.5 * (H - 6)).toFixed(1)}" class="rk-spark-mid"/>
+        <polyline points="${pts}" class="rk-spark-line"/><circle cx="${last[0].toFixed(1)}" cy="${last[1].toFixed(1)}" r="3" class="rk-spark-dot rk-f-${lv.key}"/></svg>
+      <span>近 ${n} 天</span>
+    </div>`;
+}
+
+/* ---------- stress test: everything moves m% together (β = 1) ---------- */
+let __stressM = -0.10;
+function stressScenario(c, m) {
+  let pnl = 0, skipped = 0, approx = 0;
+  const assigned = [];
+  c.pos.forEach(x => {
+    const qty = Number(x.qty) || 0;
+    if (x.kind === 'stock') {
+      const px = x.price != null ? x.price : (x.marketValue != null && qty ? Math.abs(x.marketValue) / qty : null);
+      if (px == null) { skipped++; return; }
+      pnl += (x.side || 1) * qty * px * m;
+      return;
+    }
+    const S = x.und;
+    if (S == null) { skipped++; return; }
+    const S1 = S * (1 + m), dS = S1 - S, sign = _isShortPos(x) ? -1 : 1;
+    let ch;
+    if (x.delta != null) ch = x.delta * dS + 0.5 * (x.gamma || 0) * dS * dS;
+    else if (x.strike != null) {
+      const isPut = x.kind === 'short_put' || x.kind === 'long_put';
+      const intr = s => isPut ? Math.max(0, x.strike - s) : Math.max(0, s - x.strike);
+      ch = intr(S1) - intr(S); approx++;
+    } else { skipped++; return; }
+    let posCh = ch * 100 * qty * sign;
+    if (sign > 0 && x.marketValue != null) posCh = Math.max(posCh, -Math.abs(x.marketValue));   // a long option can't lose more than it's worth
+    pnl += posCh;
+    if (x.kind === 'short_put' && x.strike != null && S1 < x.strike) assigned.push(x);
+  });
+  const assignedNominal = assigned.reduce((s, x) => s + (x.exposure || 0), 0);
+  const navAfter = c.nav != null ? c.nav + pnl : null;
+  const cashAfter = c.r.liquid != null ? c.r.liquid - assignedNominal : null;
+  return { m, pnl, navAfter, assigned, assignedNominal, cashAfter,
+           cashAfterPct: cashAfter != null && navAfter > 0 ? cashAfter / navAfter * 100 : null, skipped, approx };
+}
+function stressCushion(c) {
+  if (c.r.liquid == null || !c.nav) return null;
+  let below10 = null, borrow = null;
+  for (let i = 0; i <= 100; i++) {
+    const m = -i / 200, s = stressScenario(c, m);
+    if (below10 == null && s.cashAfterPct != null && s.cashAfterPct < 10) below10 = m;
+    if (borrow == null && s.cashAfter != null && s.cashAfter < 0) borrow = m;
+    if (below10 != null && borrow != null) break;
+  }
+  return { below10, borrow };
+}
+function _stressOutHTML(c) {
+  const s = stressScenario(c, __stressM);
+  const pct = v => c.nav ? (v / c.nav * 100) : null;
+  const fig = (label, val, sub, cls) => `<div class="rk-fig"><span class="rk-fig-val${cls ? ' rk-t-' + cls : ''}">${val}</span><span class="rk-fig-label">${label}</span>${sub ? `<span class="rk-fig-sub">${sub}</span>` : ''}</div>`;
+  const pnlPct = pct(s.pnl);
+  const pnlCls = pnlPct == null ? '' : riskLevel(_scoreMax(Math.max(0, -pnlPct), [3, 8, 15])).key;
+  const cashCls = s.cashAfterPct == null ? '' : riskLevel(_scoreMin(s.cashAfterPct, [20, 10, 5])).key;
+  // chart: −40% … +20%
+  const ms = []; for (let v = -40; v <= 20; v += 2) ms.push(v / 100);
+  const series = ms.map(m => { const r = stressScenario(c, m); return [m, pct(r.pnl), r.cashAfterPct]; });
+  const ys = series.flatMap(r => [r[1], r[2]]).filter(v => v != null).concat([0, 10]);
+  const yMin = Math.floor(Math.min(...ys) / 10) * 10, yMax = Math.ceil(Math.max(...ys) / 10) * 10 || 10;
+  const W = 640, H = 200, L = 40, Rr = 12, T = 12, B = 26;
+  const X = m => L + (m + 0.4) / 0.6 * (W - L - Rr), Y = v => T + (yMax - v) / (yMax - yMin) * (H - T - B);
+  const line = idx => series.filter(r => r[idx] != null).map(r => `${X(r[0]).toFixed(1)},${Y(r[idx]).toFixed(1)}`).join(' ');
+  const grid = []; for (let v = yMin; v <= yMax; v += 10) grid.push(`<line x1="${L}" x2="${W - Rr}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}" class="rk-ch-grid${v === 0 ? ' zero' : ''}"/><text x="${L - 6}" y="${(Y(v) + 4).toFixed(1)}" text-anchor="end" class="rk-ch-lab">${v}%</text>`);
+  const xt = [-40, -30, -20, -10, 0, 10, 20].map(v => `<text x="${X(v / 100).toFixed(1)}" y="${H - 8}" text-anchor="middle" class="rk-ch-lab">${v > 0 ? '+' : ''}${v}%</text>`).join('');
+  const cur = series.reduce((a, r) => Math.abs(r[0] - __stressM) < Math.abs(a[0] - __stressM) ? r : a, series[0]);
+  return `
+    <div class="rk-figs">
+      ${fig('组合盈亏', (s.pnl >= 0 ? '+' : '') + _fmtUsd(s.pnl), pnlPct != null ? `${pnlPct >= 0 ? '+' : ''}${pnlPct.toFixed(1)}% NAV` : '', pnlCls)}
+      ${fig('被行权的 CSP', s.assigned.length + ' 笔', s.assigned.length ? `需要 ${_fmtUsd(s.assignedNominal)} 接股 · ${s.assigned.map(x => x.ticker).join(' ')}` : '没有 CSP 跌破行权价')}
+      ${fig('接股后现金', s.cashAfter != null ? _fmtUsd(s.cashAfter) : '—', s.cashAfterPct != null ? `占新 NAV ${s.cashAfterPct.toFixed(1)}%${s.cashAfter < 0 ? ' · 需要借钱' : ''}` : '需要 Cash / SWVXX', cashCls)}
+      ${fig('估算后 NAV', s.navAfter != null ? _fmtUsd(s.navAfter) : '—', s.skipped || s.approx ? `${s.skipped ? s.skipped + ' 个仓位缺报价未计入' : ''}${s.skipped && s.approx ? ' · ' : ''}${s.approx ? s.approx + ' 个按内在价值估算' : ''}` : '全部按 Delta + Gamma 估算')}
+    </div>
+    <svg class="rk-chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="压力测试曲线">
+      ${grid.join('')}
+      <line x1="${L}" x2="${W - Rr}" y1="${Y(10).toFixed(1)}" y2="${Y(10).toFixed(1)}" class="rk-ch-floor"/>
+      <text x="${W - Rr}" y="${(Y(10) - 4).toFixed(1)}" text-anchor="end" class="rk-ch-lab rk-t-danger">现金底线 10%</text>
+      <polyline points="${line(2)}" class="rk-ch-cash"/>
+      <polyline points="${line(1)}" class="rk-ch-pnl"/>
+      <line x1="${X(cur[0]).toFixed(1)}" x2="${X(cur[0]).toFixed(1)}" y1="${T}" y2="${H - B}" class="rk-ch-cursor"/>
+      ${cur[1] != null ? `<circle cx="${X(cur[0]).toFixed(1)}" cy="${Y(cur[1]).toFixed(1)}" r="4" class="rk-ch-pnl-dot"/>` : ''}
+      ${cur[2] != null ? `<circle cx="${X(cur[0]).toFixed(1)}" cy="${Y(cur[2]).toFixed(1)}" r="4" class="rk-ch-cash-dot"/>` : ''}
+      ${xt}
+    </svg>
+    <div class="rk-legend"><span><i class="rk-sw rk-sw-pnl"></i>组合盈亏 % NAV</span><span><i class="rk-sw rk-sw-cash"></i>接股后现金 % NAV</span><span class="rk-legend-note">横轴 = 所有标的同时涨跌的幅度</span></div>`;
+}
+function _stressHTML(R) {
+  const c = R.c;
+  if (!c.nav || !c.pos.length) return '';
+  const cu = stressCushion(c);
+  const pctTxt = m => `${(Math.abs(m) * 100).toFixed(m * 200 % 2 ? 1 : 0)}%`;
+  const headline = !cu ? '需要 Cash / SWVXX 数据才能算现金安全垫.'
+    : cu.below10 === 0 ? '现在现金就已经低于 10% NAV, 还没算任何行权.'
+    : cu.below10 != null ? `大盘跌 <b>${pctTxt(cu.below10)}</b> 时, CSP 被行权接股后现金会跌破 10% NAV${cu.borrow != null ? `; 跌 <b>${pctTxt(cu.borrow)}</b> 时需要借钱接股` : ''}.`
+    : '大盘跌 50% 以内, 全部 CSP 接股后现金都不会低于 10% NAV.';
+  const presets = [-5, -10, -20, -30].map(v => `<button class="rk-preset${Math.round(__stressM * 100) === v ? ' active' : ''}" onclick="setStressMove(${v})">${v}%</button>`).join('');
+  return `
+    <section class="rk-block rk-stress">
+      <h3 class="rk-block-title">压力测试 · 大盘一起跌会怎样</h3>
+      <p class="rk-stress-head">${headline}</p>
+      <div class="rk-stress-ctrl">
+        <div class="rk-presets">${presets}</div>
+        <input type="range" min="-40" max="20" step="1" value="${Math.round(__stressM * 100)}" id="rk-stress-range" aria-label="大盘涨跌幅" oninput="setStressMove(this.value, true)">
+        <span class="rk-stress-val" id="rk-stress-val">${__stressM > 0 ? '+' : ''}${Math.round(__stressM * 100)}%</span>
+      </div>
+      <div id="rk-stress-out">${_stressOutHTML(c)}</div>
+      <div class="rk-note">假设所有标的同时同幅度涨跌 (β = 1). 期权按 Delta + Gamma 估算, 缺 Greeks 的按内在价值. 没有计入 IV 变化: 真实大跌时 IV 会上升, 卖方的实际浮亏会比这里更大.</div>
+    </section>`;
+}
+window.setStressMove = (v, fromSlider) => {
+  __stressM = Math.max(-0.4, Math.min(0.2, (parseFloat(v) || 0) / 100));
+  const out = document.getElementById('rk-stress-out');
+  if (!out) return;
+  out.innerHTML = _stressOutHTML(computeRisk().c);
+  const lab = document.getElementById('rk-stress-val'); if (lab) lab.textContent = `${__stressM > 0 ? '+' : ''}${Math.round(__stressM * 100)}%`;
+  const rng = document.getElementById('rk-stress-range'); if (rng && !fromSlider) rng.value = Math.round(__stressM * 100);
+  document.querySelectorAll('.rk-preset').forEach(b => b.classList.toggle('active', b.textContent === `${Math.round(__stressM * 100)}%`));
+};
+
+/* ---------- composite decomposition ---------- */
+function _riskDecompHTML(R) {
+  if (R.composite == null || !R.used.length) return '';
+  const parts = R.used.slice().sort((a, b) => b.contrib - a.contrib);
+  const sum = parts.reduce((s, v) => s + v.contrib, 0) || 1;
+  return `
+    <section class="rk-decomp">
+      <div class="rk-decomp-bar">${parts.map(v => `<i class="rk-f-${v.level.key}" style="width:${(v.contrib / sum * 100).toFixed(2)}%" title="${esc(v.def.label)} · ${v.contrib.toFixed(1)} 分"></i>`).join('')}</div>
+      <div class="rk-decomp-labels">${parts.slice(0, 4).map(v => `<span><i class="rk-dot rk-f-${v.level.key}"></i>${esc(v.def.label)} ${v.contrib.toFixed(1)}</span>`).join('')}${parts.length > 4 ? `<span class="rk-quiet">其余 ${parts.length - 4} 项 ${parts.slice(4).reduce((s, v) => s + v.contrib, 0).toFixed(1)}</span>` : ''}</div>
+      <div class="rk-note">加权平均 ${R.mean.toFixed(1)} 分由上面各项贡献组成.${R.floorApplied ? ` 综合分按保底规则取 ${R.top.def.label} ${Math.round(R.top.score)} − 25 = ${R.composite.toFixed(0)}, 高于加权平均.` : ''}</div>
+    </section>`;
+}
+
 /* ---------- main page · compact card ---------- */
 function riskCardHTML() {
   const R = computeRisk();
+  _recordRiskHistory(R);
   const s = R.composite, lvl = s != null ? riskLevel(s) : null;
   const drivers = R.used.filter(v => v.score >= 25).sort((a, b) => b.score - a.score).slice(0, 3);
+  const tr = _riskTrend(R);
   return `
     <div class="rk-card" id="risk-card" role="button" tabindex="0" onclick="showRiskDashboard()"
          onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showRiskDashboard();}">
@@ -10692,14 +10980,17 @@ function riskCardHTML() {
           <span class="rk-card-title">综合风险</span>
           <span class="rk-card-num${lvl ? ' rk-t-' + lvl.key : ''}">${s != null ? Math.round(s) : '—'}</span>
           <span class="rk-card-lvl${lvl ? ' rk-t-' + lvl.key : ''}">${lvl ? lvl.label : '数据不足'}</span>
+          ${tr ? `<span class="rk-card-trend ${tr.delta > 0.5 ? 'up' : tr.delta < -0.5 ? 'down' : ''}">较${tr.label} ${tr.txt}</span>` : ''}
         </div>
         <div class="rk-card-drivers">${drivers.length
           ? drivers.map(v => `<span class="rk-chip rk-c-${v.level.key}">${esc(v.def.label)} ${esc(_fmtRiskVal(v))}</span>`).join('')
           : `<span class="rk-quiet">${s != null ? '计入的各项都在安全区' : '连接 Schwab 或在下方填 NAV / Cash 后显示'}</span>`}</div>
+        ${R.c.isSchwab ? '' : `<div class="rk-card-warn">⚠ 持仓来自本地 snapshot, 不是 Schwab 实时持仓, 结果可能不完整</div>`}
         <div class="rk-card-meta">${R.used.length} 项计入 · 数据覆盖 ${Math.round(R.coverage * 100)}% · 打开仪表盘 ▸</div>
       </div>
     </div>`;
 }
+
 function _refreshRiskCard() {
   const el = document.getElementById('risk-card');
   if (!el) return;
@@ -10723,30 +11014,33 @@ function _riskScaleHTML(v) {
       <div class="rk-scale-labels">${labels}</div>
     </div>`;
 }
-function _riskRowHTML(v) {
+function _riskRowHTML(v, prev) {
   const d = v.def;
   if (!v.available) {
-    return `
-      <div class="rk-row rk-row-off">
-        <div class="rk-row-head"><span class="rk-name">${esc(d.label)}</span><span class="rk-off">${esc(v.na || v.reason)}</span></div>
-        <div class="rk-desc">${esc(d.desc)}</div>
-      </div>`;
+    return `<div class="rk-row rk-row-off"><span class="rk-name">${esc(d.label)}</span><span class="rk-off">${esc(v.na || v.reason)}</span></div>`;
   }
+  const ps = prev && prev.v ? prev.v[d.id] : null;
+  const up = ps != null && _levelIdx(riskLevel(ps).key) < _levelIdx(v.level.key);
+  const fix = _levelIdx(v.level.key) >= 2 && RISK_FIX[d.id] ? `<div class="rk-fix">建议: ${esc(RISK_FIX[d.id])}</div>` : '';
   return `
-    <div class="rk-row" data-var="${d.id}">
+    <div class="rk-row" data-var="${d.id}" role="button" tabindex="0" aria-expanded="false"
+         onclick="this.classList.toggle('open'); this.setAttribute('aria-expanded', this.classList.contains('open'))"
+         onkeydown="if(event.key==='Enter'){this.click();}">
       <div class="rk-row-head">
-        <span class="rk-name">${esc(d.label)}</span>
+        <span class="rk-name">${esc(d.label)}${up ? `<span class="rk-up" title="上次 ${ps} 分">↑ 新升级</span>` : ''}</span>
         <span class="rk-val rk-t-${v.level.key}">${esc(_fmtRiskVal(v))}</span>
         <span class="rk-pill rk-c-${v.level.key}">${v.level.label}${v.forced ? ' · 强制' : ''}</span>
       </div>
       ${_riskScaleHTML(v)}
       <div class="rk-row-foot">
         <span class="rk-detail">${esc(v.detail)}</span>
-        <span class="rk-weight">${v.w > 0 ? `权重 ${v.w} · 贡献 ${(v.contrib || 0).toFixed(1)} 分` : '权重 0 · 不计入'}</span>
+        <span class="rk-weight">${v.w > 0 ? `${(v.contrib || 0).toFixed(1)} 分 · 权重 ${v.w}` : '权重 0'}</span>
       </div>
-      <div class="rk-desc">${esc(d.desc)}${d.dir !== 'score' ? ' ' + esc(_riskThText(d)) + '.' : ''}</div>
+      ${fix}
+      <div class="rk-more">${esc(d.desc)}${d.dir !== 'score' ? '<br>' + esc(_riskThText(d)) : ''}</div>
     </div>`;
 }
+
 function _riskHeadline(R) {
   if (R.composite == null) return '还没有足够的数据. 连接 Schwab, 或在首页填 NAV 和 Cash / SWVXX.';
   const hot = R.used.filter(v => v.score >= 50).sort((a, b) => b.score - a.score);
@@ -10788,7 +11082,16 @@ function _expiryChartHTML(R) {
   const nav = R.c.nav;
   const csps = R.c.pos.filter(x => x.kind === 'short_put' && x.expiry);
   if (!nav || !csps.length) return '';
-  const weeks = _expiryWeeks(csps).sort((a, b) => a.key.localeCompare(b.key)).slice(0, 12);
+  const byWeek = {}; _expiryWeeks(csps).forEach(w => { byWeek[w.key] = w; });
+  const keys = Object.keys(byWeek).sort();
+  const start = new Date(_weekKey(_dayKey()) + 'T12:00:00'), last = new Date(keys[keys.length - 1] + 'T12:00:00');
+  const weeks = [];
+  for (let d = new Date(start); d <= last && weeks.length < 16; d.setDate(d.getDate() + 7)) {
+    const k = d.toISOString().slice(0, 10), fri = new Date(d); fri.setDate(fri.getDate() + 4);
+    weeks.push(byWeek[k] ? { ...byWeek[k], fri } : { key: k, total: 0, count: 0, items: [], fri });
+  }
+  const later = keys.filter(k => k > (weeks.length ? weeks[weeks.length - 1].key : '')).map(k => byWeek[k]);
+  if (later.length) weeks.push({ key: 'later', total: later.reduce((s, w) => s + w.total, 0), count: later.reduce((s, w) => s + w.count, 0), items: later.flatMap(w => w.items), laterLabel: '之后' });
   const maxPct = Math.max(25, ...weeks.map(w => w.total / nav * 100)) * 1.1;
   return `
     <section class="rk-block">
@@ -10796,19 +11099,21 @@ function _expiryChartHTML(R) {
       <div class="rk-cols">
         ${weeks.map(w => {
           const pct = w.total / nav * 100, lv = riskLevel(_scoreMax(pct, [15, 25, 35]));
+          const label = w.laterLabel || `${w.fri.getMonth() + 1}/${w.fri.getDate()}`;
           return `
-            <div class="rk-col" title="${esc(w.items.map(x => `${x.ticker} ${x.strike}P × ${x.qty}`).join(', '))}">
-              <span class="rk-col-val rk-t-${lv.key}">${pct.toFixed(0)}%</span>
+            <div class="rk-col${w.count ? '' : ' empty'}" title="${esc(w.items.map(x => `${x.ticker} ${x.strike}P × ${x.qty} · ${x.expiry}`).join('\n') || '这周没有到期')}">
+              <span class="rk-col-val ${w.count ? 'rk-t-' + lv.key : ''}">${w.count ? pct.toFixed(0) + '%' : ''}</span>
               <div class="rk-col-track"><i class="rk-col-fill rk-f-${lv.key}" style="height:${(pct / maxPct * 100).toFixed(1)}%"></i>
                 <em class="rk-col-guide" style="bottom:${(15 / maxPct * 100).toFixed(1)}%"></em></div>
-              <span class="rk-col-label">${esc(w.label)}</span>
-              <span class="rk-col-n">${w.count} 笔</span>
+              <span class="rk-col-label">${label}</span>
+              <span class="rk-col-n">${w.count ? w.count + ' 笔' : ''}</span>
             </div>`;
         }).join('')}
       </div>
-      <div class="rk-note">虚线 = 单周 15% NAV. 悬停柱子看具体合约.</div>
+      <div class="rk-note">每列是一周, 标签为那周五. 虚线 = 单周 15% NAV. 悬停看具体合约.</div>
     </section>`;
 }
+
 function _moneynessHTML(R) {
   const rows = R.c.pos.filter(x => (x.kind === 'short_put' || x.kind === 'short_call') && x.und != null && x.strike != null)
     .map(x => {
@@ -10818,7 +11123,7 @@ function _moneynessHTML(R) {
   if (!rows.length) return '';
   const cls = d => d < 0 ? 'danger' : d < 5 ? 'alert' : d < 10 ? 'watch' : 'safe';
   return `
-    <section class="rk-block">
+    <section class="rk-block rk-moneyness">
       <h3 class="rk-block-title">卖出期权离行权价多远</h3>
       <div class="rk-table-wrap"><table class="rk-table">
         <thead><tr><th>标的</th><th>合约</th><th>现价</th><th>距离</th><th>DTE</th><th>Delta</th><th>名义</th></tr></thead>
@@ -10841,27 +11146,62 @@ function _greeksHTML(R) {
   if (!c.isSchwab) return '';
   const opts = c.pos.filter(x => x.kind !== 'stock');
   const withD = opts.filter(x => x.delta != null && x.und != null);
-  let delta = 0, theta = 0, pnl = 0, pnlN = 0, ivW = 0, ivN = 0;
+  const noGreeks = opts.length > 0 && !withD.length;
+  const KIND = { short_put: 'CSP', short_call: 'CC / PMCC 短腿', leaps: 'LEAPS', long_put: 'Long put' };
+  const th = {}; Object.keys(KIND).forEach(k => { th[k] = { sum: 0, n: 0, miss: 0 }; });
+  const byT = {};
+  let usd = 0, pnl = 0, pnlN = 0, ivW = 0, ivN = 0;
   c.pos.forEach(x => {
-    delta += _dollarDelta(x) || 0;
-    if (x.theta != null) theta += x.theta * 100 * (Number(x.qty) || 0) * (_isShortPos(x) ? -1 : 1);
+    const qty = Number(x.qty) || 0, sgn = _isShortPos(x) ? -1 : 1;
+    const t = byT[x.ticker] || (byT[x.ticker] = { t: x.ticker, sh: 0, usd: 0, theta: 0, n: 0, miss: 0 });
+    t.n++;
+    const dd = _dollarDelta(x);
+    if (dd != null) { usd += dd; t.usd += dd; }
+    if (x.kind === 'stock') t.sh += (x.side || 1) * qty;
+    else if (x.delta != null) t.sh += x.delta * 100 * qty * sgn;
+    else t.miss++;
+    if (KIND[x.kind]) {
+      if (x.theta != null) { const v = x.theta * 100 * qty * sgn; th[x.kind].sum += v; th[x.kind].n++; t.theta += v; }
+      else th[x.kind].miss++;
+    }
     const p = _posPnl(x); if (p != null) { pnl += p; pnlN++; }
     if (_isShortPos(x) && x.iv != null && x.exposure) { ivW += x.iv * x.exposure; ivN += x.exposure; }
   });
+  const thetaNet = Object.values(th).reduce((s, o) => s + o.sum, 0);
+  const sellers = th.short_put.sum + th.short_call.sum, buyers = th.leaps.sum + th.long_put.sum;
   const fig = (label, val, sub) => `<div class="rk-fig"><span class="rk-fig-val">${val}</span><span class="rk-fig-label">${label}</span>${sub ? `<span class="rk-fig-sub">${sub}</span>` : ''}</div>`;
-  const noGreeks = opts.length > 0 && !withD.length;
+  const signed = v => (v >= 0 ? '+' : '−') + '$' + Math.round(Math.abs(v)).toLocaleString();
+  const rows = Object.values(byT).sort((a, b) => Math.abs(b.usd) - Math.abs(a.usd));
   return `
     <section class="rk-block">
       <h3 class="rk-block-title">组合 Greeks 与盈亏</h3>
-      ${noGreeks ? `<div class="rk-note">${esc(_needSchwab(c, ' Greeks'))} · 下方只显示不依赖报价的数字</div>` : ''}
+      ${noGreeks ? `<div class="rk-note">${esc(_needSchwab(c, ' Greeks'))}. 下面只显示不依赖报价的数字.</div>` : ''}
       <div class="rk-figs">
-        ${noGreeks ? '' : fig('净 Delta (美元)', _fmtUsd(delta), c.nav ? `相当于 ${(delta / c.nav * 100).toFixed(0)}% NAV 的正股` : '')}
-        ${noGreeks ? '' : fig('每日 Theta', (theta >= 0 ? '+' : '') + _fmtUsd(theta), theta >= 0 ? '时间站在你这边' : '每天的时间损耗')}
-        ${pnlN ? fig('未实现盈亏', (pnl >= 0 ? '+' : '') + _fmtUsd(pnl), `${pnlN} 个仓位`) : ''}
+        ${noGreeks ? '' : fig('Delta 美元敞口', signed(usd), `按 Delta 折算, 相当于${usd >= 0 ? '持有' : '做空'} ${_fmtUsd(Math.abs(usd))} 的正股${c.nav ? ` · ${(Math.abs(usd) / c.nav * 100).toFixed(0)}% NAV` : ''}`)}
+        ${noGreeks ? '' : fig('每日 Theta 净值', signed(thetaNet), `卖方 ${signed(sellers)} · 买方 ${signed(buyers)}`)}
+        ${pnlN ? fig('未实现盈亏', signed(pnl), `${pnlN} 个仓位`) : ''}
         ${ivN ? fig('卖出期权平均 IV', (ivW / ivN).toFixed(1) + '%', '按名义加权') : ''}
       </div>
+      ${noGreeks ? '' : `
+      <div class="rk-sub-title">每日 Theta 按策略</div>
+      <div class="rk-table-wrap"><table class="rk-table">
+        <thead><tr><th>策略</th><th>每日 Theta</th><th>仓位</th></tr></thead>
+        <tbody>${Object.entries(KIND).filter(([k]) => th[k].n || th[k].miss).map(([k, label]) => `
+          <tr><td>${label}</td><td class="${th[k].sum >= 0 ? 'rk-t-safe' : 'rk-t-alert'}">${signed(th[k].sum)}</td>
+              <td>${th[k].n}${th[k].miss ? ` <span class="rk-quiet">· ${th[k].miss} 个缺 Theta 未计入</span>` : ''}</td></tr>`).join('')}
+          <tr class="rk-total"><td>合计</td><td>${signed(thetaNet)}</td><td></td></tr></tbody>
+      </table></div>
+      <div class="rk-sub-title">按标的的 Delta</div>
+      <div class="rk-table-wrap"><table class="rk-table">
+        <thead><tr><th>标的</th><th>净 Delta (股)</th><th>美元敞口</th><th>每日 Theta</th><th>仓位</th></tr></thead>
+        <tbody>${rows.map(t => `
+          <tr><td>${esc(t.t)}</td><td>${t.sh >= 0 ? '+' : ''}${Math.round(t.sh).toLocaleString()} Δ</td><td>${signed(t.usd)}</td>
+              <td>${t.theta ? signed(t.theta) : '—'}</td><td>${t.n}${t.miss ? ` <span class="rk-quiet">· ${t.miss} 缺 Greeks</span>` : ''}</td></tr>`).join('')}</tbody>
+      </table></div>
+      <div class="rk-note">净 Delta (股) = 这个标的上所有仓位合起来, 相当于持有多少股正股; 一张 Delta 0.30 的期权 = 30 股. 卖方 Theta 记正, 买方记负.</div>`}
     </section>`;
 }
+
 function _weightsEditorHTML(R) {
   return `
     <details class="rk-block rk-editor" ${__riskEditorOpen ? 'open' : ''} ontoggle="__riskEditorOpen = this.open">
@@ -10892,14 +11232,19 @@ window.resetRiskWeights = () => {
   if (typeof scheduleAutoPushToGist === 'function') scheduleAutoPushToGist();
 };
 function _riskDiagnosticsHTML(R) {
-  const p = R.c.p, cache = loadSchwabCache();
-  const balKeys = ['optionBuyingPower', 'maintenanceRequirement', 'equity', 'cashBalance', 'marginBalance', 'buyingPower'];
+  const p = R.c.p;
+  const want = ['optionBuyingPower', 'maintenanceRequirement', 'equity', 'cashBalance', 'marginBalance', 'buyingPower', 'availableFunds'];
+  const secs = Array.isArray(p.balanceSections) ? p.balanceSections : [];
+  const whereIs = k => { const found = []; secs.forEach(s => Object.entries(s || {}).forEach(([sec, keys]) => { if ((keys || []).includes(k)) found.push(sec.replace('Balances', '')); })); return found.length ? found.join('/') : null; };
+  const balLine = R.c.bal ? want.map(k => `${k} ${typeof R.c.bal[k] === 'number' ? '✓' + (whereIs(k) ? ' (' + whereIs(k) + ')' : '') : '✗'}`).join(' · ') : '—';
+  const kc = p.kindCounts || R.c.pos.reduce((m, x) => { m[x.kind] = (m[x.kind] || 0) + 1; return m; }, {});
   const lines = [
     ['数据来源', _prSourceInfo().text],
-    ['Worker 版本', R.c.isSchwab ? (p.workerVersion ? 'v' + p.workerVersion : 'v1 (无报价)') : '—'],
-    ['报价', R.c.isSchwab ? `${p.quotesStatus || '未请求'}${p.quotesCoverage ? ` · Greeks ${p.quotesCoverage.withGreeks}/${p.quotesCoverage.options}` : ''}` : '—'],
+    ['持仓数', Object.entries(kc).map(([k, n]) => `${_KIND_LABEL[k] || k} ${n}`).join(' · ') || '0'],
+    ['Worker 版本', R.c.isSchwab ? 'v' + (p.workerVersion || 1) + (p.workerVersion >= 3 ? '' : ' · 建议升级到 v3') : '—'],
+    ['报价', R.c.isSchwab ? `${p.quotesStatus || '未请求'}${p.quotesCoverage ? ` · Greeks ${p.quotesCoverage.withGreeks}/${p.quotesCoverage.options} · 标的价格 ${p.quotesCoverage.withPrice}/${p.quotesCoverage.total}` : ''}` : '—'],
     ['账户类型', (p.accountTypes || []).join(', ') || '—'],
-    ['保证金字段', R.c.bal ? balKeys.map(k => `${k} ${typeof R.c.bal[k] === 'number' ? '✓' : '✗'}`).join(' · ') : '—'],
+    ['余额字段', balLine],
     ['未计入的项', R.vars.filter(v => !v.available && !v.na).map(v => `${v.def.label} (${v.reason})`).join(' · ') || '无'],
     ['不适用的项', R.vars.filter(v => v.na).map(v => `${v.def.label} (${v.na})`).join(' · ') || '无'],
   ];
@@ -10907,21 +11252,27 @@ function _riskDiagnosticsHTML(R) {
     <details class="rk-block">
       <summary class="rk-block-title">数据诊断</summary>
       <dl class="rk-diag">${lines.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}</dl>
+      <div class="rk-note">只含字段名和数量, 不含金额, 可以直接截图发给我排查.</div>
     </details>`;
 }
+
 function renderRiskPage() {
   const R = computeRisk();
+  _recordRiskHistory(R);
   const s = R.composite, lvl = s != null ? riskLevel(s) : null;
   const src = _prSourceInfo();
+  const prev = _riskPrev();
+  const tr = _riskTrend(R);
   const groups = RISK_CATS.map(cat => {
     const vs = R.vars.filter(v => v.def.cat === cat.id);
     const scored = vs.filter(v => v.available && v.w > 0);
     const catAvg = scored.length ? scored.reduce((a, v) => a + v.score * v.w, 0) / scored.reduce((a, v) => a + v.w, 0) : null;
     const cl = catAvg != null ? riskLevel(catAvg) : null;
+    const on = vs.filter(v => v.available), off = vs.filter(v => !v.available);
     return `
       <section class="rk-group">
         <h3 class="rk-group-title">${esc(cat.label)}${cl ? `<span class="rk-group-score rk-t-${cl.key}">${Math.round(catAvg)}</span>` : ''}</h3>
-        ${vs.map(_riskRowHTML).join('')}
+        ${on.map(v => _riskRowHTML(v, prev)).join('')}${off.map(v => _riskRowHTML(v, prev)).join('')}
       </section>`;
   }).join('');
   $app.innerHTML = `
@@ -10933,28 +11284,35 @@ function renderRiskPage() {
       </div>
     </div>
     <div class="rk-page">
+      ${_riskSourceNotice(R)}
       <section class="rk-hero">
         <div class="rk-hero-gauge">${riskGaugeSVG(s, 'composite', false)}</div>
         <div class="rk-hero-text">
-          <h2 class="rk-hero-level${lvl ? ' rk-t-' + lvl.key : ''}">${lvl ? '综合风险 · ' + lvl.label : '综合风险 · 数据不足'}</h2>
+          <h2 class="rk-hero-level${lvl ? ' rk-t-' + lvl.key : ''}">${lvl ? '综合风险 · ' + lvl.label : '综合风险 · 数据不足'}
+            ${tr ? `<span class="rk-card-trend ${tr.delta > 0.5 ? 'up' : tr.delta < -0.5 ? 'down' : ''}">较${tr.label} ${tr.txt}</span>` : ''}</h2>
           <p class="rk-hero-line">${esc(_riskHeadline(R))}</p>
+          ${R.c.isSchwab ? _riskSparkHTML() : ''}
           <div class="rk-hero-meta"><span class="pr-source ${src.cls}">${esc(src.text)}</span>
             <span>${R.used.length} 项计入 · 数据覆盖 ${Math.round(R.coverage * 100)}%</span></div>
         </div>
       </section>
+      ${_riskDecompHTML(R)}
       <div class="rk-groups">${groups}</div>
+      <div class="rk-note rk-groups-note">点任意一行看定义、阈值; 进入警戒的项会给出处理建议.</div>
+      ${_stressHTML(R)}
+      ${_greeksHTML(R)}
       ${_tickerChartHTML(R)}
       ${_expiryChartHTML(R)}
       ${_moneynessHTML(R)}
-      ${_greeksHTML(R)}
       ${_weightsEditorHTML(R)}
       <details class="rk-block">
         <summary class="rk-block-title">综合分怎么算</summary>
         <div class="rk-method">
-          <p>每个变量按自己的阈值换算成 0–100 分: 安全 0–25, 关注 25–50, 警戒 50–75, 危险 75–100. 阈值之间线性过渡.</p>
-          <p>综合分 = 各项分数按权重平均. 再加一条保底: 综合分不低于最高单项减 25. 所以任何一项进入危险区, 指针至少会到警戒区, 不会被其他安全项平均掉.</p>
-          <p>没有数据的项不计入, 并按权重算出数据覆盖率. 不适用的项 (比如没有 LEAPS 时的 LEAPS 到期) 也不计入.</p>
-          <p>开仓前的模拟用同一套算法, 把这笔交易加进持仓后重新打分. 保证金类变量 Schwab 才算得准, 模拟时保持不变.</p>
+          <p>每个变量按自己的阈值换算成 0–100 分: 安全 0–25, 关注 25–50, 警戒 50–75, 危险 75–100, 阈值之间线性过渡. 低于警戒线后一直线性走到最差可能值 (比如购买力为 0) 才是 100 分.</p>
+          <p>综合分 = 各项分数按权重平均, 再加一条保底: 不低于最高单项减 25. 任何一项进入危险区, 指针至少会到警戒区, 不会被其他安全项平均掉.</p>
+          <p>有效分散度只在仓位够重时才有意义: 投入不足 NAV 50% 时按比例降权, 避免"只有一笔小仓位"被判成高度集中.</p>
+          <p>没有数据的项、不适用的项 (比如没有 LEAPS 时的 LEAPS 到期) 不计入, 并算出数据覆盖率. 每天第一次打开会记录一次综合分和各项分数, 用来显示趋势和"新升级"的项; 只记录 Schwab 数据.</p>
+          <p>开仓前的模拟用同一套算法, 把这笔交易加进持仓后重新打分. 保证金类变量模拟时保持不变.</p>
         </div>
       </details>
       ${_riskDiagnosticsHTML(R)}
