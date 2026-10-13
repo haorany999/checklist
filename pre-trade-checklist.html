@@ -1946,6 +1946,65 @@
     color: var(--panel); background: var(--rk-danger); white-space: nowrap; }
   .rk-red-list { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 10px; }
   .rk-hero-text .rk-red-list { justify-content: inherit; }
+  /* ===== Greeks lab ===== */
+  .sf-wrap { position: relative; width: 100%; margin: 6px 0 2px; border-radius: var(--radius, 6px);
+    background: radial-gradient(ellipse at 50% 40%, color-mix(in srgb, var(--panel-2) 70%, transparent), transparent 75%); }
+  .sf-canvas { width: 100%; height: 100%; display: block; cursor: grab; touch-action: pan-y; }
+  .sf-wrap.dragging .sf-canvas { cursor: grabbing; }
+  .sf-tip { position: absolute; pointer-events: none; padding: 5px 8px; border-radius: 4px; font-size: 11px; line-height: 1.4;
+    background: var(--text); color: var(--panel); white-space: nowrap; font-family: var(--mono); z-index: 2; }
+  .sf-tip b { display: block; font-size: 13px; }
+  .sf-hint { position: absolute; right: 8px; top: 6px; font-size: 10.5px; color: var(--text-faint); pointer-events: none; }
+  .gl-title-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .gl-chart { width: 100%; height: auto; display: block; overflow: visible; }
+  .gl-lab { font-family: var(--mono); font-size: 9.5px; fill: var(--text-faint); }
+  .gl-line { fill: none; stroke-width: 2; stroke-linejoin: round; }
+  .gl-l1 { stroke: var(--accent); } .gl-l2 { stroke: var(--pending); stroke-dasharray: 5 3; } .gl-l3 { stroke: var(--text-dim); stroke-width: 1.5; }
+  .gl-sw-l1 { background: var(--accent); } .gl-sw-l2 { background: var(--pending); } .gl-sw-l3 { background: var(--text-dim); }
+  .gl-bar-sell { fill: var(--pass); opacity: 0.85; } .gl-bar-buy { fill: var(--fail); opacity: 0.75; }
+  .gl-sw-sell { background: var(--pass); } .gl-sw-buy { background: var(--fail); } .gl-sw-cum { background: var(--accent); }
+  .gl-cum { fill: none; stroke: var(--accent); stroke-width: 2; }
+  .gl-cum-lab { fill: var(--accent); }
+  .gl-exp line { stroke: var(--text-faint); stroke-dasharray: 2 3; opacity: 0.7; }
+  .gl-exp text { font-family: var(--mono); font-size: 9px; fill: var(--text-dim); }
+  .gl-exp text.long { fill: var(--fail); }
+  .gl-dot { cursor: pointer; }
+  .gl-dot circle { fill-opacity: 0.32; stroke-width: 1.5; }
+  .gl-dot text { font-family: var(--mono); font-size: 10px; fill: var(--text); }
+  .gl-dot:hover circle, .gl-dot:focus circle { fill-opacity: 0.6; }
+  .gl-safe circle { fill: var(--rk-safe); stroke: var(--rk-safe); } .gl-watch circle { fill: var(--rk-watch); stroke: var(--rk-watch); }
+  .gl-danger circle { fill: var(--rk-danger); stroke: var(--rk-danger); }
+  .gl-row { cursor: pointer; }
+  .gl-row:hover td, .rk-mg.gl-row:hover { background: color-mix(in srgb, var(--accent) 7%, transparent); }
+  .gl-row:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .gl-leaps td:first-child { font-weight: 600; }
+  /* per-contract modal */
+  body.gl-lock { overflow: hidden; }
+  .gl-overlay { position: fixed; inset: 0; z-index: 900; display: flex; align-items: flex-start; justify-content: center;
+    padding: max(24px, env(safe-area-inset-top)) 16px 24px; background: color-mix(in srgb, #000 45%, transparent); overflow-y: auto; }
+  .gl-modal { width: 100%; max-width: 900px; background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius, 10px);
+    box-shadow: 0 18px 50px rgba(0,0,0,0.3); }
+  .gl-head { display: flex; align-items: baseline; gap: 10px; padding: 14px 18px; border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; background: var(--panel); border-radius: var(--radius, 10px) var(--radius, 10px) 0 0; z-index: 3; }
+  .gl-head b { font-family: var(--mono); font-size: 16px; }
+  .gl-x { margin-left: auto; background: none; border: none; font-size: 24px; line-height: 1; color: var(--text-dim); cursor: pointer; padding: 0 4px; }
+  .gl-body { padding: 12px 18px 20px; }
+  .gl-stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 0;
+    border-top: 1px solid var(--border); border-left: 1px solid var(--border); }
+  .gl-stat { display: flex; flex-direction: column; gap: 2px; padding: 7px 10px; background: var(--panel);
+    border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  .gl-stat span { font-size: 10.5px; color: var(--text-faint); }
+  .gl-stat b { font-family: var(--mono); font-size: 13.5px; color: var(--text); font-variant-numeric: tabular-nums; }
+  .gl-grid4 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 18px; }
+  .gl-mini-t { font-size: 11.5px; color: var(--text-dim); margin-bottom: 2px; }
+  @media (max-width: 560px) {
+    .gl-overlay { padding: 0; }
+    .gl-modal { border-radius: 0; min-height: 100%; border: none; }
+    .gl-head { border-radius: 0; padding-top: max(14px, env(safe-area-inset-top)); }
+    .gl-body { padding: 10px 12px 28px; }
+    .gl-grid4 { grid-template-columns: 1fr; }
+    .gl-lab { font-size: 15px; } .gl-exp text, .gl-dot text { font-size: 15px; }
+  }
   .pr-sim-risk { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 10px; margin-top: 8px; padding: 6px 9px;
     border-radius: 4px; background: var(--panel-2); font-size: 12px; color: var(--text-dim); }
   .pr-sim-risk span { font-size: 10.5px; color: var(--text-faint); margin-left: auto; }
@@ -3697,6 +3756,7 @@ function _postRender() {
     if (typeof triggerVerdictAnimations === 'function') triggerVerdictAnimations();
     if (typeof applyLayoutMode === 'function') applyLayoutMode();
     if (typeof animateRiskGauges === 'function') animateRiskGauges();
+    if (typeof mountSurfaces === 'function') mountSurfaces();
   });
 }
 
@@ -11048,7 +11108,12 @@ window.setStressIV = v => {
 
 
 /* ---------- position helpers (labels, management, sizing) ---------- */
-function _fmtSigned(v) { return v == null ? '—' : (v >= 0 ? '+' : '−') + '$' + Math.round(Math.abs(v)).toLocaleString(); }
+function _fmtSigned(v) { if (v == null) return '—'; const a = Math.round(Math.abs(v)); return a === 0 ? '$0' : (v > 0 ? '+' : '−') + '$' + a.toLocaleString(); }
+function _fmtK(v) {             // compact axis label: +$29k, −$850, $0
+  const a = Math.abs(v); if (a < 0.5) return '$0';
+  const s = v > 0 ? '+' : '−';
+  return a >= 1000 ? `${s}$${(a / 1000).toFixed(a >= 10000 ? 0 : 1)}k` : `${s}$${Math.round(a)}`;
+}
 function _md(expiry) { const d = new Date(String(expiry) + 'T12:00:00'); return isFinite(d) ? `${d.getMonth() + 1}/${d.getDate()}` : ''; }
 function _posLabel(x) {
   if (x.kind === 'stock') return `${x.ticker} ${Math.round(Number(x.qty) || 0)} 股`;
@@ -11111,7 +11176,7 @@ function _mgmtHTML(R) {
     <section class="rk-block rk-mgmt">
       <h3 class="rk-block-title">待处理仓位${items.length ? ` <span class="rk-count">${items.length}</span>` : ''}</h3>
       ${items.length ? items.map(it => `
-        <div class="rk-mg">
+        <div class="rk-mg gl-row" role="button" tabindex="0" onclick="openOptionLab(${R.c.pos.indexOf(it.x)})" onkeydown="if(event.key==='Enter')openOptionLab(${R.c.pos.indexOf(it.x)})">
           <span class="rk-pill rk-c-${it.level}">${it.tag}</span>
           <span class="rk-mg-pos">${esc(_posLabel(it.x))}</span>
           <span class="rk-mg-text">${esc(it.text)}</span>
@@ -11362,6 +11427,518 @@ window.sendTestAlert = async () => {
   _loadAlertHealth(true);
 };
 
+/* ==========================================================
+ * GREEKS LAB · Black-Scholes revaluation, 3D surfaces, theta calendar,
+ * theta efficiency, LEAPS substitution efficiency, per-contract lab.
+ * Model: Black-Scholes, r = 4%, no dividends. IV = Schwab's, else implied
+ * from the mark. Surfaces show change versus today unless noted.
+ * ========================================================== */
+const BS_RATE = 0.04;
+function _npdf(x) { return Math.exp(-x * x / 2) / Math.sqrt(2 * Math.PI); }
+function _ncdf(x) {
+  const z = Math.abs(x) / Math.SQRT2, t = 1 / (1 + 0.3275911 * z);
+  const y = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-z * z);
+  return x >= 0 ? 0.5 * (1 + y) : 0.5 * (1 - y);
+}
+function bsGreeks(S, K, T, sigma, type, r = BS_RATE, q = 0) {
+  if (!(S > 0) || !(K > 0)) return null;
+  const call = type === 'call';
+  if (T <= 1e-6 || !(sigma > 0)) {
+    const itm = call ? S > K : S < K;
+    return { price: call ? Math.max(0, S - K) : Math.max(0, K - S), delta: itm ? (call ? 1 : -1) : 0, gamma: 0, theta: 0, vega: 0, pITM: itm ? 1 : 0 };
+  }
+  const sq = Math.sqrt(T), d1 = (Math.log(S / K) + (r - q + sigma * sigma / 2) * T) / (sigma * sq), d2 = d1 - sigma * sq;
+  const disc = Math.exp(-r * T), dq = Math.exp(-q * T), pd1 = _npdf(d1);
+  const price = call ? S * dq * _ncdf(d1) - K * disc * _ncdf(d2) : K * disc * _ncdf(-d2) - S * dq * _ncdf(-d1);
+  return {
+    price: Math.max(0, price),
+    delta: call ? dq * _ncdf(d1) : dq * (_ncdf(d1) - 1),
+    gamma: dq * pd1 / (S * sigma * sq),
+    vega: S * dq * pd1 * sq / 100,                                                // per 1 vol point
+    theta: (-(S * dq * pd1 * sigma) / (2 * sq)
+            + (call ? -r * K * disc * _ncdf(d2) + q * S * dq * _ncdf(d1) : r * K * disc * _ncdf(-d2) - q * S * dq * _ncdf(-d1))) / 365,  // per day
+    pITM: call ? _ncdf(d2) : _ncdf(-d2),
+  };
+}
+function impliedVol(price, S, K, T, type) {
+  if (!(price > 0) || !(T > 0)) return null;
+  const intr = type === 'call' ? Math.max(0, S - K) : Math.max(0, K - S);
+  if (price < intr - 0.01) return null;
+  let lo = 0.005, hi = 5;
+  for (let i = 0; i < 70; i++) {
+    const mid = (lo + hi) / 2, p = bsGreeks(S, K, T, mid, type).price;
+    if (p > price) hi = mid; else lo = mid;
+  }
+  return (lo + hi) / 2;
+}
+function _optModel(x) {
+  if (!x || x.kind === 'stock') return null;
+  const S = x.und, K = x.strike, dte = _dteOf(x);
+  if (S == null || K == null || dte == null) return null;
+  const type = x.kind === 'short_put' || x.kind === 'long_put' ? 'put' : 'call';
+  const qty = Number(x.qty) || 0, sign = _isShortPos(x) ? -1 : 1, T = Math.max(0, dte) / 365;
+  const mark = x.mark != null ? x.mark : (x.marketValue != null && qty ? Math.abs(x.marketValue) / (100 * qty) : null);
+  // Calibrate to the mark so the model reprices today's quote exactly; Schwab's IV is the fallback
+  // (also when the mark sits below the model's no-dividend lower bound and implies a near-zero vol).
+  const schwabIv = x.iv != null && x.iv > 0 ? (x.iv > 3 ? x.iv / 100 : x.iv) : null;
+  let sigma = mark != null && T > 0 ? impliedVol(mark, S, K, T, type) : null, ivSrc = '市价';
+  let q = 0;
+  if (!(sigma > 0.03)) {
+    // Mark below the no-dividend bound (typical for deep-ITM calls on dividend payers): keep a sane
+    // vol and solve the dividend yield that reprices the mark.
+    sigma = schwabIv || 0.30; ivSrc = schwabIv ? 'Schwab' : '假设 30%';
+    if (mark != null && T > 0 && type === 'call') {
+      let lo = 0, hi = 0.25;
+      if (bsGreeks(S, K, T, sigma, type, BS_RATE, hi).price <= mark) {
+        for (let i = 0; i < 60; i++) { const mid = (lo + hi) / 2; if (bsGreeks(S, K, T, sigma, type, BS_RATE, mid).price > mark) lo = mid; else hi = mid; }
+        q = (lo + hi) / 2;
+      }
+    }
+  }
+  if (!(sigma > 0)) return null;
+  return { x, S, K, T, dte, type, qty, sign, mark, sigma, schwabIv, ivSrc, q, mult: 100 * qty * sign };
+}
+function _mValue(m, S1, days, dv = 0) {        // position value in $ (short = negative)
+  return bsGreeks(S1, m.K, Math.max(0, m.T - days / 365), Math.max(0.01, m.sigma + dv / 100), m.type, BS_RATE, m.q).price * m.mult;
+}
+function _stockPx(x) {
+  const q = Number(x.qty) || 0;
+  return x.price != null ? x.price : (x.marketValue != null && q ? Math.abs(x.marketValue) / q : null);
+}
+
+/* ---------- portfolio grids ---------- */
+const SURF_METRICS = {
+  pnl:   { label: '盈亏', unit: '$', fmt: v => _fmtSigned(v), axis: v => _fmtK(v) },
+  theta: { label: 'Theta', unit: '$/天', fmt: v => _fmtSigned(v) + '/天', axis: v => _fmtK(v) + '/天' },
+  delta: { label: 'Delta', unit: '$', fmt: v => _fmtSigned(v), axis: v => _fmtK(v) },
+};
+function portfolioSurface(pos, metric) {
+  const xs = []; for (let v = -30; v <= 20.001; v += 2.5) xs.push(v / 100);
+  const ys = []; for (let d = 0; d <= 45; d += 3) ys.push(d);
+  const items = pos.map(x => x.kind === 'stock' ? { stock: x, px: _stockPx(x) } : { m: _optModel(x) }).filter(o => o.m || (o.stock && o.px != null));
+  const base = items.map(o => o.m ? _mValue(o.m, o.m.S, 0) : 0);
+  const z = xs.map(mv => ys.map(d => items.reduce((s, o, k) => {
+    if (o.stock) {
+      const q = (o.stock.side || 1) * (Number(o.stock.qty) || 0), S1 = o.px * (1 + mv);
+      return s + (metric === 'pnl' ? q * o.px * mv : metric === 'delta' ? q * S1 : 0);
+    }
+    const S1 = o.m.S * (1 + mv);
+    if (metric === 'pnl') return s + _mValue(o.m, S1, d) - base[k];
+    if (metric === 'theta') return s + _mValue(o.m, S1, d + 1) - _mValue(o.m, S1, d);
+    const g = bsGreeks(S1, o.m.K, Math.max(0, o.m.T - d / 365), o.m.sigma, o.m.type, BS_RATE, o.m.q);
+    return s + g.delta * o.m.mult * S1;
+  }, 0)));
+  return { xs, ys, z, metric, modeled: items.length, total: pos.length,
+           xFmt: v => `${v > 0 ? '+' : ''}${Math.round(v * 100)}%`, yFmt: d => `${d} 天`, zFmt: SURF_METRICS[metric].fmt,
+           xTitle: '大盘', yTitle: '天数', origin: [xs.indexOf(0), 0] };
+}
+function thetaCalendar(pos, horizon) {
+  const ms = pos.map(_optModel).filter(Boolean);
+  const shortsMax = Math.max(0, ...ms.filter(m => m.sign < 0).map(m => m.dte));
+  const N = horizon || Math.max(14, Math.min(60, shortsMax + 2));
+  const days = [];
+  let cum = 0;
+  for (let d = 0; d < N; d++) {
+    let sell = 0, buy = 0;
+    ms.forEach(m => {
+      if (d >= m.dte) return;
+      const ch = _mValue(m, m.S, d + 1) - _mValue(m, m.S, d);
+      if (m.sign < 0) sell += ch; else buy += ch;
+    });
+    cum += sell + buy;
+    days.push({ d, sell, buy, net: sell + buy, cum });
+  }
+  const expiries = ms.filter(m => m.dte < N).map(m => ({ d: m.dte, label: m.x.ticker, short: m.sign < 0 }));
+  return { days, expiries, N, modeled: ms.length };
+}
+
+/* ---------- 3D surface renderer (canvas, no dependencies) ---------- */
+const __surf = {};
+let __surfSeq = 0;
+function surfaceHTML(data, opts = {}) {
+  const id = 'sf' + (++__surfSeq);
+  __surf[id] = { data, yaw: opts.yaw ?? -0.62, pitch: opts.pitch ?? 0.92, palette: opts.palette || 'diverge', mounted: false };
+  return `<div class="sf-wrap" id="${id}" style="height:${opts.height || 320}px">
+      <canvas class="sf-canvas" aria-label="3D 曲面"></canvas><div class="sf-tip" hidden></div>
+      <div class="sf-hint">拖动旋转</div></div>`;
+}
+function _cssColor(name) {
+  const v = getComputedStyle(document.body).getPropertyValue(name).trim();
+  const ctx = _cssColor._c || (_cssColor._c = document.createElement('canvas').getContext('2d'));
+  ctx.fillStyle = '#000'; ctx.fillStyle = v || '#888';
+  const s = ctx.fillStyle;
+  if (s[0] === '#') return [parseInt(s.slice(1, 3), 16), parseInt(s.slice(3, 5), 16), parseInt(s.slice(5, 7), 16)];
+  const m = s.match(/[\d.]+/g); return m ? m.slice(0, 3).map(Number) : [136, 136, 136];
+}
+function _mix(a, b, t) { return a.map((v, i) => v + (b[i] - v) * t); }
+function drawSurface(id) {
+  const st = __surf[id], el = document.getElementById(id);
+  if (!st || !el) return;
+  const cv = el.querySelector('canvas'), ctx = cv.getContext('2d');
+  const W = el.clientWidth, H = el.clientHeight, dpr = window.devicePixelRatio || 1;
+  if (!W || !H) return;
+  cv.width = W * dpr; cv.height = H * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H);
+  const { xs, ys, z } = st.data, nx = xs.length, ny = ys.length;
+  let zmin = Infinity, zmax = -Infinity;
+  z.forEach(r => r.forEach(v => { if (v < zmin) zmin = v; if (v > zmax) zmax = v; }));
+  if (st.palette === 'diverge') { zmin = Math.min(zmin, 0); zmax = Math.max(zmax, 0); }
+  if (zmax - zmin < 1e-9) { zmax += 1; zmin -= 1; }
+  const absz = z.flat().map(Math.abs).sort((a, b) => a - b);
+  const zr = Math.max(absz[Math.floor(absz.length * 0.9)] || 0, Math.max(Math.abs(zmin), Math.abs(zmax)) * 0.15, 1e-9);
+  const Zw = v => -0.62 + (v - zmin) / (zmax - zmin) * 1.24;
+  const cy = Math.cos(st.yaw), sy = Math.sin(st.yaw), cp = Math.cos(st.pitch), sp = Math.sin(st.pitch);
+  const P0 = (X, Y, Z) => { const x1 = X * cy - Y * sy, y1 = X * sy + Y * cy; return [x1, -(Z * cp + y1 * sp), y1 * cp - Z * sp]; };
+  let bx0 = Infinity, bx1 = -Infinity, by0 = Infinity, by1 = -Infinity;
+  const fitPts = [];
+  for (const X of [-1, 1]) for (const Y of [-1, 1]) for (const Z of [-0.62, 0.62]) fitPts.push([X, Y, Z]);   // the surface's own box
+  for (const s of [-1, 1]) for (const t of [-1, 1]) fitPts.push([s * 1.22, t, -0.62], [s, t * 1.22, -0.62]);   // axis-label ring
+  fitPts.forEach(p => { const q = P0(...p); bx0 = Math.min(bx0, q[0]); bx1 = Math.max(bx1, q[0]); by0 = Math.min(by0, q[1]); by1 = Math.max(by1, q[1]); });
+  const padX = 40, padY = 14;
+  const scale = Math.min((W - 2 * padX) / (bx1 - bx0), (H - 2 * padY) / (by1 - by0));
+  const ox = W / 2 - (bx0 + bx1) / 2 * scale, oy = H / 2 - (by0 + by1) / 2 * scale;
+  const P = (X, Y, Z) => { const q = P0(X, Y, Z); return [ox + q[0] * scale, oy + q[1] * scale, q[2]]; };
+  const Xw = i => -1 + 2 * i / (nx - 1), Yw = j => -1 + 2 * j / (ny - 1);
+  const neg = _cssColor('--fail'), pos = _cssColor('--pass'), mid = _cssColor('--panel-2'), acc = _cssColor('--accent');
+  const txt = _cssColor('--text-faint'), line = _cssColor('--border');
+  const col = v => {
+    if (st.palette === 'seq') return _mix(mid, acc, Math.max(0, Math.min(1, (v - zmin) / (zmax - zmin))));
+    const t = v / zr; return t >= 0 ? _mix(mid, pos, Math.min(1, t)) : _mix(mid, neg, Math.min(1, -t));
+  };
+  const rgba = (c, a = 1) => `rgba(${c.map(Math.round).join(',')},${a})`;
+  // base box
+  const zb = -0.62, corners = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([X, Y]) => P(X, Y, zb));
+  ctx.strokeStyle = rgba(line, 0.9); ctx.lineWidth = 1;
+  ctx.beginPath(); corners.forEach((p, k) => k ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.closePath(); ctx.stroke();
+  if (st.palette === 'diverge' && zmin < 0 && zmax > 0) {          // zero level outline
+    const z0 = Zw(0), q = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([X, Y]) => P(X, Y, z0));
+    ctx.setLineDash([3, 4]); ctx.strokeStyle = rgba(txt, 0.45);
+    ctx.beginPath(); q.forEach((p, k) => k ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.closePath(); ctx.stroke(); ctx.setLineDash([]);
+  }
+  // quads, painter's algorithm
+  const quads = [];
+  for (let i = 0; i < nx - 1; i++) for (let j = 0; j < ny - 1; j++) {
+    const w = [[i, j], [i + 1, j], [i + 1, j + 1], [i, j + 1]].map(([a, b]) => [Xw(a), Yw(b), Zw(z[a][b])]);
+    const pr = w.map(p => P(...p));
+    const ux = w[2][0] - w[0][0], uy = w[2][1] - w[0][1], uz = w[2][2] - w[0][2];
+    const vx = w[3][0] - w[1][0], vy = w[3][1] - w[1][1], vz = w[3][2] - w[1][2];
+    let nx_ = uy * vz - uz * vy, ny_ = uz * vx - ux * vz, nz_ = ux * vy - uy * vx;
+    const nl = Math.hypot(nx_, ny_, nz_) || 1; nx_ /= nl; ny_ /= nl; nz_ /= nl;
+    const light = Math.abs(nx_ * -0.35 + ny_ * -0.45 + nz_ * 0.82);
+    quads.push({ pr, depth: pr.reduce((s, p) => s + p[2], 0) / 4, c: col((z[i][j] + z[i + 1][j] + z[i + 1][j + 1] + z[i][j + 1]) / 4), light });
+  }
+  quads.sort((a, b) => b.depth - a.depth);
+  quads.forEach(q => {
+    ctx.beginPath(); q.pr.forEach((p, k) => k ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.closePath();
+    ctx.fillStyle = rgba(q.c.map(v => v * (0.72 + 0.28 * q.light)), 0.96); ctx.fill();
+    ctx.strokeStyle = rgba(line, 0.55); ctx.lineWidth = 0.6; ctx.stroke();
+  });
+  // axis labels: x along front edge, y along right edge, z on a back corner
+  ctx.fillStyle = rgba(txt); ctx.font = `10px ${getComputedStyle(document.body).getPropertyValue('--mono') || 'monospace'}`; ctx.textAlign = 'center';
+  const front = P(0, -1, zb)[2] < P(0, 1, zb)[2] ? -1 : 1, side = P(1, 0, zb)[2] < P(-1, 0, zb)[2] ? 1 : -1;
+  const xStep = Math.max(1, Math.round((nx - 1) / 5)), yStep = Math.max(1, Math.round((ny - 1) / 4));
+  for (let i = 0; i < nx; i += xStep) { const p = P(Xw(i), front * 1.12, zb); ctx.fillText(st.data.xFmt(xs[i]), p[0], p[1] + 4); }
+  for (let j = yStep; j < ny; j += yStep) { const p = P(side * 1.14, Yw(j), zb); ctx.fillText(st.data.yFmt(ys[j]), p[0], p[1] + 4); }
+  const zc = [-side, -front], zlo = P(zc[0], zc[1], zb), zhi = P(zc[0], zc[1], 0.62);
+  ctx.strokeStyle = rgba(line); ctx.beginPath(); ctx.moveTo(zlo[0], zlo[1]); ctx.lineTo(zhi[0], zhi[1]); ctx.stroke();
+  ctx.textAlign = zlo[0] < W / 2 ? 'right' : 'left';
+  const zoff = zlo[0] < W / 2 ? -6 : 6;
+  const zAxis = st.data.zAxis || (st.data.metric && SURF_METRICS[st.data.metric] ? SURF_METRICS[st.data.metric].axis : st.data.zFmt);
+  (zmin < 0 && zmax > 0 ? [zmin, 0, zmax] : [zmin, zmax]).forEach(v => { const p = P(zc[0], zc[1], Zw(v)); ctx.fillText(zAxis(v), p[0] + zoff, p[1] + 3); });
+  ctx.textAlign = 'center';
+  const xt = P(0, front * 1.32, zb), yt = P(side * 1.36, 0, zb);
+  ctx.fillStyle = rgba(_cssColor('--text-dim')); ctx.fillText(st.data.xTitle, xt[0], xt[1] + 6); ctx.fillText(st.data.yTitle, yt[0], yt[1] + 6);
+  // "today" marker
+  if (st.data.origin && st.data.origin[0] >= 0) {
+    const [oi, oj] = st.data.origin, p = P(Xw(oi), Yw(oj), Zw(z[oi][oj]));
+    ctx.fillStyle = rgba(_cssColor('--text')); ctx.beginPath(); ctx.arc(p[0], p[1], 3.5, 0, 7); ctx.fill();
+  }
+  st.verts = []; for (let i = 0; i < nx; i++) for (let j = 0; j < ny; j++) { const p = P(Xw(i), Yw(j), Zw(z[i][j])); st.verts.push({ i, j, x: p[0], y: p[1], d: p[2] }); }
+}
+function _mountSurface(id) {
+  const st = __surf[id], el = document.getElementById(id);
+  if (!st || !el || st.mounted === el) return;
+  st.mounted = el;
+  const cv = el.querySelector('canvas'), tip = el.querySelector('.sf-tip');
+  let drag = null, raf = 0;
+  const redraw = () => { if (!raf) raf = requestAnimationFrame(() => { raf = 0; drawSurface(id); }); };
+  cv.addEventListener('pointerdown', e => { drag = { x: e.clientX, y: e.clientY, t: e.pointerType }; cv.setPointerCapture(e.pointerId); el.classList.add('dragging'); tip.hidden = true; });
+  cv.addEventListener('pointermove', e => {
+    if (drag) {
+      st.yaw += (e.clientX - drag.x) * 0.012;
+      if (drag.t !== 'touch') st.pitch = Math.max(0.12, Math.min(1.5, st.pitch + (e.clientY - drag.y) * 0.01));
+      drag.x = e.clientX; drag.y = e.clientY; redraw(); return;
+    }
+    const r = cv.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top;
+    let best = null, bd = 20 * 20;
+    (st.verts || []).forEach(v => { const d = (v.x - mx) ** 2 + (v.y - my) ** 2; if (d < bd || (best && d === bd && v.d < best.d)) { bd = d; best = v; } });
+    if (!best) { tip.hidden = true; return; }
+    const D = st.data;
+    tip.innerHTML = `${esc(D.xTitle)} ${esc(D.xFmt(D.xs[best.i]))} · ${esc(D.yFmt(D.ys[best.j]))}<b>${esc(D.zFmt(D.z[best.i][best.j]))}</b>`;
+    tip.hidden = false; tip.style.left = Math.min(best.x + 12, el.clientWidth - 150) + 'px'; tip.style.top = Math.max(0, best.y - 34) + 'px';
+  });
+  const end = () => { drag = null; el.classList.remove('dragging'); };
+  cv.addEventListener('pointerup', end); cv.addEventListener('pointercancel', end);
+  cv.addEventListener('pointerleave', () => { if (!drag) tip.hidden = true; });
+  drawSurface(id);
+}
+function mountSurfaces() { Object.keys(__surf).forEach(id => { if (document.getElementById(id)) _mountSurface(id); else delete __surf[id]; }); }
+let __surfResize = 0;
+window.addEventListener('resize', () => { clearTimeout(__surfResize); __surfResize = setTimeout(() => Object.keys(__surf).forEach(drawSurface), 120); });
+window.setSurfaceMetric = (id, metric) => {
+  const st = __surf[id]; if (!st || !st.rebuild) return;
+  st.data = st.rebuild(metric); st.palette = metric === 'delta' ? 'diverge' : 'diverge';
+  drawSurface(id);
+  document.querySelectorAll(`[data-sf="${id}"]`).forEach(b => b.classList.toggle('active', b.dataset.m === metric));
+};
+
+/* ---------- 2D charts ---------- */
+function _lineChartSVG({ xs, series, xFmt, yFmt, marker, w = 300, h = 150, zero = true, xTicks = 5 }) {
+  const L = 50, R = 8, T = 8, B = 20;
+  const all = series.flatMap(s => s.ys).filter(v => v != null && isFinite(v));
+  let lo = Math.min(...all, zero ? 0 : Infinity), hi = Math.max(...all, zero ? 0 : -Infinity);
+  if (hi - lo < 1e-9) { hi += 1; lo -= 1; }
+  const pad = (hi - lo) * 0.08; lo -= pad; hi += pad;
+  const X = i => L + i / (xs.length - 1) * (w - L - R), Y = v => T + (hi - v) / (hi - lo) * (h - T - B);
+  const path = ys => ys.map((v, i) => v == null || !isFinite(v) ? null : `${X(i).toFixed(1)},${Y(v).toFixed(1)}`).filter(Boolean).join(' ');
+  const ticks = lo + pad < 0 && hi - pad > 0 ? [lo + pad, 0, hi - pad] : [lo + pad, (lo + hi) / 2, hi - pad];
+  const xi = []; for (let k = 0; k < xTicks; k++) xi.push(Math.round(k * (xs.length - 1) / (xTicks - 1)));
+  const mi = marker != null ? xs.reduce((b, x, i) => Math.abs(x - marker) < Math.abs(xs[b] - marker) ? i : b, 0) : null;
+  return `<svg class="gl-chart" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" role="img">
+    ${ticks.map(v => `<line x1="${L}" x2="${w - R}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}" class="rk-ch-grid"/><text x="${L - 4}" y="${(Y(v) + 3).toFixed(1)}" text-anchor="end" class="gl-lab">${esc(yFmt(v))}</text>`).join('')}
+    ${zero && lo < 0 && hi > 0 ? `<line x1="${L}" x2="${w - R}" y1="${Y(0).toFixed(1)}" y2="${Y(0).toFixed(1)}" class="rk-ch-grid zero"/>` : ''}
+    ${mi != null ? `<line x1="${X(mi).toFixed(1)}" x2="${X(mi).toFixed(1)}" y1="${T}" y2="${h - B}" class="rk-ch-cursor"/>` : ''}
+    ${series.map(s => `<polyline points="${path(s.ys)}" class="gl-line ${s.cls || ''}"/>`).join('')}
+    ${xi.map(i => `<text x="${X(i).toFixed(1)}" y="${h - 6}" text-anchor="middle" class="gl-lab">${esc(xFmt(xs[i]))}</text>`).join('')}
+  </svg>`;
+}
+function _thetaCalendarSVG(cal) {
+  if (!cal.modeled) return '';
+  const nStack = Math.max(1, ...Object.values(cal.expiries.reduce((m, e) => { m[e.d] = (m[e.d] || 0) + 1; return m; }, {})));
+  const W = 640, H = 200 + nStack * 10, L = 46, R = 46, T = 12, B = 24 + nStack * 10, n = cal.days.length;
+  const maxBar = Math.max(1, ...cal.days.map(d => Math.max(d.sell, -d.buy, Math.abs(d.net))));
+  const cums = cal.days.map(d => d.cum), cmin = Math.min(0, ...cums), cmax = Math.max(1, ...cums);
+  const bw = (W - L - R) / n, Xc = d => L + (d + 0.5) * bw;
+  const Y = v => T + (H - T - B) / 2 - v / maxBar * ((H - T - B) / 2) * 0.95;
+  const Yc = v => T + (cmax - v) / (cmax - cmin) * (H - T - B);
+  const today = new Date();
+  const lab = d => { const x = new Date(today.getTime() + d * 864e5); return `${x.getMonth() + 1}/${x.getDate()}`; };
+  const bars = cal.days.map(d => `
+    ${d.sell > 0 ? `<rect x="${(Xc(d.d) - bw * 0.38).toFixed(1)}" y="${Y(d.sell).toFixed(1)}" width="${(bw * 0.76).toFixed(1)}" height="${(Y(0) - Y(d.sell)).toFixed(1)}" class="gl-bar-sell"><title>${lab(d.d)} 卖方 ${_fmtSigned(d.sell)}</title></rect>` : ''}
+    ${d.buy < 0 ? `<rect x="${(Xc(d.d) - bw * 0.38).toFixed(1)}" y="${Y(0).toFixed(1)}" width="${(bw * 0.76).toFixed(1)}" height="${(Y(d.buy) - Y(0)).toFixed(1)}" class="gl-bar-buy"><title>${lab(d.d)} 买方 ${_fmtSigned(d.buy)}</title></rect>` : ''}`).join('');
+  const line = cal.days.map(d => `${Xc(d.d).toFixed(1)},${Yc(d.cum).toFixed(1)}`).join(' ');
+  const step = Math.max(1, Math.round(n / 8));
+  const xl = cal.days.filter(d => d.d % step === 0).map(d => `<text x="${Xc(d.d).toFixed(1)}" y="${H - B + 12}" text-anchor="middle" class="gl-lab">${lab(d.d)}</text>`).join('');
+  const byDay = {}; cal.expiries.forEach(e => { (byDay[e.d] = byDay[e.d] || []).push(e); });
+  const ex = Object.entries(byDay).map(([d, es]) => `<g class="gl-exp"><line x1="${Xc(+d).toFixed(1)}" x2="${Xc(+d).toFixed(1)}" y1="${T}" y2="${H - B}"/>`
+    + es.map((e, k) => `<text x="${Xc(+d).toFixed(1)}" y="${H - 5 - (es.length - 1 - k) * 10}" text-anchor="middle" class="${e.short ? '' : 'long'}">${esc(e.label)}</text>`).join('') + '</g>').join('');
+  return `<svg class="rk-chart gl-cal" viewBox="0 0 ${W} ${H}" role="img" aria-label="Theta 日历">
+    <line x1="${L}" x2="${W - R}" y1="${Y(0).toFixed(1)}" y2="${Y(0).toFixed(1)}" class="rk-ch-grid zero"/>
+    <text x="${L - 6}" y="${(Y(maxBar * 0.95) + 3).toFixed(1)}" text-anchor="end" class="gl-lab">${_fmtSigned(maxBar)}</text>
+    <text x="${L - 6}" y="${(Y(-maxBar * 0.95) + 3).toFixed(1)}" text-anchor="end" class="gl-lab">${_fmtSigned(-maxBar)}</text>
+    <text x="${W - R + 6}" y="${(Yc(cmax) + 8).toFixed(1)}" class="gl-lab gl-cum-lab">${_fmtSigned(cmax)}</text>
+    ${ex}${bars}<polyline points="${line}" class="gl-cum"/>${xl}
+  </svg>`;
+}
+function _thetaScatterSVG(pos) {
+  const pts = pos.filter(_isShortPos).map(x => {
+    const m = _optModel(x); if (!m) return null;
+    const g = bsGreeks(m.S, m.K, m.T, m.sigma, m.type, BS_RATE, m.q);
+    const th = (x.theta != null ? x.theta : g.theta) * 100 * m.qty * -1;
+    const coll = (m.type === 'put' ? m.K : m.S) * 100 * m.qty;
+    return { x, m, p: g.pITM * 100, y: th * 365 / coll * 100, coll, th };
+  }).filter(Boolean);
+  if (pts.length < 1) return '';
+  const W = 640, H = 220, L = 46, R = 14, T = 12, B = 30;
+  const xmax = Math.max(50, ...pts.map(p => p.p)) * 1.05, ymax = Math.max(10, ...pts.map(p => p.y)) * 1.15;
+  const X = v => L + v / xmax * (W - L - R), Y = v => T + (ymax - v) / ymax * (H - T - B);
+  const cmax = Math.max(...pts.map(p => p.coll));
+  const dcls = d => d <= 7 ? 'danger' : d <= 21 ? 'watch' : 'safe';
+  const gx = [0, 10, 20, 30, 40, 50, 60, 70, 80].filter(v => v <= xmax), gy = [0, ymax / 3, ymax * 2 / 3].map(v => Math.round(v));
+  return `<svg class="rk-chart gl-scatter" viewBox="0 0 ${W} ${H}" role="img" aria-label="Theta 效率">
+    ${gy.map(v => `<line x1="${L}" x2="${W - R}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}" class="rk-ch-grid${v === 0 ? ' zero' : ''}"/><text x="${L - 6}" y="${(Y(v) + 3).toFixed(1)}" text-anchor="end" class="gl-lab">${v}%</text>`).join('')}
+    ${gx.map(v => `<text x="${X(v).toFixed(1)}" y="${H - 12}" text-anchor="middle" class="gl-lab">${v}%</text>`).join('')}
+    <text x="${W - R}" y="${(Y(0) - 5).toFixed(1)}" text-anchor="end" class="gl-lab">到期价内概率 →</text>
+    <text x="${L + 4}" y="${T + 9}" class="gl-lab">↑ 年化 Theta / 保证金</text>
+    ${pts.map(p => {
+      const r = 5 + 13 * Math.sqrt(p.coll / cmax), idx = pos.indexOf(p.x);
+      return `<g class="gl-dot gl-${dcls(p.m.dte)}" role="button" tabindex="0" onclick="openOptionLab(${idx})" onkeydown="if(event.key==='Enter')openOptionLab(${idx})">
+        <circle cx="${X(p.p).toFixed(1)}" cy="${Y(p.y).toFixed(1)}" r="${r.toFixed(1)}"/>
+        <text x="${X(p.p).toFixed(1)}" y="${(Y(p.y) - r - 3).toFixed(1)}" text-anchor="middle">${esc(p.x.ticker)}</text>
+        <title>${esc(_posLabel(p.x))} · 价内概率 ${p.p.toFixed(0)}% · 年化 ${p.y.toFixed(1)}% · ${_fmtSigned(p.th)}/天</title></g>`;
+    }).join('')}
+  </svg>`;
+}
+
+/* ---------- LEAPS efficiency ---------- */
+function _leapsStats(x) {
+  const m = _optModel(x); if (!m || m.type !== 'call') return null;
+  const g = bsGreeks(m.S, m.K, m.T, m.sigma, 'call', BS_RATE, m.q);
+  const delta = x.delta != null ? x.delta : g.delta, theta = x.theta != null ? x.theta : g.theta, vega = x.vega != null ? x.vega : g.vega;
+  const mark = m.mark != null ? m.mark : g.price;
+  const intr = Math.max(0, m.S - m.K), extr = Math.max(0, mark - intr);
+  const yrs = Math.max(1 / 365, m.T);
+  return {
+    m, g, delta, mark, intr, extr,
+    shares: delta * 100 * m.qty, usd: delta * 100 * m.qty * m.S,
+    lambda: mark > 0 ? delta * m.S / mark : null,
+    extrPct: mark > 0 ? extr / mark * 100 : null,
+    carry: extr / m.K / yrs * 100,                       // annualized time value as a financing rate on the strike
+    thetaMonth: theta * 100 * m.qty * 30, vegaUsd: vega * 100 * m.qty,
+    be: m.K + mark, beMove: (m.K + mark - m.S) / m.S * 100,
+    dPer1: g.gamma * m.S * 0.01 * 100 * m.qty,           // share-delta gained per +1% move
+    value: mark * 100 * m.qty,
+  };
+}
+function _leapsLabHTML(R) {
+  if (!R.c.isSchwab) return '';
+  const rows = R.c.pos.map((x, i) => ({ x, i, s: x.kind === 'leaps' ? _leapsStats(x) : null })).filter(o => o.x.kind === 'leaps');
+  if (!rows.length) return '';
+  const ok = rows.filter(o => o.s);
+  const sum = k => ok.reduce((a, o) => a + (o.s[k] || 0), 0);
+  const val = sum('value'), usd = sum('usd'), extr = ok.reduce((a, o) => a + o.s.extr * 100 * o.s.m.qty, 0);
+  const carryW = ok.reduce((a, o) => a + o.s.carry * o.s.m.K * o.s.m.qty, 0) / (ok.reduce((a, o) => a + o.s.m.K * o.s.m.qty, 0) || 1);
+  const fig = (label, v, sub) => `<div class="rk-fig"><span class="rk-fig-val">${v}</span><span class="rk-fig-label">${label}</span>${sub ? `<span class="rk-fig-sub">${sub}</span>` : ''}</div>`;
+  const dcls = d => d < 0.6 ? 'rk-t-alert' : d > 0.92 ? 'rk-t-watch' : 'rk-t-safe';
+  return `
+    <section class="rk-block">
+      <h3 class="rk-block-title">LEAPS · 替代效率</h3>
+      ${ok.length ? `<div class="rk-figs">
+        ${fig('正股等值', _fmtUsd(usd), `${Math.round(sum('shares')).toLocaleString()} 股`)}
+        ${fig('平均杠杆 λ', val > 0 ? (usd / val).toFixed(2) + '×' : '—', `市值 ${_fmtUsd(val)}`)}
+        ${fig('时间价值', _fmtUsd(extr), `年化成本 ${carryW.toFixed(1)}%`)}
+        ${fig('每月 Theta', _fmtSigned(sum('thetaMonth')), `Vega ${_fmtSigned(sum('vegaUsd'))}/点`)}
+      </div>` : ''}
+      <div class="rk-table-wrap"><table class="rk-table gl-leaps">
+        <thead><tr><th>合约</th><th>Δ</th><th>股数</th><th>λ</th><th>时间价值</th><th>年化成本</th><th>每月 Θ</th><th>Vega/点</th><th>盈亏平衡</th><th>DTE</th></tr></thead>
+        <tbody>${rows.map(({ x, i, s }) => s ? `
+          <tr class="gl-row" role="button" tabindex="0" onclick="openOptionLab(${i})" onkeydown="if(event.key==='Enter')openOptionLab(${i})">
+            <td>${esc(_posLabel(x))}</td><td class="${dcls(s.delta)}">${s.delta.toFixed(2)}</td><td>${Math.round(s.shares)}</td>
+            <td>${s.lambda != null ? s.lambda.toFixed(2) + '×' : '—'}</td><td>${s.extrPct != null ? s.extrPct.toFixed(0) + '%' : '—'}</td>
+            <td>${s.carry.toFixed(1)}%</td><td class="rk-t-alert">${_fmtSigned(s.thetaMonth)}</td><td>${_fmtSigned(s.vegaUsd)}</td>
+            <td>${s.be.toFixed(0)} <span class="rk-quiet">${s.beMove >= 0 ? '+' : ''}${s.beMove.toFixed(1)}%</span></td><td>${s.m.dte}</td></tr>`
+          : `<tr><td>${esc(_posLabel(x))}</td><td colspan="9" class="rk-quiet">缺报价</td></tr>`).join('')}</tbody>
+      </table></div>
+      <div class="rk-note">λ = Δ × 现价 ÷ 期权价. 年化成本 = 时间价值 ÷ 行权价 ÷ 剩余年限, 可直接对比融资利率. Δ &lt; 0.60 橙色.</div>
+    </section>`;
+}
+
+/* ---------- portfolio visual block (inside Greeks) ---------- */
+function _greeksVizHTML(R) {
+  const pos = R.c.pos;
+  if (!R.c.isSchwab || !pos.some(x => _optModel(x))) return '';
+  const surf = portfolioSurface(pos, 'pnl');
+  const sid = 'sf' + (__surfSeq + 1);
+  const html = surfaceHTML(surf, { height: 340 });
+  __surf[sid].rebuild = metric => portfolioSurface(pos, metric);
+  const cal = thetaCalendar(pos);
+  const sc = _thetaScatterSVG(pos);
+  const tabs = Object.entries(SURF_METRICS).map(([k, v]) => `<button class="rk-preset${k === 'pnl' ? ' active' : ''}" data-sf="${sid}" data-m="${k}" onclick="setSurfaceMetric('${sid}','${k}')">${v.label}</button>`).join('');
+  const tot = cal.days.reduce((s, d) => s + d.sell, 0), cost = cal.days.reduce((s, d) => s + d.buy, 0);
+  return `
+    <div class="rk-sub-title gl-title-row"><span>风险曲面 · 大盘 × 时间</span><span class="rk-presets">${tabs}</span></div>
+    ${html}
+    <div class="rk-note">相对今天. ${surf.modeled}/${surf.total} 个仓位建模.</div>
+    <div class="rk-sub-title">Theta 日历 · ${cal.N} 天</div>
+    ${_thetaCalendarSVG(cal)}
+    <div class="rk-legend"><span><i class="rk-sw gl-sw-sell"></i>卖方 ${_fmtSigned(tot)}</span><span><i class="rk-sw gl-sw-buy"></i>买方 ${_fmtSigned(cost)}</span><span><i class="rk-sw gl-sw-cum"></i>累计 ${_fmtSigned(tot + cost)}</span><span class="rk-legend-note">股价 / IV 不变</span></div>
+    ${sc ? `<div class="rk-sub-title">Theta 效率</div>${sc}
+    <div class="rk-legend"><span><i class="rk-sw rk-f-safe"></i>&gt; 21 天</span><span><i class="rk-sw rk-f-watch"></i>≤ 21 天</span><span><i class="rk-sw rk-f-danger"></i>≤ 7 天</span><span class="rk-legend-note">点大小 = 保证金</span></div>` : ''}`;
+}
+
+/* ---------- per-contract lab (modal) ---------- */
+window.openOptionLab = idx => {
+  const R = computeRisk(), x = R.c.pos[idx], m = _optModel(x);
+  if (!x || x.kind === 'stock') return;
+  const g = m ? bsGreeks(m.S, m.K, m.T, m.sigma, m.type, BS_RATE, m.q) : null;
+  const short = _isShortPos(x);
+  let body;
+  if (!m) body = `<div class="rk-quiet">缺报价 (现价 / IV / 到期日), 无法建模.</div>`;
+  else {
+    const n = 41, xsP = []; for (let k = 0; k < n; k++) xsP.push(m.S * (0.7 + 0.6 * k / (n - 1)));
+    const entry = x.avg != null ? x.avg : m.mark;           // per share
+    const pnlAt = (S1, days) => (bsGreeks(S1, m.K, Math.max(0, m.T - days / 365), m.sigma, m.type, BS_RATE, m.q).price - entry) * m.mult;
+    const half = Math.round(m.dte / 2);
+    const payoff = _lineChartSVG({ xs: xsP, w: 640, h: 200, marker: m.S, xFmt: v => v.toFixed(0), yFmt: _fmtK,
+      series: [{ ys: xsP.map(S1 => pnlAt(S1, 0)), cls: 'gl-l1' }, { ys: xsP.map(S1 => pnlAt(S1, half)), cls: 'gl-l2' }, { ys: xsP.map(S1 => pnlAt(S1, m.dte)), cls: 'gl-l3' }] });
+    const prof = (fn, f) => _lineChartSVG({ xs: xsP, marker: m.S, xFmt: v => v.toFixed(0), yFmt: f, zero: false, xTicks: 3,
+      series: [{ ys: xsP.map(S1 => fn(bsGreeks(S1, m.K, m.T, m.sigma, m.type, BS_RATE, m.q))), cls: 'gl-l1' }, { ys: xsP.map(S1 => fn(bsGreeks(S1, m.K, Math.max(0, m.T - half / 365), m.sigma, m.type, BS_RATE, m.q))), cls: 'gl-l2' }] });
+    const mu = Math.abs(m.mult);
+    const ys = []; const stepD = Math.max(1, Math.ceil(m.dte / 18)); for (let d = 0; d <= m.dte; d += stepD) ys.push(d); if (ys[ys.length - 1] !== m.dte) ys.push(m.dte);
+    const xsS = []; for (let v = -30; v <= 30.001; v += 3) xsS.push(v / 100);
+    const build = metric => ({ xs: xsS, ys, metric, xFmt: v => `${v > 0 ? '+' : ''}${Math.round(v * 100)}%`, yFmt: d => `${d} 天`, xTitle: x.ticker, yTitle: '天数',
+      zFmt: metric === 'delta' ? v => `${v >= 0 ? '+' : ''}${Math.round(v)} 股` : SURF_METRICS[metric].fmt,
+      zAxis: metric === 'delta' ? v => `${v >= 0 ? '+' : ''}${Math.round(v)}` : SURF_METRICS[metric].axis, origin: [xsS.indexOf(0), 0],
+      z: xsS.map(mv => ys.map(d => {
+        const S1 = m.S * (1 + mv);
+        if (metric === 'pnl') return pnlAt(S1, d);
+        if (metric === 'theta') return _mValue(m, S1, Math.min(m.dte, d + 1)) - _mValue(m, S1, d);
+        return bsGreeks(S1, m.K, Math.max(0, m.T - d / 365), m.sigma, m.type, BS_RATE, m.q).delta * m.mult;
+      })) });
+    const sid = 'sf' + (__surfSeq + 1);
+    const surf = surfaceHTML(build('pnl'), { height: 300 });
+    __surf[sid].rebuild = build;
+    __surf[sid].data.zFmt = SURF_METRICS.pnl.fmt;
+    const tabs = [['pnl', '盈亏'], ['theta', 'Theta'], ['delta', 'Delta (股)']].map(([k, l]) => `<button class="rk-preset${k === 'pnl' ? ' active' : ''}" data-sf="${sid}" data-m="${k}" onclick="setSurfaceMetric('${sid}','${k}')">${l}</button>`).join('');
+    const stat = (l, v, cls) => `<div class="gl-stat"><span>${l}</span><b class="${cls || ''}">${v}</b></div>`;
+    const dl = x.delta != null ? x.delta : g.delta, th = x.theta != null ? x.theta : g.theta, vg = x.vega != null ? x.vega : g.vega, gm = x.gamma != null ? x.gamma : g.gamma;
+    const dist = _distPct(x), cap = _captured(x);
+    const coll = (m.type === 'put' ? m.K : m.S) * mu;
+    const extra = short ? [
+      stat('到期价内概率', (g.pITM * 100).toFixed(0) + '%', g.pITM > 0.35 ? 'rk-t-alert' : ''),
+      stat('盈亏平衡', (m.type === 'put' ? m.K - entry : m.K + entry).toFixed(2)),
+      stat('已赚', cap != null ? cap.toFixed(0) + '%' : '—'),
+      stat('年化权利金', entry > 0 ? (entry * mu / coll * 365 / Math.max(1, m.dte) * 100).toFixed(1) + '%' : '—'),
+      stat('年化 Theta', (-th * mu * 365 / coll * 100).toFixed(1) + '%'),
+    ] : (() => { const s = _leapsStats(x) || {}; return [
+      stat('杠杆 λ', s.lambda != null ? s.lambda.toFixed(2) + '×' : '—'),
+      stat('时间价值', s.extrPct != null ? s.extrPct.toFixed(0) + '%' : '—'),
+      stat('年化成本', s.carry != null ? s.carry.toFixed(1) + '%' : '—'),
+      stat('盈亏平衡', s.be != null ? `${s.be.toFixed(0)} (${s.beMove >= 0 ? '+' : ''}${s.beMove.toFixed(1)}%)` : '—'),
+      stat('+1% Δ 变化', s.dPer1 != null ? '+' + s.dPer1.toFixed(1) + ' 股' : '—'),
+    ]; })();
+    body = `
+      <div class="gl-stats">
+        ${stat('现价', m.S.toFixed(2))}${stat('行权价', m.K)}${stat('DTE', m.dte)}
+        ${stat('IV', (m.sigma * 100).toFixed(1) + '%' + (m.schwabIv && Math.abs(m.schwabIv - m.sigma) > 0.05 ? ` <span class="rk-quiet">Schwab ${(m.schwabIv * 100).toFixed(1)}%</span>` : ''))}
+        ${stat('市价', m.mark != null ? m.mark.toFixed(2) : g.price.toFixed(2) + ' (模型)')}${m.q > 0 ? stat('隐含股息率', (m.q * 100).toFixed(2) + '%' + (m.q > 0.08 ? ' · 市价可能过时' : ''), m.q > 0.08 ? 'rk-t-alert' : '') : ''}
+        ${stat('距行权价', dist == null ? '—' : dist < 0 ? '价内 ' + Math.abs(dist).toFixed(1) + '%' : dist.toFixed(1) + '%', dist != null && dist < 0 ? (short ? 'rk-t-danger' : 'rk-t-safe') : '')}
+        ${stat('Δ', (dl * m.sign).toFixed(2) + ` · ${Math.round(dl * m.mult)} 股`)}${stat('Γ', gm.toFixed(4))}
+        ${stat('Θ / 天', _fmtSigned(th * m.mult))}${stat('Vega / 点', _fmtSigned(vg * m.mult))}
+        ${extra.join('')}
+      </div>
+      <div class="rk-sub-title">盈亏曲线</div>
+      ${payoff}
+      <div class="rk-legend"><span><i class="rk-sw gl-sw-l1"></i>今天</span><span><i class="rk-sw gl-sw-l2"></i>${half} 天后</span><span><i class="rk-sw gl-sw-l3"></i>到期</span><span class="rk-legend-note">相对开仓价 ${entry.toFixed(2)}</span></div>
+      <div class="rk-sub-title gl-title-row"><span>曲面 · 股价 × 时间</span><span class="rk-presets">${tabs}</span></div>
+      ${surf}
+      <div class="rk-sub-title">Greeks 随股价</div>
+      <div class="gl-grid4">
+        <div><div class="gl-mini-t">Delta (股)</div>${prof(gg => gg.delta * m.mult, v => Math.round(v).toString())}</div>
+        <div><div class="gl-mini-t">Gamma (股 / $1)</div>${prof(gg => gg.gamma * m.mult, v => (Math.abs(v) < 0.05 ? 0 : v).toFixed(1))}</div>
+        <div><div class="gl-mini-t">Theta ($/天)</div>${prof(gg => gg.theta * m.mult, _fmtK)}</div>
+        <div><div class="gl-mini-t">Vega ($/点)</div>${prof(gg => gg.vega * m.mult, _fmtK)}</div>
+      </div>
+      <div class="rk-legend"><span><i class="rk-sw gl-sw-l1"></i>今天</span><span><i class="rk-sw gl-sw-l2"></i>${half} 天后</span><span class="rk-legend-note">Black-Scholes-Merton · r 4% · ${m.q > 0 ? `股息率 ${(m.q * 100).toFixed(2)}% (由市价反推) · IV ${m.ivSrc}` : `IV 按${m.ivSrc}校准`}</span></div>`;
+  }
+  closeOptionLab();
+  const ov = document.createElement('div');
+  ov.className = 'gl-overlay'; ov.id = 'gl-overlay';
+  ov.innerHTML = `<div class="gl-modal" role="dialog" aria-modal="true" aria-label="${esc(_posLabel(x))}">
+      <div class="gl-head"><b>${esc(_posLabel(x))}</b><span class="rk-quiet">${esc(_KIND_LABEL[x.kind] || x.kind)}</span><button class="gl-x" onclick="closeOptionLab()" aria-label="关闭">×</button></div>
+      <div class="gl-body">${body}</div></div>`;
+  ov.addEventListener('click', e => { if (e.target === ov) closeOptionLab(); });
+  document.body.appendChild(ov);
+  document.body.classList.add('gl-lock');
+  requestAnimationFrame(mountSurfaces);
+  ov.querySelector('.gl-x').focus();
+};
+window.closeOptionLab = () => {
+  const ov = document.getElementById('gl-overlay');
+  if (ov) { ov.remove(); document.body.classList.remove('gl-lock'); }
+};
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('gl-overlay')) closeOptionLab(); });
+
+
 /* ---------- composite decomposition ---------- */
 function _riskDecompHTML(R) {
   if (R.composite == null || !R.used.length) return '';
@@ -11552,7 +12129,7 @@ function _moneynessHTML(R) {
       <div class="rk-table-wrap"><table class="rk-table">
         <thead><tr><th>标的</th><th>合约</th><th>现价</th><th>距离</th><th>DTE</th><th>Delta</th><th>名义</th></tr></thead>
         <tbody>${rows.map(({ x, dist }) => `
-          <tr>
+          <tr class="gl-row" role="button" tabindex="0" onclick="openOptionLab(${R.c.pos.indexOf(x)})">
             <td>${esc(x.ticker)}</td>
             <td>${x.strike}${x.kind === 'short_put' ? 'P' : 'C'} × ${x.qty}</td>
             <td>${x.und.toFixed(2)}</td>
@@ -11606,6 +12183,7 @@ function _greeksHTML(R) {
         ${ivN ? fig('卖出期权平均 IV', (ivW / ivN).toFixed(1) + '%', '名义加权') : ''}
       </div>
       ${noGreeks ? '' : `
+      ${_greeksVizHTML(R)}
       <div class="rk-sub-title">每日 Theta · 策略</div>
       <div class="rk-table-wrap"><table class="rk-table rk-dd-table" id="rk-theta-table">
         <thead><tr><th>策略 / 合约</th><th>每日 Theta</th><th>仓位 / 详情</th></tr></thead>
@@ -11616,7 +12194,7 @@ function _greeksHTML(R) {
             <tr class="rk-dd-head" tabindex="0" role="button" onclick="this.parentElement.classList.toggle('open')" onkeydown="if(event.key==='Enter')this.click()">
               <td><span class="rk-caret">▸</span>${label}</td><td class="${th[k].sum >= 0 ? 'rk-t-safe' : 'rk-t-alert'}">${signed(th[k].sum)}</td>
               <td>${th[k].n}${th[k].miss ? ` <span class="rk-quiet">· 缺 Theta ${th[k].miss}</span>` : ''}</td></tr>
-            ${ps.map(({ x, v }) => `<tr class="rk-dd-row"><td>${esc(_posLabel(x))}<div class="rk-dd-meta-m">${esc(_posMeta(x))}</div></td><td class="${v == null ? 'rk-quiet' : v >= 0 ? 'rk-t-safe' : 'rk-t-alert'}">${v == null ? '缺 Theta' : signed(v)}</td><td class="rk-dd-meta-d">${esc(_posMeta(x))}</td></tr>`).join('')}
+            ${ps.map(({ x, v }) => `<tr class="rk-dd-row gl-row" role="button" tabindex="0" onclick="openOptionLab(${c.pos.indexOf(x)})" onkeydown="if(event.key==='Enter')openOptionLab(${c.pos.indexOf(x)})"><td>${esc(_posLabel(x))}<div class="rk-dd-meta-m">${esc(_posMeta(x))}</div></td><td class="${v == null ? 'rk-quiet' : v >= 0 ? 'rk-t-safe' : 'rk-t-alert'}">${v == null ? '缺 Theta' : signed(v)}</td><td class="rk-dd-meta-d">${esc(_posMeta(x))}</td></tr>`).join('')}
           </tbody>`; }).join('')}
         <tbody><tr class="rk-total"><td>合计</td><td>${signed(thetaNet)}</td><td></td></tr></tbody>
       </table></div>
@@ -11633,7 +12211,7 @@ function _greeksHTML(R) {
               const qty = Number(x.qty) || 0, sg = _isShortPos(x) ? -1 : 1;
               const sh = x.kind === 'stock' ? (x.side || 1) * qty : (x.delta != null ? x.delta * 100 * qty * sg : null);
               const dd = _dollarDelta(x), tv = x.theta != null ? x.theta * 100 * qty * sg : null;
-              return `<tr class="rk-dd-row"><td>${esc(_posLabel(x))}</td><td>${sh == null ? '<span class="rk-quiet">缺 Delta</span>' : (sh >= 0 ? '+' : '') + Math.round(sh).toLocaleString() + ' Δ'}</td><td>${dd == null ? '—' : signed(dd)}</td><td>${tv == null ? '—' : signed(tv)}</td></tr>`;
+              return `<tr class="rk-dd-row${x.kind === 'stock' ? '' : ' gl-row'}"${x.kind === 'stock' ? '' : ` role="button" tabindex="0" onclick="openOptionLab(${c.pos.indexOf(x)})"`}><td>${esc(_posLabel(x))}</td><td>${sh == null ? '<span class="rk-quiet">缺 Delta</span>' : (sh >= 0 ? '+' : '') + Math.round(sh).toLocaleString() + ' Δ'}</td><td>${dd == null ? '—' : signed(dd)}</td><td>${tv == null ? '—' : signed(tv)}</td></tr>`;
             }).join('')}
           </tbody>`; }).join('')}
       </table></div>
@@ -11749,6 +12327,7 @@ function renderRiskPage() {
       <div class="rk-groups">${groups}</div>
       ${_stressHTML(R)}
       ${_greeksHTML(R)}
+      ${_leapsLabHTML(R)}
       ${_tickerChartHTML(R)}
       ${_expiryChartHTML(R)}
       ${_moneynessHTML(R)}
