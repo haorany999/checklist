@@ -4507,7 +4507,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.13-v10';
+const APP_BUILD = '2026.10.13-v11';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
@@ -11774,7 +11774,7 @@ function surfacePanelHTML({ metrics, build, def = 'pnl', height = 320 }) {
   return `
     <div class="sf-panel" id="${id}" tabindex="0" onkeydown="sfKey(event,'${id}')">
       <div class="sf-bar">
-        <div class="rk-presets sf-metrics">${metrics.map(k => tab('sf-m', 'data-m', k, GRID_METRICS[k].label + (scope === 'S' && ['delta', 'gamma', 'charm', 'vanna'].includes(k) ? ' (股)' : ''), k === def)).join('')}</div>
+        <div class="rk-presets sf-metrics">${metrics.map(k => tab('sf-m', 'data-m', k, GRID_METRICS[k].label, k === def)).join('')}</div>
         <div class="sf-tools">
           <span class="rk-presets">${tab('sf-mode', 'data-mode', '3d', '3D', true)}${tab('sf-mode', 'data-mode', 'grid', '矩阵', false)}</span>
           <span class="rk-presets sf-views">${[['def', '默认'], ['front', '正面'], ['side', '侧面'], ['top', '俯视']].map(([k, l]) => tab('sf-v', 'data-v', k, l, k === 'def')).join('')}</span>
@@ -12225,15 +12225,15 @@ const GREEK_HELP = {
     short: '卖方: 价外 short put 遇到 IV 上升, Delta 变大 (更像要被行权). 大跌时价格下跌和 IV 上升同时推高 Delta, 这是"跌得越快越难受"的原因之一.',
     long: 'LEAPS: 深度价内时 IV 上升会降低 Delta, 让 LEAPS 更像期权而不是正股.',
     ex: 'Vanna +0.8 股/点, IV +10 点 → Delta 约多 8 股.' },
-  carry: { t: '时间价值年化', def: '期权价 = 内在价值 + 时间价值. 时间价值到期前会全部损耗, 是用 LEAPS 代替正股所付的"租金". 年化 = 时间价值 ÷ 行权价 ÷ 剩余年数.',
+  carry: { t: '时间价值/年', def: '期权价 = 内在价值 + 时间价值. 时间价值到期前会全部损耗, 是用 LEAPS 代替正股所付的"租金". 年化 = 时间价值 ÷ 行权价 ÷ 剩余年数.',
     read: '这是成本, 不是收益. 可以直接和融资利率比较.',
     long: '例: MSFT 400C 价格 150 = 内在 120 + 时间价值 30. 30 ÷ 400 ÷ 1.26 年 ≈ 6%/年, 相当于以 6% 年息借 $400/股 买股票. 若融资利率 10%+, LEAPS 是更便宜的杠杆; 若年化成本高于融资利率, 直接融资买正股更划算.',
     ex: '年化成本越低越好; 深度价内 + 长期限的 LEAPS 通常最低.' },
-  beta: { t: 'Beta 与 SPY 等值 Delta', def: 'β = 这只股票相对 SPY 的平均涨跌倍数. SPY 等值 Delta = Σ(每个仓位的美元 Delta × β) ÷ SPY 价格: 整个组合相当于持有多少股 SPY.',
+  beta: { t: 'Beta 与 SPY 等值', def: 'β = 这只股票相对 SPY 的平均涨跌倍数. SPY 等值 Delta = Σ(每个仓位的美元 Delta × β) ÷ SPY 价格: 整个组合相当于持有多少股 SPY.',
     read: '用它把不同标的的方向风险换算到同一把尺子上. 例如 RKLB β 3.85: SPY 跌 1% 时它平均跌约 3.85%.',
     long: '大盘敞口 / NAV > 100% 表示组合比满仓 SPY 更敏感. 相关性低 (< 0.4) 的标的, 实际走势更多是自身因素, β 只解释一部分.',
     short: '卖 put 的标的 β 越高, 大盘下跌时越快逼近行权价; 压力测试切到「β 加权」看被行权的先后顺序.',
-    ex: '+300 股 SPY, SPY 600: SPY 跌 1% ≈ 亏 $1,800. 防御股算出 β 接近 0 而你认为不合理时, 在「使用」里手填常态值 (如 0.5).' },
+    ex: '+300 股 SPY, SPY 600: SPY 跌 1% ≈ 亏 $1,800. 防御股算出 β 接近 0 而你认为不合理时, 在「覆盖」里手填常态值 (如 0.5).' },
   lambda: { t: '杠杆 λ', def: 'λ = Delta × 现价 ÷ 期权价: 每 1 美元期权相当于多少美元正股的涨跌.',
     read: 'λ 越大杠杆越高, 但通常意味着 Delta 更低、时间价值占比更高.',
     long: '股票替代型 LEAPS 一般 λ 2–4; Swing 型更高. λ 高不等于更好, 要和时间价值年化一起看.',
@@ -12429,12 +12429,12 @@ function _leapsLabHTML(R) {
       <h3 class="rk-block-title">LEAPS</h3>
       ${ok.length ? `<div class="rk-figs">
         ${fig('正股等值', _fmtUsd(usd), `${Math.round(sum('shares')).toLocaleString()} 股`)}
-        ${fig('平均杠杆 λ', val > 0 ? (usd / val).toFixed(2) + '×' : '—', `市值 ${_fmtUsd(val)}`)}
-        ${fig('时间价值', _fmtUsd(extr), `时间价值年化 ${carryW.toFixed(1)}%`, 'rk-t-watch')}
-        ${fig('每月 Theta', _fmtSigned(sum('thetaMonth')), `Vega ${_fmtSigned(sum('vegaUsd'))}/点`, sum('thetaMonth') >= 0 ? 'rk-t-safe' : 'rk-t-alert')}
+        ${fig('杠杆 λ', val > 0 ? (usd / val).toFixed(2) + '×' : '—', `市值 ${_fmtUsd(val)}`)}
+        ${fig('时间价值', _fmtUsd(extr), `${carryW.toFixed(1)}%/年`, 'rk-t-watch')}
+        ${fig('Theta/月', _fmtSigned(sum('thetaMonth')), `Vega ${_fmtSigned(sum('vegaUsd'))}/点`, sum('thetaMonth') >= 0 ? 'rk-t-safe' : 'rk-t-alert')}
       </div>` : ''}
       <div class="rk-table-wrap"><table class="rk-table gl-leaps">
-        <thead><tr><th>合约</th><th>Δ</th><th>股数</th><th>λ ${_qBtn('lambda', 'long')}</th><th>时间价值</th><th>时间价值年化 ${_qBtn('carry', 'long')}</th><th>浮盈 · 年化</th><th>每月 Θ</th><th>Vega/点</th><th>DTE</th></tr></thead>
+        <thead><tr><th>合约</th><th>Δ</th><th>股数</th><th>λ ${_qBtn('lambda', 'long')}</th><th>时间价值</th><th>时间价值/年 ${_qBtn('carry', 'long')}</th><th>浮盈</th><th>Theta/月</th><th>Vega/点</th><th>DTE</th></tr></thead>
         <tbody>${rows.map(({ x, i, s }) => s ? `
           <tr class="gl-row" role="button" tabindex="0" onclick="openOptionLab(${i})" onkeydown="if(event.key==='Enter')openOptionLab(${i})">
             <td>${esc(_posLabel(x))}</td><td class="${dcls(s.delta)}">${s.delta.toFixed(2)}</td><td>${Math.round(s.shares)}</td>
@@ -12444,7 +12444,7 @@ function _leapsLabHTML(R) {
             <td class="${_thCls(s.thetaMonth)}">${_fmtSigned(s.thetaMonth)}</td><td>${_fmtSigned(s.vegaUsd)}</td><td>${s.m.dte}</td></tr>`
           : `<tr><td>${esc(_posLabel(x))}</td><td colspan="9" class="rk-quiet">缺报价</td></tr>`).join('')}</tbody>
       </table></div>
-      <div class="rk-note">时间价值年化是成本 (可对比融资利率), 不是收益; 年化收益按对应 checklist 快照的开仓日计算. Δ &lt; 0.60 橙色. 点合约看止盈 / 止损先到概率.</div>
+      <div class="rk-note">时间价值/年 是成本 (可对比融资利率), 不是收益; 年化收益按对应 checklist 快照的开仓日计算. Δ &lt; 0.60 橙色. 点合约看止盈 / 止损先到概率.</div>
     </section>`;
 }
 
@@ -12459,9 +12459,9 @@ function _greeksVizHTML(R) {
   return `
     <div class="rk-sub-title">风险曲面</div>
     ${panel}
-    <div class="rk-sub-title">Theta 日历 · ${cal.N} 天</div>
+    <div class="rk-sub-title">Theta 日历</div>
     ${_thetaCalendarSVG(cal)}
-    <div class="rk-legend"><span><i class="rk-sw gl-sw-sell"></i>卖方 ${_fmtSigned(tot)}</span><span><i class="rk-sw gl-sw-buy"></i>买方 ${_fmtSigned(cost)}</span><span><i class="rk-sw gl-sw-cum"></i>${cal.N} 天累计净额 ${_fmtSigned(tot + cost)}</span><span class="rk-legend-note">股价 / IV 不变: 卖方剩余时间价值 − 买方同期损耗, 只算这 ${cal.N} 天</span></div>
+    <div class="rk-legend"><span><i class="rk-sw gl-sw-sell"></i>卖方 ${_fmtSigned(tot)}</span><span><i class="rk-sw gl-sw-buy"></i>买方 ${_fmtSigned(cost)}</span><span><i class="rk-sw gl-sw-cum"></i>累计 ${_fmtSigned(tot + cost)}</span><span class="rk-legend-note">${cal.N} 天 · 股价 / IV 不变 · 卖方剩余时间价值 − 买方损耗</span></div>
     ${sc ? `<div class="rk-sub-title">Theta 效率</div>${sc}
     <div class="rk-legend"><span><i class="rk-sw rk-f-safe"></i>&gt; 21 天</span><span><i class="rk-sw rk-f-watch"></i>≤ 21 天</span><span><i class="rk-sw rk-f-danger"></i>≤ 7 天</span><span class="rk-legend-note">点大小 = 保证金</span></div>` : ''}`;
 }
@@ -12509,8 +12509,8 @@ function _optionLabBodyHTML(x) {
   if (short) extra = [
     stat('盈亏平衡', `${be.toFixed(2)} (${((be - m.S) / m.S * 100) >= 0 ? '+' : ''}${((be - m.S) / m.S * 100).toFixed(1)}%)`),
     stat('盈利概率', pc(pop), pop < 0.5 ? 'rk-t-alert' : 'rk-t-safe'),
-    stat('到期价内概率', pc(g.pITM), g.pITM > 0.35 ? 'rk-t-alert' : ''),
-    stat('±1σ 到期', `${(m.S - sd).toFixed(0)} – ${(m.S + sd).toFixed(0)}`),
+    stat('价内概率', pc(g.pITM), g.pITM > 0.35 ? 'rk-t-alert' : ''),
+    stat('±1σ', `${(m.S - sd).toFixed(0)} – ${(m.S + sd).toFixed(0)}`),
     stat('已赚', cap != null ? cap.toFixed(0) + '%' : '—'),
     stat('年化权利金', entry > 0 ? (entry * mu / coll * 365 / Math.max(1, m.dte) * 100).toFixed(1) + '%' : '—'),
     stat('年化 Theta', (-th * mu * 365 / coll * 100).toFixed(1) + '%'),
@@ -12521,18 +12521,18 @@ function _optionLabBodyHTML(x) {
       stat(`止盈 +${lx.tgtPct}% 先到`, lx.already === 'target' ? '已达到' : pc(lx.pTarget), 'rk-t-safe'),
       stat(`止损 −${lx.stopPct}% 先到`, lx.already === 'stop' ? '已触发' : pc(lx.pStop), lx.pStop > 0.3 ? 'rk-t-danger' : ''),
       stat('退出时盈利', pc(lx.pProfitExit), lx.pProfitExit < 0.5 ? 'rk-t-alert' : 'rk-t-safe'),
-      stat('退出日盈亏平衡', lx.be != null ? `${lx.be.toFixed(2)} (${((lx.be - m.S) / m.S * 100) >= 0 ? '+' : ''}${((lx.be - m.S) / m.S * 100).toFixed(1)}%)` : '—'),
-      stat('±1σ 至退出日', `${(m.S - sd).toFixed(0)} – ${(m.S + sd).toFixed(0)}`),
+      stat('盈亏平衡', lx.be != null ? `${lx.be.toFixed(2)} (${((lx.be - m.S) / m.S * 100) >= 0 ? '+' : ''}${((lx.be - m.S) / m.S * 100).toFixed(1)}%)` : '—'),
+      stat('±1σ', `${(m.S - sd).toFixed(0)} – ${(m.S + sd).toFixed(0)}`),
       stat('距退出', `${lx.exitD} 天`),
     ] : [stat('退出', `已进入 6 个月退出区`, 'rk-t-danger')];
     extra.push(
       stat('杠杆 λ', s.lambda != null ? s.lambda.toFixed(2) + '×' : '—', '', 'lambda'),
       stat('时间价值', s.extrPct != null ? s.extrPct.toFixed(0) + '%' : '—'),
-      stat('时间价值年化', s.carry != null ? s.carry.toFixed(1) + '%' : '—', '', 'carry'),
-      stat('浮盈 · 年化收益', rr ? `${rr.ret >= 0 ? '+' : ''}${rr.ret.toFixed(0)}% · ${rr.ann != null ? (rr.ann >= 0 ? '+' : '') + rr.ann.toFixed(0) + '%' : rr.days != null ? '持有 < 30 天' : '无开仓记录'}` : '—', rr && rr.ret >= 0 ? 'rk-t-safe' : 'rk-t-alert'),
+      stat('时间价值/年', s.carry != null ? s.carry.toFixed(1) + '%' : '—', '', 'carry'),
+      stat('浮盈', rr ? `${rr.ret >= 0 ? '+' : ''}${rr.ret.toFixed(0)}%${rr.ann != null ? ` · ${rr.ann >= 0 ? '+' : ''}${rr.ann.toFixed(0)}%/年` : ''}` : '—', rr && rr.ret >= 0 ? 'rk-t-safe' : 'rk-t-alert'),
       stat('+1% Δ 变化', s.dPer1 != null ? '+' + s.dPer1.toFixed(1) + ' 股' : '—'));
   } else extra = [
-    stat('盈亏平衡', `${be.toFixed(2)}`), stat('盈利概率 (到期)', pc(pop)), stat('±1σ 到期', `${(m.S - sd).toFixed(0)} – ${(m.S + sd).toFixed(0)}`)];
+    stat('盈亏平衡', `${be.toFixed(2)}`), stat('盈利概率', pc(pop)), stat('±1σ', `${(m.S - sd).toFixed(0)} – ${(m.S + sd).toFixed(0)}`)];
   return `
     <div class="gl-stats">
       ${stat('现价', m.S.toFixed(2))}${stat('行权价', m.K)}${stat('DTE', m.dte)}
@@ -12546,9 +12546,9 @@ function _optionLabBodyHTML(x) {
     <div class="rk-sub-title">盈亏曲线</div>
     ${payoff}
     <div class="rk-legend"><span><i class="rk-sw gl-sw-l1"></i>今天</span><span><i class="rk-sw gl-sw-l2"></i>${half} 天后</span><span><i class="rk-sw gl-sw-l3"></i>${Hlabel}${useExit ? ' (DTE 180)' : ''}</span><span><i class="rk-sw gl-sw-band"></i>±1σ</span><span class="rk-legend-note">虚线 ±2σ · 点线 ${useExit ? '退出日' : ''}盈亏平衡 · 相对开仓价 ${entry.toFixed(2)}</span></div>
-    <div class="rk-sub-title">曲面${useExit ? ' · 至退出日' : ''}</div>
+    <div class="rk-sub-title">曲面</div>
     ${panel}
-    <div class="rk-sub-title">Greeks 随股价</div>
+    <div class="rk-sub-title">Greeks</div>
     ${_greekGridHTML(fnFor, half, ctx, xsP, m.S)}
     <div class="rk-legend"><span><i class="rk-sw gl-sw-l1"></i>今天</span><span><i class="rk-sw gl-sw-l2"></i>${half} 天后</span><span class="rk-legend-note">悬停 / 点按看数值 · 竖虚线 = 现价 · Black-Scholes-Merton · r 4% · ${m.q > 0 ? `股息率 ${(m.q * 100).toFixed(2)}% (由市价反推) · IV ${m.ivSrc}` : `IV 按${m.ivSrc}校准`} · 概率为风险中性${isLeaps ? ' · 先到概率为 2000 条路径模拟' : ''}</span></div>`;
 }
@@ -12596,11 +12596,11 @@ function greeksCardHTML() {
   return `
     <div class="gk-card" id="gk-card" role="button" tabindex="0" onclick="showGreeksPage()"
          onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showGreeksPage();}">
-      <div class="gk-title">Greeks · 盈亏 <span>${s.opts} 个期权 ▸</span></div>
+      <div class="gk-title">Greeks <span>${s.opts} 个期权 ▸</span></div>
       <div class="gk-cells">
-        ${cell('Delta 美元敞口', _fmtSigned(s.usd))}
-        ${cell('每日 Theta', _fmtSigned(s.theta), s.theta >= 0 ? 'rk-t-safe' : 'rk-t-alert')}
-        ${cell('未实现盈亏', s.pnlN ? _fmtSigned(s.pnl) : '—', s.pnl >= 0 ? 'rk-t-safe' : 'rk-t-danger')}
+        ${cell('美元 Delta', _fmtSigned(s.usd))}
+        ${cell('Theta/天', _fmtSigned(s.theta), s.theta >= 0 ? 'rk-t-safe' : 'rk-t-alert')}
+        ${cell('浮盈', s.pnlN ? _fmtSigned(s.pnl) : '—', s.pnl >= 0 ? 'rk-t-safe' : 'rk-t-danger')}
       </div>
     </div>`;
 }
@@ -12793,7 +12793,7 @@ function _comboLabBodyHTML(cm, kind) {
       const ext = Math.max(0, (L.m.mark ?? 0) - Math.max(0, S - L.m.K));
       extra.push(stat('LEAPS 时间价值 vs 权利金', `${ext.toFixed(2)} vs ${credit.toFixed(2)}`, ext > credit ? 'rk-t-safe' : 'rk-t-alert'));
     }
-    extra.push(stat('短腿到期价内概率', (bsGreeks(S, Ks, sh.m.T, sh.m.sigma, 'call', BS_RATE, sh.m.q).pITM * 100).toFixed(0) + '%'));
+    extra.push(stat('被行权概率', (bsGreeks(S, Ks, sh.m.T, sh.m.sigma, 'call', BS_RATE, sh.m.q).pITM * 100).toFixed(0) + '%'));
   }
   if (kind === 'cc' && sh && cm.stocks.length) {
     const cb = cm.stocks[0].entry;
@@ -12812,17 +12812,17 @@ function _comboLabBodyHTML(cm, kind) {
       ${stat('现价', S.toFixed(2))}${stat('短腿 DTE', H)}${stat('净 Δ', `${d0 >= 0 ? '+' : ''}${Math.round(d0)} 股`)}
       ${stat('净 Γ', cm.greek(S, 0, 'gamma').toFixed(2) + ' 股/$')}${stat('净 Θ / 天', _fmtSigned(th0), th0 >= 0 ? 'rk-t-safe' : 'rk-t-alert')}
       ${stat('净 Vega / 点', _fmtSigned(cm.greek(S, 0, 'vega')))}${stat('净成本', _fmtSigned(cm.net))}
-      ${stat('短腿到期盈亏平衡', bes.length ? bes.map(b => b.toFixed(2)).join(' / ') : '—')}
-      ${stat('短腿到期盈利概率', (pop * 100).toFixed(0) + '%', pop < 0.5 ? 'rk-t-alert' : 'rk-t-safe')}
-      ${stat('短腿到期最大盈利', _fmtSigned(Math.max(...atH)))}${stat('−30% 时', _fmtSigned(cm.pnl(S * 0.7, H)), 'rk-t-danger')}
+      ${stat('盈亏平衡', bes.length ? bes.map(b => b.toFixed(2)).join(' / ') : '—')}
+      ${stat('盈利概率', (pop * 100).toFixed(0) + '%', pop < 0.5 ? 'rk-t-alert' : 'rk-t-safe')}
+      ${stat('最大盈利', _fmtSigned(Math.max(...atH)))}${stat('−30% 时', _fmtSigned(cm.pnl(S * 0.7, H)), 'rk-t-danger')}
       ${extra.join('')}
     </div>
-    <div class="rk-sub-title">组合盈亏曲线 · ${cm.opts.length + cm.stocks.length} 条腿</div>
+    <div class="rk-sub-title">盈亏曲线</div>
     ${payoff}
     <div class="rk-legend"><span><i class="rk-sw gl-sw-l1"></i>今天</span><span><i class="rk-sw gl-sw-l2"></i>${half} 天后</span><span><i class="rk-sw gl-sw-l3"></i>短腿到期</span><span><i class="rk-sw gl-sw-band"></i>±1σ</span><span class="rk-legend-note">点线 盈亏平衡 · 虚线 短腿行权价 · 相对开仓价</span></div>
     <div class="rk-sub-title">曲面</div>
     ${panel}
-    <div class="rk-sub-title">组合 Greeks 随股价</div>
+    <div class="rk-sub-title">Greeks</div>
     ${_greekGridHTML((k, S1, d) => cm.greek(S1, d, k), half, 'short', xsP, S)}
     <div class="rk-legend"><span><i class="rk-sw gl-sw-l1"></i>今天</span><span><i class="rk-sw gl-sw-l2"></i>${half} 天后</span><span class="rk-legend-note">悬停 / 点按看数值 · 竖虚线 = 现价 · Black-Scholes-Merton · 每条腿各自按市价校准 IV · 到期的腿按内在价值结算</span></div>`;
 }
@@ -12896,7 +12896,7 @@ function _quoteBlocksHTML() {
 function _previewBlockHTML() {
   return `
     <details class="cq-preview" id="csp-preview-box" ${state.cspPreviewOpen ? 'open' : ''} ontoggle="toggleCspPreview(this.open)">
-      <summary>预览这张合约 · 盈亏 / 曲面 / Greeks</summary>
+      <summary>预览</summary>
       <div id="csp-preview">${state.cspPreviewOpen ? cspPreviewInnerHTML() : ''}</div>
     </details>`;
 }
@@ -13015,16 +13015,16 @@ function _betaPanelHTML(R) {
   }).join('');
   return `
     <section class="rk-block">
-      <h3 class="rk-block-title rk-title-row"><span>Beta · 对 SPY</span>${_betaToggleHTML()}</h3>
+      <h3 class="rk-block-title rk-title-row"><span>Beta</span>${_betaToggleHTML()}</h3>
       <div class="rk-figs">
-        <div class="rk-fig"><span class="rk-fig-val rk-t-acc">${eq.shares != null ? `${eq.shares >= 0 ? '+' : ''}${Math.round(eq.shares).toLocaleString()} 股 SPY` : '—'}</span><span class="rk-fig-label">SPY 等值 Delta ${_qBtn('beta', 'long')}</span><span class="rk-fig-sub">β 加权 ${_fmtSigned(eq.usd)}${eq.spy ? ` · SPY ${eq.spy.toFixed(2)}` : ''}</span></div>
+        <div class="rk-fig"><span class="rk-fig-val rk-t-acc">${eq.shares != null ? `${eq.shares >= 0 ? '+' : ''}${Math.round(eq.shares).toLocaleString()} 股 SPY` : '—'}</span><span class="rk-fig-label">SPY 等值 ${_qBtn('beta', 'long')}</span><span class="rk-fig-sub">β 加权 ${_fmtSigned(eq.usd)}${eq.spy ? ` · SPY ${eq.spy.toFixed(2)}` : ''}</span></div>
         <div class="rk-fig"><span class="rk-fig-val ${eq.usd >= 0 ? 'rk-t-alert' : 'rk-t-safe'}">${_fmtSigned(-eq.usd * 0.01)}</span><span class="rk-fig-label">SPY 跌 1% 时</span><span class="rk-fig-sub">约等于组合盈亏</span></div>
         ${R.c.nav ? `<div class="rk-fig"><span class="rk-fig-val rk-t-${Math.abs(eq.usd) / R.c.nav > 1.5 ? 'alert' : Math.abs(eq.usd) / R.c.nav > 1 ? 'watch' : 'safe'}">${(Math.abs(eq.usd) / R.c.nav * 100).toFixed(0)}%</span><span class="rk-fig-label">大盘敞口 / NAV</span><span class="rk-fig-sub">&gt; 100% = 比满仓 SPY 更敏感</span></div>` : ''}
       </div>
       <div class="rk-table-wrap"><table class="rk-table bt-table">
-        <thead><tr><th>标的</th><th>β 计算</th><th>相关性</th><th>天数</th><th>使用</th><th></th></tr></thead>
+        <thead><tr><th>标的</th><th>β</th><th>相关性</th><th>天数</th><th>覆盖</th><th></th></tr></thead>
         <tbody>${rows}</tbody></table></div>
-      <div class="rk-note">β = 一年日收益对 SPY 回归; 相关性低于 0.4 时 β 参考价值有限. 「使用」留空 = 用计算值, 填数 = 手动覆盖. 右上开关只影响风险曲面和压力测试.
+      <div class="rk-note">β = 一年日收益对 SPY 回归; 相关性低于 0.4 时 β 参考价值有限. 「覆盖」留空 = 用计算值, 填数 = 手动覆盖. 右上开关只影响风险曲面和压力测试.
         ${c ? `更新 ${_ago(c.at)}` : '未读取'}${__betaError ? ` · <span class="rk-t-danger">${esc(__betaError)}</span>` : ''}
         <button class="btn ghost small" onclick="fetchBetasNow()">重新计算</button></div>
     </section>`;
@@ -13189,7 +13189,7 @@ function _expiryChartHTML(R) {
   const maxPct = Math.max(25, ...weeks.map(w => w.total / nav * 100)) * 1.1;
   return `
     <section class="rk-block">
-      <h3 class="rk-block-title">CSP 到期 · 按周</h3>
+      <h3 class="rk-block-title">CSP 到期</h3>
       <div class="rk-cols">
         ${weeks.map(w => {
           const pct = w.total / nav * 100, lv = riskLevel(_scoreMax(pct, [15, 25, 35]));
@@ -13218,7 +13218,7 @@ function _moneynessHTML(R) {
   const cls = d => d < 0 ? 'danger' : d < 5 ? 'alert' : d < 10 ? 'watch' : 'safe';
   return `
     <section class="rk-block rk-moneyness">
-      <h3 class="rk-block-title">卖出期权 · 距行权价</h3>
+      <h3 class="rk-block-title">距行权价</h3>
       <div class="rk-table-wrap"><table class="rk-table">
         <thead><tr><th>标的</th><th>合约</th><th>现价</th><th>距离</th><th>DTE</th><th>Delta</th><th>名义</th></tr></thead>
         <tbody>${rows.map(({ x, dist }) => `
@@ -13267,19 +13267,19 @@ function _greeksHTML(R) {
   const rows = Object.values(byT).sort((a, b) => Math.abs(b.usd) - Math.abs(a.usd));
   return `
     <section class="rk-block">
-      <h3 class="rk-block-title">Greeks · 盈亏</h3>
+      <h3 class="rk-block-title">Greeks</h3>
       ${noGreeks ? `<div class="rk-note">${esc(_needSchwab(c, ' Greeks'))}.</div>` : ''}
       <div class="rk-figs">
-        ${noGreeks ? '' : fig('Delta 美元敞口', signed(usd), c.nav ? `${(Math.abs(usd) / c.nav * 100).toFixed(0)}% NAV` : '')}
-        ${noGreeks ? '' : fig('每日 Theta', signed(thetaNet), `卖方 ${signed(sellers)} · 买方 ${signed(buyers)}`, thetaNet >= 0 ? 'rk-t-safe' : 'rk-t-alert')}
-        ${pnlN ? fig('未实现盈亏', signed(pnl), `${pnlN} 仓位`, pnl >= 0 ? 'rk-t-safe' : 'rk-t-danger') : ''}
-        ${ivN ? fig('卖出期权平均 IV', (ivW / ivN).toFixed(1) + '%', '名义加权', 'rk-t-watch') : ''}
+        ${noGreeks ? '' : fig('美元 Delta', signed(usd), c.nav ? `${(Math.abs(usd) / c.nav * 100).toFixed(0)}% NAV` : '')}
+        ${noGreeks ? '' : fig('Theta/天', signed(thetaNet), `卖方 ${signed(sellers)} · 买方 ${signed(buyers)}`, thetaNet >= 0 ? 'rk-t-safe' : 'rk-t-alert')}
+        ${pnlN ? fig('浮盈', signed(pnl), `${pnlN} 仓位`, pnl >= 0 ? 'rk-t-safe' : 'rk-t-danger') : ''}
+        ${ivN ? fig('卖方 IV', (ivW / ivN).toFixed(1) + '%', '名义加权', 'rk-t-watch') : ''}
       </div>
       ${noGreeks ? '' : `
       ${_greeksVizHTML(R)}
-      <div class="rk-sub-title">每日 Theta · 策略</div>
+      <div class="rk-sub-title">按策略</div>
       <div class="rk-table-wrap"><table class="rk-table rk-dd-table" id="rk-theta-table">
-        <thead><tr><th>策略 / 合约</th><th>每日 Theta</th><th>仓位 / 详情</th></tr></thead>
+        <thead><tr><th>策略</th><th>Theta/天</th><th>仓位</th></tr></thead>
         ${Object.entries(KIND).filter(([k]) => th[k].n || th[k].miss).map(([k, label]) => {
           const ps = c.pos.filter(x => x.kind === k).map(x => ({ x, v: x.theta != null ? x.theta * 100 * (Number(x.qty) || 0) * (_isShortPos(x) ? -1 : 1) : null }))
             .sort((a, b) => (b.v ?? -1e12) - (a.v ?? -1e12));
@@ -13291,9 +13291,9 @@ function _greeksHTML(R) {
           </tbody>`; }).join('')}
         <tbody><tr class="rk-total"><td>合计</td><td class="${_thCls(thetaNet)}">${signed(thetaNet)}</td><td></td></tr></tbody>
       </table></div>
-      <div class="rk-sub-title">Delta · 标的</div>
+      <div class="rk-sub-title">按标的</div>
       <div class="rk-table-wrap"><table class="rk-table rk-dd-table" id="rk-delta-table">
-        <thead><tr><th>标的 / 仓位</th><th>净 Delta (股)</th><th>美元敞口</th><th>每日 Theta</th></tr></thead>
+        <thead><tr><th>标的</th><th>Delta</th><th>美元 Delta</th><th>Theta/天</th></tr></thead>
         ${rows.map(t => {
           const ps = c.pos.filter(x => x.ticker === t.t);
           return `<tbody class="rk-dd" data-ticker="${esc(t.t)}">
@@ -13419,7 +13419,7 @@ function renderRiskPage() {
       ${_reconHTML()}
       <div class="rk-groups">${groups}</div>
       ${_stressHTML(R)}
-      ${R.c.isSchwab && R.c.pos.some(x => x.kind !== 'stock') ? `<button class="rk-linkrow" onclick="showGreeksPage()">Greeks · 盈亏 · LEAPS ▸</button>` : ''}
+      ${R.c.isSchwab && R.c.pos.some(x => x.kind !== 'stock') ? `<button class="rk-linkrow" onclick="showGreeksPage()">Greeks ▸</button>` : ''}
       ${_tickerChartHTML(R)}
       ${_expiryChartHTML(R)}
       ${_moneynessHTML(R)}
