@@ -1703,6 +1703,7 @@
   body { --rk-safe: var(--pass); --rk-watch: var(--pending); --rk-alert: color-mix(in srgb, var(--pending) 45%, var(--fail)); --rk-danger: var(--fail); }
   .rk-t-safe { color: var(--rk-safe) !important; } .rk-t-watch { color: var(--rk-watch) !important; }
   .rk-t-alert { color: var(--rk-alert) !important; } .rk-t-danger { color: var(--rk-danger) !important; }
+  .rk-t-acc { color: var(--accent) !important; }
   .rk-t-safe.rg-score { fill: var(--rk-safe); } .rk-t-watch.rg-score { fill: var(--rk-watch); }
   .rk-t-alert.rg-score { fill: var(--rk-alert); } .rk-t-danger.rg-score { fill: var(--rk-danger); }
 
@@ -2133,6 +2134,7 @@
     .sf-panel.fs .sf-rotate { display: block; position: absolute; top: 8px; left: 50%; transform: translateX(-50%); padding: 4px 10px; border-radius: 12px;
       background: var(--accent); color: var(--panel); font-size: 12px; white-space: nowrap; pointer-events: none; }
   }
+  .app-build { margin: 18px 0 6px; text-align: center; font-family: var(--mono); font-size: 10.5px; color: var(--text-faint); }
   .pr-sim-risk { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 10px; margin-top: 8px; padding: 6px 9px;
     border-radius: 4px; background: var(--panel-2); font-size: 12px; color: var(--text-dim); }
   .pr-sim-risk span { font-size: 10.5px; color: var(--text-faint); margin-left: auto; }
@@ -4504,6 +4506,8 @@ function clearSparklineFilters() {
 }
 window.clearSparklineFilters = clearSparklineFilters;
 
+// Bump on every release so it's obvious which file the browser actually loaded
+const APP_BUILD = '2026.10.13-v9';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
@@ -5637,6 +5641,7 @@ function renderPicker() {
         </button>
       </div>
       ${pickerFooterHTML()}
+      <div class="app-build">版本 ${APP_BUILD}</div>
     </div>
   `;
   // Assign stagger indexes to panels and list rows
@@ -12223,6 +12228,11 @@ const GREEK_HELP = {
     read: '这是成本, 不是收益. 可以直接和融资利率比较.',
     long: '例: MSFT 400C 价格 150 = 内在 120 + 时间价值 30. 30 ÷ 400 ÷ 1.26 年 ≈ 6%/年, 相当于以 6% 年息借 $400/股 买股票. 若融资利率 10%+, LEAPS 是更便宜的杠杆; 若年化成本高于融资利率, 直接融资买正股更划算.',
     ex: '年化成本越低越好; 深度价内 + 长期限的 LEAPS 通常最低.' },
+  beta: { t: 'Beta 与 SPY 等值 Delta', def: 'β = 这只股票相对 SPY 的平均涨跌倍数. SPY 等值 Delta = Σ(每个仓位的美元 Delta × β) ÷ SPY 价格: 整个组合相当于持有多少股 SPY.',
+    read: '用它把不同标的的方向风险换算到同一把尺子上. 例如 RKLB β 3.85: SPY 跌 1% 时它平均跌约 3.85%.',
+    long: '大盘敞口 / NAV > 100% 表示组合比满仓 SPY 更敏感. 相关性低 (< 0.4) 的标的, 实际走势更多是自身因素, β 只解释一部分.',
+    short: '卖 put 的标的 β 越高, 大盘下跌时越快逼近行权价; 压力测试切到「β 加权」看被行权的先后顺序.',
+    ex: '+300 股 SPY, SPY 600: SPY 跌 1% ≈ 亏 $1,800. 防御股算出 β 接近 0 而你认为不合理时, 在「使用」里手填常态值 (如 0.5).' },
   lambda: { t: '杠杆 λ', def: 'λ = Delta × 现价 ÷ 期权价: 每 1 美元期权相当于多少美元正股的涨跌.',
     read: 'λ 越大杠杆越高, 但通常意味着 Delta 更低、时间价值占比更高.',
     long: '股票替代型 LEAPS 一般 λ 2–4; Swing 型更高. λ 高不等于更好, 要和时间价值年化一起看.',
@@ -12411,16 +12421,16 @@ function _leapsLabHTML(R) {
   const sum = k => ok.reduce((a, o) => a + (o.s[k] || 0), 0);
   const val = sum('value'), usd = sum('usd'), extr = ok.reduce((a, o) => a + o.s.extr * 100 * o.s.m.qty, 0);
   const carryW = ok.reduce((a, o) => a + o.s.carry * o.s.m.K * o.s.m.qty, 0) / (ok.reduce((a, o) => a + o.s.m.K * o.s.m.qty, 0) || 1);
-  const fig = (label, v, sub) => `<div class="rk-fig"><span class="rk-fig-val">${v}</span><span class="rk-fig-label">${label}</span>${sub ? `<span class="rk-fig-sub">${sub}</span>` : ''}</div>`;
+  const fig = (label, v, sub, cls = 'rk-t-acc') => `<div class="rk-fig"><span class="rk-fig-val ${cls}">${v}</span><span class="rk-fig-label">${label}</span>${sub ? `<span class="rk-fig-sub">${sub}</span>` : ''}</div>`;
   const dcls = d => d < 0.6 ? 'rk-t-alert' : d > 0.92 ? 'rk-t-watch' : 'rk-t-safe';
   return `
     <section class="rk-block">
-      <h3 class="rk-block-title">LEAPS · 替代效率</h3>
+      <h3 class="rk-block-title">LEAPS</h3>
       ${ok.length ? `<div class="rk-figs">
         ${fig('正股等值', _fmtUsd(usd), `${Math.round(sum('shares')).toLocaleString()} 股`)}
         ${fig('平均杠杆 λ', val > 0 ? (usd / val).toFixed(2) + '×' : '—', `市值 ${_fmtUsd(val)}`)}
-        ${fig('时间价值', _fmtUsd(extr), `时间价值年化 ${carryW.toFixed(1)}%`)}
-        ${fig('每月 Theta', _fmtSigned(sum('thetaMonth')), `Vega ${_fmtSigned(sum('vegaUsd'))}/点`)}
+        ${fig('时间价值', _fmtUsd(extr), `时间价值年化 ${carryW.toFixed(1)}%`, 'rk-t-watch')}
+        ${fig('每月 Theta', _fmtSigned(sum('thetaMonth')), `Vega ${_fmtSigned(sum('vegaUsd'))}/点`, sum('thetaMonth') >= 0 ? 'rk-t-safe' : 'rk-t-alert')}
       </div>` : ''}
       <div class="rk-table-wrap"><table class="rk-table gl-leaps">
         <thead><tr><th>合约</th><th>Δ</th><th>股数</th><th>λ ${_qBtn('lambda', 'long')}</th><th>时间价值</th><th>时间价值年化 ${_qBtn('carry', 'long')}</th><th>浮盈 · 年化</th><th>每月 Θ</th><th>Vega/点</th><th>DTE</th></tr></thead>
@@ -12450,7 +12460,7 @@ function _greeksVizHTML(R) {
     ${panel}
     <div class="rk-sub-title">Theta 日历 · ${cal.N} 天</div>
     ${_thetaCalendarSVG(cal)}
-    <div class="rk-legend"><span><i class="rk-sw gl-sw-sell"></i>卖方 ${_fmtSigned(tot)}</span><span><i class="rk-sw gl-sw-buy"></i>买方 ${_fmtSigned(cost)}</span><span><i class="rk-sw gl-sw-cum"></i>累计 ${_fmtSigned(tot + cost)}</span><span class="rk-legend-note">股价 / IV 不变</span></div>
+    <div class="rk-legend"><span><i class="rk-sw gl-sw-sell"></i>卖方 ${_fmtSigned(tot)}</span><span><i class="rk-sw gl-sw-buy"></i>买方 ${_fmtSigned(cost)}</span><span><i class="rk-sw gl-sw-cum"></i>${cal.N} 天累计净额 ${_fmtSigned(tot + cost)}</span><span class="rk-legend-note">股价 / IV 不变: 卖方剩余时间价值 − 买方同期损耗, 只算这 ${cal.N} 天</span></div>
     ${sc ? `<div class="rk-sub-title">Theta 效率</div>${sc}
     <div class="rk-legend"><span><i class="rk-sw rk-f-safe"></i>&gt; 21 天</span><span><i class="rk-sw rk-f-watch"></i>≤ 21 天</span><span><i class="rk-sw rk-f-danger"></i>≤ 7 天</span><span class="rk-legend-note">点大小 = 保证金</span></div>` : ''}`;
 }
@@ -13006,12 +13016,14 @@ function _betaPanelHTML(R) {
     <section class="rk-block">
       <h3 class="rk-block-title rk-title-row"><span>Beta · 对 SPY</span>${_betaToggleHTML()}</h3>
       <div class="rk-figs">
-        <div class="rk-fig"><span class="rk-fig-val">${eq.shares != null ? `${eq.shares >= 0 ? '+' : ''}${Math.round(eq.shares).toLocaleString()} 股` : '—'}</span><span class="rk-fig-label">SPY 等值 Delta</span><span class="rk-fig-sub">β 加权 ${_fmtSigned(eq.usd)}${eq.spy ? ` · SPY ${eq.spy.toFixed(2)}` : ''}</span></div>
+        <div class="rk-fig"><span class="rk-fig-val rk-t-acc">${eq.shares != null ? `${eq.shares >= 0 ? '+' : ''}${Math.round(eq.shares).toLocaleString()} 股 SPY` : '—'}</span><span class="rk-fig-label">SPY 等值 Delta ${_qBtn('beta', 'long')}</span><span class="rk-fig-sub">β 加权 ${_fmtSigned(eq.usd)}${eq.spy ? ` · SPY ${eq.spy.toFixed(2)}` : ''}</span></div>
+        <div class="rk-fig"><span class="rk-fig-val ${eq.usd >= 0 ? 'rk-t-alert' : 'rk-t-safe'}">${_fmtSigned(-eq.usd * 0.01)}</span><span class="rk-fig-label">SPY 跌 1% 时</span><span class="rk-fig-sub">约等于组合盈亏</span></div>
+        ${R.c.nav ? `<div class="rk-fig"><span class="rk-fig-val rk-t-${Math.abs(eq.usd) / R.c.nav > 1.5 ? 'alert' : Math.abs(eq.usd) / R.c.nav > 1 ? 'watch' : 'safe'}">${(Math.abs(eq.usd) / R.c.nav * 100).toFixed(0)}%</span><span class="rk-fig-label">大盘敞口 / NAV</span><span class="rk-fig-sub">&gt; 100% = 比满仓 SPY 更敏感</span></div>` : ''}
       </div>
       <div class="rk-table-wrap"><table class="rk-table bt-table">
         <thead><tr><th>标的</th><th>β 计算</th><th>相关性</th><th>天数</th><th>使用</th><th></th></tr></thead>
         <tbody>${rows}</tbody></table></div>
-      <div class="rk-note">一年日收益对 SPY 回归. 「使用」留空 = 用计算值; 填数 = 手动覆盖.
+      <div class="rk-note">β = 一年日收益对 SPY 回归; 相关性低于 0.4 时 β 参考价值有限. 「使用」留空 = 用计算值, 填数 = 手动覆盖. 右上开关只影响风险曲面和压力测试.
         ${c ? `更新 ${_ago(c.at)}` : '未读取'}${__betaError ? ` · <span class="rk-t-danger">${esc(__betaError)}</span>` : ''}
         <button class="btn ghost small" onclick="fetchBetasNow()">重新计算</button></div>
     </section>`;
@@ -13249,7 +13261,7 @@ function _greeksHTML(R) {
   });
   const thetaNet = Object.values(th).reduce((s, o) => s + o.sum, 0);
   const sellers = th.short_put.sum + th.short_call.sum, buyers = th.leaps.sum + th.long_put.sum;
-  const fig = (label, val, sub) => `<div class="rk-fig"><span class="rk-fig-val">${val}</span><span class="rk-fig-label">${label}</span>${sub ? `<span class="rk-fig-sub">${sub}</span>` : ''}</div>`;
+  const fig = (label, val, sub, cls = 'rk-t-acc') => `<div class="rk-fig"><span class="rk-fig-val ${cls}">${val}</span><span class="rk-fig-label">${label}</span>${sub ? `<span class="rk-fig-sub">${sub}</span>` : ''}</div>`;
   const signed = v => (v >= 0 ? '+' : '−') + '$' + Math.round(Math.abs(v)).toLocaleString();
   const rows = Object.values(byT).sort((a, b) => Math.abs(b.usd) - Math.abs(a.usd));
   return `
@@ -13258,9 +13270,9 @@ function _greeksHTML(R) {
       ${noGreeks ? `<div class="rk-note">${esc(_needSchwab(c, ' Greeks'))}.</div>` : ''}
       <div class="rk-figs">
         ${noGreeks ? '' : fig('Delta 美元敞口', signed(usd), c.nav ? `${(Math.abs(usd) / c.nav * 100).toFixed(0)}% NAV` : '')}
-        ${noGreeks ? '' : fig('每日 Theta', signed(thetaNet), `卖方 ${signed(sellers)} · 买方 ${signed(buyers)}`)}
-        ${pnlN ? fig('未实现盈亏', signed(pnl), `${pnlN} 仓位`) : ''}
-        ${ivN ? fig('卖出期权平均 IV', (ivW / ivN).toFixed(1) + '%', '名义加权') : ''}
+        ${noGreeks ? '' : fig('每日 Theta', signed(thetaNet), `卖方 ${signed(sellers)} · 买方 ${signed(buyers)}`, thetaNet >= 0 ? 'rk-t-safe' : 'rk-t-alert')}
+        ${pnlN ? fig('未实现盈亏', signed(pnl), `${pnlN} 仓位`, pnl >= 0 ? 'rk-t-safe' : 'rk-t-danger') : ''}
+        ${ivN ? fig('卖出期权平均 IV', (ivW / ivN).toFixed(1) + '%', '名义加权', 'rk-t-watch') : ''}
       </div>
       ${noGreeks ? '' : `
       ${_greeksVizHTML(R)}
