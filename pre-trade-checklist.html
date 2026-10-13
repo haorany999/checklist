@@ -10556,9 +10556,13 @@ const RISK_VARS = [
     calc: c => {
       if (!c.isSchwab) return { unavailable: '需要连接 Schwab' };
       if (!c.nav) return { unavailable: '需要 NAV' };
-      const v = _balPick(c.bal, ['optionBuyingPower']);
-      if (v == null) return { unavailable: '余额里没有 optionBuyingPower 字段 · 见页面底部数据诊断' };
-      return { value: c.pctNav(v), detail: `${_fmtUsd(v)} 可用` };
+      // Schwab's API has no optionBuyingPower field; ToS's "Option Buying Power" is
+      // buyingPowerNonMarginableTrade (confirmed against ToS). Others kept as fallbacks.
+      for (const k of ['buyingPowerNonMarginableTrade', 'optionBuyingPower', 'availableFundsNonMarginableTrade']) {
+        const v = _balPick(c.bal, [k]);
+        if (v != null) return { value: c.pctNav(v), detail: `${_fmtUsd(v)} 可用${k === 'availableFundsNonMarginableTrade' ? ' · 取自 availableFundsNonMarginableTrade' : ''}` };
+      }
+      return { na: '账户余额里没有期权购买力字段', hidden: true };   // quietly dropped, as agreed
     } },
   { id: 'margin_util', cat: 'leverage', label: '维持保证金占用', unit: '%', dir: 'max', th: [25, 40, 60], w: 16,
     desc: '维持保证金 ÷ 账户净值. 到 100% 就是 margin call. 卖 put 越多越高.',
@@ -10730,7 +10734,7 @@ function computeRisk(p = getPortfolio()) {
     const w = _riskWeight(def, saved);
     let out;
     try { out = def.calc(c) || {}; } catch (e) { out = { unavailable: '计算出错' }; }
-    if (out.na) return { def, w, available: false, na: out.na };
+    if (out.na) return { def, w, available: false, na: out.na, hidden: !!out.hidden };
     if (out.unavailable) return { def, w, available: false, reason: out.unavailable };
     if (out.value == null || !isFinite(out.value)) return { def, w, available: false, reason: '数据不足' };
     let score = out.score != null ? out.score : def.dir === 'min' ? _scoreMin(out.value, def.th, def.worst || 0) : _scoreMax(out.value, def.th);
@@ -11673,7 +11677,7 @@ window.resetRiskWeights = () => {
 };
 function _riskDiagnosticsHTML(R) {
   const p = R.c.p;
-  const want = ['optionBuyingPower', 'maintenanceRequirement', 'equity', 'cashBalance', 'marginBalance', 'buyingPower', 'availableFunds'];
+  const want = ['optionBuyingPower', 'buyingPowerNonMarginableTrade', 'availableFundsNonMarginableTrade', 'maintenanceRequirement', 'equity', 'cashBalance', 'marginBalance', 'buyingPower', 'availableFunds'];
   const secs = Array.isArray(p.balanceSections) ? p.balanceSections : [];
   const whereIs = k => { const found = []; secs.forEach(s => Object.entries(s || {}).forEach(([sec, keys]) => { if ((keys || []).includes(k)) found.push(sec.replace('Balances', '')); })); return found.length ? found.join('/') : null; };
   const balLine = R.c.bal ? want.map(k => `${k} ${typeof R.c.bal[k] === 'number' ? '✓' + (whereIs(k) ? ' (' + whereIs(k) + ')' : '') : '✗'}`).join(' · ') : '—';
@@ -11704,7 +11708,7 @@ function renderRiskPage() {
   const prev = _riskPrev();
   const tr = _riskTrend(R);
   const groups = RISK_CATS.map(cat => {
-    const vs = R.vars.filter(v => v.def.cat === cat.id);
+    const vs = R.vars.filter(v => v.def.cat === cat.id && !v.hidden);
     const scored = vs.filter(v => v.available && v.w > 0);
     const catAvg = scored.length ? scored.reduce((a, v) => a + v.score * v.w, 0) / scored.reduce((a, v) => a + v.w, 0) : null;
     const cl = catAvg != null ? riskLevel(catAvg) : null;
