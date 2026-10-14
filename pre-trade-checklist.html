@@ -2193,6 +2193,64 @@
   .header-sticky { position: sticky; top: 0; z-index: 40; margin: calc(-1 * env(safe-area-inset-top, 0px)) -16px 12px;
     padding: calc(8px + env(safe-area-inset-top, 0px)) 16px 8px; background: color-mix(in srgb, var(--bg) 86%, transparent);
     -webkit-backdrop-filter: blur(14px) saturate(160%); backdrop-filter: blur(14px) saturate(160%); border-bottom: 1px solid var(--border); }
+  .rk-spark-area { fill: color-mix(in srgb, var(--text-dim) 12%, transparent); stroke: none; }
+  .rk-spark span em { font-style: normal; font-size: 10.5px; color: var(--text-faint); }
+  /* GEX */
+  .gex-chart rect.gex-pos { fill: color-mix(in srgb, var(--pass) 70%, transparent); }
+  .gex-chart rect.gex-neg { fill: color-mix(in srgb, var(--fail) 70%, transparent); }
+  .gex-zero { stroke: var(--border); stroke-width: 1; }
+  .gex-spot { stroke: var(--accent); stroke-width: 1.5; } .gex-spot-t { fill: var(--accent); }
+  .gex-flip { stroke: var(--rk-watch); stroke-width: 1.2; stroke-dasharray: 4 3; } .gex-flip-t { fill: var(--rk-watch); }
+  .gex-mp { stroke: var(--text-dim); stroke-width: 1.2; stroke-dasharray: 2 3; } .gex-mp-t { fill: var(--text-dim); }
+  .gex-mark { stroke: var(--text); stroke-width: 1.5; } .gex-mark-t { fill: var(--text); font-weight: 700; }
+  .gex-verdict { margin-top: 6px; font-size: 12.5px; }
+  /* volatility regime */
+  .vol-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; font-size: 12.5px; }
+  .vol-badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; letter-spacing: 0.02em; }
+  .vol-green { background: color-mix(in srgb, var(--pass) 16%, transparent); color: var(--pass); }
+  .vol-yellow { background: color-mix(in srgb, var(--rk-watch) 18%, transparent); color: var(--rk-watch); }
+  .vol-red { background: color-mix(in srgb, var(--fail) 16%, transparent); color: var(--fail); }
+  .vol-body { display: flex; gap: 12px; align-items: stretch; flex-wrap: wrap; margin-bottom: 8px; }
+  .vol-body .tc-grid { flex: 1 1 420px; }
+  .vol-ts { width: 150px; height: 54px; flex: 0 0 auto; align-self: center; }
+  .vol-ts-line { fill: none; stroke-width: 2; } .vol-ts-line.vol-green { stroke: var(--pass); background: none; }
+  .vol-ts-line.vol-yellow { stroke: var(--rk-watch); background: none; } .vol-ts-line.vol-red { stroke: var(--fail); background: none; }
+  .vol-ts-dot { fill: var(--text); }
+  /* CSP scan */
+  .scan-card-line { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 12.5px; color: var(--text-dim); margin-top: 6px; }
+  .scan-card-line b { color: var(--text); font-family: var(--mono); }
+  .sc-env { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; font-size: 12.5px; }
+  .sc-cfg label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--text-dim); }
+  .sc-cfg input { padding: 7px 9px; font-family: var(--mono); font-size: 13px; border: 1px solid var(--border); border-radius: 4px; background: var(--panel); color: var(--text); }
+  .sc-cfg-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 10px 0 4px; }
+  .sc-oi { flex-direction: row !important; align-items: center; } .sc-oi input { width: 72px; }
+  .sc-row { padding: 12px 0; border-top: 1px solid var(--border); }
+  .sc-row:first-child { border-top: none; padding-top: 2px; }
+  .sc-top { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .sc-top .btn { margin-left: auto; }
+  .sc-t { font-size: 15px; font-family: var(--mono); color: var(--text); }
+  .sc-k { font-size: 14px; font-family: var(--mono); color: var(--accent); }
+  .sc-figs { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 8px 0 6px; }
+  .sc-figs span { display: flex; flex-direction: column; } .sc-figs em { font-style: normal; font-size: 10.5px; color: var(--text-faint); }
+  .sc-figs b { font-family: var(--mono); font-size: 13.5px; color: var(--text); font-variant-numeric: tabular-nums; }
+  .sc-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .sc-chip { font-size: 11px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--border); color: var(--text-dim); }
+  .sc-chip.ok { border-color: color-mix(in srgb, var(--pass) 50%, var(--border)); color: var(--pass); }
+  .sc-chip.no { border-color: color-mix(in srgb, var(--fail) 45%, var(--border)); color: var(--fail); }
+  .sc-alts { margin-top: 6px; font-size: 12px; color: var(--text-dim); }
+  .sc-none { padding: 5px 0; font-size: 12.5px; }
+  /* P&L attribution */
+  .at-seg { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; }
+  .at-lead { font-size: 13px; color: var(--text-dim); margin-bottom: 10px; } .at-lead b { color: var(--text); margin: 0 2px; }
+  .at-figs { grid-template-columns: repeat(6, 1fr); }
+  .at-chart rect.at-theta, .at-sw-theta { fill: var(--pass); background: var(--pass); }
+  .at-chart rect.at-delta, .at-sw-delta { fill: var(--accent); background: var(--accent); }
+  .at-chart rect.at-gamma, .at-sw-gamma { fill: #a371f7; background: #a371f7; }
+  .at-chart rect.at-vega, .at-sw-vega { fill: var(--rk-watch); background: var(--rk-watch); }
+  .at-chart rect.at-other, .at-sw-other { fill: var(--text-faint); background: var(--text-faint); }
+  .at-chart circle.at-actual { fill: var(--text); stroke: var(--panel); stroke-width: 1; } .at-sw-actual { background: var(--text); border-radius: 50%; }
+  @media (max-width: 560px) { .at-figs { grid-template-columns: repeat(3, 1fr); } .vol-ts { display: none; } }
+  [data-vol-slot] .vol-badge { margin-right: 8px; }
   .pr-sim-risk { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 10px; margin-top: 8px; padding: 6px 9px;
     border-radius: 4px; background: var(--panel-2); font-size: 12px; color: var(--text-dim); }
   .pr-sim-risk span { font-size: 10.5px; color: var(--text-faint); margin-left: auto; }
@@ -3896,6 +3954,7 @@ function _viewKey() {
   if (state._view === 'risk') return 'risk';
   if (state._view === 'greeks') return 'greeks';
   if (state._view === 'performance') return 'performance';
+  if (state._view === 'scan') return 'scan';
   if (!state.strategy) return 'picker';
   if (state.strategy === 'leaps') {
     if (!state.leapsStyle || !state.leapsPhase) return 'leaps-config';
@@ -3930,7 +3989,8 @@ function render() {
     }
     _postRender(); return;
   }
-  if (state._view === 'greeks') { _safe('Greeks 页', renderGreeksPage, null); _postRender(); return; }
+  if (state._view === 'greeks') { _safe('Greeks 页', renderGreeksPage, null); _postRender(); setTimeout(() => fetchSnaps(), 0); return; }
+  if (state._view === 'scan') { _safe('CSP 扫描', renderScanPage, null); _postRender(); return; }
   if (state._view === 'performance') { _safe('Performance', renderPerformancePage, null); _postRender(); return; }
   if (!state.strategy) { renderPicker(); _postRender(); return; }
   if (state.strategy === 'leaps') {
@@ -4575,7 +4635,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.14-v16';
+const APP_BUILD = '2026.10.14-v17';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
@@ -5684,6 +5744,7 @@ function renderPicker() {
       ${syncStatusMiniHTML()}
       ${_safe('综合风险', riskCardHTML)}
       ${_safe('Performance', perfCardHTML)}
+      ${_safe('CSP 扫描', scanCardHTML)}
       ${_safe('Greeks', greeksCardHTML)}
       ${marketSignalHTML()}
       ${mainNavWidgetHTML()}
@@ -6251,6 +6312,7 @@ function renderChecklist() {
     ${qrefHTML()}
     ${configHTML}
     <div class="tc" id="tech-strip">${techStripInnerHTML()}</div>
+    <div class="tc" id="gex-strip">${_safe('GEX', _gexStripHTML, '')}</div>
     ${checklistHTML}
     ${bottomSummaryHTML()}
     <div class="disclaimer">
@@ -6348,8 +6410,11 @@ function renderChecklist() {
   setTimeout(() => {
     const te = document.getElementById('in-ticker');
     if (te && !te.dataset.tcBound) { te.dataset.tcBound = '1'; te.addEventListener('input', scheduleTech); }
+    const ks = document.getElementById('in-csp-strike');
+    if (ks && !ks.dataset.gxBound) { ks.dataset.gxBound = '1'; ks.addEventListener('input', () => { _gexFill(); const g = document.getElementById('gex-strip'); if (g) { g.innerHTML = _safe('GEX', _gexStripHTML, ''); _fitChartText(); } }); }
     const t = _normTicker(state.ticker);
     if (t && (!__px[t] || Date.now() - __px[t].at > 60000)) refreshTech();
+    if (t && (!__gex[t] || Date.now() - __gex[t].at > 10 * 60000)) refreshGexStrip();
   }, 0);
   const tickerEl = document.getElementById('in-ticker');
   if (tickerEl) {
@@ -9096,6 +9161,7 @@ function buildSyncPayload() {
       betaOverrides: (function() { try { return localStorage.getItem(BETA_OVR_KEY) || ''; } catch (e) { return ''; } })(),
       betaMode: (function() { try { return localStorage.getItem(BETA_MODE_KEY) || ''; } catch (e) { return ''; } })(),
       perfStart: (function() { try { return localStorage.getItem(PERF_START_KEY) || ''; } catch (e) { return ''; } })(),
+      scanCfg: (function() { try { return localStorage.getItem(SCAN_CFG_KEY) || ''; } catch (e) { return ''; } })(),
       density: (function() { try { return localStorage.getItem(DENSITY_KEY) || ''; } catch (e) { return ''; } })(),
       trendRange: (function() { try { return localStorage.getItem(TREND_RANGE_KEY) || ''; } catch (e) { return ''; } })(),
       themeCustom: (function() { try { return localStorage.getItem(THEME_CUSTOM_KEY) || ''; } catch (e) { return ''; } })(),
@@ -9122,6 +9188,7 @@ function applyRemotePayload(remote, mode) {
     if (typeof s.riskWeights === 'string' && s.riskWeights) { try { JSON.parse(s.riskWeights); localStorage.setItem(RISK_WEIGHTS_KEY, s.riskWeights); } catch (e) {} }
     if (typeof s.betaOverrides === 'string' && s.betaOverrides) { try { JSON.parse(s.betaOverrides); localStorage.setItem(BETA_OVR_KEY, s.betaOverrides); } catch (e) {} }
     if (s.betaMode === 'beta' || s.betaMode === 'flat') { try { localStorage.setItem(BETA_MODE_KEY, s.betaMode); } catch (e) {} }
+    if (typeof s.scanCfg === 'string' && s.scanCfg) { try { JSON.parse(s.scanCfg); localStorage.setItem(SCAN_CFG_KEY, s.scanCfg); } catch (e) {} }
     if (typeof s.perfStart === 'string' && s.perfStart) { try { const o = JSON.parse(s.perfStart); localStorage.setItem(PERF_START_KEY, JSON.stringify({ ...loadPerfStart(), ...o })); } catch (e) {} }
     if (typeof s.density === 'string' && s.density) localStorage.setItem(DENSITY_KEY, s.density);
     if (typeof s.trendRange === 'string' && s.trendRange) localStorage.setItem(TREND_RANGE_KEY, s.trendRange);
@@ -10290,7 +10357,7 @@ async function refreshSchwab({ force = false } = {}) {
 // Repaint what depends on the data without stealing focus from an input
 function _afterSchwabChange(dataChanged) {
   if (state._view === 'history') return;
-  if (state._view === 'risk' || state._view === 'greeks' || state._view === 'performance') {
+  if (state._view === 'risk' || state._view === 'greeks' || state._view === 'performance' || state._view === 'scan') {
     const ae = document.activeElement;
     if (!(ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA'))) { const y = window.scrollY; render(); window.scrollTo(0, y); }
     return;
@@ -11267,16 +11334,20 @@ function _riskTrend(R) {
 }
 function _riskSparkHTML() {
   const h = loadRiskHist().slice(-60);
-  if (h.length < 2) return `<div class="rk-spark-empty">趋势自明日起.</div>`;
-  const W = 180, H = 40, n = h.length;
-  const xy = h.map((e, i) => [(i / (n - 1)) * (W - 4) + 2, H - 3 - (e.s / 100) * (H - 6)]);
+  if (h.length < 5) return '';                                   // a 2-day "trend" is just a flat line: wait for real history
+  const W = 180, H = 40, n = h.length, vals = h.map(e => e.s);
+  const lo = Math.min(...vals), hi = Math.max(...vals), pad = Math.max(3, (hi - lo) * 0.15);
+  const y0 = Math.max(0, lo - pad), y1 = Math.min(100, hi + pad);
+  const Y = v => H - 3 - (v - y0) / (y1 - y0 || 1) * (H - 6);
+  const xy = h.map((e, i) => [(i / (n - 1)) * (W - 4) + 2, Y(e.s)]);
   const pts = xy.map(p => p.map(v => v.toFixed(1)).join(',')).join(' ');
+  const area = `2,${H} ${pts} ${(W - 2).toFixed(1)},${H}`;
   const last = xy[xy.length - 1], lv = riskLevel(h[h.length - 1].s);
   return `
     <div class="rk-spark" title="${esc(h.map(e => `${e.d} ${Math.round(e.s)}`).join('\n'))}">
-      <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"><line x1="0" x2="${W}" y1="${(H - 3 - 0.5 * (H - 6)).toFixed(1)}" y2="${(H - 3 - 0.5 * (H - 6)).toFixed(1)}" class="rk-spark-mid"/>
+      <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"><polygon points="${area}" class="rk-spark-area"/>
         <polyline points="${pts}" class="rk-spark-line"/><circle cx="${last[0].toFixed(1)}" cy="${last[1].toFixed(1)}" r="3" class="rk-spark-dot rk-f-${lv.key}"/></svg>
-      <span>近 ${n} 天</span>
+      <span>近 ${n} 天<br><em>低 ${Math.round(lo)} · 高 ${Math.round(hi)}</em></span>
     </div>`;
 }
 
@@ -12807,7 +12878,7 @@ function renderGreeksPage() {
     </div>
     <div class="rk-page">
       ${_riskSourceNotice(R)}
-      ${R.c.isSchwab ? _safe('Greeks', () => _greeksHTML(R)) + _safe('LEAPS', () => _leapsLabHTML(R)) + _safe('Beta', () => _betaPanelHTML(R)) : ''}
+      ${R.c.isSchwab ? _safe('Greeks', () => _greeksHTML(R)) + _safe('盈亏归因', _attribHTML) + _safe('LEAPS', () => _leapsLabHTML(R)) + _safe('Beta', () => _betaPanelHTML(R)) : ''}
     </div>`;
 }
 
@@ -13241,13 +13312,14 @@ function _mergeLive(rows, live) {
 }
 async function fetchPrices(tickers, { maxAge = 60000 } = {}) {
   if (!loadSchwabCfg()) return;
-  const need = [...new Set(tickers.filter(t => t && /^[A-Z.]{1,6}$/.test(t)))].filter(t => !__px[t] || Date.now() - __px[t].at > maxAge);
+  const need = [...new Set(tickers.filter(t => t && /^\$?[A-Z0-9.]{1,6}$/.test(t)))].filter(t => !__px[t] || Date.now() - __px[t].at > maxAge);
   if (!need.length) return;
   try {
     const r = await _wfetch(`/prices?tickers=${encodeURIComponent(need.join(','))}`);
     const b = await r.json().catch(() => null);
     if (!r.ok || !b || !b.tickers) { need.forEach(t => { __px[t] = { at: Date.now(), bars: [], err: r.status === 404 ? '需 Worker v7' : (b && b.message) || `HTTP ${r.status}` }; }); return; }
-    need.forEach(t => { const x = b.tickers[t]; const m = x ? _mergeLive(x.rows || [], x.live) : { bars: [], live: false }; __px[t] = { at: Date.now(), ...m, err: m.bars.length ? null : '无历史数据' }; });
+    need.forEach(t => { const x = b.tickers[t]; if (x && x.live && t[0] === '$' && x.live.open == null && x.live.last > 0) x.live.open = x.live.last;
+      const m = x ? _mergeLive(x.rows || [], x.live) : { bars: [], live: false }; __px[t] = { at: Date.now(), ...m, err: m.bars.length ? null : (!x && t[0] === '$' ? 'VIX 指数需要 Worker v8' : '无历史数据') }; });
   } catch (e) { need.forEach(t => { __px[t] = { at: Date.now(), bars: [], err: '网络错误' }; }); }
 }
 
@@ -13314,7 +13386,7 @@ function _techFills(t) {
 const _TECH_LABEL = { kdj_j_leaps: 'KDJ J', kdj_j_leaps_add: 'KDJ J', kdj_j: 'KDJ J', bb_below_mid: '布林', bb_above_mid: '布林', bb_upper_zone: '布林',
   right_ma: '均线', above_ema21_sma50: '均线', price_above_ma: '均线', macd_golden: 'MACD', below_200ma: '200MA' };
 let __techTimer = 0;
-function scheduleTech() { clearTimeout(__techTimer); __techTimer = setTimeout(() => refreshTech(), 700); }
+function scheduleTech() { clearTimeout(__techTimer); __techTimer = setTimeout(() => { refreshTech(); refreshGexStrip(); }, 700); }
 async function refreshTech(force) {
   const t = _normTicker(state.ticker);
   if (!t || !loadSchwabCfg() || !state.strategy) { _techRender(); return; }
@@ -13902,6 +13974,419 @@ function _wheelHTML() {
     </section>`;
 }
 
+/* ═════════════ v17 · GEX / Max Pain · volatility regime · CSP scan · P&L attribution ═════════════ */
+const _todayISO = () => new Date().toISOString().slice(0, 10);
+function _fmtBig(v) { const a = Math.abs(v), s = v < 0 ? '−' : '+'; return a >= 1e9 ? `${s}$${(a / 1e9).toFixed(1)}B` : a >= 1e6 ? `${s}$${(a / 1e6).toFixed(1)}M` : a >= 1e3 ? `${s}$${(a / 1e3).toFixed(0)}k` : `${s}$${a.toFixed(0)}`; }
+
+/* ---------- GEX / Max Pain (Worker /chain, both sides) ---------- */
+const __gex = {};
+function gexCompute(S, cs) {
+  const byK = new Map(); let total = 0;
+  const gOf = (o, x) => {
+    const T = Math.max(1, o.dte ?? 1) / 365;
+    if (x === S && o.gamma != null && o.gamma > 0) return o.gamma;
+    if (!(o.iv > 0)) return 0;
+    const g = bsGreeks(x, o.strike, T, o.iv / 100, o.type === 'C' ? 'call' : 'put'); return g ? g.gamma : 0;
+  };
+  const live = cs.filter(o => o.oi > 0 && o.strike > 0);
+  live.forEach(o => {
+    const v = (o.type === 'C' ? 1 : -1) * gOf(o, S) * o.oi * 100 * S * S * 0.01;
+    const r = byK.get(o.strike) || { K: o.strike, call: 0, put: 0, coi: 0, poi: 0 };
+    if (o.type === 'C') { r.call += v; r.coi += o.oi; } else { r.put += v; r.poi += o.oi; }
+    byK.set(o.strike, r); total += v;
+  });
+  const rows = [...byK.values()].sort((a, b) => a.K - b.K).map(r => ({ ...r, net: r.call + r.put }));
+  const callWall = rows.filter(r => r.K >= S * 0.9).reduce((a, b) => (b.call > (a ? a.call : 0) ? b : a), null);
+  const putWall = rows.filter(r => r.K <= S * 1.1).reduce((a, b) => (b.put < (a ? a.put : 0) ? b : a), null);
+  // gamma flip: where dealer gamma (re-priced at each hypothetical spot) changes sign, nearest to spot
+  const tot = x => live.reduce((s, o) => s + (o.type === 'C' ? 1 : -1) * gOf(o, x) * o.oi * 100 * x * x * 0.01, 0);
+  let flip = null, prev = null;
+  for (let x = S * 0.8; x <= S * 1.2 + 1e-9; x += S * 0.01) {
+    const v = tot(x);
+    if (prev && Math.sign(v) !== Math.sign(prev.v)) { const fx = prev.x + (x - prev.x) * Math.abs(prev.v) / (Math.abs(prev.v) + Math.abs(v)); if (flip == null || Math.abs(fx - S) < Math.abs(flip - S)) flip = fx; }
+    prev = { x, v };
+  }
+  return { total, rows, callWall: callWall && callWall.call > 0 ? callWall.K : null, putWall: putWall && putWall.put < 0 ? putWall.K : null, flip };
+}
+function maxPainOf(cs, expiry) {
+  const c = cs.filter(o => o.expiry === expiry && o.oi > 0);
+  const ks = [...new Set(c.map(o => o.strike))].sort((a, b) => a - b);
+  if (ks.length < 3) return null;
+  let best = null;
+  ks.forEach(K => {
+    const pain = c.reduce((s, o) => s + o.oi * 100 * (o.type === 'C' ? Math.max(0, K - o.strike) : Math.max(0, o.strike - K)), 0);
+    if (!best || pain < best.pain) best = { K, pain };
+  });
+  return best.K;
+}
+function _monthlyExpiry(cs) {                       // nearest 3rd-Friday expiry ≥ 2 days out, else the one with most OI
+  const exps = [...new Set(cs.map(o => o.expiry))].filter(e => (Date.parse(e + 'T16:00:00') - Date.now()) / 864e5 >= 2).sort();
+  const third = exps.find(e => { const d = new Date(e + 'T12:00:00Z'); return d.getUTCDay() === 5 && d.getUTCDate() >= 15 && d.getUTCDate() <= 21; });
+  if (third) return third;
+  const oi = {}; cs.forEach(o => { oi[o.expiry] = (oi[o.expiry] || 0) + (o.oi || 0); });
+  return exps.sort((a, b) => (oi[b] || 0) - (oi[a] || 0))[0] || null;
+}
+async function fetchGex(t, { maxAge = 10 * 60000 } = {}) {
+  if (!t || !loadSchwabCfg()) return null;
+  if (__gex[t] && Date.now() - __gex[t].at < maxAge) return __gex[t];
+  const from = _todayISO(), to = _addDays(from, 50);
+  try {
+    const [rp, rc] = await Promise.all(['P', 'C'].map(ty => _wfetch(`/chain?ticker=${encodeURIComponent(t)}&type=${ty}&from=${from}&to=${to}&strikeCount=60`)));
+    const [bp, bc] = await Promise.all([rp.json().catch(() => null), rc.json().catch(() => null)]);
+    if (!rp.ok || !rc.ok || !bp || !bc) { __gex[t] = { at: Date.now(), err: rp.status === 404 ? '需 Worker v7+' : (bp && bp.message) || `HTTP ${rp.status}` }; return __gex[t]; }
+    const cs = [...bp.contracts.map(o => ({ ...o, type: 'P' })), ...bc.contracts.map(o => ({ ...o, type: 'C' }))];
+    const S = bp.underlying || bc.underlying;
+    const g = S > 0 && cs.length ? gexCompute(S, cs) : null;
+    const mx = _monthlyExpiry(cs);
+    __gex[t] = { at: Date.now(), S, cs, g, mx, maxPain: mx ? maxPainOf(cs, mx) : null, hasGamma: cs.some(o => o.gamma != null), err: g ? null : '期权链为空' };
+  } catch (e) { __gex[t] = { at: Date.now(), err: '网络错误' }; }
+  return __gex[t];
+}
+function _gexChartSVG(G, mark) {
+  const S = G.S, rows = G.g.rows.filter(r => r.K >= S * 0.85 && r.K <= S * 1.15);
+  if (rows.length < 3) return '';
+  const W = _chartW(), H = 170, L = 8, R = 8, T = 16, B = 22;
+  const k0 = rows[0].K, k1 = rows[rows.length - 1].K, mx = Math.max(...rows.map(r => Math.abs(r.net))) || 1;
+  const X = k => L + (k - k0) / (k1 - k0 || 1) * (W - L - R), Y0 = T + (H - T - B) / 2, Y = v => Y0 - v / mx * (H - T - B) / 2;
+  const bw = Math.max(2, (W - L - R) / rows.length * 0.7);
+  const vline = (k, cls, label, dy = 0) => k == null || k < k0 || k > k1 ? '' : `<line x1="${X(k).toFixed(1)}" x2="${X(k).toFixed(1)}" y1="${T}" y2="${H - B}" class="${cls}"/><text x="${X(k).toFixed(1)}" y="${T - 4 + dy}" text-anchor="middle" class="rk-ch-lab ${cls}-t">${esc(label)}</text>`;
+  return `<svg class="rk-chart gex-chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="各行权价 GEX">
+    <line x1="${L}" x2="${W - R}" y1="${Y0}" y2="${Y0}" class="gex-zero"/>
+    ${rows.map(r => `<rect x="${(X(r.K) - bw / 2).toFixed(1)}" y="${Math.min(Y0, Y(r.net)).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(0.5, Math.abs(Y(r.net) - Y0)).toFixed(1)}" class="${r.net >= 0 ? 'gex-pos' : 'gex-neg'}"><title>${r.K} · ${_fmtBig(r.net)} / 1%</title></rect>`).join('')}
+    ${vline(S, 'gex-spot', '现价')}${vline(G.g.flip, 'gex-flip', 'Flip', 10)}${vline(G.maxPain, 'gex-mp', 'Max Pain', 20)}${mark ? vline(mark, 'gex-mark', '你的', 30) : ''}
+    <text x="${L}" y="${H - 6}" class="rk-ch-lab">${k0}</text><text x="${W - R}" y="${H - 6}" text-anchor="end" class="rk-ch-lab">${k1}</text>
+  </svg>`;
+}
+function gexInnerHTML(t, opts = {}) {
+  const G = __gex[t];
+  if (!G) return '<div class="rk-quiet">读取期权链…</div>';
+  if (G.err) return `<div class="rk-t-alert">${esc(G.err)}</div>`;
+  const g = G.g, f2 = v => v == null ? '—' : (+v).toFixed(v >= 100 ? 0 : 2);
+  const pos = g.total >= 0, pct = k => k == null ? '' : `${((k / G.S - 1) * 100 >= 0 ? '+' : '')}${((k / G.S - 1) * 100).toFixed(1)}%`;
+  const cell = (label, val, sub, cls) => `<div class="tc-cell"><span>${label}</span><b class="${cls || ''}">${val}</b>${sub ? `<em>${sub}</em>` : ''}</div>`;
+  const mark = opts.strike > 0 ? +opts.strike : null;
+  const vsWall = mark && g.putWall ? (mark < g.putWall ? `<span class="rk-t-safe">行权价 ${mark} 在 Put Wall ${g.putWall} 下方 ✓</span>` : `<span class="rk-t-alert">行权价 ${mark} 不在 Put Wall ${g.putWall} 下方</span>`) : '';
+  return `
+    <div class="tc-grid">
+      ${cell('净 GEX', _fmtBig(g.total), pos ? '正 Gamma · 波动被压制' : '负 Gamma · 波动被放大', pos ? 'rk-t-safe' : 'rk-t-alert')}
+      ${cell('Put Wall', f2(g.putWall), pct(g.putWall) + ' · 支撑')}
+      ${cell('Call Wall', f2(g.callWall), pct(g.callWall) + ' · 阻力')}
+      ${cell('Gamma Flip', f2(g.flip), g.flip ? (G.S >= g.flip ? '现价在上方' : '现价在下方') : '区间内无')}
+      ${cell('Max Pain', f2(G.maxPain), G.mx ? _md(G.mx) + ' 到期' : '')}
+    </div>
+    ${_gexChartSVG(G, mark)}
+    ${vsWall ? `<div class="gex-verdict">${vsWall}</div>` : ''}
+    <div class="cq-note">按 OI × Gamma 估算做市商对冲敞口 (假设做市商卖出 put / 买入 call 的常见约定), 50 天内全部到期合约. ${G.hasGamma ? 'Gamma 取自 Schwab' : 'Gamma 按 Black-Scholes 估算'} · ${_ago(G.at)}.</div>`;
+}
+function _gexStripHTML() {
+  const t = _normTicker(state.ticker);
+  if (!t || !loadSchwabCfg() || !state.strategy) return '';
+  return `<div class="tc-head"><b>期权结构 · GEX</b><span class="rk-quiet">${esc(t)}</span><button class="pr-mini-btn" onclick="refreshGexStrip(true)" title="刷新">⟳</button></div>
+    ${gexInnerHTML(t, { strike: state.strategy === 'csp' ? parseFloat(state.cspStrike) : null })}`;
+}
+function _gexFill() {
+  const t = _normTicker(state.ticker), G = __gex[t];
+  if (state.strategy !== 'csp' || !G || G.err || !G.g || !G.g.putWall) return;
+  const K = parseFloat(state.cspStrike);
+  if (!(K > 0)) return;
+  if (!currentItems().some(i => i.id === 'gex_put_wall')) return;
+  _cqApplyFill({ gex_put_wall: K < G.g.putWall ? 'pass' : 'fail' });
+}
+window.refreshGexStrip = async force => {
+  const t = _normTicker(state.ticker); if (!t) return;
+  const el = () => document.getElementById('gex-strip');
+  if (force && __gex[t]) __gex[t].at = 0;
+  if (el() && !__gex[t]) el().innerHTML = _gexStripHTML();
+  await fetchGex(t);
+  _gexFill();
+  if (el()) { el().innerHTML = _gexStripHTML(); _fitChartText(); }
+};
+
+/* ---------- volatility regime (VIX term structure + SPY realised) ---------- */
+const VOL_SYMS = ['$VIX', '$VIX9D', '$VIX3M', '$VVIX', 'SPY'];
+async function fetchVol(force) {
+  await fetchPrices(VOL_SYMS, { maxAge: force ? 0 : 5 * 60000 });
+  document.querySelectorAll('[data-vol-slot]').forEach(el => { el.innerHTML = el.dataset.volSlot === 'mini' ? volMiniHTML() : _safe('波动率环境', volInnerHTML); });
+  _fitChartText();
+}
+function volRegime() {
+  const bars = s => (__px[s] && __px[s].bars && __px[s].bars.length > 20 ? __px[s].bars : null);
+  const vix = bars('$VIX'); if (!vix) return null;
+  const last = s => { const b = bars(s); return b ? b[b.length - 1].c : null; };
+  const v = last('$VIX'), v9 = last('$VIX9D'), v3 = last('$VIX3M'), vv = last('$VVIX');
+  const yr = vix.slice(-252).map(b => b.c), pct = yr.filter(x => x <= v).length / yr.length * 100;
+  const spy = bars('SPY');
+  let rv = null, dd = null, ma200 = null;
+  if (spy && spy.length > 21) {
+    const c = spy.map(b => b.c), n = c.length, lr = [];
+    for (let i = n - 20; i < n; i++) lr.push(Math.log(c[i] / c[i - 1]));
+    const m = lr.reduce((s, x) => s + x, 0) / lr.length;
+    rv = Math.sqrt(lr.reduce((s, x) => s + (x - m) ** 2, 0) / (lr.length - 1) * 252) * 100;
+    dd = (c[n - 1] / Math.max(...spy.slice(-252).map(b => b.h)) - 1) * 100;
+    ma200 = n >= 200 ? c.slice(-200).reduce((s, x) => s + x, 0) / 200 : null;
+  }
+  const ts1 = v9 != null ? v9 / v : null, ts2 = v3 != null ? v / v3 : null, vrp = rv != null ? v - rv : null;
+  const red = [], yel = [], note = [];
+  if (ts2 != null && ts2 >= 1) red.push(`期限结构倒挂 (VIX ${v.toFixed(1)} ≥ VIX3M ${v3.toFixed(1)})`);
+  if (ts1 != null && ts1 >= 1.1) red.push(`短期恐慌 (VIX9D 高于 VIX ${((ts1 - 1) * 100).toFixed(0)}%)`);
+  if (vrp != null && vrp < 0 && v >= 25) red.push(`实际波动 ${rv.toFixed(1)} 已超过隐含 ${v.toFixed(1)}`);
+  if (!red.length) {
+    if (ts2 != null && ts2 >= 0.95) yel.push('期限结构接近平坦');
+    if (pct >= 85) yel.push(`VIX 处于一年 ${pct.toFixed(0)} 百分位`);
+    if (vv != null && vv >= 110) yel.push(`VVIX ${vv.toFixed(0)} 偏高 (波动率本身不稳)`);
+    if (vrp != null && vrp < 0) yel.push('隐含波动低于实际波动, 卖方没有溢价');
+  }
+  if (v < 13 || pct < 15) note.push('权利金偏薄');
+  const level = red.length ? 'red' : yel.length ? 'yellow' : 'green';
+  return { v, v9, v3, vv, pct, rv, vrp, dd, ma200, spyPx: spy ? spy[spy.length - 1].c : null, ts1, ts2, level, reasons: red.length ? red : yel, note, live: !!(__px['$VIX'] && __px['$VIX'].live), at: __px['$VIX'].at, hist: vix.slice(-252) };
+}
+const VOL_LABEL = { green: '适合卖权利金', yellow: '谨慎', red: '暂停新开卖方' };
+function volMiniHTML() {
+  const r = volRegime();
+  if (!r) return `<span class="rk-quiet">${__px['$VIX'] && __px['$VIX'].err ? '波动率: ' + esc(__px['$VIX'].err) : '波动率读取中…'}</span>`;
+  return `<span class="vol-badge vol-${r.level}">${VOL_LABEL[r.level]}</span><span class="rk-quiet">VIX ${r.v.toFixed(1)} · ${r.ts2 != null ? (r.ts2 >= 1 ? '倒挂' : r.ts2 >= 0.95 ? '平坦' : '正常') : ''}${r.note.length ? ' · ' + r.note.join(' · ') : ''}</span>`;
+}
+function volInnerHTML() {
+  const r = volRegime(), px = __px['$VIX'];
+  if (!r) return `<div class="rk-quiet">${px && px.err ? `<span class="rk-t-alert">${esc(px.err)}${/v7|404/.test(px.err) ? '' : ' · VIX 指数需要 Worker v8'}</span>` : '读取 VIX…'}</div>`;
+  const f1 = v => v == null ? '—' : v.toFixed(1);
+  const tsTxt = r.ts2 == null ? '—' : r.ts2 >= 1 ? '倒挂' : r.ts2 >= 0.95 ? '平坦' : '正常';
+  const cell = (label, val, sub, cls) => `<div class="tc-cell"><span>${label}</span><b class="${cls || ''}">${val}</b>${sub ? `<em>${sub}</em>` : ''}</div>`;
+  const pts = [['9 天', r.v9], ['30 天', r.v], ['3 个月', r.v3]].filter(p => p[1] != null);
+  const W = 150, H = 54, lo = Math.min(...pts.map(p => p[1])) * 0.92, hi = Math.max(...pts.map(p => p[1])) * 1.05;
+  const tsX = i => 16 + i * (W - 32) / Math.max(1, pts.length - 1), tsY = v => H - 14 - (v - lo) / (hi - lo || 1) * (H - 24);
+  const ts = pts.length >= 2 ? `<svg class="vol-ts" viewBox="0 0 ${W} ${H}" aria-label="VIX 期限结构">
+      <polyline points="${pts.map((p, i) => `${tsX(i).toFixed(1)},${tsY(p[1]).toFixed(1)}`).join(' ')}" class="vol-ts-line vol-${r.level}"/>
+      ${pts.map((p, i) => `<circle cx="${tsX(i).toFixed(1)}" cy="${tsY(p[1]).toFixed(1)}" r="2.8" class="vol-ts-dot"/><text x="${tsX(i).toFixed(1)}" y="${H - 2}" text-anchor="middle" class="rk-ch-lab">${p[0]}</text>`).join('')}</svg>` : '';
+  const hist = r.hist;
+  const chart = _lineChartSVG({ xs: hist.map((_, i) => i), series: [{ ys: hist.map(b => b.c), cls: 'gl-l1', label: 'VIX' }], w: _chartW(), h: 130, zero: false, xTicks: 4,
+    xFmt: i => { const b = hist[Math.round(i)]; return b ? `${+b.d.slice(5, 7)}/${+b.d.slice(8)}` : ''; }, yFmt: v => v.toFixed(0), tipFmt: v => v.toFixed(2) });
+  return `
+    <div class="vol-head"><span class="vol-badge vol-${r.level}">${VOL_LABEL[r.level]}</span>
+      <span class="rk-quiet">${r.reasons.length ? esc(r.reasons.join(' · ')) : '期限结构正常, 隐含波动高于实际波动'}${r.note.length ? ' · ' + esc(r.note.join(' · ')) : ''}</span></div>
+    <div class="vol-body">
+      <div class="tc-grid">
+        ${cell('VIX', f1(r.v), `一年 ${r.pct.toFixed(0)} 百分位`, r.pct >= 85 ? 'rk-t-alert' : r.pct <= 15 ? 'rk-t-watch' : '')}
+        ${cell('期限结构', tsTxt, r.ts2 != null ? `${r.ts2 >= 1 ? 'backwardation' : 'contango'} · VIX/VIX3M ${r.ts2.toFixed(2)}` : '', r.ts2 >= 1 ? 'rk-t-danger' : r.ts2 >= 0.95 ? 'rk-t-alert' : 'rk-t-safe')}
+        ${cell('VRP', r.vrp != null ? (r.vrp >= 0 ? '+' : '') + r.vrp.toFixed(1) : '—', r.rv != null ? `VIX − SPY 实际波动 ${r.rv.toFixed(1)}` : '', r.vrp >= 0 ? 'rk-t-safe' : 'rk-t-alert')}
+        ${cell('VVIX', r.vv != null ? r.vv.toFixed(0) : '—', '波动率的波动', r.vv >= 110 ? 'rk-t-alert' : '')}
+        ${cell('SPY 回撤', r.dd != null ? r.dd.toFixed(1) + '%' : '—', r.ma200 ? (r.spyPx >= r.ma200 ? '200MA 上方' : '200MA 下方') : '', r.dd <= -10 ? 'rk-t-alert' : '')}
+      </div>
+      ${ts}
+    </div>
+    ${chart}
+    <div class="rk-note">暂停: 期限结构倒挂 / VIX9D 高于 VIX 10% 以上 / 高波动下实际波动超过隐含. 谨慎: 接近平坦 / VIX ≥ 85 百分位 / VVIX ≥ 110 / VRP 为负. ${_ago(r.at)}.</div>`;
+}
+
+/* ---------- CSP opportunity scan ---------- */
+const SCAN_CFG_KEY = 'pretrade_scan_cfg', SCAN_RES_KEY = 'pretrade_scan_res';
+const SCAN_INTENTS = { assign: '想接股', neutral: '一般', premium: '只赚权利金' };
+let __scanBusy = false, __scanProg = '';
+function loadScanCfg() {
+  let c = {}; try { c = JSON.parse(localStorage.getItem(SCAN_CFG_KEY) || '{}') || {}; } catch (e) {}
+  if (!Array.isArray(c.list) || !c.list.length) {
+    const p = getPortfolio(), hist = typeof loadHistory === 'function' ? loadHistory() : [];
+    c.list = [...new Set([...(p.positions || []).map(x => x.ticker), ...(hist || []).filter(h => h.strategy === 'CSP' || h.strategy === 'csp').map(h => h.ticker)].filter(t => /^[A-Z.]{1,6}$/.test(t || '')))].slice(0, 15);
+  }
+  return { list: c.list, intent: SCAN_INTENTS[c.intent] ? c.intent : 'neutral', oiMin: c.oiMin > 0 ? c.oiMin : 100 };
+}
+function saveScanCfg(c) { try { localStorage.setItem(SCAN_CFG_KEY, JSON.stringify(c)); } catch (e) {} if (typeof scheduleAutoPushToGist === 'function') scheduleAutoPushToGist(); }
+function loadScanRes() { try { const r = JSON.parse(localStorage.getItem(SCAN_RES_KEY) || 'null'); return r && Array.isArray(r.rows) ? r : null; } catch (e) { return null; } }
+window.setScanCfg = (k, v) => {
+  const c = loadScanCfg();
+  if (k === 'list') c.list = [...new Set(String(v).toUpperCase().split(/[\s,，、]+/).map(s => s.trim()).filter(t => /^[A-Z.]{1,6}$/.test(t)))].slice(0, 25);
+  else if (k === 'intent' && SCAN_INTENTS[v]) c.intent = v;
+  else if (k === 'oiMin') c.oiMin = Math.max(0, parseInt(v, 10) || 0);
+  saveScanCfg(c); const y = window.scrollY; render(); window.scrollTo(0, y);
+};
+function scanTicker(t, cfg) {
+  const G = __gex[t];
+  if (!G || G.err) return { t, err: G ? G.err : '无数据' };
+  const S = G.S, dMax = { assign: 30, neutral: 25, premium: 15 }[cfg.intent];
+  const tech = __px[t] && techOf(__px[t].bars);
+  const all = G.cs.filter(o => o.type === 'P' && o.dte >= 20 && o.dte <= 45 && o.strike < S && o.bid > 0 && o.delta != null).map(o => {
+    const mid = o.mark != null ? o.mark : (o.bid + o.ask) / 2, d = Math.round(Math.abs(o.delta) * 100);
+    return { K: o.strike, exp: o.expiry, dte: o.dte, d, mid, bid: o.bid, ask: o.ask, oi: o.oi || 0, iv: o.iv,
+      roc: mid / o.strike * 30 / o.dte * 100, ann: mid / o.strike * 365 / o.dte * 100, away: (1 - o.strike / S) * 100,
+      wall: G.g.putWall ? o.strike < G.g.putWall : null, spread: o.ask > 0 ? (o.ask - o.bid) / ((o.ask + o.bid) / 2) * 100 : null };
+  });
+  const why = { delta: 0, roc: 0, oi: 0, wall: 0 };
+  // hard rules, same order as the checklist: Δ cap · 30-day ROC · liquidity · strike below the GEX put wall
+  const pass = all.filter(c => { if (c.d > dMax) { why.delta++; return false; } if (c.roc < 2) { why.roc++; return false; } if (c.oi < cfg.oiMin) { why.oi++; return false; }
+    if (c.wall === false) { why.wall++; return false; } return true; });
+  pass.sort((a, b) => b.roc - a.roc);
+  const best = pass[0] || null;
+  return { t, S, best, alts: pass.slice(1, 4), n: pass.length, total: all.length, why,
+    putWall: G.g.putWall, callWall: G.g.callWall, flip: G.g.flip, gexPos: G.g.total >= 0, maxPain: best ? maxPainOf(G.cs, best.exp) : G.maxPain,
+    bb: tech ? tech.px < tech.mid : null, rsi: tech ? tech.rsi : null, j: tech ? tech.J : null };
+}
+window.runScan = async () => {
+  if (__scanBusy || !loadSchwabCfg()) return;
+  const cfg = loadScanCfg();
+  if (!cfg.list.length) { showToast('扫描列表为空', 'error', '先填要扫描的标的'); return; }
+  __scanBusy = true;
+  const paint = () => { const el = document.getElementById('scan-prog'); if (el) el.textContent = __scanProg; };
+  try {
+    __scanProg = '读取行情和波动率…'; paint();
+    await Promise.all([fetchPrices(cfg.list, { maxAge: 30 * 60000 }), fetchPrices(VOL_SYMS, { maxAge: 5 * 60000 })]);
+    for (let i = 0; i < cfg.list.length; i += 2) {
+      __scanProg = `读取期权链 ${Math.min(i + 2, cfg.list.length)} / ${cfg.list.length}…`; paint();
+      await Promise.all(cfg.list.slice(i, i + 2).map(t => fetchGex(t, { maxAge: 10 * 60000 })));
+    }
+    const rows = cfg.list.map(t => scanTicker(t, cfg));
+    const vr = volRegime();
+    try { localStorage.setItem(SCAN_RES_KEY, JSON.stringify({ at: Date.now(), intent: cfg.intent, oiMin: cfg.oiMin, vol: vr ? { level: vr.level, v: vr.v } : null, rows })); } catch (e) {}
+  } finally { __scanBusy = false; __scanProg = ''; }
+  if (state._view === 'scan') { const y = window.scrollY; render(); window.scrollTo(0, y); }
+};
+window.showScan = () => { closeOptionLab(); state._view = 'scan'; render(); window.scrollTo(0, 0);
+  const r = loadScanRes(); if (!r || new Date(r.at).toDateString() !== new Date().toDateString()) runScan(); };
+window.openScanChecklist = (t, K, exp) => {
+  const cfg = loadScanCfg();
+  state._view = null; pickStrategy('csp');
+  state.cspIntent = cfg.intent; state.ticker = t; state.cspStrike = String(K); state.tradeExpiry = exp;
+  render(); window.scrollTo(0, 0);
+  if (typeof scheduleCspQuote === 'function') scheduleCspQuote();
+};
+function scanCardHTML() {
+  if (!loadSchwabCfg()) return '';
+  const r = loadScanRes(), ok = r ? r.rows.filter(x => x.best) : [];
+  const top = ok.slice().sort((a, b) => b.best.roc - a.best.roc)[0];
+  return `
+    <div class="gk-card" id="scan-card" role="button" tabindex="0" onclick="showScan()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showScan();}">
+      <div class="gk-title">CSP 扫描 <span>${r ? _ago(r.at) + ' ▸' : '未扫描 ▸'}</span></div>
+      <div class="scan-card-line"><span data-vol-slot="mini">${volMiniHTML()}</span></div>
+      <div class="scan-card-line">${r ? (ok.length ? `<b>${ok.length}</b> 个标的有符合规则的合约${top ? ` · 最佳 <b>${esc(top.t)} ${top.best.K}P ${esc(_md(top.best.exp))}</b> · 30 天 ROC ${top.best.roc.toFixed(2)}%` : ''}` : '没有符合规则的合约') : '点开扫描你的 watchlist'}</div>
+    </div>`;
+}
+function renderScanPage() {
+  const cfg = loadScanCfg(), r = loadScanRes();
+  const head = `<div class="header header-sticky"><div class="brand">Pre-Trade Checklist</div><div class="header-actions">
+    <button class="btn ghost" onclick="state._view = null; render(); window.scrollTo(0, 0)">← 返回</button><button class="btn ghost" onclick="runScan()">扫描</button></div></div>`;
+  if (!loadSchwabCfg()) { $app.innerHTML = head + '<div class="rk-page"><div class="rk-notice">需要连接 Schwab.</div></div>'; return; }
+  const dMax = { assign: 30, neutral: 25, premium: 15 }[cfg.intent];
+  const ph = typeof loadRocPhase === 'function' ? loadRocPhase() : null, m = ph ? ROC_MATRIX.csp[ph.phase] : null;
+  const rows = r ? r.rows : [], ok = rows.filter(x => x.best).sort((a, b) => b.best.roc - a.best.roc), none = rows.filter(x => !x.best);
+  const chip = (ok2, label) => ok2 == null ? `<span class="sc-chip">${label} ?</span>` : `<span class="sc-chip ${ok2 ? 'ok' : 'no'}">${label} ${ok2 ? '✓' : '✗'}</span>`;
+  const card = x => { const b = x.best; return `
+    <div class="sc-row">
+      <div class="sc-top"><b class="sc-t">${esc(x.t)}</b><b class="sc-k">${b.K}P ${esc(_md(b.exp))}</b><span class="rk-quiet">现价 ${x.S.toFixed(2)}</span>
+        <button class="btn small" onclick="openScanChecklist('${esc(x.t)}', ${b.K}, '${esc(b.exp)}')">开 checklist</button></div>
+      <div class="sc-figs"><span><em>30 天 ROC</em><b class="rk-t-safe">${b.roc.toFixed(2)}%</b></span><span><em>年化</em><b>${b.ann.toFixed(0)}%</b></span>
+        <span><em>Δ</em><b>${b.d}</b></span><span><em>DTE</em><b>${b.dte}</b></span><span><em>权利金</em><b>${b.mid.toFixed(2)}</b></span>
+        <span><em>距现价</em><b>${b.away.toFixed(1)}%</b></span><span><em>OI</em><b>${b.oi.toLocaleString()}</b></span></div>
+      <div class="sc-chips">${chip(b.wall, `Put Wall ${x.putWall ?? '—'}`)}${chip(x.bb, '布林中轨下')}${x.rsi != null ? `<span class="sc-chip">RSI ${x.rsi.toFixed(0)}</span>` : ''}
+        <span class="sc-chip">${x.gexPos ? '正 Gamma' : '负 Gamma'}</span>${x.maxPain ? `<span class="sc-chip">Max Pain ${x.maxPain}</span>` : ''}${b.spread != null && b.spread > 15 ? `<span class="sc-chip no">价差 ${b.spread.toFixed(0)}%</span>` : ''}</div>
+      ${x.alts.length ? `<div class="sc-alts">其他: ${x.alts.map(a => `<button class="app-link" onclick="openScanChecklist('${esc(x.t)}', ${a.K}, '${esc(a.exp)}')">${a.K}P ${esc(_md(a.exp))}</button> <span class="rk-quiet">Δ${a.d} · ${a.roc.toFixed(2)}%</span>`).join(' · ')}</div>` : ''}
+    </div>`; };
+  $app.innerHTML = head + `
+    <div class="rk-page">
+      <section class="rk-block">
+        <h3 class="rk-block-title rk-title-row"><span>CSP 扫描</span><span class="rk-quiet" id="scan-prog">${__scanBusy ? esc(__scanProg) : r ? _ago(r.at) : ''}</span></h3>
+        <div class="sc-env"><span data-vol-slot="mini">${volMiniHTML()}</span>${ph ? `<span class="sc-chip ${m === 'pass' ? 'ok' : 'no'}">ROC ${esc(ROC_PHASES[ph.phase].short)}</span>` : ''}</div>
+        <div class="sc-cfg">
+          <label>标的 <input id="scan-list" value="${esc(cfg.list.join(', '))}" onchange="setScanCfg('list', this.value)" autocapitalize="characters"></label>
+          <div class="sc-cfg-row"><span class="rk-presets">${Object.entries(SCAN_INTENTS).map(([k, v]) => `<button class="rk-preset${cfg.intent === k ? ' active' : ''}" onclick="setScanCfg('intent', '${k}')">${v}</button>`).join('')}</span>
+            <label class="sc-oi">OI ≥ <input inputmode="numeric" value="${cfg.oiMin}" onchange="setScanCfg('oiMin', this.value)"></label></div>
+          <div class="rk-note">硬规则: DTE 20–45 · Δ ≤ ${dMax} · 30 天 ROC ≥ 2% · OI ≥ ${cfg.oiMin} · 行权价 &lt; GEX Put Wall. 每个标的取 ROC 最高的一张, 标的之间按 ROC 排序.</div>
+        </div>
+      </section>
+      ${r && r.intent !== cfg.intent ? '<div class="rk-notice">设置已改, 点「扫描」更新结果.</div>' : ''}
+      <section class="rk-block">${ok.length ? ok.map(card).join('') : `<div class="rk-quiet">${__scanBusy ? '扫描中…' : r ? '没有符合规则的合约.' : '尚未扫描.'}</div>`}</section>
+      ${none.length ? `<section class="rk-block"><h3 class="rk-block-title">不符合</h3>${none.map(x => `<div class="sc-none"><b>${esc(x.t)}</b> <span class="rk-quiet">${x.err ? esc(x.err) : x.total ? `${x.total} 张合约: Δ 超限 ${x.why.delta} · ROC 不足 ${x.why.roc} · OI 不足 ${x.why.oi} · 在 Put Wall${x.putWall ? ' ' + x.putWall : ''} 上方 ${x.why.wall}` : '20–45 天内无可用合约'}</span></div>`).join('')}</section>` : ''}
+      <div class="rk-note">需要你自己确认: IVP · 财报日 · 支撑位 / Volume Profile. 扫描只做筛选, 行权价由你决定.</div>
+    </div>`;
+  setTimeout(() => { if (!volRegime()) fetchVol(); }, 0);
+}
+
+/* ---------- Greeks P&L attribution (Worker /snapshots) ---------- */
+const SNAPS_KEY = 'pretrade_snaps';
+let __attrDays = 30, __snapBusy = false, __snapErr = null;
+function loadSnaps() { try { const c = JSON.parse(localStorage.getItem(SNAPS_KEY) || 'null'); return c && Array.isArray(c.data) ? c : null; } catch (e) { return null; } }
+async function fetchSnaps(force) {
+  if (!loadSchwabCfg() || __snapBusy) return;
+  const c = loadSnaps(); if (!force && c && Date.now() - c.at < 30 * 60000) return;
+  __snapBusy = true;
+  try {
+    const r = await _wfetch('/snapshots?days=95'); const b = await r.json().catch(() => null);
+    if (r.ok && b && Array.isArray(b.snapshots)) { try { localStorage.setItem(SNAPS_KEY, JSON.stringify({ data: b.snapshots, at: Date.now() })); } catch (e) {} __snapErr = null; }
+    else __snapErr = r.status === 404 ? '需 Worker v8' : (b && b.message) || `HTTP ${r.status}`;
+  } catch (e) { __snapErr = '网络错误'; }
+  finally { __snapBusy = false; }
+  const el = document.getElementById('attr-slot'); if (el) { el.innerHTML = _safe('盈亏归因', _attribInnerHTML); _fitChartText(); }
+}
+const ATTR_KEYS = ['theta', 'delta', 'gamma', 'vega', 'other'];
+const ATTR_LABEL = { theta: 'Theta', delta: 'Delta', gamma: 'Gamma', vega: 'Vega', other: '其他' };
+function computeAttribution(snaps) {
+  const days = [];
+  for (let i = 1; i < snaps.length; i++) {
+    const s0 = snaps[i - 1], s1 = snaps[i], dd = Math.max(1, Math.round((Date.parse(s1.d) - Date.parse(s0.d)) / 864e5));
+    const m0 = new Map(s0.pos.map(p => [p.s, p]));
+    const day = { d: s1.d, actual: 0, theta: 0, delta: 0, gamma: 0, vega: 0, other: 0, skipped: 0, byT: {} };
+    s1.pos.forEach(p1 => {
+      const p0 = m0.get(p1.s);
+      if (!p0 || p0.q !== p1.q || p0.k !== p1.k) { if (p0 || p1) day.skipped++; return; }
+      const dS = p1.u != null && p0.u != null ? p1.u - p0.u : 0;
+      const r = { theta: 0, delta: 0, gamma: 0, vega: 0 };
+      let actual;
+      if (p0.k === 'stock') {
+        actual = p1.mv != null && p0.mv != null ? p1.mv - p0.mv : p0.q * dS;
+        r.delta = p0.q * dS;
+      } else {
+        const n = (p0.q || 0) * 100 * (p0.k === 'short_put' || p0.k === 'short_call' ? -1 : 1);
+        r.delta = (p0.de || 0) * dS * n; r.gamma = 0.5 * (p0.ga || 0) * dS * dS * n; r.theta = (p0.th || 0) * dd * n;
+        r.vega = p1.iv != null && p0.iv != null ? (p0.ve || 0) * (p1.iv - p0.iv) * n : 0;
+        actual = p1.mv != null && p0.mv != null ? p1.mv - p0.mv : (p1.m != null && p0.m != null ? (p1.m - p0.m) * n : 0);
+      }
+      const other = actual - r.theta - r.delta - r.gamma - r.vega;
+      const bt = day.byT[p1.t] || (day.byT[p1.t] = { actual: 0, theta: 0, delta: 0, gamma: 0, vega: 0, other: 0 });
+      [['actual', actual], ['theta', r.theta], ['delta', r.delta], ['gamma', r.gamma], ['vega', r.vega], ['other', other]].forEach(([k, v]) => { day[k] += v; bt[k] += v; });
+    });
+    days.push(day);
+  }
+  return days;
+}
+window.setAttrDays = n => { __attrDays = n; const el = document.getElementById('attr-slot'); if (el) { el.innerHTML = _safe('盈亏归因', _attribInnerHTML); _fitChartText(); } };
+function _attribInnerHTML() {
+  const c = loadSnaps();
+  if (!c) return `<div class="rk-quiet">${__snapErr ? `<span class="rk-t-alert">${esc(__snapErr)}</span>` : '读取快照…'}</div>`;
+  if (c.data.length < 2) return `<div class="rk-quiet">每个交易日收盘自动记录持仓和 Greeks (Worker v8 起). 已记录 ${c.data.length} 天, 满 2 个交易日后开始显示.</div>`;
+  const all = computeAttribution(c.data), days = all.slice(-__attrDays);
+  const sum = k => days.reduce((s, d) => s + d[k], 0), tot = Object.fromEntries(['actual', ...ATTR_KEYS].map(k => [k, sum(k)]));
+  const fig = (k, label) => `<div class="rk-fig"><span class="rk-fig-val ${_thCls(tot[k])}">${_fmtSigned(tot[k])}</span><span class="rk-fig-label">${label}</span>${k !== 'actual' && Math.abs(tot.actual) > 1 ? `<span class="rk-fig-sub">占实际 ${(tot[k] / Math.abs(tot.actual) * 100).toFixed(0)}%</span>` : ''}</div>`;
+  // stacked bars per day
+  const W = _chartW(), H = 170, L = 44, R = 8, T = 10, B = 20, n = days.length;
+  const up = d => ATTR_KEYS.reduce((s, k) => s + Math.max(0, d[k]), 0), dn = d => ATTR_KEYS.reduce((s, k) => s + Math.min(0, d[k]), 0);
+  const hi = Math.max(1, ...days.map(up), ...days.map(d => d.actual)), lo = Math.min(-1, ...days.map(dn), ...days.map(d => d.actual));
+  const Y = v => T + (hi - v) / (hi - lo) * (H - T - B), bw = Math.min(36, Math.max(3, (W - L - R) / n * 0.68)), X = i => L + (i + 0.5) * (W - L - R) / n;
+  const bars = days.map((d, i) => { let pu = 0, pd = 0; return ATTR_KEYS.map(k => { const v = d[k]; if (!v) return ''; const y0 = v > 0 ? pu : pd, y1 = y0 + v; if (v > 0) pu = y1; else pd = y1;
+    return `<rect x="${(X(i) - bw / 2).toFixed(1)}" y="${Y(Math.max(y0, y1)).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(0.5, Math.abs(Y(y0) - Y(y1))).toFixed(1)}" class="at-${k}"><title>${d.d} · ${ATTR_LABEL[k]} ${_fmtSigned(v)}</title></rect>`; }).join('')
+    + `<circle cx="${X(i).toFixed(1)}" cy="${Y(d.actual).toFixed(1)}" r="2.6" class="at-actual"><title>${d.d} · 实际 ${_fmtSigned(d.actual)}</title></circle>`; }).join('');
+  const chart = `<svg class="rk-chart at-chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="每日盈亏归因">
+    <line x1="${L}" x2="${W - R}" y1="${Y(0).toFixed(1)}" y2="${Y(0).toFixed(1)}" class="gex-zero"/>
+    <text x="${L - 6}" y="${(Y(hi) + 4).toFixed(1)}" text-anchor="end" class="rk-ch-lab">${esc(_fmtK(hi))}</text><text x="${L - 6}" y="${(Y(lo)).toFixed(1)}" text-anchor="end" class="rk-ch-lab">${esc(_fmtK(lo))}</text>
+    ${bars}
+    <text x="${L}" y="${H - 5}" class="rk-ch-lab">${esc(days[0].d.slice(5))}</text><text x="${W - R}" y="${H - 5}" text-anchor="end" class="rk-ch-lab">${esc(days[n - 1].d.slice(5))}</text></svg>`;
+  const byT = {}; days.forEach(d => Object.entries(d.byT).forEach(([t, v]) => { const o = byT[t] || (byT[t] = { actual: 0, theta: 0, delta: 0, gamma: 0, vega: 0, other: 0 }); Object.keys(o).forEach(k => { o[k] += v[k]; }); }));
+  const tick = Object.entries(byT).sort((a, b) => Math.abs(b[1].actual) - Math.abs(a[1].actual));
+  const main = ATTR_KEYS.filter(k => k !== 'other').sort((a, b) => Math.abs(tot[b]) - Math.abs(tot[a]))[0];
+  const lead = { theta: '时间价值', delta: '方向', gamma: '大幅波动 (Gamma)', vega: '隐含波动率变化' }[main];
+  return `
+    <div class="rk-presets at-seg">${[7, 30, 90].map(d => `<button class="rk-preset${__attrDays === d ? ' active' : ''}" onclick="setAttrDays(${d})">${d} 天</button>`).join('')}<span class="rk-quiet">${days.length} 个交易日</span></div>
+    <div class="at-lead">近 ${days.length} 个交易日实际 <b class="${_thCls(tot.actual)}">${_fmtSigned(tot.actual)}</b>, 主要来自<b>${lead}</b> (${_fmtSigned(tot[main])}).</div>
+    <div class="rk-figs at-figs">${fig('actual', '实际')}${fig('theta', 'Theta')}${fig('delta', 'Delta')}${fig('gamma', 'Gamma')}${fig('vega', 'Vega')}${fig('other', '其他')}</div>
+    ${chart}
+    <div class="rk-legend">${ATTR_KEYS.map(k => `<span><i class="rk-sw at-sw-${k}"></i>${ATTR_LABEL[k]}</span>`).join('')}<span><i class="rk-sw at-sw-actual"></i>实际</span></div>
+    <div class="rk-table-wrap"><table class="rk-table">
+      <thead><tr><th>标的</th><th>实际</th><th>Theta</th><th>Delta</th><th>Gamma</th><th>Vega</th><th>其他</th></tr></thead>
+      <tbody>${tick.map(([t, v]) => `<tr><td>${esc(t)}</td>${['actual', ...ATTR_KEYS].map(k => `<td class="${_thCls(v[k])}">${Math.abs(v[k]) < 0.5 ? '—' : _fmtSigned(v[k])}</td>`).join('')}</tr>`).join('')}</tbody>
+    </table></div>
+    <div class="rk-note">每天用前一日收盘的 Greeks × 当天的变化: Delta × 标的涨跌, ½ Gamma × 涨跌², Theta × 天数, Vega × IV 变化. 其他 = 实际 − 以上, 包括高阶效应、价差变动和盘中 Greeks 变化. 当天新开、平仓或张数变化的仓位不计入.</div>`;
+}
+function _attribHTML() {
+  return `<section class="rk-block"><h3 class="rk-block-title rk-title-row"><span>盈亏归因</span><button class="btn ghost small" onclick="fetchSnaps(true)">刷新</button></h3><div id="attr-slot">${_safe('盈亏归因', _attribInnerHTML)}</div></section>`;
+}
+
 /* ---------- fault isolation: one broken block never takes the page down ---------- */
 const LAST_ERR_KEY = 'pretrade_last_error';
 function _reportErr(where, e) {
@@ -13920,7 +14405,7 @@ function _safe(label, fn, fallback) {
 }
 // Rebuildable caches only. Inputs, snapshots, settings and both connections are never touched.
 const CACHE_KEYS = ['pretrade_schwab_cache', 'pretrade_schwab_closed', 'pretrade_betas', 'pretrade_crisis', 'pretrade_history_tx',
-  'pretrade_navseries', 'pretrade_last_error', 'pretrade_watchlist', 'pretrade_panel_collapse'];
+  'pretrade_navseries', 'pretrade_last_error', 'pretrade_watchlist', 'pretrade_panel_collapse', 'pretrade_scan_res', 'pretrade_snaps'];
 function _sanitizeRiskHist() {
   // device-only trend: keep every well-formed day, drop anything malformed
   let kept = 0, dropped = 0;
@@ -14352,6 +14837,7 @@ function renderRiskPage() {
       </section>
       ${_safe('构成', () => _riskDecompHTML(R))}
       ${_safe('待处理仓位', () => _mgmtHTML(R))}
+      ${R.c.isSchwab ? `<section class="rk-block"><h3 class="rk-block-title rk-title-row"><span>波动率环境</span><button class="btn ghost small" onclick="fetchVol(true)">刷新</button></h3><div data-vol-slot="full">${_safe('波动率环境', volInnerHTML)}</div></section>` : ''}
       ${_safe('持仓对账', () => _reconHTML())}
       <div class="rk-groups">${_safe('风险变量', () => groups)}</div>
       ${_safe('压力测试', () => _stressHTML(R))}
@@ -14381,7 +14867,7 @@ function renderRiskPage() {
     const c1 = document.getElementById('rk-crisis'); if (c1) c1.innerHTML = _safe('历史危机', () => _crisisInnerHTML(R));
     const v1 = document.getElementById('rk-var'); if (v1) v1.innerHTML = _safe('VaR', () => _varInnerHTML(R));
     _fitChartText();
-    fetchCrisis(); fetchVarData();
+    fetchCrisis(); fetchVarData(); fetchVol();
   }, 30);
 }
 
@@ -14469,7 +14955,7 @@ window.addEventListener('scroll', updateScrolledState, { passive: true });
 
 // Schwab portfolio: fetch on launch, and on resume if older than a few minutes
 (function bootSchwab() {
-  if (loadSchwabCfg()) setTimeout(() => { refreshSchwab(); _reconcileSoon(); fetchBetas(); fetchPerf(); }, 300);
+  if (loadSchwabCfg()) setTimeout(() => { refreshSchwab(); _reconcileSoon(); fetchBetas(); fetchPerf(); fetchVol(); }, 300);
   // Always listen: Schwab may be configured later in this session
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible' && loadSchwabCfg()
