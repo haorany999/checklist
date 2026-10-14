@@ -1901,7 +1901,12 @@
   .rk-c-info { color: var(--accent); }
   .rk-count { font-size: 12px; font-weight: 500; color: var(--text-faint); margin-left: 6px; }
   /* management + reconciliation rows */
-  .rk-mg, .rk-rc { display: grid; grid-template-columns: 76px minmax(140px, 190px) 1fr; gap: 10px; align-items: center;
+  .rk-mg { display: block; padding: 10px 0; border-top: 1px solid var(--border); cursor: pointer; }
+  .rk-mg-top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .rk-mg-pnl { margin-left: auto; font-family: var(--mono); font-size: 13px; font-weight: 600; }
+  .rk-mg-sub { margin-top: 4px; font-size: 12.5px; color: var(--text-dim); }
+  .rk-mg-act { color: var(--text); }
+  .rk-rc { display: grid; grid-template-columns: 76px minmax(140px, 190px) 1fr; gap: 10px; align-items: center;
     padding: 8px 0; border-top: 1px solid var(--border); font-size: 12.5px; }
   .rk-mg:first-of-type { border-top: none; }
   .rk-mg-pos, .rk-rc-pos { font-family: var(--mono); font-weight: 600; color: var(--text); white-space: nowrap; }
@@ -1938,10 +1943,8 @@
   .history-auto { font-family: var(--mono); font-size: 10.5px; padding: 1px 6px; border-radius: 3px; color: var(--accent);
     border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent); }
   @media (max-width: 560px) {
-    .rk-mg { grid-template-columns: auto 1fr; } .rk-mg-text { grid-column: 1 / -1; }
     .rk-rc { grid-template-columns: 1fr; gap: 4px; } .rk-rc-act { justify-content: flex-start; }
     .rk-dd-meta-m { display: block; } .rk-dd-meta-d { display: none; }
-    .rk-mg { grid-template-columns: 76px 1fr; }
   }
   .rk-red-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; font-weight: 600; padding: 2px 8px; border-radius: 10px;
     color: var(--panel); background: var(--rk-danger); white-space: nowrap; }
@@ -4572,7 +4575,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.14-v15';
+const APP_BUILD = '2026.10.14-v16';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
@@ -11450,27 +11453,46 @@ function _leapsStyleFor(x) {
 }
 
 // Positions that need a decision now — straight from the SOPs (50% / 21 days, LEAPS 9 / 6 months, profit ladders)
+// Positions that need a decision now, straight from the SOPs. Each item: tag (what), facts (why), act (what to do).
+const MG_ORDER = { danger: 0, alert: 1, watch: 2, info: 3 };
 function _mgmtItems(c) {
   if (!c.isSchwab) return [];
   const items = [];
+  const pc = v => `${Math.abs(v).toFixed(1)}%`;
   c.pos.forEach(x => {
     const dte = _dteOf(x);
     if (_isShortPos(x)) {
-      const cap = _captured(x), dist = _distPct(x);
-      if (dte != null && dte <= 7 && dist != null && dist < 0) items.push({ x, level: 'danger', tag: '必须决定', text: `${dte} 天到期 · 价内` });
-      else if (cap != null && cap >= 50) items.push({ x, level: 'info', tag: '可止盈', text: `已赚 ${cap.toFixed(0)}%` });
-      else if (dte != null && dte <= 21) items.push({ x, level: 'watch', tag: '21 天', text: `${dte} 天${dist != null ? ` · 距行权价 ${dist < 0 ? '价内' : dist.toFixed(1) + '%'}` : ''}` });
+      const cap = _captured(x), dist = _distPct(x), put = x.kind === 'short_put';
+      const away = dist == null ? '' : dist < 0 ? `价内 ${pc(dist)}` : `距行权价 ${pc(dist)}`;
+      const left = x.marketValue != null ? ` · 余 ${_fmtUsd(Math.abs(x.marketValue))}` : '';
+      if (dte != null && dte <= 7 && dist != null && dist < 0)
+        items.push({ x, level: 'danger', tag: '必须决定', facts: `${dte} 天 · ${away}`, act: put ? '接股 / roll / 买回' : '被 call 走 / roll / 买回' });
+      else if (dte != null && dte <= 7 && dist != null && dist < 3)
+        items.push({ x, level: 'danger', tag: '临近行权', facts: `${dte} 天 · ${away}`, act: 'roll / 买回 / 接受行权' });
+      else if (dist != null && dist < 0)
+        items.push({ x, level: 'alert', tag: '价内', facts: `${dte ?? '—'} 天 · ${away}`, act: put ? 'roll 下移或准备接股' : 'roll 上移或准备被 call 走' });
+      else if (cap != null && cap >= 50)
+        items.push({ x, level: 'info', tag: '可止盈', facts: `已赚 ${cap.toFixed(0)}%${left} · ${dte ?? '—'} 天`, act: '买回止盈' });
+      else if (dte != null && dte <= 21)
+        items.push({ x, level: 'watch', tag: '进入 21 天', facts: `${dte} 天 · ${away}${cap != null ? ` · 已赚 ${cap.toFixed(0)}%` : ''}`, act: '止盈或 roll' });
     } else if (x.kind === 'leaps') {
       const style = _leapsStyleFor(x), th = { stock_sub: 150, balanced: 100, swing: 50 }[style] || 100;
       const prof = x.cost > 0 && x.marketValue != null ? (x.marketValue - x.cost) / x.cost * 100 : null;
-      if (dte != null && dte <= 180) items.push({ x, level: 'danger', tag: '必退', text: `${dte} 天 · ≤ 6 个月` });
-      else if (dte != null && dte < 270) items.push({ x, level: 'watch', tag: 'roll', text: `${dte} 天 · < 9 个月` });
-      if (prof != null && prof >= 200) items.push({ x, level: 'info', tag: '平半', text: `浮盈 ${prof.toFixed(0)}% · ≥ 200%` });
-      else if (prof != null && prof >= th) items.push({ x, level: 'info', tag: '分批止盈', text: `浮盈 ${prof.toFixed(0)}% · ≥ ${th}% (${style ? LEAPS_STYLE_LABEL[style] : 'Balanced'})` });
+      if (dte != null && dte <= 180) items.push({ x, level: 'danger', tag: 'LEAPS 必退', facts: `${dte} 天 · ≤ 6 个月`, act: '平仓或 roll 到 ≥ 400 天' });
+      else if (dte != null && dte < 270) items.push({ x, level: 'watch', tag: 'LEAPS roll', facts: `${dte} 天 · < 9 个月`, act: 'roll 到 ≥ 400 天' });
+      if (prof != null && prof >= 200) items.push({ x, level: 'info', tag: 'LEAPS 平半', facts: `浮盈 ${prof.toFixed(0)}%`, act: '平一半' });
+      else if (prof != null && prof >= th) items.push({ x, level: 'info', tag: 'LEAPS 止盈', facts: `浮盈 ${prof.toFixed(0)}% · 门槛 ${th}%`, act: '按梯度分批止盈' });
     }
   });
-  const order = { danger: 0, watch: 1, info: 2 };
-  return items.sort((a, b) => order[a.level] - order[b.level]);
+  return items.sort((a, b) => MG_ORDER[a.level] - MG_ORDER[b.level]);
+}
+// "1 笔临近行权 · 2 笔可止盈": one chip per tag, most urgent first
+function _mgmtChips(items, max = 3) {
+  const g = [];
+  items.forEach(it => { const f = g.find(x => x.tag === it.tag); if (f) f.n++; else g.push({ tag: it.tag, level: it.level, n: 1 }); });
+  const shown = g.slice(0, max).map(x => `<span class="rk-chip rk-c-${x.level === 'alert' ? 'alert' : x.level}">${x.n} 笔${esc(x.tag)}</span>`);
+  if (g.length > max) shown.push(`<span class="rk-chip rk-c-watch">+${g.slice(max).reduce((s, x) => s + x.n, 0)}</span>`);
+  return shown.join('');
 }
 function _mgmtHTML(R) {
   if (!R.c.isSchwab) return '';
@@ -11478,12 +11500,12 @@ function _mgmtHTML(R) {
   return `
     <section class="rk-block rk-mgmt">
       <h3 class="rk-block-title">待处理仓位${items.length ? ` <span class="rk-count">${items.length}</span>` : ''}</h3>
-      ${items.length ? items.map(it => `
-        <div class="rk-mg gl-row" role="button" tabindex="0" onclick="openOptionLab(${R.c.pos.indexOf(it.x)})" onkeydown="if(event.key==='Enter')openOptionLab(${R.c.pos.indexOf(it.x)})">
-          <span class="rk-pill rk-c-${it.level}">${it.tag}</span>
-          <span class="rk-mg-pos">${esc(_posLabel(it.x))}</span>
-          <span class="rk-mg-text">${esc(it.text)}</span>
-        </div>`).join('') : `<div class="rk-quiet">无.</div>`}
+      ${items.length ? items.map(it => { const i = R.c.pos.indexOf(it.x), pnl = _posPnl(it.x); return `
+        <div class="rk-mg gl-row" role="button" tabindex="0" onclick="openOptionLab(${i})" onkeydown="if(event.key==='Enter')openOptionLab(${i})">
+          <div class="rk-mg-top"><span class="rk-pill rk-c-${it.level}">${esc(it.tag)}</span><b class="rk-mg-pos">${esc(_posLabel(it.x))}</b>
+            ${pnl != null ? `<span class="rk-mg-pnl ${_thCls(pnl)}">${_fmtSigned(pnl)}</span>` : ''}</div>
+          <div class="rk-mg-sub">${esc(it.facts)} · <span class="rk-mg-act">${esc(it.act)}</span></div>
+        </div>`; }).join('') : `<div class="rk-quiet">无.</div>`}
     </section>`;
 }
 
@@ -13974,10 +13996,9 @@ function riskCardHTML() {
           : `<span class="rk-quiet">${s != null ? '全部安全' : '数据不足'}</span>`}</div>
         ${R.c.isSchwab ? (() => {
           const mg = _mgmtItems(R.c), rc = reconcileReport();
-          const urgent = mg.filter(i => i.level === 'danger').length, pend = rc ? rc.pending.length : 0;
+          const pend = rc ? rc.pending.length : 0;
           const bits = [];
-          if (urgent) bits.push(`<span class="rk-chip rk-c-danger">${urgent} 笔必须决定</span>`);
-          if (mg.length - urgent) bits.push(`<span class="rk-chip rk-c-info">${mg.length - urgent} 笔可止盈 / roll</span>`);
+          if (mg.length) bits.push(_mgmtChips(mg));
           if (pend) bits.push(`<span class="rk-chip rk-c-watch">${pend} 笔待确认</span>`);
           return bits.length ? `<div class="rk-card-drivers rk-card-tasks">${bits.join('')}</div>` : '';
         })() : `<div class="rk-card-warn">⚠ 本地 snapshot · 不完整</div>`}
