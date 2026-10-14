@@ -2135,6 +2135,46 @@
       background: var(--accent); color: var(--panel); font-size: 12px; white-space: nowrap; pointer-events: none; }
   }
   .app-build { margin: 18px 0 6px; text-align: center; font-family: var(--mono); font-size: 10.5px; color: var(--text-faint); }
+  /* technicals panel (checklist) */
+  .tc { margin: 12px 0; }
+  .tc:empty { display: none; }
+  .tc-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 13px; }
+  .tc-head b { color: var(--text); }
+  .tc-head .pr-mini-btn { margin-left: auto; }
+  .tc-grid { display: flex; flex-wrap: wrap; border-top: 1px solid var(--border); border-left: 1px solid var(--border); border-radius: var(--radius, 6px); overflow: hidden; }
+  .tc-cell { flex: 1 1 112px; display: flex; flex-direction: column; gap: 1px; padding: 7px 10px; background: var(--panel); border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  .tc-cell span { font-size: 10.5px; color: var(--text-faint); }
+  .tc-cell b { font-family: var(--mono); font-size: 15px; color: var(--text); font-variant-numeric: tabular-nums; }
+  .tc-cell em { font-style: normal; font-size: 10.5px; color: var(--text-dim); }
+  .tc-mas { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .tc-ma { font-family: var(--mono); font-size: 11px; padding: 2px 7px; border-radius: 3px; border: 1px solid var(--border); color: var(--text-dim); }
+  .tc-ma.up { border-color: color-mix(in srgb, var(--pass) 50%, var(--border)); color: var(--pass); }
+  .tc-ma.dn { border-color: color-mix(in srgb, var(--fail) 45%, var(--border)); color: var(--fail); }
+  .tc-ma.up::before { content: '▲ '; font-size: 8px; } .tc-ma.dn::before { content: '▼ '; font-size: 8px; }
+  /* VaR histogram */
+  .var-hist rect.var-pos { fill: color-mix(in srgb, var(--pass) 55%, transparent); }
+  .var-hist rect.var-neg { fill: color-mix(in srgb, var(--pending) 60%, transparent); }
+  .var-hist rect.var-tail { fill: var(--fail); }
+  .var-line { stroke: var(--fail); stroke-width: 1.5; stroke-dasharray: 4 3; }
+  /* performance */
+  .pf-months { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
+  .pf-m { display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; border-radius: var(--radius, 6px); border: 1px solid var(--border);
+    background: color-mix(in srgb, var(--c) calc(var(--a) * 100%), var(--panel)); }
+  .pf-m span { font-size: 10.5px; color: var(--text-faint); }
+  .pf-m b { font-family: var(--mono); font-size: 13.5px; font-variant-numeric: tabular-nums; }
+  .pf-m em { font-style: normal; font-size: 10.5px; color: var(--text-faint); min-height: 14px; }
+  .pf-m.future { opacity: 0.45; background: var(--panel); }
+  .pf-start { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 12px; font-size: 12.5px; color: var(--text-dim); }
+  .pf-start input { width: 150px; padding: 5px 8px; font-family: var(--mono); font-size: 13px; border: 1px solid var(--accent); border-radius: 4px; background: var(--panel); color: var(--text); }
+  .pf-page .rk-figs { grid-template-columns: repeat(3, 1fr); }
+  .roll-table td:first-child { font-family: var(--mono); font-weight: 600; }
+  .gl-head .btn.small { margin-left: 4px; }
+  @media (max-width: 560px) {
+    .pf-months { grid-template-columns: repeat(3, 1fr); }
+    .pf-page .rk-figs { grid-template-columns: repeat(2, 1fr); }
+    .pf-opt { display: none; }
+  }
+  .rk-table th { white-space: nowrap; }
   .pr-sim-risk { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 10px; margin-top: 8px; padding: 6px 9px;
     border-radius: 4px; background: var(--panel-2); font-size: 12px; color: var(--text-dim); }
   .pr-sim-risk span { font-size: 10.5px; color: var(--text-faint); margin-left: auto; }
@@ -3837,6 +3877,7 @@ function _viewKey() {
   if (state._view === 'history') return 'history';
   if (state._view === 'risk') return 'risk';
   if (state._view === 'greeks') return 'greeks';
+  if (state._view === 'performance') return 'performance';
   if (!state.strategy) return 'picker';
   if (state.strategy === 'leaps') {
     if (!state.leapsStyle || !state.leapsPhase) return 'leaps-config';
@@ -3864,6 +3905,7 @@ function render() {
   if (state._view === 'history') { renderHistoryPage(); _postRender(); return; }
   if (state._view === 'risk') { renderRiskPage(); _postRender(); return; }
   if (state._view === 'greeks') { renderGreeksPage(); _postRender(); return; }
+  if (state._view === 'performance') { renderPerformancePage(); _postRender(); return; }
   if (!state.strategy) { renderPicker(); _postRender(); return; }
   if (state.strategy === 'leaps') {
     // Always open — force direction to 'open' if not already set
@@ -4507,7 +4549,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.13-v11';
+const APP_BUILD = '2026.10.13-v12.1';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
@@ -5615,6 +5657,7 @@ function renderPicker() {
       <div class="picker-sub">Trading in the Zone</div>
       ${syncStatusMiniHTML()}
       ${riskCardHTML()}
+      ${perfCardHTML()}
       ${greeksCardHTML()}
       ${marketSignalHTML()}
       ${mainNavWidgetHTML()}
@@ -6181,6 +6224,7 @@ function renderChecklist() {
     ${progressBarHTML()}
     ${qrefHTML()}
     ${configHTML}
+    <div class="tc" id="tech-strip">${techStripInnerHTML()}</div>
     ${checklistHTML}
     ${bottomSummaryHTML()}
     <div class="disclaimer">
@@ -6275,6 +6319,12 @@ function renderChecklist() {
 
   // Ticker input (always present in checklist)
   if (typeof _bindCspQuote === 'function') setTimeout(_bindCspQuote, 0);
+  setTimeout(() => {
+    const te = document.getElementById('in-ticker');
+    if (te && !te.dataset.tcBound) { te.dataset.tcBound = '1'; te.addEventListener('input', scheduleTech); }
+    const t = _normTicker(state.ticker);
+    if (t && (!__px[t] || Date.now() - __px[t].at > 60000)) refreshTech();
+  }, 0);
   const tickerEl = document.getElementById('in-ticker');
   if (tickerEl) {
     tickerEl.addEventListener('focus', () => { pushUndo(); cancelFullRender(); });
@@ -9019,6 +9069,7 @@ function buildSyncPayload() {
       riskWeights: (function() { try { return localStorage.getItem(RISK_WEIGHTS_KEY) || ''; } catch (e) { return ''; } })(),
       betaOverrides: (function() { try { return localStorage.getItem(BETA_OVR_KEY) || ''; } catch (e) { return ''; } })(),
       betaMode: (function() { try { return localStorage.getItem(BETA_MODE_KEY) || ''; } catch (e) { return ''; } })(),
+      perfStart: (function() { try { return localStorage.getItem(PERF_START_KEY) || ''; } catch (e) { return ''; } })(),
       density: (function() { try { return localStorage.getItem(DENSITY_KEY) || ''; } catch (e) { return ''; } })(),
       trendRange: (function() { try { return localStorage.getItem(TREND_RANGE_KEY) || ''; } catch (e) { return ''; } })(),
       themeCustom: (function() { try { return localStorage.getItem(THEME_CUSTOM_KEY) || ''; } catch (e) { return ''; } })(),
@@ -9045,6 +9096,7 @@ function applyRemotePayload(remote, mode) {
     if (typeof s.riskWeights === 'string' && s.riskWeights) { try { JSON.parse(s.riskWeights); localStorage.setItem(RISK_WEIGHTS_KEY, s.riskWeights); } catch (e) {} }
     if (typeof s.betaOverrides === 'string' && s.betaOverrides) { try { JSON.parse(s.betaOverrides); localStorage.setItem(BETA_OVR_KEY, s.betaOverrides); } catch (e) {} }
     if (s.betaMode === 'beta' || s.betaMode === 'flat') { try { localStorage.setItem(BETA_MODE_KEY, s.betaMode); } catch (e) {} }
+    if (typeof s.perfStart === 'string' && s.perfStart) { try { const o = JSON.parse(s.perfStart); localStorage.setItem(PERF_START_KEY, JSON.stringify({ ...loadPerfStart(), ...o })); } catch (e) {} }
     if (typeof s.density === 'string' && s.density) localStorage.setItem(DENSITY_KEY, s.density);
     if (typeof s.trendRange === 'string' && s.trendRange) localStorage.setItem(TREND_RANGE_KEY, s.trendRange);
     if (typeof s.themeCustom === 'string' && s.themeCustom) localStorage.setItem(THEME_CUSTOM_KEY, s.themeCustom);
@@ -10025,7 +10077,7 @@ const SCHWAB_DEFAULT_URL = 'https://checklist.haorany999.workers.dev';
 const SCHWAB_AUTO_REFRESH_MIN = 5;    // page load / resume refetch at most this often
 const SCHWAB_STALE_MIN = 15;          // source badge turns amber after this
 const SCHWAB_MAX_AGE_H = 24;          // older → not used, fall back to manual + history
-const SCHWAB_KINDS = ['stock', 'leaps', 'short_put', 'short_call', 'long_put'];
+const SCHWAB_KINDS = ['stock', 'leaps', 'short_put', 'short_call', 'long_put', 'long_call'];
 let __schwabStatus = { state: 'idle' };   // idle | loading | ok | reauth | unauthorized | error
 let __schwabInflight = null;
 let __schwabSetupOpen = false;
@@ -10073,6 +10125,53 @@ function _schwabAgeText(c) {
 }
 // Worker positions → Portfolio positions with the agreed exposure rules:
 // stock cost · LEAPS cost · CSP strike × 100 × contracts · short call / long put = 0
+/* Multi-leg recognition: pair legs by underlying + expiry.
+ * Put / call credit & debit spreads, iron condors, strangles / straddles; long calls that are spread
+ * wings or short-dated are not LEAPS; short calls without shares or a longer long call are naked. */
+function _groupLegs(pos) {
+  const byKey = {};
+  pos.forEach(x => { if (x.kind !== 'stock' && x.expiry) (byKey[x.ticker + '|' + x.expiry] = byKey[x.ticker + '|' + x.expiry] || []).push(x); });
+  let gid = 0;
+  const pair = (shorts, longs, better) => shorts.forEach(s => {
+    const l = longs.filter(o => !o.group && better(o, s)).sort((a, b) => Math.abs(a.strike - s.strike) - Math.abs(b.strike - s.strike))[0];
+    if (!l) return;
+    const g = ++gid, width = Math.abs(s.strike - l.strike);
+    s.group = l.group = g; s.wing = l; l.wingOf = s;
+    s.spread = { width, legs: 2 };
+  });
+  Object.values(byKey).forEach(L => {
+    const sp = L.filter(x => x.kind === 'short_put'), lp = L.filter(x => x.kind === 'long_put');
+    const sc = L.filter(x => x.kind === 'short_call'), lc = L.filter(x => x.kind === 'leaps' || x.kind === 'long_call');
+    pair(sp, lp, (o, s) => o.strike < s.strike);                 // put credit spread
+    pair(sc, lc, (o, s) => o.strike > s.strike);                 // call credit spread
+    pair(sc, lc, (o, s) => o.strike < s.strike);                 // call debit spread (covered by the long call)
+    sp.forEach(s => { if (s.wing) { s.exposure = s.spread.width * 100 * (Number(s.qty) || 0); } });
+    lc.forEach(l => { if (l.group) l.kind = 'long_call'; });
+    const putSp = sp.find(s => s.wing), callSp = sc.find(s => s.wing);
+    const label = putSp && callSp ? 'Iron condor' : null;
+    L.forEach(x => {
+      if (x.group) x.strategy = label || (x.kind === 'short_put' || x.kind === 'long_put' ? 'Put spread' : 'Call spread');
+    });
+    const nsp = sp.filter(s => !s.wing), nsc = sc.filter(s => !s.wing);
+    if (nsp.length && nsc.length) { const same = nsp.some(a => nsc.some(b => a.strike === b.strike)); [...nsp, ...nsc].forEach(x => { x.strategy = same ? 'Straddle' : 'Strangle'; }); }
+  });
+  // unpaired short-dated long calls are not LEAPS
+  pos.forEach(x => { if (x.kind === 'leaps' && !x.group) { const d = _dteOf(x); if (d != null && d <= 90) x.kind = 'long_call'; } if (x.kind === 'long_call' && !x.group) x.exposure = x.cost || 0; });
+  // naked short calls: coverage = shares + long calls expiring no earlier (PMCC / diagonal), not already a wing
+  const tick = [...new Set(pos.filter(x => x.kind === 'short_call' && !x.wing).map(x => x.ticker))];
+  tick.forEach(t => {
+    const shares = pos.filter(x => x.kind === 'stock' && x.ticker === t && (x.side || 1) > 0).reduce((s, x) => s + (Number(x.qty) || 0), 0);
+    let cover = Math.floor(shares / 100);
+    const longs = pos.filter(x => (x.kind === 'leaps' || x.kind === 'long_call') && x.ticker === t && !x.wingOf).map(x => ({ x, left: Number(x.qty) || 0 }));
+    pos.filter(x => x.kind === 'short_call' && x.ticker === t && !x.wing).sort((a, b) => a.strike - b.strike).forEach(s => {
+      let need = Number(s.qty) || 0;
+      const fromShares = Math.min(need, cover); cover -= fromShares; need -= fromShares;
+      longs.filter(o => o.left > 0 && (o.x.expiry || '') >= (s.expiry || '')).forEach(o => { const k = Math.min(need, o.left); o.left -= k; need -= k; });
+      s.nakedQty = need;
+    });
+  });
+  return pos;
+}
 function _schwabPositions(data) {
   return (Array.isArray(data.positions) ? data.positions : [])
     .filter(p => p && SCHWAB_KINDS.includes(p.kind))
@@ -10101,7 +10200,7 @@ function getPortfolio() {
     return {
       source: 'schwab', asOf: sc.fetchedAt,
       nav: _num(d.nav), cash: _num(d.cash), swvxx: _num(d.swvxx),
-      positions: _schwabPositions(d),
+      positions: _groupLegs(_schwabPositions(d)),
       unclassified: Array.isArray(d.unclassified) ? d.unclassified.length : 0,
       balances: _sumBalances(d.balancesRaw), accountTypes: Array.isArray(d.accountTypes) ? d.accountTypes : [],
       isInCall: d.isInCall === true, workerVersion: _num(d.workerVersion) || 1,
@@ -10158,14 +10257,14 @@ async function refreshSchwab({ force = false } = {}) {
       __schwabInflight = null;
     }
     _afterSchwabChange(dataChanged);
-    if (dataChanged) { _reconcileSoon(); fetchBetas(); }
+    if (dataChanged) { _reconcileSoon(); fetchBetas(); fetchPerf(); }
   })();
   return __schwabInflight;
 }
 // Repaint what depends on the data without stealing focus from an input
 function _afterSchwabChange(dataChanged) {
   if (state._view === 'history') return;
-  if (state._view === 'risk' || state._view === 'greeks') {
+  if (state._view === 'risk' || state._view === 'greeks' || state._view === 'performance') {
     const ae = document.activeElement;
     if (!(ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA'))) { const y = window.scrollY; render(); window.scrollTo(0, y); }
     return;
@@ -10368,7 +10467,7 @@ window.updatePortfolioCash  = (val) => { _saveNumKey(CASH_KEY, val);  _refreshPo
 window.updatePortfolioSwvxx = (val) => { _saveNumKey(SWVXX_KEY, val); _refreshPortfolioRows(); _refreshRiskCard(); };
 
 /* ---------- Holdings modal ---------- */
-const _KIND_LABEL = { stock: '正股', leaps: 'LEAPS', short_put: 'CSP', short_call: 'Short call', long_put: 'Long put' };
+const _KIND_LABEL = { stock: '正股', leaps: 'LEAPS', short_put: 'CSP', short_call: 'Short call', long_put: 'Long put', long_call: 'Long call' };
 function holdingsModalBodyHTML() {
   const r = portfolioRisk();
   if (r.tickers.length === 0) {
@@ -10687,7 +10786,7 @@ const RISK_FAMILIES = [
   { id: 'assign', label: '行权冲击', vars: ['free_cash', 'csp_exposure', 'assign_near', 'expiry_cluster'] },
   { id: 'direction', label: '方向与亏损', vars: ['delta_exposure', 'gross_exposure', 'unrealized_loss'] },
   { id: 'conc', label: '集中度', vars: ['largest_ticker', 'eff_n', 'top3'] },
-  { id: 'struct', label: '结构', vars: ['short_call_itm', 'leaps_dte'] },
+  { id: 'struct', label: '结构', vars: ['naked_call', 'short_call_itm', 'leaps_dte'] },
   { id: 'signal', label: '市场信号', vars: ['market_regime'] },
 ];
 const RISK_CATS = [
@@ -10868,7 +10967,7 @@ const RISK_VARS = [
       const top = weeks[0];
       return { value: c.pctNav(top.total), detail: `${top.label} 周 · ${top.count} 笔 · ${_fmtUsd(top.total)}` };
     } },
-  { id: 'short_call_itm', cat: 'assign', label: '临近被行权的 short call', unit: 'count', dir: 'max', th: [0.5, 1.5, 2.5], w: 3,
+  { id: 'short_call_itm', cat: 'assign', label: '临近被行权的 short call', unit: 'count', dir: 'max', th: [0.5, 1.5, 2.5], w: 2,
     desc: '现价 ≥ 行权价 97% 的 short call.',
     calc: c => {
       const sc = c.pos.filter(x => x.kind === 'short_call');
@@ -10885,7 +10984,7 @@ const RISK_VARS = [
       const l = c.r.largest;
       return l ? { value: c.pctNav(l.exposure), detail: l.ticker } : { value: 0, detail: _noneText(c, '持仓') };
     } },
-  { id: 'top3', cat: 'concentration', label: '前三大标的', unit: '%', dir: 'max', th: [50, 70, 90], w: 2,
+  { id: 'top3', cat: 'concentration', label: '前三大标的', unit: '%', dir: 'max', th: [50, 70, 90], w: 1,
     desc: '前三大标的合计.',
     calc: c => {
       if (!c.nav) return { unavailable: '缺 NAV' };
@@ -10905,7 +11004,17 @@ const RISK_VARS = [
       return { value: 1 / hhi, scale, detail: `${t.length} 个标的 · HHI ${Math.round(hhi * 10000)}`
         + (scale < 1 ? ` · 投入 ${deployed.toFixed(1)}% · 计分 ×${(scale * 100).toFixed(0)}%` : '') };
     } },
-  { id: 'leaps_dte', cat: 'time', label: 'LEAPS 临近到期', unit: '%', dir: 'max', th: [10, 30, 50], w: 3,
+  { id: 'naked_call', cat: 'assign', label: '无保护 short call', unit: '%', dir: 'max', th: [0, 10, 25], w: 3,
+    desc: '没有正股、也没有更长期 long call 覆盖的 short call 名义 (现价 × 100 × 张数). 上涨风险无上限.',
+    calc: c => {
+      const sc = c.pos.filter(x => x.kind === 'short_call');
+      if (!sc.length) return { na: _noneText(c, ' short call') };
+      if (!c.nav) return { unavailable: '缺 NAV' };
+      const nk = sc.filter(x => x.nakedQty > 0);
+      const v = nk.reduce((s, x) => s + (x.und || x.strike || 0) * 100 * x.nakedQty, 0);
+      return { value: c.pctNav(v), detail: nk.length ? nk.map(x => `${x.ticker} ${x.strike}C × ${x.nakedQty}`).join(' · ') : '全部有覆盖' };
+    } },
+  { id: 'leaps_dte', cat: 'time', label: 'LEAPS 临近到期', unit: '%', dir: 'max', th: [10, 30, 50], w: 2,
     desc: '< 9 个月的 LEAPS 成本占比. SOP: < 9 个月 roll, ≤ 6 个月退出.',
     calc: c => {
       const L = c.pos.filter(x => x.kind === 'leaps');
@@ -11583,9 +11692,16 @@ function _alertsInnerHTML() {
   return `
     <div class="rk-al-line"><span class="rk-pill rk-c-safe">已开启</span>
       上次检查 ${_ago(a.lastRunAt)} · 上次发出 ${_ago(a.lastSentAt)}${a.lastError ? ` · <span class="rk-t-danger">上次失败: ${esc(a.lastError)}</span>` : ''}</div>
-    <div class="rk-note">触发: 现金 &lt; 10% · 保证金 ≥ 50% / 追保 · 价内或距行权价 &lt; 3% · 50% · 21 天 · LEAPS 9 / 6 个月 · 平仓 · 授权将过期. 20 小时不重复.</div>
-    <button class="btn ghost small" onclick="sendTestAlert()">发送测试邮件</button>`;
+    <div class="rk-note">触发: 现金 &lt; 10% · 保证金 ≥ 50% / 追保 · 价内或距行权价 &lt; 3% · 50% · 21 天 · LEAPS 9 / 6 个月 · 平仓 · 授权将过期. 20 小时不重复. 早报: 工作日纽约时间 9:00.</div>
+    <button class="btn ghost small" onclick="sendTestAlert()">发送测试邮件</button> <button class="btn ghost small" onclick="sendTestDigest()">发送早报</button>`;
 }
+window.sendTestDigest = async () => {
+  showToast('发送中…', 'info');
+  try {
+    const r = await _wfetch('/digest/test', { method: 'POST' }); const b = await r.json().catch(() => ({}));
+    if (r.ok) showToast('早报已发出', 'success', '检查邮箱 (含垃圾邮件)'); else showToast('发送失败', 'error', r.status === 404 ? '需 Worker v7' : b.message || `HTTP ${r.status}`);
+  } catch (e) { showToast('发送失败', 'error', '网络错误'); }
+};
 window.sendTestAlert = async () => {
   const cfg = loadSchwabCfg(); if (!cfg) return;
   showToast('发送中…', 'info');
@@ -12234,6 +12350,16 @@ const GREEK_HELP = {
     long: '大盘敞口 / NAV > 100% 表示组合比满仓 SPY 更敏感. 相关性低 (< 0.4) 的标的, 实际走势更多是自身因素, β 只解释一部分.',
     short: '卖 put 的标的 β 越高, 大盘下跌时越快逼近行权价; 压力测试切到「β 加权」看被行权的先后顺序.',
     ex: '+300 股 SPY, SPY 600: SPY 跌 1% ≈ 亏 $1,800. 防御股算出 β 接近 0 而你认为不合理时, 在「覆盖」里手填常态值 (如 0.5).' },
+  var: { t: 'VaR', def: 'Value at Risk: 按过去一年每天的实际涨跌重估现有持仓, 把每天的盈亏从差到好排序. VaR 95% = 第 5 百分位的亏损; CVaR = 比 VaR 更差的那 5% 天的平均亏损.',
+    read: '柱状图是一日盈亏分布, 红色是最差的 5%. 尾巴越长越厚, 极端日子越伤.',
+    short: '卖方的分布通常左尾更长: 平时小赚, 偶尔大亏. CVaR 比 VaR 更能反映这种风险.',
+    long: 'VaR 用的是历史, 假设未来一年和过去一年类似; 波动骤增时会低估.',
+    ex: 'VaR 95% −$2,400: 平均 20 个交易日里约有 1 天亏得比 $2,400 更多.' },
+  crisis: { t: '历史危机', def: '把真实的历史下跌段 (各标的当时的实际涨跌) 瞬时套到现在的持仓上, 期权全量重估, IV 按同期 VIX 放大.',
+    read: '比单纯的"大盘跌 X%"更真实: 每只股票按当时自己的跌幅, 高 β 股票跌得更多, 防御股可能不跌.',
+    short: '重点看「被行权」和「接股后现金」: 卖 put 组合在危机里的主要风险是同时被大量行权.',
+    long: '当时还未上市的标的按 β × SPY 估算, 会标「β 估算」.',
+    ex: '2020 疫情: SPY −34%, VIX 从 14 到 66. 组合 −$45,000 · 被行权 3 笔 · 接股后现金 −8% = 需要借钱接股.' },
   lambda: { t: '杠杆 λ', def: 'λ = Delta × 现价 ÷ 期权价: 每 1 美元期权相当于多少美元正股的涨跌.',
     read: 'λ 越大杠杆越高, 但通常意味着 Delta 更低、时间价值占比更高.',
     long: '股票替代型 LEAPS 一般 λ 2–4; Swing 型更高. λ 高不等于更好, 要和时间价值年化一起看.',
@@ -12472,7 +12598,7 @@ function _probBeyond(m, X, above) {          // risk-neutral P(S_T > X) or P(S_T
   const d2 = (Math.log(m.S / X) + (BS_RATE - m.q - m.sigma * m.sigma / 2) * m.T) / (m.sigma * Math.sqrt(m.T));
   return above ? _ncdf(d2) : _ncdf(-d2);
 }
-function _optionLabBodyHTML(x) {
+function _optionLabBodyHTML(x, posIdx = -1) {
   const m = _optModel(x);
   if (!m) return `<div class="rk-quiet">缺报价 (现价 / 市价或 IV / 到期日), 无法建模.</div>`;
   const g = bsGreeks(m.S, m.K, m.T, m.sigma, m.type, BS_RATE, m.q);
@@ -12550,6 +12676,7 @@ function _optionLabBodyHTML(x) {
     ${panel}
     <div class="rk-sub-title">Greeks</div>
     ${_greekGridHTML(fnFor, half, ctx, xsP, m.S)}
+    ${_rollBlockHTML(x, posIdx)}
     <div class="rk-legend"><span><i class="rk-sw gl-sw-l1"></i>今天</span><span><i class="rk-sw gl-sw-l2"></i>${half} 天后</span><span class="rk-legend-note">悬停 / 点按看数值 · 竖虚线 = 现价 · Black-Scholes-Merton · r 4% · ${m.q > 0 ? `股息率 ${(m.q * 100).toFixed(2)}% (由市价反推) · IV ${m.ivSrc}` : `IV 按${m.ivSrc}校准`} · 概率为风险中性${isLeaps ? ' · 先到概率为 2000 条路径模拟' : ''}</span></div>`;
 }
 
@@ -12560,13 +12687,25 @@ window.openOptionLab = idx => {
   const ov = document.createElement('div');
   ov.className = 'gl-overlay'; ov.id = 'gl-overlay';
   ov.innerHTML = `<div class="gl-modal" role="dialog" aria-modal="true" aria-label="${esc(_posLabel(x))}">
-      <div class="gl-head"><b>${esc(_posLabel(x))}</b><span class="rk-quiet">${esc(_KIND_LABEL[x.kind] || x.kind)}</span><button class="gl-x" onclick="closeOptionLab()" aria-label="关闭">×</button></div>
-      <div class="gl-body">${_optionLabBodyHTML(x)}</div></div>`;
+      <div class="gl-head"><b>${esc(_posLabel(x))}</b><span class="rk-quiet">${esc(_KIND_LABEL[x.kind] || x.kind)}${x.strategy ? ' · ' + esc(x.strategy) : ''}</span>
+        ${x.strategy ? `<button class="btn ghost small" onclick="openGroupLab(${idx})">整组</button>` : ''}<button class="gl-x" onclick="closeOptionLab()" aria-label="关闭">×</button></div>
+      <div class="gl-body">${_optionLabBodyHTML(x, idx)}</div></div>`;
   ov.addEventListener('click', e => { if (e.target === ov) closeOptionLab(); });
   document.body.appendChild(ov);
   document.body.classList.add('gl-lock');
   requestAnimationFrame(mountSurfaces);
   ov.querySelector('.gl-x').focus();
+};
+window.openGroupLab = idx => {
+  const pos = computeRisk().c.pos, x = pos[idx]; if (!x) return;
+  const legs = pos.filter(p => p.kind !== 'stock' && p.ticker === x.ticker && p.expiry === x.expiry && p.strategy === x.strategy);
+  const cm = _comboOf(legs); if (!cm) return;
+  const ov = document.getElementById('gl-overlay'); if (!ov) return;
+  ov.querySelector('.gl-head b').textContent = `${x.ticker} ${x.strategy} ${_md(x.expiry)}`;
+  ov.querySelector('.gl-head .rk-quiet').textContent = legs.map(l => `${l.kind.startsWith('short') ? '−' : '+'}${l.strike}${l.kind.endsWith('put') ? 'P' : 'C'}`).join(' ');
+  const gb = ov.querySelector('.gl-head .btn'); if (gb) gb.remove();
+  ov.querySelector('.gl-body').innerHTML = _comboLabBodyHTML(cm, 'spread');
+  requestAnimationFrame(mountSurfaces);
 };
 window.closeOptionLab = () => {
   const ov = document.getElementById('gl-overlay');
@@ -13030,6 +13169,561 @@ function _betaPanelHTML(R) {
     </section>`;
 }
 
+/* ---------- market data: daily bars (Worker /prices) + live bar ---------- */
+const __px = {};                     // ticker → { at, bars, live, err }
+let __pxInflight = null;
+function _wurl(path) { const c = loadSchwabCfg(); return c ? c.url.replace(/\/+$/, '') + path : null; }
+function _wfetch(path, init = {}) {
+  const c = loadSchwabCfg(); if (!c) return Promise.reject(new Error('no_cfg'));
+  return fetch(_wurl(path), { ...init, headers: { ...(init.headers || {}), Authorization: 'Bearer ' + c.token }, cache: 'no-store' });
+}
+function _isoDay(n) { return new Date(n * 86400000).toISOString().slice(0, 10); }
+function _mergeLive(rows, live) {
+  const bars = rows.map(r => ({ d: _isoDay(r[0]), o: r[1], h: r[2], l: r[3], c: r[4], v: r[5] }));
+  if (!live || !(live.last > 0) || live.open == null) return { bars, live: false };
+  const wd = new Date(live.day + 'T12:00:00Z').getUTCDay();
+  if (wd === 0 || wd === 6) return { bars, live: false };
+  const bar = { d: live.day, o: live.open, h: Math.max(live.high ?? live.last, live.last), l: Math.min(live.low ?? live.last, live.last), c: live.last, v: live.vol || 0 };
+  if (bars.length && bars[bars.length - 1].d === live.day) bars[bars.length - 1] = bar; else if (!bars.length || bars[bars.length - 1].d < live.day) bars.push(bar);
+  return { bars, live: true };
+}
+async function fetchPrices(tickers, { maxAge = 60000 } = {}) {
+  if (!loadSchwabCfg()) return;
+  const need = [...new Set(tickers.filter(t => t && /^[A-Z.]{1,6}$/.test(t)))].filter(t => !__px[t] || Date.now() - __px[t].at > maxAge);
+  if (!need.length) return;
+  try {
+    const r = await _wfetch(`/prices?tickers=${encodeURIComponent(need.join(','))}`);
+    const b = await r.json().catch(() => null);
+    if (!r.ok || !b || !b.tickers) { need.forEach(t => { __px[t] = { at: Date.now(), bars: [], err: r.status === 404 ? '需 Worker v7' : (b && b.message) || `HTTP ${r.status}` }; }); return; }
+    need.forEach(t => { const x = b.tickers[t]; const m = x ? _mergeLive(x.rows || [], x.live) : { bars: [], live: false }; __px[t] = { at: Date.now(), ...m, err: m.bars.length ? null : '无历史数据' }; });
+  } catch (e) { need.forEach(t => { __px[t] = { at: Date.now(), bars: [], err: '网络错误' }; }); }
+}
+
+/* ---------- technical indicators (daily) ---------- */
+function _sma(a, n, i = a.length - 1) { if (i + 1 < n) return null; let s = 0; for (let k = i - n + 1; k <= i; k++) s += a[k]; return s / n; }
+function _emaSeries(a, n) { const k = 2 / (n + 1), out = []; a.forEach((v, i) => out.push(i ? v * k + out[i - 1] * (1 - k) : v)); return out; }
+function techOf(bars) {
+  if (!bars || bars.length < 30) return null;
+  const c = bars.map(b => b.c), h = bars.map(b => b.h), l = bars.map(b => b.l), n = c.length, px = c[n - 1];
+  // RSI 14 (Wilder)
+  let ag = 0, al = 0;
+  for (let i = 1; i <= 14; i++) { const d = c[i] - c[i - 1]; ag += Math.max(0, d); al += Math.max(0, -d); }
+  ag /= 14; al /= 14;
+  for (let i = 15; i < n; i++) { const d = c[i] - c[i - 1]; ag = (ag * 13 + Math.max(0, d)) / 14; al = (al * 13 + Math.max(0, -d)) / 14; }
+  const rsi = al === 0 ? 100 : 100 - 100 / (1 + ag / al);
+  // KDJ 9,3,3
+  let K = 50, D = 50;
+  for (let i = 8; i < n; i++) {
+    const hh = Math.max(...h.slice(i - 8, i + 1)), ll = Math.min(...l.slice(i - 8, i + 1));
+    const rsv = hh === ll ? 50 : (c[i] - ll) / (hh - ll) * 100;
+    K = 2 / 3 * K + rsv / 3; D = 2 / 3 * D + K / 3;
+  }
+  const J = 3 * K - 2 * D;
+  // Bollinger 20, 2σ
+  const mid = _sma(c, 20), sd = Math.sqrt(c.slice(-20).reduce((s, v) => s + (v - mid) ** 2, 0) / 20);
+  const up = mid + 2 * sd, lo = mid - 2 * sd;
+  // MAs, EMA21, MACD 12/26/9
+  const ma = p => _sma(c, p), maPrev = p => _sma(c, p, n - 2);
+  const ema21 = _emaSeries(c, 21);
+  const e12 = _emaSeries(c, 12), e26 = _emaSeries(c, 26), dif = e12.map((v, i) => v - e26[i]), dea = _emaSeries(dif, 9);
+  let cross = null, crossAt = null;
+  for (let i = n - 1; i >= Math.max(1, n - 3); i--) {
+    if (dif[i - 1] <= dea[i - 1] && dif[i] > dea[i]) { cross = 'golden'; crossAt = i; break; }
+    if (dif[i - 1] >= dea[i - 1] && dif[i] < dea[i]) { cross = 'dead'; crossAt = i; break; }
+  }
+  // HV20, 52-week range
+  const lr = []; for (let i = n - 20; i < n; i++) lr.push(Math.log(c[i] / c[i - 1]));
+  const m = lr.reduce((s, v) => s + v, 0) / lr.length, hv = Math.sqrt(lr.reduce((s, v) => s + (v - m) ** 2, 0) / (lr.length - 1) * 252) * 100;
+  const yr = bars.slice(-252), hi = Math.max(...yr.map(b => b.h)), lo52 = Math.min(...yr.map(b => b.l));
+  const above2 = v => v != null && c[n - 1] > v && c[n - 2] > (v);
+  return { px, day: bars[n - 1].d, rsi, K, D, J, mid, up, lo, pctB: up > lo ? (px - lo) / (up - lo) : null,
+    sma5: ma(5), sma10: ma(10), sma20: ma(20), sma50: ma(50), sma200: ma(200), ema21: ema21[n - 1],
+    sma5p: maPrev(5), sma10p: maPrev(10), sma20p: maPrev(20), ema21p: ema21[n - 2], sma50p: maPrev(50),
+    dif: dif[n - 1], dea: dea[n - 1], cross, crossLow: crossAt != null && dif[crossAt] < 0, hv, hi52: hi, lo52, pos52: hi > lo52 ? (px - lo52) / (hi - lo52) : null,
+    prevClose: c[n - 2], _above2: above2 };
+}
+// checklist ids this can decide, and how
+function _techFills(t) {
+  const v = {}, pf = b => (b ? 'pass' : 'fail');
+  const c1 = t.px, c0 = t.prevClose;
+  const above = (now, prev) => now != null && c1 > now;
+  const stayed = (now, prev) => now != null && prev != null && c1 > now && c0 > prev;
+  v.kdj_j_leaps = v.kdj_j_leaps_add = v.kdj_j = t.J.toFixed(1);
+  v.bb_below_mid = pf(c1 < t.mid);
+  v.bb_above_mid = pf(c1 > t.mid);
+  v.bb_upper_zone = pf(c1 > (t.mid + t.up) / 2);
+  v.right_ma = pf(above(t.sma5) || above(t.sma10) || above(t.sma20));
+  v.above_ema21_sma50 = pf(stayed(t.ema21, t.ema21p) || stayed(t.sma50, t.sma50p));
+  v.price_above_ma = pf(stayed(t.sma5, t.sma5p) || stayed(t.sma10, t.sma10p) || stayed(t.sma20, t.sma20p));
+  v.macd_golden = pf(t.cross === 'golden' && t.crossLow);
+  if (t.sma200 != null) v.below_200ma = pf(c1 < t.sma200);
+  return v;
+}
+const _TECH_LABEL = { kdj_j_leaps: 'KDJ J', kdj_j_leaps_add: 'KDJ J', kdj_j: 'KDJ J', bb_below_mid: '布林', bb_above_mid: '布林', bb_upper_zone: '布林',
+  right_ma: '均线', above_ema21_sma50: '均线', price_above_ma: '均线', macd_golden: 'MACD', below_200ma: '200MA' };
+let __techTimer = 0;
+function scheduleTech() { clearTimeout(__techTimer); __techTimer = setTimeout(() => refreshTech(), 700); }
+async function refreshTech(force) {
+  const t = _normTicker(state.ticker);
+  if (!t || !loadSchwabCfg() || !state.strategy) { _techRender(); return; }
+  if (force && __px[t]) __px[t].at = 0;
+  _techRender(true);
+  await fetchPrices([t]);
+  const tech = __px[t] && techOf(__px[t].bars);
+  if (tech) {
+    const ids = new Set(currentItems().map(i => i.id));
+    const fills = Object.fromEntries(Object.entries(_techFills(tech)).filter(([k]) => ids.has(k)));
+    _cqApplyFill(fills);
+  }
+  _techRender();
+}
+function _techRender(loading) {
+  const el = document.getElementById('tech-strip');
+  if (el) el.innerHTML = techStripInnerHTML(loading);
+}
+function techStripInnerHTML(loading) {
+  const t = _normTicker(state.ticker);
+  if (!t) return '';
+  if (!loadSchwabCfg()) return `<div class="tc-head"><b>技术面</b><span class="rk-quiet">未连接 Schwab</span></div>`;
+  const p = __px[t];
+  if (!p || (loading && !p.bars)) return `<div class="tc-head"><b>技术面</b><span class="rk-quiet">读取中…</span></div>`;
+  if (p.err) return `<div class="tc-head"><b>技术面</b><span class="rk-t-alert">${esc(p.err)}</span></div>`;
+  const x = techOf(p.bars);
+  if (!x) return `<div class="tc-head"><b>技术面</b><span class="rk-quiet">历史不足</span></div>`;
+  const f2 = v => v == null ? '—' : v.toFixed(2), rel = (ma, label) => ma == null ? '' : `<span class="tc-ma ${x.px >= ma ? 'up' : 'dn'}">${label} ${f2(ma)}</span>`;
+  const cell = (label, val, sub, cls) => `<div class="tc-cell"><span>${label}</span><b class="${cls || ''}">${val}</b>${sub ? `<em>${sub}</em>` : ''}</div>`;
+  const ids = new Set(currentItems().map(i => i.id));
+  const filled = [...new Set(Object.keys(_TECH_LABEL).filter(k => ids.has(k) && state.quoteFill && state.quoteFill[k] != null).map(k => _TECH_LABEL[k]))];
+  const iv = _cspQuoteFresh() && _cspQuoteFresh().option ? _cspQuoteFresh().option.iv : null;
+  return `
+    <div class="tc-head"><b>技术面</b><span class="rk-quiet">${esc(t)} · 日线 · ${p.live ? '含今日实时' : '截至 ' + esc(x.day)} · ${_ago(p.at)}</span><button class="pr-mini-btn" onclick="refreshTech(true)" title="刷新">⟳</button></div>
+    <div class="tc-grid">
+      ${cell('现价', f2(x.px), `${x.px >= x.prevClose ? '+' : ''}${((x.px / x.prevClose - 1) * 100).toFixed(2)}%`, x.px >= x.prevClose ? 'rk-t-safe' : 'rk-t-alert')}
+      ${cell('RSI 14', x.rsi.toFixed(1), x.rsi >= 70 ? '超买' : x.rsi <= 30 ? '超卖' : '', x.rsi >= 70 ? 'rk-t-alert' : x.rsi <= 30 ? 'rk-t-safe' : '')}
+      ${cell('KDJ J', x.J.toFixed(1), `K ${x.K.toFixed(0)} · D ${x.D.toFixed(0)}`, x.J > 80 ? 'rk-t-alert' : x.J < 20 ? 'rk-t-safe' : '')}
+      ${cell('布林 %B', x.pctB != null ? (x.pctB * 100).toFixed(0) + '%' : '—', x.px > x.mid ? '中轨上' : '中轨下')}
+      ${cell('MACD', x.cross === 'golden' ? '金叉' : x.cross === 'dead' ? '死叉' : x.dif > x.dea ? '多' : '空', `${x.cross ? (x.crossLow ? '零轴下 · ' : '零轴上 · ') : ''}DIF ${x.dif.toFixed(2)}`, x.cross === 'golden' || (!x.cross && x.dif > x.dea) ? 'rk-t-safe' : 'rk-t-alert')}
+      ${cell('HV 20', x.hv.toFixed(1) + '%', iv != null ? `IV ${iv.toFixed(1)}% · VRP ${(iv - x.hv) >= 0 ? '+' : ''}${(iv - x.hv).toFixed(1)}` : '')}
+      ${cell('52 周', x.pos52 != null ? (x.pos52 * 100).toFixed(0) + '%' : '—', `${f2(x.lo52)} – ${f2(x.hi52)}`)}
+    </div>
+    <div class="tc-mas">${rel(x.sma5, 'MA5')}${rel(x.sma10, 'MA10')}${rel(x.sma20, 'MA20')}${rel(x.ema21, 'EMA21')}${rel(x.sma50, 'MA50')}${rel(x.sma200, 'MA200')}</div>
+    ${filled.length ? `<div class="cq-note">已自动填入 ${filled.join(' · ')}; 手改过的不覆盖.</div>` : ''}`;
+}
+
+/* ---------- roll calculator (Worker /chain) ---------- */
+function _addDays(iso, n) { const d = new Date(iso + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); }
+window.runRoll = async (idx, btn) => {
+  const x = computeRisk().c.pos[idx], box = document.getElementById('roll-' + idx);
+  if (!x || !box) return;
+  box.innerHTML = '<div class="rk-quiet">读取期权链…</div>';
+  const long = x.kind === 'leaps', type = x.kind === 'short_put' ? 'P' : 'C';
+  const today = new Date().toISOString().slice(0, 10);
+  const from = x.expiry, to = long ? _addDays(today, 820) : _addDays(x.expiry, 75);
+  try {
+    const r = await _wfetch(`/chain?ticker=${encodeURIComponent(x.ticker)}&type=${type}&from=${from}&to=${to}&strikeCount=${long ? 24 : 16}`);
+    const b = await r.json().catch(() => null);
+    if (!r.ok || !b || !Array.isArray(b.contracts)) { box.innerHTML = `<div class="rk-t-alert">${r.status === 404 ? '需 Worker v7' : esc((b && b.message) || 'HTTP ' + r.status)}</div>`; return; }
+    box.innerHTML = _rollTableHTML(x, b);
+  } catch (e) { box.innerHTML = '<div class="rk-t-alert">网络错误</div>'; }
+};
+function _rollTableHTML(x, b) {
+  const qty = Number(x.qty) || 1, cur = b.contracts.find(o => o.expiry === x.expiry && Math.abs(o.strike - x.strike) < 0.005);
+  const curMid = cur && cur.mark != null ? cur.mark : x.mark, curBid = cur ? cur.bid : null, curAsk = cur ? cur.ask : null;
+  if (curMid == null) return '<div class="rk-quiet">缺当前合约报价.</div>';
+  const long = x.kind === 'leaps', put = x.kind === 'short_put', S = b.underlying || x.und;
+  const minExp = long ? _addDays(new Date().toISOString().slice(0, 10), 400) : _addDays(x.expiry, 1);
+  let cands = b.contracts.filter(o => o.expiry >= minExp && o.mark != null);
+  if (put) cands = cands.filter(o => o.strike <= x.strike && o.strike >= x.strike * 0.85);
+  else if (!long) cands = cands.filter(o => o.strike >= x.strike && o.strike <= x.strike * 1.15);
+  else cands = cands.filter(o => Math.abs(o.strike - x.strike) <= x.strike * 0.15);
+  const rows = cands.map(o => {
+    const mid = long ? -(o.mark - curMid) : o.mark - curMid;                 // short: credit +; long: debit −
+    const cons = long ? (curBid != null && o.ask != null ? curBid - o.ask : null) : (o.bid != null && curAsk != null ? o.bid - curAsk : null);
+    const be = put ? o.strike - ((x.avg || 0) + mid) : null;
+    const ext = long && S ? Math.max(0, o.mark - Math.max(0, S - o.strike)) : null;
+    return { o, mid, cons, be, ext, carry: ext != null ? ext / o.strike / Math.max(1 / 365, o.dte / 365) * 100 : null,
+      ann: !long ? o.mark / (put ? o.strike : S) * 365 / Math.max(1, o.dte) * 100 : null };
+  });
+  rows.sort(long ? (a, b) => (a.carry ?? 99) - (b.carry ?? 99) : (a, b) => (b.mid >= 0) - (a.mid >= 0) || Math.abs(a.o.delta ?? 1) - Math.abs(b.o.delta ?? 1));
+  const top = rows.slice(0, 10);
+  if (!top.length) return '<div class="rk-quiet">没有符合条件的合约.</div>';
+  const usd = v => v == null ? '—' : _fmtSigned(v * 100 * qty);
+  return `
+    <div class="rk-table-wrap"><table class="rk-table roll-table">
+      <thead><tr><th>合约</th><th>${long ? '净付' : '净收'}</th><th>保守</th><th>Δ</th><th>DTE</th>${put ? '<th>盈亏平衡</th>' : ''}${long ? '<th>时间价值/年</th>' : '<th>年化</th>'}</tr></thead>
+      <tbody>${top.map(r => `<tr>
+        <td>${r.o.strike}${put ? 'P' : 'C'} ${esc(_md(r.o.expiry))}</td>
+        <td class="${_thCls(r.mid * 100)}">${usd(r.mid)}</td><td class="rk-quiet">${usd(r.cons)}</td>
+        <td>${r.o.delta != null ? r.o.delta.toFixed(2) : '—'}</td><td>${r.o.dte ?? '—'}</td>
+        ${put ? `<td>${r.be != null ? r.be.toFixed(2) : '—'}</td>` : ''}
+        <td>${long ? (r.carry != null ? r.carry.toFixed(1) + '%' : '—') : (r.ann != null ? r.ann.toFixed(1) + '%' : '—')}</td></tr>`).join('')}</tbody>
+    </table></div>
+    <div class="rk-note">当前合约 ${x.strike}${put ? 'P' : 'C'} ${esc(_md(x.expiry))}: 中间价 ${curMid.toFixed(2)}${curBid != null ? ` (${curBid.toFixed(2)} / ${curAsk.toFixed(2)})` : ''}. 净额按中间价; 保守 = 按买卖价成交. ${long ? '目标 DTE ≥ 400, 按时间价值/年排序.' : '净收为正优先, 再按 Δ 从低到高.'}</div>`;
+}
+function _rollBlockHTML(x, idx) {
+  if (idx < 0 || !loadSchwabCfg() || !['short_put', 'short_call', 'leaps'].includes(x.kind) || !x.expiry) return '';
+  return `<div class="rk-sub-title rk-title-row"><span>Roll</span><button class="btn ghost small" onclick="runRoll(${idx}, this)">计算</button></div><div id="roll-${idx}"></div>`;
+}
+
+/* ---------- historical crisis replay (Worker /crisis) ---------- */
+const CRISIS_KEY = 'pretrade_crisis';
+let __crisisBusy = false, __crisisErr = null;
+function loadCrisis() { try { const c = JSON.parse(localStorage.getItem(CRISIS_KEY) || 'null'); return c && c.data && c.data.scenarios ? c : null; } catch (e) { return null; } }
+async function fetchCrisis(force) {
+  const p = getPortfolio(); if (p.source !== 'schwab' || __crisisBusy) return;
+  const tickers = [...new Set(p.positions.map(x => x.ticker).filter(t => /^[A-Z.]{1,6}$/.test(t)))];
+  const c = loadCrisis();
+  if (!force && c && Date.now() - c.at < 7 * 86400000 && tickers.every(t => c.data.moves[t])) return;
+  __crisisBusy = true;
+  try {
+    const r = await _wfetch(`/crisis?tickers=${encodeURIComponent(tickers.join(','))}`);
+    const b = await r.json().catch(() => null);
+    if (r.ok && b && b.scenarios) { try { localStorage.setItem(CRISIS_KEY, JSON.stringify({ data: b, at: Date.now() })); } catch (e) {} __crisisErr = null; }
+    else __crisisErr = r.status === 404 ? '需 Worker v7' : (b && b.message) || `HTTP ${r.status}`;
+  } catch (e) { __crisisErr = '网络错误'; }
+  finally { __crisisBusy = false; }
+  const el = document.getElementById('rk-crisis'); if (el) { el.innerHTML = _crisisInnerHTML(computeRisk()); _fitChartText(); }
+}
+// reprice the book under per-ticker moves (instant), optional IV multiplier
+function _shockBook(c, moveOf, ivMult = 1) {
+  let pnl = 0; const per = []; const assigned = [];
+  c.pos.forEach(x => {
+    const mv = moveOf(x.ticker);
+    if (mv == null) return;
+    if (x.kind === 'stock') { const px = _stockPx(x); if (px == null) return; const v = (x.side || 1) * (Number(x.qty) || 0) * px * mv; pnl += v; per.push({ x, mv, v }); return; }
+    const m = _optModel(x); if (!m) return;
+    const S1 = m.S * (1 + mv), sig = Math.min(3, m.sigma * ivMult);
+    const v = (bsGreeks(S1, m.K, m.T, sig, m.type, BS_RATE, m.q).price - bsGreeks(m.S, m.K, m.T, m.sigma, m.type, BS_RATE, m.q).price) * m.mult;
+    pnl += v; per.push({ x, mv, v });
+    if (x.kind === 'short_put' && S1 < x.strike) assigned.push(x);
+  });
+  const aN = assigned.reduce((s, x) => s + (x.exposure || 0), 0), navA = c.nav != null ? c.nav + pnl : null;
+  const cashA = c.r.liquid != null ? c.r.liquid - aN : null;
+  return { pnl, per, assigned, aN, navA, cashA, cashPct: cashA != null && navA > 0 ? cashA / navA * 100 : null };
+}
+function _crisisInnerHTML(R) {
+  const cr = loadCrisis();
+  if (!cr) return `<div class="rk-quiet">${__crisisErr ? `<span class="rk-t-alert">${esc(__crisisErr)}</span>` : '读取历史数据…'}</div>`;
+  const c = R.c, d = cr.data;
+  const rows = d.scenarios.map(s => {
+    let est = 0;
+    const res = _shockBook(c, t => { const r = d.moves[t] ? d.moves[t][s.id] : null; if (r != null) return r; if (s.spy == null) return null; est++; return _betaInfo(t).beta * s.spy; },
+      s.vix != null ? Math.max(0.6, Math.min(2.5, 1 + s.vix)) : 1);
+    return { s, res, est };
+  });
+  const pct = v => c.nav ? (v / c.nav * 100) : null;
+  return `
+    <div class="rk-table-wrap"><table class="rk-table rk-dd-table">
+      <thead><tr><th>情景</th><th>涨跌</th><th>组合</th><th>% NAV</th><th>被行权</th><th>接股后现金</th></tr></thead>
+      ${rows.map(({ s, res, est }) => `<tbody class="rk-dd">
+        <tr class="rk-dd-head" tabindex="0" role="button" onclick="this.parentElement.classList.toggle('open')" onkeydown="if(event.key==='Enter')this.click()">
+          <td><span class="rk-caret">▸</span>${esc(s.label)} <span class="rk-quiet">${esc(s.from.slice(2).replace(/-/g, '/'))}–${esc(s.to.slice(5).replace('-', '/'))}</span></td>
+          <td>${s.spy != null ? (s.spy * 100).toFixed(1) + '%' : '—'}</td>
+          <td class="${_thCls(res.pnl)}">${_fmtSigned(res.pnl)}</td><td class="${_thCls(res.pnl)}">${pct(res.pnl) != null ? pct(res.pnl).toFixed(1) + '%' : '—'}</td>
+          <td>${res.assigned.length ? `${res.assigned.length} 笔 · ${_fmtUsd(res.aN)}` : '—'}</td>
+          <td class="${res.cashPct == null ? '' : res.cashPct < 0 ? 'rk-t-danger' : res.cashPct < 10 ? 'rk-t-alert' : ''}">${res.cashPct != null ? res.cashPct.toFixed(1) + '%' : '—'}</td></tr>
+        ${res.per.sort((a, b) => a.v - b.v).map(p => `<tr class="rk-dd-row"><td>${esc(_posLabel(p.x))}${d.moves[p.x.ticker] && d.moves[p.x.ticker][s.id] == null ? ' <span class="rk-quiet">β 估算</span>' : ''}</td><td>${(p.mv * 100).toFixed(1)}%</td><td class="${_thCls(p.v)}">${_fmtSigned(p.v)}</td><td></td><td></td><td></td></tr>`).join('')}
+      </tbody>`).join('')}
+    </table></div>
+    <div class="rk-note">各标的按该期间实际涨跌瞬时作用于现有持仓; 期间尚未上市的按 β × SPY 估算. IV 按 VIX 同期变化等比放大 (上限 2.5 倍).</div>`;
+}
+
+/* ---------- historical VaR (Worker /prices) ---------- */
+let __varBusy = false;
+async function fetchVarData() {
+  const p = getPortfolio(); if (p.source !== 'schwab' || __varBusy) return;
+  const tickers = [...new Set(['SPY', ...p.positions.map(x => x.ticker)])];
+  __varBusy = true;
+  try { await fetchPrices(tickers, { maxAge: 6 * 3600e3 }); } finally { __varBusy = false; }
+  const el = document.getElementById('rk-var'); if (el) { el.innerHTML = _varInnerHTML(computeRisk()); _fitChartText(); }
+}
+function computeVaR(c) {
+  const spy = __px.SPY && __px.SPY.bars;
+  if (!spy || spy.length < 60) return null;
+  const days = spy.slice(-253).map(b => b.d), idx = {};
+  const ret = {};
+  const tickers = [...new Set(c.pos.map(x => x.ticker))];
+  const spyC = {}; spy.forEach(b => { spyC[b.d] = b.c; });
+  const spyR = days.slice(1).map((d, i) => spyC[d] / spyC[days[i]] - 1);
+  tickers.forEach(t => {
+    const bars = __px[t] && __px[t].bars; const cm = {}; (bars || []).forEach(b => { cm[b.d] = b.c; });
+    ret[t] = days.slice(1).map((d, i) => cm[d] && cm[days[i]] ? cm[d] / cm[days[i]] - 1 : _betaInfo(t).beta * spyR[i]);
+  });
+  const N = days.length - 1;
+  const one = []; for (let i = 0; i < N; i++) one.push({ d: days[i + 1], v: _shockBook(c, t => ret[t] ? ret[t][i] : null).pnl });
+  const five = []; for (let i = 0; i + 5 <= N; i++) five.push(_shockBook(c, t => ret[t] ? ret[t].slice(i, i + 5).reduce((p, r) => p * (1 + r), 1) - 1 : null).pnl);
+  const q = (arr, p) => { const s = arr.slice().sort((a, b) => a - b); return s[Math.max(0, Math.floor(p * s.length) - 0)]; };
+  const vals = one.map(o => o.v), sorted = vals.slice().sort((a, b) => a - b), k = Math.max(1, Math.floor(0.05 * sorted.length));
+  const worst = one.reduce((a, b) => b.v < a.v ? b : a);
+  return { n: N, from: days[0], v95: -q(vals, 0.05), v99: -q(vals, 0.01), cvar: -(sorted.slice(0, k).reduce((s, v) => s + v, 0) / k), v95w: -q(five, 0.05), worst, vals };
+}
+function _varInnerHTML(R) {
+  const c = R.c, spy = __px.SPY;
+  if (!spy || !spy.bars) return '<div class="rk-quiet">读取行情…</div>';
+  if (spy.err) return `<div class="rk-t-alert">${esc(spy.err)}</div>`;
+  const v = computeVaR(c);
+  if (!v) return '<div class="rk-quiet">历史不足.</div>';
+  const pct = x => c.nav ? ` · ${(x / c.nav * 100).toFixed(1)}%` : '';
+  const fig = (label, val, sub, cls) => `<div class="rk-fig"><span class="rk-fig-val ${cls || 'rk-t-alert'}">${val}</span><span class="rk-fig-label">${label}</span><span class="rk-fig-sub">${sub}</span></div>`;
+  // histogram of one-day P&L
+  const W = _chartW(), H = 150, L = 8, Rm = 8, T = 10, B = 22, nb = 30;
+  const lo = Math.min(...v.vals), hi = Math.max(...v.vals), bw = (hi - lo) / nb || 1;
+  const bins = new Array(nb).fill(0); v.vals.forEach(x => { bins[Math.min(nb - 1, Math.floor((x - lo) / bw))]++; });
+  const mx = Math.max(...bins), X = x => L + (x - lo) / (hi - lo || 1) * (W - L - Rm), Y = n => H - B - n / mx * (H - T - B);
+  const bars = bins.map((n, i) => { const x0 = lo + i * bw; return `<rect x="${X(x0).toFixed(1)}" y="${Y(n).toFixed(1)}" width="${Math.max(1, X(x0 + bw) - X(x0) - 1).toFixed(1)}" height="${(H - B - Y(n)).toFixed(1)}" class="${x0 + bw <= -v.v95 ? 'var-tail' : x0 < 0 ? 'var-neg' : 'var-pos'}"/>`; }).join('');
+  const vx = X(-v.v95);
+  return `
+    <div class="rk-figs">
+      ${fig('1 日 VaR 95%', _fmtSigned(-v.v95), `20 天里约 1 天亏得更多${pct(v.v95)}`)}
+      ${fig('1 日 VaR 99%', _fmtSigned(-v.v99), `100 天里约 1 天${pct(v.v99)}`, 'rk-t-danger')}
+      ${fig('1 日 CVaR 95%', _fmtSigned(-v.cvar), `最差 5% 的平均${pct(v.cvar)}`, 'rk-t-danger')}
+      ${fig('5 日 VaR 95%', _fmtSigned(-v.v95w), `一周${pct(v.v95w)}`)}
+    </div>
+    <svg class="rk-chart var-hist" viewBox="0 0 ${W} ${H}" role="img" aria-label="一日盈亏分布">
+      ${bars}<line x1="${vx.toFixed(1)}" x2="${vx.toFixed(1)}" y1="${T}" y2="${H - B}" class="var-line"/>
+      <text x="${(vx + 4).toFixed(1)}" y="${T + 9}" class="rk-ch-lab rk-t-danger">VaR 95%</text>
+      <text x="${L}" y="${H - 6}" class="rk-ch-lab">${esc(_fmtK(lo))}</text><text x="${W - Rm}" y="${H - 6}" text-anchor="end" class="rk-ch-lab">${esc(_fmtK(hi))}</text>
+      <text x="${X(0).toFixed(1)}" y="${H - 6}" text-anchor="middle" class="rk-ch-lab">$0</text>
+    </svg>
+    <div class="rk-note">历史模拟: 过去 ${v.n} 个交易日 (${esc(v.from)} 起) 每天的实际涨跌套到现有持仓, 期权全量重估, IV 不变. 最差一天 ${esc(v.worst.d)}: ${_fmtSigned(v.worst.v)}.</div>`;
+}
+
+/* ---------- Performance (Worker /history + /navseries) ---------- */
+const HIST_KEY = 'pretrade_history_tx', NAVS_KEY = 'pretrade_navseries', PERF_START_KEY = 'pretrade_perf_start';
+const FLOW_TYPES = ['ACH_RECEIPT', 'ACH_DISBURSEMENT', 'CASH_RECEIPT', 'CASH_DISBURSEMENT', 'ELECTRONIC_FUND', 'WIRE_IN', 'WIRE_OUT', 'JOURNAL'];
+let __perfBusy = false, __perfErr = null, __perfPeriod = 'ytd';
+function loadHist() { try { const c = JSON.parse(localStorage.getItem(HIST_KEY) || 'null'); return c && Array.isArray(c.data) ? c : null; } catch (e) { return null; } }
+function loadNavs() { try { const c = JSON.parse(localStorage.getItem(NAVS_KEY) || 'null'); return c && Array.isArray(c.data) ? c : null; } catch (e) { return null; } }
+function loadPerfStart() { try { const o = JSON.parse(localStorage.getItem(PERF_START_KEY) || '{}'); return o && typeof o === 'object' ? o : {}; } catch (e) { return {}; } }
+const _thisYear = () => new Date().getFullYear();
+async function fetchPerf(force) {
+  if (!loadSchwabCfg() || __perfBusy) return;
+  const h = loadHist();
+  if (!force && h && Date.now() - h.at < 30 * 60000) return;
+  __perfBusy = true;
+  try {
+    const [r1, r2] = await Promise.all([_wfetch(`/history?from=${_thisYear() - 1}-01-01`), _wfetch('/navseries')]);
+    const b1 = await r1.json().catch(() => null), b2 = await r2.json().catch(() => null);
+    if (r1.ok && b1 && Array.isArray(b1.transactions)) { try { localStorage.setItem(HIST_KEY, JSON.stringify({ data: b1.transactions, at: Date.now(), status: b1.status })); } catch (e) {} __perfErr = null; }
+    else __perfErr = r1.status === 404 ? '需 Worker v7' : (b1 && b1.message) || `HTTP ${r1.status}`;
+    if (r2.ok && b2 && Array.isArray(b2.series)) { try { localStorage.setItem(NAVS_KEY, JSON.stringify({ data: b2.series, at: Date.now() })); } catch (e) {} }
+  } catch (e) { __perfErr = '网络错误'; }
+  finally { __perfBusy = false; }
+  _pushPerfState();
+  if (state._view === 'performance') { const y = window.scrollY; render(); window.scrollTo(0, y); } else _refreshRiskCard();
+}
+function _pushPerfState() {
+  const st = loadPerfStart()[_thisYear()], p = computePerf();
+  if (!st || !p || !loadSchwabCfg()) return;
+  const key = `${st}|${Math.round(p.flowsYtd)}|${new Date().toISOString().slice(0, 10)}`;
+  if (_pushPerfState._last === key) return; _pushPerfState._last = key;
+  _wfetch('/perf/state', { method: 'POST', body: JSON.stringify({ year: _thisYear(), startNav: st, netFlows: p.flowsYtd }), headers: { 'Content-Type': 'application/json' } }).catch(() => {});
+}
+window.setPerfStart = v => {
+  const o = loadPerfStart(), n = parseFloat(String(v).replace(/[,$\s]/g, ''));
+  if (n > 0) o[_thisYear()] = n; else delete o[_thisYear()];
+  try { localStorage.setItem(PERF_START_KEY, JSON.stringify(o)); } catch (e) {}
+  if (typeof scheduleAutoPushToGist === 'function') scheduleAutoPushToGist();
+  _pushPerfState._last = null; _pushPerfState();
+  const y = window.scrollY; render(); window.scrollTo(0, y);
+};
+window.setPerfPeriod = p => { __perfPeriod = p; const y = window.scrollY; render(); window.scrollTo(0, y); };
+
+/* FIFO lot matching over normalized transactions */
+function buildPerfLots(txs) {
+  const open = {}, stockOpen = {}, closed = [], flows = [], income = [];
+  const assignEvents = [];
+  const isAssign = t => /ASSIGN|EXERCIS/i.test(t.desc || '') || t.items.some(i => /ASSIGN|EXERCIS/i.test(i.desc || ''));
+  txs.forEach(t => {
+    if (FLOW_TYPES.includes(t.type)) { if (t.net) flows.push({ ts: t.ts, amt: t.net }); return; }
+    if (t.type === 'DIVIDEND_OR_INTEREST') { if (t.net) income.push({ ts: t.ts, amt: t.net, desc: t.desc }); return; }
+    const opts = t.items.filter(i => i.asset === 'OPTION'), eqs = t.items.filter(i => i.asset === 'EQUITY' || i.asset === 'COLLECTIVE_INVESTMENT');
+    const multi = opts.length > 1;
+    opts.forEach(i => {
+      const qty = Math.abs(i.amount || 0); if (!qty) return;
+      const key = i.symbol, q = open[key] || (open[key] = []);
+      if (t.type === 'RECEIVE_AND_DELIVER') {
+        const method = isAssign(t) ? 'assigned' : 'expired';
+        _consume(q, qty, 0, t.ts, closed, i, method);
+        if (method === 'assigned') assignEvents.push({ ts: t.ts, ticker: i.ticker, strike: i.strike, putCall: i.putCall, qty });
+        return;
+      }
+      const cash = multi ? (i.cost ?? 0) : (t.net ?? i.cost ?? 0);
+      if (i.effect === 'CLOSING' || (i.effect == null && q.length)) _consume(q, qty, cash, t.ts, closed, i, 'trade');
+      else q.push({ qty, cash, ts: t.ts, side: cash > 0 ? 'short' : 'long', multi, item: i });
+    });
+    eqs.forEach(i => {
+      const qty = Math.abs(i.amount || 0); if (!qty || !i.ticker) return;
+      const cash = eqs.length === 1 && !opts.length ? (t.net ?? i.cost ?? 0) : (i.cost ?? (i.price != null ? -Math.sign(i.amount || 1) * i.price * qty : 0));
+      const q = stockOpen[i.ticker] || (stockOpen[i.ticker] = []);
+      const buy = cash < 0 || (cash === 0 && (i.amount || 0) > 0) || (t.type === 'RECEIVE_AND_DELIVER' && (i.amount || 0) > 0);
+      if (buy) {
+        const fromAssign = assignEvents.find(a => a.ticker === i.ticker && Math.abs(a.ts - t.ts) < 4 * 86400000 && !a.used);
+        if (fromAssign) fromAssign.used = true;
+        const per = cash ? -cash / qty : (fromAssign ? fromAssign.strike : (i.price || 0));
+        q.push({ qty, per, ts: t.ts, assign: fromAssign || null });
+      } else {
+        let left = qty; const per = cash / qty;
+        while (left > 0 && q.length) {
+          const lot = q[0], k = Math.min(left, lot.qty);
+          closed.push({ kind: 'stock', ticker: i.ticker, strategy: '正股', side: 'long', qty: k, openTs: lot.ts, closeTs: t.ts, pnl: (per - lot.per) * k, method: 'trade', assign: lot.assign });
+          if (lot.assign) lot.assign.stockPnl = (lot.assign.stockPnl || 0) + (per - lot.per) * k, lot.assign.sold = (lot.assign.sold || 0) + k;
+          lot.qty -= k; left -= k; if (!lot.qty) q.shift();
+        }
+      }
+    });
+  });
+  return { closed, flows, income, assignEvents, stockOpen };
+}
+function _consume(q, qty, cash, ts, closed, item, method) {
+  let left = qty;
+  while (left > 0 && q.length) {
+    const lot = q[0], k = Math.min(left, lot.qty);
+    const openPart = lot.cash * k / lot.qty, closePart = cash * k / qty;
+    const dteOpen = item.expiry && lot.ts ? (Date.parse(item.expiry + 'T16:00:00') - lot.ts) / 86400000 : null;
+    const strategy = lot.multi ? 'Spread' : item.putCall === 'PUT' ? (lot.side === 'short' ? 'CSP' : 'Long put')
+      : lot.side === 'short' ? 'Short call' : (dteOpen != null && dteOpen >= 270 ? 'LEAPS' : 'Long call');
+    closed.push({ kind: 'option', ticker: item.ticker, strike: item.strike, putCall: item.putCall, expiry: item.expiry, side: lot.side, qty: k,
+      openTs: lot.ts, closeTs: ts, openCash: openPart, pnl: openPart + closePart, method, strategy,
+      capture: lot.side === 'short' && openPart > 0 ? (openPart + closePart) / openPart * 100 : null });
+    lot.cash -= openPart; lot.qty -= k; left -= k; if (!lot.qty) q.shift();
+  }
+}
+function _statsOf(lots) {
+  const n = lots.length, wins = lots.filter(l => l.pnl > 0), losses = lots.filter(l => l.pnl < 0);
+  const sum = a => a.reduce((s, l) => s + l.pnl, 0), gw = sum(wins), gl = -sum(losses);
+  const caps = lots.filter(l => l.capture != null);
+  const days = lots.filter(l => l.openTs && l.closeTs).map(l => (l.closeTs - l.openTs) / 86400000);
+  return { n, pnl: sum(lots), wr: n ? wins.length / n * 100 : null, avgW: wins.length ? gw / wins.length : null, avgL: losses.length ? -gl / losses.length : null,
+    pf: gl > 0 ? gw / gl : (gw > 0 ? Infinity : null), exp: n ? sum(lots) / n : null,
+    capture: caps.length ? caps.reduce((s, l) => s + l.capture, 0) / caps.length : null, days: days.length ? days.reduce((s, v) => s + v, 0) / days.length : null };
+}
+function computePerf() {
+  const h = loadHist(); if (!h) return null;
+  const { closed, flows, income, assignEvents, stockOpen } = buildPerfLots(h.data);
+  const y0 = new Date(_thisYear(), 0, 1).getTime(), now = Date.now();
+  const inP = l => __perfPeriod === 'all' || (l.closeTs || 0) >= y0;
+  const lots = closed.filter(inP);
+  const flowsYtd = flows.filter(f => f.ts >= y0).reduce((s, f) => s + f.amt, 0);
+  const incomeYtd = income.filter(f => f.ts >= y0).reduce((s, f) => s + f.amt, 0);
+  const startNav = loadPerfStart()[_thisYear()];
+  const nav = getPortfolio().nav;
+  let ytd = null, ytdPct = null;
+  if (startNav > 0 && nav > 0) {
+    ytd = nav - startNav - flowsYtd;
+    const T = now - y0, wf = flows.filter(f => f.ts >= y0).reduce((s, f) => s + f.amt * (now - f.ts) / T, 0);
+    ytdPct = ytd / (startNav + wf) * 100;                        // Modified Dietz
+  }
+  const months = new Array(12).fill(0).map(() => ({ pnl: 0, n: 0 }));
+  closed.filter(l => (l.closeTs || 0) >= y0).forEach(l => { const m = new Date(l.closeTs).getMonth(); months[m].pnl += l.pnl; months[m].n++; });
+  const byStrat = {}, byTicker = {};
+  lots.forEach(l => { (byStrat[l.strategy] = byStrat[l.strategy] || []).push(l); (byTicker[l.ticker] = byTicker[l.ticker] || []).push(l); });
+  const pos = getPortfolio().positions;
+  const assigns = assignEvents.filter(a => a.putCall === 'PUT' && (__perfPeriod === 'all' || a.ts >= y0)).map(a => {
+    const prem = closed.filter(l => l.method === 'assigned' && l.ticker === a.ticker && l.strike === a.strike && Math.abs(l.closeTs - a.ts) < 86400000).reduce((s, l) => s + l.pnl, 0);
+    const shares = a.qty * 100, held = Math.max(0, shares - (a.sold || 0));
+    const stk = pos.find(x => x.kind === 'stock' && x.ticker === a.ticker), px = stk ? _stockPx(stk) : null;
+    const unreal = held && px != null ? (px - a.strike) * held : 0;
+    return { ...a, prem, realized: a.stockPnl || 0, unreal, held, total: prem + (a.stockPnl || 0) + unreal };
+  });
+  return { lots, all: closed, flowsYtd, incomeYtd, startNav, nav, ytd, ytdPct, months, byStrat, byTicker, assigns,
+    stats: _statsOf(lots), realizedYtd: closed.filter(l => (l.closeTs || 0) >= y0).reduce((s, l) => s + l.pnl, 0), at: h.at, status: h.status };
+}
+function perfCardHTML() {
+  if (!loadSchwabCfg()) return '';
+  const p = computePerf();
+  const cell = (label, v, cls) => `<div class="gk-cell"><span>${label}</span><b class="${cls || ''}">${v}</b></div>`;
+  const pc = v => v == null ? '—' : `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`;
+  return `
+    <div class="gk-card" id="pf-card" role="button" tabindex="0" onclick="showPerformance()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showPerformance();}">
+      <div class="gk-title">Performance <span>${p ? `${_thisYear()} ▸` : (__perfErr ? esc(__perfErr) : '读取中…')}</span></div>
+      <div class="gk-cells">
+        ${cell('YTD', p && p.ytd != null ? _fmtSigned(p.ytd) : '—', p && p.ytd != null ? _thCls(p.ytd) : '')}
+        ${cell('YTD %', p ? pc(p.ytdPct) : '—', p && p.ytdPct != null ? _thCls(p.ytdPct * 100) : '')}
+        ${cell('已实现', p ? _fmtSigned(p.realizedYtd) : '—', p ? _thCls(p.realizedYtd) : '')}
+      </div>
+    </div>`;
+}
+window.showPerformance = () => { closeOptionLab(); state._view = 'performance'; render(); window.scrollTo(0, 0); fetchPerf(); };
+function _monthsHTML(p) {
+  const mx = Math.max(1, ...p.months.map(m => Math.abs(m.pnl))), cur = new Date().getMonth();
+  return `<div class="pf-months">${p.months.map((m, i) => {
+    const a = m.n ? 0.08 + Math.min(1, Math.abs(m.pnl) / mx) * 0.5 : 0, col = m.pnl >= 0 ? 'var(--pass)' : 'var(--fail)';
+    return `<div class="pf-m${i > cur ? ' future' : ''}" style="--a:${a.toFixed(2)};--c:${col}"><span>${i + 1} 月</span><b class="${m.n ? _thCls(m.pnl) : 'rk-quiet'}">${m.n ? _fmtSigned(m.pnl) : '—'}</b><em>${m.n ? m.n + ' 笔' : ''}</em></div>`;
+  }).join('')}</div>`;
+}
+function _navCurveHTML(p) {
+  const s = (loadNavs() || {}).data || [];
+  const pts = s.filter(x => x[0] >= `${_thisYear()}-01-01`);
+  if (p.startNav > 0) pts.unshift([`${_thisYear()}-01-01`, p.startNav]);
+  if (pts.length < 2) return `<div class="rk-quiet">净值从部署 Worker v7 当天起每日记录${s.length ? ` (已有 ${s.length} 天)` : ''}; 填年初净值后曲线从 1 月 1 日起.</div>`;
+  return _lineChartSVG({ xs: pts.map((_, i) => i), series: [{ ys: pts.map(x => x[1]), cls: 'gl-l1', label: 'NAV' }], w: _chartW(), h: 180, zero: false,
+    xFmt: i => { const d = pts[Math.round(i)] ? pts[Math.round(i)][0] : ''; return d ? `${+d.slice(5, 7)}/${+d.slice(8)}` : ''; }, yFmt: v => _fmtK(v).replace('+', ''), tipFmt: v => '$' + Math.round(v).toLocaleString(), xTicks: Math.min(5, pts.length) });
+}
+function renderPerformancePage() {
+  const p = computePerf(), st = loadPerfStart()[_thisYear()];
+  const head = `
+    <div class="header">
+      <div class="brand">Pre-Trade Checklist</div>
+      <div class="header-actions"><button class="btn ghost" onclick="state._view = null; render(); window.scrollTo(0, 0)">← 返回</button>
+        <button class="btn ghost" onclick="fetchPerf(true)">刷新</button></div>
+    </div>`;
+  if (!loadSchwabCfg()) { $app.innerHTML = head + '<div class="rk-page"><div class="rk-notice">需要连接 Schwab.</div></div>'; return; }
+  if (!p) { $app.innerHTML = head + `<div class="rk-page"><div class="rk-quiet" style="padding:24px 0">${__perfErr ? `<span class="rk-t-alert">${esc(__perfErr)}</span>` : '读取交易记录…'}</div></div>`; return; }
+  const fig = (label, val, sub, cls) => `<div class="rk-fig"><span class="rk-fig-val ${cls || 'rk-t-acc'}">${val}</span><span class="rk-fig-label">${label}</span>${sub ? `<span class="rk-fig-sub">${sub}</span>` : ''}</div>`;
+  const s = p.stats, pc = v => v == null ? '—' : `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`, n0 = v => v == null ? '—' : v === Infinity ? '∞' : v.toFixed(2);
+  const strat = Object.entries(p.byStrat).map(([k, L]) => ({ k, s: _statsOf(L) })).sort((a, b) => b.s.pnl - a.s.pnl);
+  const tick = Object.entries(p.byTicker).map(([k, L]) => ({ k, s: _statsOf(L) })).sort((a, b) => Math.abs(b.s.pnl) - Math.abs(a.s.pnl));
+  const recent = p.lots.slice().sort((a, b) => (b.closeTs || 0) - (a.closeTs || 0)).slice(0, 40);
+  const lotLabel = l => l.kind === 'stock' ? `${l.ticker} ${Math.round(l.qty)} 股` : `${l.ticker} ${l.strike}${l.putCall === 'PUT' ? 'P' : 'C'} ${_md(l.expiry)} × ${l.qty}`;
+  const dt = ts => { const d = new Date(ts); return `${d.getMonth() + 1}/${d.getDate()}`; };
+  const M = { trade: '平仓', expired: '到期', assigned: '被行权' };
+  $app.innerHTML = head + `
+    <div class="rk-page pf-page">
+      <section class="rk-block">
+        <h3 class="rk-block-title rk-title-row"><span>Performance</span><span class="rk-presets"><button class="rk-preset${__perfPeriod === 'ytd' ? ' active' : ''}" onclick="setPerfPeriod('ytd')">${_thisYear()}</button><button class="rk-preset${__perfPeriod === 'all' ? ' active' : ''}" onclick="setPerfPeriod('all')">全部</button></span></h3>
+        <div class="rk-figs">
+          ${fig('YTD', p.ytd != null ? _fmtSigned(p.ytd) : '—', p.ytd != null ? `净值 ${_fmtUsd(p.nav)} · 年初 ${_fmtUsd(p.startNav)}` : '填年初净值', p.ytd != null ? _thCls(p.ytd) : 'rk-quiet')}
+          ${fig('YTD %', pc(p.ytdPct), p.flowsYtd ? `净入金 ${_fmtSigned(p.flowsYtd)} 已剔除` : '时间加权', p.ytdPct != null ? _thCls(p.ytdPct * 100) : 'rk-quiet')}
+          ${fig('已实现', _fmtSigned(s.pnl), `${s.n} 笔${p.incomeYtd ? ` · 股息利息 ${_fmtSigned(p.incomeYtd)}` : ''}`, _thCls(s.pnl))}
+          ${fig('胜率', s.wr != null ? s.wr.toFixed(0) + '%' : '—', `盈亏比 ${n0(s.pf)}`)}
+          ${fig('期望值 / 笔', s.exp != null ? _fmtSigned(s.exp) : '—', `均盈 ${s.avgW != null ? _fmtSigned(s.avgW) : '—'} · 均亏 ${s.avgL != null ? _fmtSigned(s.avgL) : '—'}`, s.exp != null ? _thCls(s.exp) : '')}
+          ${fig('权利金留存', s.capture != null ? s.capture.toFixed(0) + '%' : '—', `卖方平仓时 · 平均持有 ${s.days != null ? s.days.toFixed(0) : '—'} 天`, 'rk-t-watch')}
+        </div>
+        ${!st ? `<div class="pf-start">年初净值 <input inputmode="decimal" placeholder="12 月 31 日 NAV" onchange="setPerfStart(this.value)"> <span class="rk-quiet">月结单上的数字, 只填一次</span></div>`
+              : `<div class="pf-start rk-quiet">年初净值 ${_fmtUsd(st)} <button class="btn ghost small" onclick="setPerfStart('')">修改</button></div>`}
+      </section>
+      <section class="rk-block"><h3 class="rk-block-title">净值</h3>${_navCurveHTML(p)}</section>
+      <section class="rk-block"><h3 class="rk-block-title">月度已实现 · ${_thisYear()}</h3>${_monthsHTML(p)}</section>
+      <section class="rk-block"><h3 class="rk-block-title">按策略</h3>
+        <div class="rk-table-wrap"><table class="rk-table">
+          <thead><tr><th>策略</th><th>笔数</th><th>胜率</th><th>已实现</th><th class="pf-opt">均盈</th><th class="pf-opt">均亏</th><th>盈亏比</th><th>期望值</th><th>留存</th><th class="pf-opt">天数</th></tr></thead>
+          <tbody>${strat.map(({ k, s }) => `<tr><td>${esc(k)}</td><td>${s.n}</td><td>${s.wr != null ? s.wr.toFixed(0) + '%' : '—'}</td><td class="${_thCls(s.pnl)}">${_fmtSigned(s.pnl)}</td>
+            <td class="pf-opt">${s.avgW != null ? _fmtSigned(s.avgW) : '—'}</td><td class="pf-opt">${s.avgL != null ? _fmtSigned(s.avgL) : '—'}</td><td>${n0(s.pf)}</td><td class="${_thCls(s.exp)}">${s.exp != null ? _fmtSigned(s.exp) : '—'}</td>
+            <td>${s.capture != null ? s.capture.toFixed(0) + '%' : '—'}</td><td class="pf-opt">${s.days != null ? s.days.toFixed(0) : '—'}</td></tr>`).join('') || '<tr><td colspan="10" class="rk-quiet">无平仓记录</td></tr>'}</tbody>
+        </table></div></section>
+      <section class="rk-block"><h3 class="rk-block-title">按标的</h3>
+        <div class="rk-table-wrap"><table class="rk-table">
+          <thead><tr><th>标的</th><th>笔数</th><th>胜率</th><th>已实现</th><th>期望值</th></tr></thead>
+          <tbody>${tick.map(({ k, s }) => `<tr><td>${esc(k)}</td><td>${s.n}</td><td>${s.wr != null ? s.wr.toFixed(0) + '%' : '—'}</td><td class="${_thCls(s.pnl)}">${_fmtSigned(s.pnl)}</td><td class="${_thCls(s.exp)}">${s.exp != null ? _fmtSigned(s.exp) : '—'}</td></tr>`).join('') || '<tr><td colspan="5" class="rk-quiet">无</td></tr>'}</tbody>
+        </table></div></section>
+      ${p.assigns.length ? `<section class="rk-block"><h3 class="rk-block-title">被行权</h3>
+        <div class="rk-table-wrap"><table class="rk-table">
+          <thead><tr><th>日期</th><th>合约</th><th>权利金</th><th>正股已实现</th><th>正股浮动</th><th>合计</th></tr></thead>
+          <tbody>${p.assigns.map(a => `<tr><td>${dt(a.ts)}</td><td>${esc(a.ticker)} ${a.strike}P × ${a.qty}</td><td class="${_thCls(a.prem)}">${_fmtSigned(a.prem)}</td>
+            <td class="${_thCls(a.realized)}">${a.sold ? _fmtSigned(a.realized) : '—'}</td><td class="${_thCls(a.unreal)}">${a.held ? `${_fmtSigned(a.unreal)} <span class="rk-quiet">${a.held} 股</span>` : '—'}</td>
+            <td class="${_thCls(a.total)}"><b>${_fmtSigned(a.total)}</b></td></tr>`).join('')}</tbody>
+        </table></div></section>` : ''}
+      <section class="rk-block"><h3 class="rk-block-title">平仓记录</h3>
+        <div class="rk-table-wrap"><table class="rk-table">
+          <thead><tr><th>日期</th><th>合约</th><th>策略</th><th>盈亏</th><th>方式</th><th>天数</th><th>留存</th></tr></thead>
+          <tbody>${recent.map(l => `<tr><td>${dt(l.closeTs)}</td><td>${esc(lotLabel(l))}</td><td>${esc(l.strategy)}</td><td class="${_thCls(l.pnl)}">${_fmtSigned(l.pnl)}</td>
+            <td>${M[l.method] || ''}</td><td>${l.openTs ? Math.round((l.closeTs - l.openTs) / 86400000) : '—'}</td><td>${l.capture != null ? l.capture.toFixed(0) + '%' : '—'}</td></tr>`).join('') || '<tr><td colspan="7" class="rk-quiet">无</td></tr>'}</tbody>
+        </table></div>
+        <div class="rk-note">先进先出配对开平仓; 已实现含手续费. 交易记录 ${_ago(p.at)}读取${p.status && p.status !== 'ok' ? ` · <span class="rk-t-alert">${esc(p.status)}</span>` : ''}.</div></section>
+    </div>`;
+}
+
 /* ---------- composite decomposition ---------- */
 function _riskDecompHTML(R) {
   if (R.composite == null || !R.used.length) return '';
@@ -13088,6 +13782,8 @@ function _refreshRiskCard() {
   el.outerHTML = riskCardHTML();
   const gk = document.getElementById('gk-card');
   if (gk) gk.outerHTML = greeksCardHTML() || '<span id="gk-card" hidden></span>';
+  const pf = document.getElementById('pf-card');
+  if (pf) pf.outerHTML = perfCardHTML() || '<span id="pf-card" hidden></span>';
   animateRiskGauges();
 }
 
@@ -13240,7 +13936,7 @@ function _greeksHTML(R) {
   const opts = c.pos.filter(x => x.kind !== 'stock');
   const withD = opts.filter(x => x.delta != null && x.und != null);
   const noGreeks = opts.length > 0 && !withD.length;
-  const KIND = { short_put: 'CSP', short_call: 'CC / PMCC 短腿', leaps: 'LEAPS', long_put: 'Long put' };
+  const KIND = { short_put: 'CSP', short_call: 'Short call', leaps: 'LEAPS', long_call: 'Long call', long_put: 'Long put' };
   const th = {}; Object.keys(KIND).forEach(k => { th[k] = { sum: 0, n: 0, miss: 0 }; });
   const byT = {};
   let usd = 0, pnl = 0, pnlN = 0, ivW = 0, ivN = 0;
@@ -13419,6 +14115,8 @@ function renderRiskPage() {
       ${_reconHTML()}
       <div class="rk-groups">${groups}</div>
       ${_stressHTML(R)}
+      ${R.c.isSchwab ? `<section class="rk-block"><h3 class="rk-block-title rk-title-row"><span>历史危机 ${_qBtn('crisis', 'short')}</span><button class="btn ghost small" onclick="fetchCrisis(true)">刷新</button></h3><div id="rk-crisis">${_crisisInnerHTML(R)}</div></section>
+      <section class="rk-block"><h3 class="rk-block-title">VaR ${_qBtn('var', 'short')}</h3><div id="rk-var">${_varInnerHTML(R)}</div></section>` : ''}
       ${R.c.isSchwab && R.c.pos.some(x => x.kind !== 'stock') ? `<button class="rk-linkrow" onclick="showGreeksPage()">Greeks ▸</button>` : ''}
       ${_tickerChartHTML(R)}
       ${_expiryChartHTML(R)}
@@ -13437,7 +14135,7 @@ function renderRiskPage() {
       </details>
       ${_riskDiagnosticsHTML(R)}
     </div>`;
-  setTimeout(() => _loadAlertHealth(), 0);
+  setTimeout(() => { _loadAlertHealth(); if (R.c.isSchwab) { fetchCrisis(); fetchVarData(); } }, 0);
 }
 
 /* ---------- post-trade: composite before → after ---------- */
@@ -13523,7 +14221,7 @@ window.addEventListener('scroll', updateScrolledState, { passive: true });
 
 // Schwab portfolio: fetch on launch, and on resume if older than a few minutes
 (function bootSchwab() {
-  if (loadSchwabCfg()) setTimeout(() => { refreshSchwab(); _reconcileSoon(); fetchBetas(); }, 300);
+  if (loadSchwabCfg()) setTimeout(() => { refreshSchwab(); _reconcileSoon(); fetchBetas(); fetchPerf(); }, 300);
   // Always listen: Schwab may be configured later in this session
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible' && loadSchwabCfg()
