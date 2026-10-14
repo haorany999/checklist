@@ -2622,6 +2622,268 @@
     border-left: 3px solid var(--pending);
   }
 
+  /* ═══════════════════════ PRO · terminal design system (light / dark from the system) ═══════════════════════ */
+  body.theme-pro {
+    --sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", Roboto, sans-serif;
+    --mono: "SF Mono", "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+    --radius: 2px;
+    --rk-safe: var(--pass); --rk-watch: var(--pending); --rk-alert: #E8743B; --rk-danger: var(--fail);
+  }
+  body.theme-pro-dark {
+    --bg: #0A0C0F; --panel: #101317; --panel-2: #161A20; --hover: #1A1F26;
+    --border: #1F252D; --border-hi: #2C343E;
+    --text: #E4E7EB; --text-dim: #9AA3AE; --text-faint: #69727E;
+    --pass: #2BC48A; --pass-bg: rgba(43, 196, 138, 0.10);
+    --fail: #F2554F; --fail-bg: rgba(242, 85, 79, 0.10);
+    --pending: #E6A63A; --pending-bg: rgba(230, 166, 58, 0.10);
+    --accent: #4C9DFF;
+    --rk-alert: #EE7A3C;
+    color-scheme: dark;
+  }
+  body.theme-pro-light {
+    --bg: #EDEFF2; --panel: #FFFFFF; --panel-2: #F5F6F8; --hover: #F0F3F7;
+    --border: #D8DCE2; --border-hi: #C1C7CF;
+    --text: #0D1117; --text-dim: #4A5361; --text-faint: #737C88;
+    --pass: #0B8A52; --pass-bg: rgba(11, 138, 82, 0.08);
+    --fail: #C8312D; --fail-bg: rgba(200, 49, 45, 0.07);
+    --pending: #A86A00; --pending-bg: rgba(168, 106, 0, 0.08);
+    --accent: #0A5FD1;
+    --rk-alert: #C2541A;
+    color-scheme: light;
+  }
+  body.theme-pro, body.theme-pro html { font-size: 14px; line-height: 1.45; letter-spacing: 0; font-feature-settings: "tnum", "zero"; }
+  @media (max-width: 640px) { body.theme-pro { font-size: 15px; } }
+  body.theme-pro::before, body.theme-pro::after { display: none !important; }
+  body.theme-pro .app { max-width: 920px; padding: 0 16px 40px; }
+  body.theme-pro .app:has(.pd) { max-width: 1240px; }
+
+  /* header bar */
+  body.theme-pro .header { padding: 10px 0; margin: 0 0 12px; border-bottom: 1px solid var(--border); align-items: center; }
+  body.theme-pro .header .brand { font: 700 11.5px/1 var(--sans); letter-spacing: 0.16em; color: var(--text); text-transform: uppercase; display: flex; align-items: center; gap: 8px; }
+  body.theme-pro .header .brand::before { content: ''; width: 8px; height: 8px; background: var(--accent); display: inline-block; }
+  body.theme-pro .header-sticky { background: var(--bg); -webkit-backdrop-filter: none; backdrop-filter: none; }
+  body.theme-pro .theme-btn { border-radius: 2px; padding: 4px 9px; font: 600 11px/1.4 var(--sans); letter-spacing: 0.06em; background: transparent; border: 1px solid var(--border); color: var(--text-dim); }
+  body.theme-pro .theme-dot { width: 6px; height: 6px; border-radius: 0; background: var(--accent); box-shadow: none; }
+
+  /* buttons */
+  body.theme-pro .btn { border-radius: 2px; padding: 5px 11px; font: 500 12.5px/1.35 var(--sans); letter-spacing: 0; box-shadow: none; }
+  body.theme-pro .btn.ghost { background: transparent; border: 1px solid var(--border); color: var(--text-dim); }
+  body.theme-pro .btn.ghost:hover { border-color: var(--border-hi); color: var(--text); background: var(--hover); }
+  body.theme-pro .btn.small { padding: 3px 8px; font-size: 11.5px; }
+  body.theme-pro .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  body.theme-pro .btn.big { padding: 10px 16px; font-size: 14px; font-weight: 600; }
+
+  /* panels: flat, hairline, square */
+  body.theme-pro .rk-card, body.theme-pro .gk-card, body.theme-pro .ms-panel, body.theme-pro .main-nav-widget, body.theme-pro .pr-panel,
+  body.theme-pro .rk-block, body.theme-pro .rk-hero, body.theme-pro .rk-decomp, body.theme-pro .rk-group, body.theme-pro .sync-mini,
+  body.theme-pro .picker-panel, body.theme-pro .picker-empty-hint, body.theme-pro .rk-notice, body.theme-pro .config, body.theme-pro .item, body.theme-pro .group {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 2px; box-shadow: none;
+  }
+  body.theme-pro .rk-block, body.theme-pro .rk-group { padding: 12px 14px; margin: 0 0 10px; }
+  body.theme-pro .gk-card, body.theme-pro .rk-card { padding: 11px 13px; margin: 0; transition: border-color 0.12s; }
+  body.theme-pro .gk-card:hover, body.theme-pro .rk-card:hover, body.theme-pro .picker-card:hover { border-color: var(--border-hi); background: var(--hover); transform: none; box-shadow: none; }
+
+  /* titles: one label style everywhere */
+  body.theme-pro .rk-block-title, body.theme-pro .gk-title, body.theme-pro .rk-card-title, body.theme-pro .ms-title, body.theme-pro .pr-title, body.theme-pro .main-nav-label,
+  body.theme-pro .rk-group-title, body.theme-pro .pd-sec, body.theme-pro .config-title, body.theme-pro .picker-panel-head {
+    font: 600 11px/1.3 var(--sans); letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dim);
+  }
+  body.theme-pro .rk-block-title { padding-bottom: 8px; margin: -2px 0 10px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; }
+  body.theme-pro .gk-title { display: flex; justify-content: space-between; margin-bottom: 8px; }
+  body.theme-pro .gk-title span { font-weight: 500; letter-spacing: 0.02em; text-transform: none; color: var(--text-faint); }
+  body.theme-pro .rk-sub-title { font: 600 11px/1.3 var(--sans); letter-spacing: 0.06em; color: var(--text-dim); margin: 14px 0 6px; }
+  body.theme-pro .pd-sec { margin: 0 0 8px; }
+  .pd-sec { display: none; }
+  body.theme-pro .pd-sec { display: block; }
+
+  /* numbers */
+  body.theme-pro .gk-cell b, body.theme-pro .rk-fig-val, body.theme-pro .tc-cell b, body.theme-pro .rk-card-num, body.theme-pro .sc-figs b,
+  body.theme-pro .rk-table td, body.theme-pro .main-nav-input { font-family: var(--mono); font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+  body.theme-pro .gk-cells { gap: 0; display: grid; grid-template-columns: repeat(3, 1fr); }
+  body.theme-pro .gk-cell { padding: 0 10px 0 0; }
+  body.theme-pro .gk-cell + .gk-cell { padding-left: 10px; border-left: 1px solid var(--border); }
+  body.theme-pro .gk-cell span { font-size: 10.5px; letter-spacing: 0.04em; color: var(--text-faint); }
+  body.theme-pro .gk-cell b { font-size: 16px; font-weight: 600; }
+  body.theme-pro .rk-figs { gap: 0; border: 1px solid var(--border); border-radius: 2px; display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); overflow: hidden; }
+  body.theme-pro .rk-fig { background: transparent; border: 0; border-radius: 0; padding: 9px 12px; box-shadow: inset -1px -1px 0 var(--border); }
+  body.theme-pro .rk-fig-val { font-size: 18px; font-weight: 600; }
+  body.theme-pro .rk-fig-label { font-size: 11px; color: var(--text-dim); }
+  body.theme-pro .rk-fig-sub { font-size: 10.5px; color: var(--text-faint); }
+  body.theme-pro .tc-grid { border-radius: 2px; }
+  body.theme-pro .tc-cell b { font-size: 14px; }
+
+  /* tags instead of pills */
+  body.theme-pro .rk-chip, body.theme-pro .sc-chip, body.theme-pro .rk-pill, body.theme-pro .rk-red-badge, body.theme-pro .vol-badge, body.theme-pro .pr-source, body.theme-pro .tc-ma {
+    border-radius: 2px; padding: 1px 6px; font: 600 10.5px/1.6 var(--sans); letter-spacing: 0.02em; box-shadow: none;
+  }
+  body.theme-pro .rk-chip { background: transparent; border: 1px solid currentColor; }
+  body.theme-pro .rk-red-badge { background: var(--fail-bg); color: var(--fail); border: 1px solid color-mix(in srgb, var(--fail) 55%, transparent); }
+  body.theme-pro .rk-red-badge::before { content: ''; display: inline-block; width: 5px; height: 5px; background: var(--fail); margin-right: 6px; vertical-align: 1px; }
+  body.theme-pro .vol-badge { border: 1px solid currentColor; background: transparent; }
+  body.theme-pro .rk-count { font: 600 11px var(--mono); color: var(--text-faint); }
+
+  /* tables */
+  body.theme-pro .rk-table { font-size: 12.5px; border-collapse: collapse; }
+  body.theme-pro .rk-table th { font: 600 10.5px/1.3 var(--sans); letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-faint); border-bottom: 1px solid var(--border-hi); padding: 6px 8px; background: transparent; }
+  body.theme-pro .rk-table td { padding: 6px 8px; border-bottom: 1px solid var(--border); }
+  body.theme-pro .rk-table tbody tr:hover td { background: var(--hover); }
+  body.theme-pro .rk-preset { border-radius: 2px; font: 600 11px var(--sans); padding: 3px 9px; }
+  body.theme-pro .rk-presets { border-radius: 2px; gap: 0; }
+  body.theme-pro .rk-note, body.theme-pro .rk-legend-note, body.theme-pro .cq-note { font-size: 11.5px; color: var(--text-faint); line-height: 1.5; }
+  body.theme-pro input, body.theme-pro select, body.theme-pro textarea { border-radius: 2px !important; }
+
+  /* risk score meter (replaces the dial) */
+  .rm { display: flex; align-items: center; gap: 14px; min-width: 0; }
+  .rm-num { font: 700 44px/1 var(--mono); letter-spacing: -0.03em; min-width: 2ch; }
+  .rm-side { flex: 1; min-width: 120px; }
+  .rm-lvl { font: 700 12px/1 var(--sans); letter-spacing: 0.1em; margin-bottom: 8px; }
+  .rm-bar { position: relative; display: flex; height: 6px; gap: 2px; }
+  .rm-z { display: block; height: 100%; opacity: 0.85; }
+  .rm-safe { background: var(--rk-safe); } .rm-watch { background: var(--rk-watch); } .rm-alert { background: var(--rk-alert); } .rm-danger { background: var(--rk-danger); }
+  .rm-mark { position: absolute; top: -4px; width: 2px; height: 14px; margin-left: -1px; background: var(--text); box-shadow: 0 0 0 2px var(--panel); }
+  .rm-scale { display: flex; justify-content: space-between; margin-top: 5px; font: 500 10px var(--mono); color: var(--text-faint); }
+  .rm-compact .rm-num { font-size: 34px; }
+  .rm-compact .rm-lvl { margin-bottom: 6px; font-size: 11px; }
+
+  /* main page: KPI strip + two columns */
+  body.theme-pro .picker-title, body.theme-pro .picker-sub { display: none; }
+  body.theme-pro .pd-kpis { display: grid; grid-template-columns: 1fr; gap: 8px; margin: 0 0 10px; }
+  body.theme-pro .pd-cols { display: grid; grid-template-columns: 1fr; gap: 10px; }
+  body.theme-pro .pd-main > *, body.theme-pro .pd-side > * { margin-top: 0; margin-bottom: 10px; }
+  @media (min-width: 1000px) {
+    body.theme-pro .pd-kpis { grid-template-columns: 1.35fr 1fr 1fr 1.15fr; }
+    body.theme-pro .pd-cols { grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); align-items: start; }
+  }
+  body.theme-pro .rk-card { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; align-items: start; }
+  body.theme-pro .rk-card-gauge { width: auto; margin: 0; grid-row: span 2; }
+  body.theme-pro .rk-card-top .rk-card-num, body.theme-pro .rk-card-top .rk-card-lvl { display: none; }
+  body.theme-pro .rk-card-top { margin-bottom: 4px; }
+  body.theme-pro .rk-card-trend { font: 600 11px var(--mono); }
+  body.theme-pro .rk-card-drivers { margin: 4px 0; gap: 4px; }
+  body.theme-pro .rk-card-meta { font-size: 11px; color: var(--text-faint); }
+  body.theme-pro .scan-card-line { font-size: 12px; margin-top: 4px; }
+
+  /* strategy launcher */
+  body.theme-pro .picker-choices { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 0 0 10px; }
+  body.theme-pro .picker-card { background: var(--panel); border: 1px solid var(--border); border-radius: 2px; padding: 12px 14px; text-align: left; box-shadow: none; position: relative; min-height: 0; }
+  body.theme-pro .picker-card::after { content: '›'; position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--text-faint); font-size: 18px; }
+  body.theme-pro .picker-card-tag { font: 600 10px/1.3 var(--sans); letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 4px; }
+  body.theme-pro .picker-card-title { font: 700 18px/1.1 var(--mono); letter-spacing: 0.02em; color: var(--text); }
+  @media (max-width: 640px) { body.theme-pro .picker-choices { grid-template-columns: repeat(2, 1fr); } }
+
+  /* market signal / NAV / portfolio risk */
+  body.theme-pro .ms-panel, body.theme-pro .pr-panel, body.theme-pro .main-nav-widget { padding: 12px 14px; }
+  body.theme-pro .ms-btn { border-radius: 2px; font: 600 12px var(--sans); padding: 7px 6px; }
+  body.theme-pro .main-nav-input { border-radius: 2px; background: var(--panel-2); }
+  body.theme-pro .pr-row { font-size: 12.5px; padding: 6px 0; }
+  body.theme-pro .pr-schwab-line, body.theme-pro .pr-sub { font-size: 11.5px; }
+  body.theme-pro .picker-empty-hint { border-style: solid; padding: 12px 14px; font-size: 12px; color: var(--text-faint); }
+  body.theme-pro .sync-mini { padding: 9px 12px; margin-bottom: 10px; }
+  body.theme-pro .sync-mini-icon { display: none; }
+  body.theme-pro .app-build { font: 500 10.5px var(--mono); color: var(--text-faint); }
+
+  /* risk dashboard */
+  body.theme-pro .rk-page { max-width: 920px; }
+  body.theme-pro .rk-hero { display: grid; grid-template-columns: minmax(260px, 340px) 1fr; gap: 18px; padding: 16px 18px; margin-bottom: 10px; align-items: center; }
+  body.theme-pro .rk-hero-gauge { width: auto; max-width: none; margin: 0; }
+  body.theme-pro .rk-hero-level { font: 700 12px/1.3 var(--sans); letter-spacing: 0.1em; color: var(--text-dim) !important; display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  body.theme-pro .rk-hero-line { font-size: 12.5px; color: var(--text-dim); margin: 8px 0; }
+  body.theme-pro .rk-hero-meta { font-size: 11px; color: var(--text-faint); }
+  body.theme-pro .rk-red-list { gap: 4px; }
+  body.theme-pro .rk-decomp { padding: 10px 14px; margin-bottom: 10px; }
+  body.theme-pro .rk-decomp-bar { border-radius: 0; height: 6px; gap: 1px; }
+  body.theme-pro .rk-decomp-bar > * { border-radius: 0 !important; }
+  body.theme-pro .rk-groups { gap: 10px; }
+  body.theme-pro .rk-group-score { font: 700 14px var(--mono); }
+  body.theme-pro .rk-row { padding: 9px 0; }
+  body.theme-pro .rk-bar-track, body.theme-pro .rk-row .rk-track { border-radius: 0; }
+  body.theme-pro .rk-mg { padding: 9px 0; }
+  body.theme-pro .rk-mg-pos { font-size: 13px; }
+  body.theme-pro .rk-linkrow { border-radius: 2px; background: var(--panel); border: 1px solid var(--border); font: 600 12px var(--sans); letter-spacing: 0.06em; }
+  @media (max-width: 720px) {
+    body.theme-pro .rk-hero { grid-template-columns: 1fr; gap: 12px; padding: 14px; }
+  }
+  /* charts follow the palette */
+  body.theme-pro .rk-chart text, body.theme-pro .rk-ch-lab { fill: var(--text-faint); }
+  /* Pro · round 2: spacing, header, risk card, market signal */
+  body.theme-pro .picker { padding: 0 0 24px; }
+  body.theme-pro .header { flex-wrap: nowrap; gap: 10px; }
+  body.theme-pro .header-actions { flex-wrap: nowrap; gap: 6px; }
+  body.theme-pro .btn { min-height: 30px; }
+  body.theme-pro .customize-btn { display: none; }
+  @media (max-width: 640px) {
+    body.theme-pro .header .brand { font-size: 10.5px; letter-spacing: 0.12em; white-space: nowrap; }
+    body.theme-pro .header .btn, body.theme-pro .theme-btn { padding: 4px 8px; font-size: 12px; min-height: 30px; }
+    body.theme-pro .picker-card { padding: 10px 12px; }
+    body.theme-pro .picker-card-title { font-size: 16px; }
+  }
+  /* risk card: title → meter → tags → meta, one column */
+  body.theme-pro .rk-card { display: flex; flex-direction: column; gap: 8px; }
+  body.theme-pro .rk-card-body { display: contents; }
+  body.theme-pro .rk-card-top { order: 0; margin: 0; display: flex; align-items: baseline; gap: 10px; }
+  body.theme-pro .rk-card-top .rk-card-title { margin-right: auto; }
+  body.theme-pro .rk-card-gauge { order: 1; }
+  body.theme-pro .rk-card-drivers { order: 2; margin: 0; }
+  body.theme-pro .rk-card-tasks { order: 3; }
+  body.theme-pro .rk-card-meta { order: 4; }
+  body.theme-pro .rk-card-warn { order: 5; }
+  /* market signal: selected phase is outlined, not filled */
+  body.theme-pro .ms-btn { background: transparent; border: 1px solid var(--border); color: var(--text-dim); }
+  body.theme-pro .ms-btn.active { font-weight: 700; border-color: currentColor; }
+  body.theme-pro .ms-btn.active.ms-pass { color: var(--pass); background: var(--pass-bg); }
+  body.theme-pro .ms-btn.active.ms-pending { color: var(--pending); background: var(--pending-bg); }
+  body.theme-pro .ms-btn.active.ms-fail { color: var(--fail); background: var(--fail-bg); }
+  body.theme-pro .ms-btn.active.ms-accent { color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+  body.theme-pro .main-nav-widget { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; align-items: center; }
+  body.theme-pro .main-nav-hint { grid-column: 1 / -1; font-size: 11px; color: var(--text-faint); font-family: var(--sans); }
+  body.theme-pro .rk-hero-level .rk-t-safe, body.theme-pro .rk-hero-level { text-transform: none; }
+  body.theme-pro .rk-card-gauge { width: 100%; max-width: none; flex: none; height: auto; }
+  body.theme-pro .rk-card-gauge .rm-side { max-width: 260px; }
+  body.theme-pro .rk-hero, body.theme-pro .rk-hero-text, body.theme-pro .rk-hero-line, body.theme-pro .rm-lvl { text-align: left; }
+  body.theme-pro .rk-hero-text { align-items: flex-start; }
+  body.theme-pro .rk-hero-level, body.theme-pro .rk-red-list, body.theme-pro .rk-hero-meta, body.theme-pro .rk-spark { justify-content: flex-start; }
+  body.theme-pro .rk-page { padding-top: 0; margin-top: 0; }
+  /* theme menu */
+  .theme-menu { position: fixed; z-index: 1200; min-width: 200px; padding: 4px; background: var(--panel); border: 1px solid var(--border-hi); border-radius: var(--radius, 6px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28); display: flex; flex-direction: column; }
+  .tm-item { display: flex; align-items: baseline; justify-content: space-between; gap: 14px; padding: 7px 10px; background: transparent; border: 0; border-radius: calc(var(--radius, 6px) - 2px);
+    color: var(--text); font: 500 13px var(--sans); text-align: left; cursor: pointer; }
+  .tm-item:hover, .tm-item:focus-visible { background: var(--panel-2); outline: none; }
+  .tm-item.on { color: var(--accent); }
+  .tm-item.on .tm-name::before { content: ''; display: inline-block; width: 6px; height: 6px; background: var(--accent); margin-right: 8px; vertical-align: 1px; }
+  .tm-desc { font-size: 11px; color: var(--text-faint); }
+  .tm-sep { height: 1px; background: var(--border); margin: 4px 2px; }
+  body.theme-pro .theme-menu { border-radius: 2px; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35); }
+  body.theme-pro .tm-item { border-radius: 0; }
+  /* Pro · mobile safety: the header can never widen the page; comfortable touch targets */
+  body.theme-pro .header { min-width: 0; }
+  body.theme-pro .header .brand { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex-shrink: 1; }
+  body.theme-pro .header-actions { flex-wrap: wrap; justify-content: flex-end; flex-shrink: 0; max-width: 100%; }
+  @media (max-width: 640px) {
+    body.theme-pro .header:has(.header-actions > .btn:not(.ghost)) .brand { font-size: 0; gap: 0; flex: 0 0 auto; }
+    body.theme-pro .header:has(.header-actions > .btn:not(.ghost)) .brand::before { width: 10px; height: 10px; }
+    body.theme-pro .header-actions { gap: 5px; }
+    body.theme-pro .header .btn, body.theme-pro .theme-btn { padding: 4px 7px; }
+  }
+  @media (pointer: coarse) {
+    body.theme-pro .rk-preset { min-height: 32px; padding: 6px 10px; }
+    body.theme-pro .btn.small { min-height: 32px; }
+    body.theme-pro .autofill-btn { min-height: 30px; padding: 4px 10px; }
+    body.theme-pro .explore-row-del { min-width: 32px; min-height: 32px; }
+    body.theme-pro .app-link { display: inline-block; padding: 8px 2px; }
+    body.theme-pro .pr-mini-btn { min-width: 32px; min-height: 32px; }
+  }
+  /* Pro · segmented controls: square, wrap instead of clipping */
+  body.theme-pro .segmented { border-radius: 2px; padding: 2px; gap: 2px; background: var(--panel-2); }
+  body.theme-pro .segmented button { border-radius: 0; white-space: normal; line-height: 1.25; padding: 7px 6px; font-size: 12.5px; overflow-wrap: anywhere; }
+  body.theme-pro .segmented button.active { background: var(--panel); color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); font-weight: 600; }
+  /* small icon buttons keep their look but get a finger-sized hit area */
+  body.theme-pro .gl-q { position: relative; }
+  @media (pointer: coarse) {
+    body.theme-pro .gl-q { width: 22px; height: 22px; }
+    body.theme-pro .gl-q::after { content: ''; position: absolute; inset: -7px; }
+    body.theme-pro .gl-x { min-width: 36px; min-height: 36px; display: inline-flex; align-items: center; justify-content: center; }
+  }
 </style>
 </head>
 <body class="theme-slate">
@@ -4187,7 +4449,7 @@ function headerHTML() {
     <div class="header">
       <div class="brand">Pre-Trade Checklist</div>
       <div class="header-actions">
-        <button class="theme-btn" onclick="cycleTheme()" title="循环主题 (Auto → Slate → Terminal → Light → Warm → 护眼)">
+        <button class="theme-btn" onclick="toggleThemeMenu(event)" title="主题" aria-haspopup="menu">
           <span class="theme-dot"></span>
           <span>${themeName}</span>
         </button>
@@ -4635,7 +4897,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.14-v17';
+const APP_BUILD = '2026.10.15-v18.2';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
@@ -5729,7 +5991,7 @@ function renderPicker() {
     <div class="header">
       <div class="brand">Pre-Trade Checklist</div>
       <div class="header-actions">
-        <button class="theme-btn" onclick="cycleTheme()" title="循环主题 (Auto → Slate → Terminal → Light → Warm → 护眼)">
+        <button class="theme-btn" onclick="toggleThemeMenu(event)" title="主题" aria-haspopup="menu">
           <span class="theme-dot"></span>
           <span>${themeName}</span>
         </button>
@@ -5738,20 +6000,18 @@ function renderPicker() {
         <button class="btn ghost" onclick="showHistory()">History</button>
       </div>
     </div>
-    <div class="picker">
+    <div class="picker pd">
       <div class="picker-title">选择要检查的策略</div>
       <div class="picker-sub">Trading in the Zone</div>
       ${syncStatusMiniHTML()}
-      ${_safe('综合风险', riskCardHTML)}
-      ${_safe('Performance', perfCardHTML)}
-      ${_safe('CSP 扫描', scanCardHTML)}
-      ${_safe('Greeks', greeksCardHTML)}
-      ${marketSignalHTML()}
-      ${mainNavWidgetHTML()}
-      ${portfolioRiskHTML()}
-      ${daysSinceLastSnapshotHTML()}
-      ${draftContinueBannerHTML()}
-      ${forcedTradeReminderHTML()}
+      <div class="pd-kpis">
+        ${_safe('综合风险', riskCardHTML)}
+        ${_safe('Performance', perfCardHTML)}
+        ${_safe('Greeks', greeksCardHTML)}
+        ${_safe('CSP 扫描', scanCardHTML)}
+      </div>
+      <div class="pd-cols"><div class="pd-main">
+      <div class="pd-sec">新交易</div>
       <div class="picker-choices">
         <button class="picker-card" onclick="pickStrategy('leaps')">
           <div class="picker-card-tag">Long-dated calls</div>
@@ -5770,6 +6030,14 @@ function renderPicker() {
           <div class="picker-card-title">CC</div>
         </button>
       </div>
+      ${draftContinueBannerHTML()}
+      ${forcedTradeReminderHTML()}
+      ${daysSinceLastSnapshotHTML()}
+      ${marketSignalHTML()}
+      </div><div class="pd-side">
+      ${mainNavWidgetHTML()}
+      ${portfolioRiskHTML()}
+      </div></div>
       ${pickerFooterHTML()}
       <div class="app-build">版本 ${APP_BUILD} · <button class="app-link" onclick="clearCaches()">清理缓存</button>${(() => { const t = _lastErrText(); return t !== '无' ? `<div class="app-err">最近错误 · ${esc(t)} <button class="btn ghost small" onclick="localStorage.removeItem('pretrade_last_error'); render()">清除</button></div>` : ''; })()}</div>
     </div>
@@ -9643,9 +9911,10 @@ function wireSyncActions() {
 /* ==========================================================
  * THEME
  * ========================================================== */
-const THEME_CYCLE = ['auto', 'slate', 'terminal', 'light', 'warm', 'sepia'];
-const THEME_LABEL = { auto: 'Auto', slate: 'Slate', terminal: 'Terminal', light: 'Light', warm: 'Warm', sepia: '护眼' };
-const THEME_COLORS = { slate: '#0F1419', terminal: '#000000', light: '#F9FAFB', warm: '#FBF6E9', sepia: '#1A1611' };
+const THEME_CYCLE = ['pro', 'auto', 'slate', 'terminal', 'light', 'warm', 'sepia'];
+const THEME_LABEL = { pro: 'Pro', auto: 'Auto', slate: 'Slate', terminal: 'Terminal', light: 'Light', warm: 'Warm', sepia: '护眼' };
+const THEME_COLORS = { 'pro-dark': '#0A0C0F', 'pro-light': '#EDEFF2', slate: '#0F1419', terminal: '#000000', light: '#F9FAFB', warm: '#FBF6E9', sepia: '#1A1611' };
+function _isPro() { return document.body.classList.contains('theme-pro'); }
 
 // User theme customization (persisted separately)
 const THEME_CUSTOM_KEY = 'pretrade_theme_custom';
@@ -9889,6 +10158,7 @@ window.resetCustomRadius = resetCustomRadius;
 window.resetAllCustom = resetAllCustom;
 
 function resolveTheme(t) {
+  if (t === 'pro') { try { return window.matchMedia('(prefers-color-scheme: light)').matches ? 'pro-light' : 'pro-dark'; } catch (e) { return 'pro-dark'; } }
   if (t !== 'auto') return t;
   try {
     return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'slate';
@@ -9897,13 +10167,31 @@ function resolveTheme(t) {
 function setTheme(t) {
   state.theme = t;
   const resolved = resolveTheme(t);
-  document.body.className = 'theme-' + resolved;
+  document.body.className = resolved.startsWith('pro') ? 'theme-pro theme-' + resolved : 'theme-' + resolved;
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.setAttribute('content', THEME_COLORS[resolved]);
   try { localStorage.setItem('pretrade_theme', t); } catch (e) {}
-  // Re-apply custom overrides after theme change
-  applyThemeCustom();
+  // Pro is a fixed design system: custom accent / radius / background only apply to the classic themes
+  if (resolved.startsWith('pro')) { ['--accent', '--bg', '--panel', '--panel-2', '--border', '--border-hi', '--text', '--text-dim', '--text-faint'].forEach(k => document.body.style.removeProperty(k)); document.documentElement.style.removeProperty('--radius'); }
+  else applyThemeCustom();
 }
+const THEME_DESC = { pro: '跟随系统深浅', auto: '经典 · 跟随系统', slate: '经典深色', terminal: '绿色终端', light: '经典浅色', warm: '暖色', sepia: '护眼' };
+function closeThemeMenu() { const m = document.getElementById('theme-menu'); if (m) m.remove(); document.removeEventListener('pointerdown', _themeMenuOutside, true); document.removeEventListener('keydown', _themeMenuKey, true); }
+function _themeMenuOutside(e) { if (!e.target.closest('#theme-menu') && !e.target.closest('.theme-btn')) closeThemeMenu(); }
+function _themeMenuKey(e) { if (e.key === 'Escape') { e.stopPropagation(); closeThemeMenu(); } }
+window.toggleThemeMenu = e => {
+  if (document.getElementById('theme-menu')) { closeThemeMenu(); return; }
+  const btn = e.currentTarget || e.target.closest('.theme-btn'), r = btn.getBoundingClientRect();
+  const m = document.createElement('div');
+  m.id = 'theme-menu'; m.className = 'theme-menu'; m.setAttribute('role', 'menu');
+  m.innerHTML = THEME_CYCLE.map((t, i) => `${i === 1 ? '<div class="tm-sep"></div>' : ''}<button role="menuitemradio" aria-checked="${state.theme === t}" class="tm-item${state.theme === t ? ' on' : ''}" data-t="${t}">
+    <span class="tm-name">${THEME_LABEL[t]}</span><span class="tm-desc">${THEME_DESC[t] || ''}</span></button>`).join('');
+  document.body.appendChild(m);
+  const w = m.offsetWidth, left = Math.max(8, Math.min(window.innerWidth - w - 8, r.right - w));
+  m.style.top = `${r.bottom + 6}px`; m.style.left = `${left}px`;
+  m.querySelectorAll('.tm-item').forEach(b => b.addEventListener('click', () => { closeThemeMenu(); setTheme(b.dataset.t); render(); }));
+  setTimeout(() => { document.addEventListener('pointerdown', _themeMenuOutside, true); document.addEventListener('keydown', _themeMenuKey, true); }, 0);
+};
 function cycleTheme() {
   const i = THEME_CYCLE.indexOf(state.theme);
   setTheme(THEME_CYCLE[(i + 1) % THEME_CYCLE.length]);
@@ -9912,15 +10200,16 @@ function cycleTheme() {
 function loadTheme() {
   try {
     const saved = localStorage.getItem('pretrade_theme');
-    if (THEME_CYCLE.indexOf(saved) >= 0) state.theme = saved;
-    else state.theme = 'auto';  // Default for new users
+    if (!localStorage.getItem('pretrade_theme_pro')) { localStorage.setItem('pretrade_theme_pro', '1'); state.theme = 'pro'; }   // one-time move to the new design
+    else if (THEME_CYCLE.indexOf(saved) >= 0) state.theme = saved;
+    else state.theme = 'pro';  // Default for new users
   } catch (e) { state.theme = 'auto'; }
   loadThemeCustom();
   setTheme(state.theme);
   // Listen to system preference changes (for auto mode)
   try {
     window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', () => {
-      if (state.theme === 'auto') setTheme('auto');
+      if (state.theme === 'auto' || state.theme === 'pro') { setTheme(state.theme); render(); }
     });
   } catch (e) {}
 }
@@ -11213,7 +11502,19 @@ function _riskThText(def) {
 /* ---------- analog gauge ---------- */
 const __gaugeLast = {};
 function _gaugeAngle(s) { return -90 + 1.8 * Math.max(0, Math.min(100, s)); }
+function riskMeterHTML(score, compact) {
+  const lv = score != null ? riskLevel(score) : null, pos = score != null ? Math.max(0, Math.min(100, score)) : null;
+  let prev = 0;
+  const zones = RISK_LEVELS.map(l => { const w = Math.min(100, l.upTo) - prev, z = `<i class="rm-z rm-${l.key}" style="width:${w}%"></i>`; prev = Math.min(100, l.upTo); return z; }).join('');
+  return `<div class="rm${compact ? ' rm-compact' : ''}">
+    <div class="rm-num${lv ? ' rk-t-' + lv.key : ''}">${score != null ? Math.round(score) : '—'}</div>
+    <div class="rm-side"><div class="rm-lvl${lv ? ' rk-t-' + lv.key : ''}">${lv ? lv.label : '数据不足'}</div>
+      <div class="rm-bar">${zones}${pos != null ? `<b class="rm-mark" style="left:${pos}%"></b>` : ''}</div>
+      ${compact ? '' : '<div class="rm-scale"><span>0</span><span>25</span><span>50</span><span>75</span><span>100</span></div>'}</div>
+  </div>`;
+}
 function riskGaugeSVG(score, key, compact) {
+  if (_isPro()) return riskMeterHTML(score, compact);
   const cx = 120, cy = 118, R = 96;
   const pt = (t, r) => { const a = Math.PI * (1 - t / 100); return [cx + r * Math.cos(a), cy - r * Math.sin(a)]; };
   const arc = (t0, t1, r) => {
@@ -13312,14 +13613,14 @@ function _mergeLive(rows, live) {
 }
 async function fetchPrices(tickers, { maxAge = 60000 } = {}) {
   if (!loadSchwabCfg()) return;
-  const need = [...new Set(tickers.filter(t => t && /^\$?[A-Z0-9.]{1,6}$/.test(t)))].filter(t => !__px[t] || Date.now() - __px[t].at > maxAge);
+  const need = [...new Set(tickers.filter(t => t && /^\$?[A-Z0-9.]{1,6}$/.test(t)))].filter(t => !__px[t] || __px[t].err || Date.now() - __px[t].at > maxAge);
   if (!need.length) return;
   try {
     const r = await _wfetch(`/prices?tickers=${encodeURIComponent(need.join(','))}`);
     const b = await r.json().catch(() => null);
     if (!r.ok || !b || !b.tickers) { need.forEach(t => { __px[t] = { at: Date.now(), bars: [], err: r.status === 404 ? '需 Worker v7' : (b && b.message) || `HTTP ${r.status}` }; }); return; }
     need.forEach(t => { const x = b.tickers[t]; if (x && x.live && t[0] === '$' && x.live.open == null && x.live.last > 0) x.live.open = x.live.last;
-      const m = x ? _mergeLive(x.rows || [], x.live) : { bars: [], live: false }; __px[t] = { at: Date.now(), ...m, err: m.bars.length ? null : (!x && t[0] === '$' ? 'VIX 指数需要 Worker v8' : '无历史数据') }; });
+      const m = x ? _mergeLive(x.rows || [], x.live) : { bars: [], live: false }; __px[t] = { at: Date.now(), ...m, err: m.bars.length ? null : (!x && t[0] === '$' ? 'no_index' : t[0] === '$' ? 'no_index_rows' : '无历史数据') }; });
   } catch (e) { need.forEach(t => { __px[t] = { at: Date.now(), bars: [], err: '网络错误' }; }); }
 }
 
@@ -14106,6 +14407,7 @@ window.refreshGexStrip = async force => {
 const VOL_SYMS = ['$VIX', '$VIX9D', '$VIX3M', '$VVIX', 'SPY'];
 async function fetchVol(force) {
   await fetchPrices(VOL_SYMS, { maxAge: force ? 0 : 5 * 60000 });
+  if (!document.querySelector('[data-vol-slot]')) return;
   document.querySelectorAll('[data-vol-slot]').forEach(el => { el.innerHTML = el.dataset.volSlot === 'mini' ? volMiniHTML() : _safe('波动率环境', volInnerHTML); });
   _fitChartText();
 }
@@ -14141,14 +14443,21 @@ function volRegime() {
   return { v, v9, v3, vv, pct, rv, vrp, dd, ma200, spyPx: spy ? spy[spy.length - 1].c : null, ts1, ts2, level, reasons: red.length ? red : yel, note, live: !!(__px['$VIX'] && __px['$VIX'].live), at: __px['$VIX'].at, hist: vix.slice(-252) };
 }
 const VOL_LABEL = { green: '适合卖权利金', yellow: '谨慎', red: '暂停新开卖方' };
+function _volErrText(err) {
+  const wv = (getPortfolio().workerVersion) || null;
+  if (err === 'no_index') return wv && wv < 8 ? `当前 Worker 是 v${wv}, VIX 需要 v8. 在 Cloudflare 部署 v8 后点「刷新」.`
+    : 'Worker 没有返回 VIX. 确认 Cloudflare 上已点 Deploy 且是 v8, 然后点「刷新」.';
+  if (err === 'no_index_rows') return 'Worker 已是 v8, 但 Schwab 没有返回 VIX 历史数据. 稍后点「刷新」重试.';
+  return err;
+}
 function volMiniHTML() {
   const r = volRegime();
-  if (!r) return `<span class="rk-quiet">${__px['$VIX'] && __px['$VIX'].err ? '波动率: ' + esc(__px['$VIX'].err) : '波动率读取中…'}</span>`;
+  if (!r) return `<span class="rk-quiet">${__px['$VIX'] && __px['$VIX'].err ? '波动率: ' + esc(_volErrText(__px['$VIX'].err)) : '波动率读取中…'}</span>`;
   return `<span class="vol-badge vol-${r.level}">${VOL_LABEL[r.level]}</span><span class="rk-quiet">VIX ${r.v.toFixed(1)} · ${r.ts2 != null ? (r.ts2 >= 1 ? '倒挂' : r.ts2 >= 0.95 ? '平坦' : '正常') : ''}${r.note.length ? ' · ' + r.note.join(' · ') : ''}</span>`;
 }
 function volInnerHTML() {
   const r = volRegime(), px = __px['$VIX'];
-  if (!r) return `<div class="rk-quiet">${px && px.err ? `<span class="rk-t-alert">${esc(px.err)}${/v7|404/.test(px.err) ? '' : ' · VIX 指数需要 Worker v8'}</span>` : '读取 VIX…'}</div>`;
+  if (!r) return `<div class="rk-quiet">${px && px.err ? `<span class="rk-t-alert">${esc(_volErrText(px.err))}</span>` : '读取 VIX…'}</div>`;
   const f1 = v => v == null ? '—' : v.toFixed(1);
   const tsTxt = r.ts2 == null ? '—' : r.ts2 >= 1 ? '倒挂' : r.ts2 >= 0.95 ? '平坦' : '正常';
   const cell = (label, val, sub, cls) => `<div class="tc-cell"><span>${label}</span><b class="${cls || ''}">${val}</b>${sub ? `<em>${sub}</em>` : ''}</div>`;
@@ -14248,8 +14557,10 @@ window.openScanChecklist = (t, K, exp) => {
   render(); window.scrollTo(0, 0);
   if (typeof scheduleCspQuote === 'function') scheduleCspQuote();
 };
+let __volTry = 0;
 function scanCardHTML() {
   if (!loadSchwabCfg()) return '';
+  if (!volRegime() && Date.now() - __volTry > 30000) { __volTry = Date.now(); setTimeout(() => fetchVol(), 0); }   // retry a missing / failed VIX read
   const r = loadScanRes(), ok = r ? r.rows.filter(x => x.best) : [];
   const top = ok.slice().sort((a, b) => b.best.roc - a.best.roc)[0];
   return `
@@ -14776,6 +15087,7 @@ function _riskDiagnosticsHTML(R) {
     ['余额字段', balLine],
     ['未计入', R.vars.filter(v => !v.available && !v.na).map(v => `${v.def.label} (${v.reason})`).join(' · ') || '无'],
     ['不适用', R.vars.filter(v => v.na).map(v => `${v.def.label} (${v.na})`).join(' · ') || '无'],
+    ['Worker', getPortfolio().workerVersion ? 'v' + getPortfolio().workerVersion : '—'],
     ['最近错误', _lastErrText()],
     ['版本', APP_BUILD],
   ];
@@ -14828,7 +15140,7 @@ function renderRiskPage() {
         <div class="rk-hero-text">
           <h2 class="rk-hero-level${lvl ? ' rk-t-' + lvl.key : ''}">${lvl ? '综合风险 · ' + lvl.label : '综合风险 · 数据不足'}
             ${tr ? `<span class="rk-card-trend ${tr.delta > 0.5 ? 'up' : tr.delta < -0.5 ? 'down' : ''}">较${tr.label} ${tr.txt}</span>` : ''}</h2>
-          ${R.danger && R.danger.length ? `<div class="rk-red-list">${R.danger.map(v => `<span class="rk-red-badge">⛔ ${esc(v.def.label)} ${esc(_fmtRiskVal(v))}</span>`).join('')}</div>` : ''}
+          ${R.danger && R.danger.length ? `<div class="rk-red-list">${R.danger.map(v => `<span class="rk-red-badge">${esc(v.def.label)} ${esc(_fmtRiskVal(v))}</span>`).join('')}</div>` : ''}
           ${(() => { const h = _riskHeadline(R); return h ? `<p class="rk-hero-line">${esc(h)}</p>` : ''; })()}
           ${R.c.isSchwab ? _riskSparkHTML() : ''}
           <div class="rk-hero-meta"><span class="pr-source ${src.cls}">${esc(src.text)}</span>
