@@ -2175,6 +2175,18 @@
     .pf-opt { display: none; }
   }
   .rk-table th { white-space: nowrap; }
+  button.pf-m { font: inherit; text-align: left; color: inherit; cursor: pointer; width: 100%; -webkit-appearance: none; appearance: none; }
+  .pf-m.click:hover, .pf-m.click:focus-visible { border-color: var(--accent); }
+  .pf-m.on { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+  .pf-detail { margin-top: 12px; padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--radius, 6px); background: var(--bg); }
+  .pf-detail-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; font-size: 13px; }
+  .pf-detail-head b { font-size: 14px; color: var(--text); }
+  .pf-detail-head span:first-of-type { font-family: var(--mono); font-weight: 700; }
+  .pf-detail-head .gl-x { margin-left: auto; font-size: 20px; }
+  .rk-err { border-color: color-mix(in srgb, var(--fail) 45%, var(--border)); font-size: 12.5px; color: var(--text-dim); }
+  .rk-err b { color: var(--fail); margin-right: 6px; }
+  .app-err { margin: 6px auto 0; max-width: 92%; font-size: 10.5px; color: var(--fail); word-break: break-word; line-height: 1.5; }
+  .app-link { background: none; border: none; padding: 0; font: inherit; color: var(--accent); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
   .pr-sim-risk { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 10px; margin-top: 8px; padding: 6px 9px;
     border-radius: 4px; background: var(--panel-2); font-size: 12px; color: var(--text-dim); }
   .pr-sim-risk span { font-size: 10.5px; color: var(--text-faint); margin-left: auto; }
@@ -3903,9 +3915,17 @@ function _triggerViewTransition() {
 function render() {
   _triggerViewTransition();
   if (state._view === 'history') { renderHistoryPage(); _postRender(); return; }
-  if (state._view === 'risk') { renderRiskPage(); _postRender(); return; }
-  if (state._view === 'greeks') { renderGreeksPage(); _postRender(); return; }
-  if (state._view === 'performance') { renderPerformancePage(); _postRender(); return; }
+  if (state._view === 'risk') {
+    try { renderRiskPage(); }
+    catch (e) {
+      _reportErr('风险页', e);
+      $app.innerHTML = `<div class="header"><div class="brand">Pre-Trade Checklist</div><div class="header-actions"><button class="btn ghost" onclick="hideRiskDashboard()">← 返回</button></div></div>
+        <div class="rk-page"><div class="rk-notice">风险页出错: ${esc(String(e && e.message || e))}<div class="rk-notice-why">请截图发给开发者 · 版本 ${APP_BUILD}</div><div class="rk-notice-act"><button class="btn small" onclick="clearCaches()">清理缓存后重试</button></div></div></div>`;
+    }
+    _postRender(); return;
+  }
+  if (state._view === 'greeks') { _safe('Greeks 页', renderGreeksPage, null); _postRender(); return; }
+  if (state._view === 'performance') { _safe('Performance', renderPerformancePage, null); _postRender(); return; }
   if (!state.strategy) { renderPicker(); _postRender(); return; }
   if (state.strategy === 'leaps') {
     // Always open — force direction to 'open' if not already set
@@ -4549,7 +4569,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.13-v12.1';
+const APP_BUILD = '2026.10.14-v14.1';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
@@ -5656,9 +5676,9 @@ function renderPicker() {
       <div class="picker-title">选择要检查的策略</div>
       <div class="picker-sub">Trading in the Zone</div>
       ${syncStatusMiniHTML()}
-      ${riskCardHTML()}
-      ${perfCardHTML()}
-      ${greeksCardHTML()}
+      ${_safe('综合风险', riskCardHTML)}
+      ${_safe('Performance', perfCardHTML)}
+      ${_safe('Greeks', greeksCardHTML)}
       ${marketSignalHTML()}
       ${mainNavWidgetHTML()}
       ${portfolioRiskHTML()}
@@ -5684,7 +5704,7 @@ function renderPicker() {
         </button>
       </div>
       ${pickerFooterHTML()}
-      <div class="app-build">版本 ${APP_BUILD}</div>
+      <div class="app-build">版本 ${APP_BUILD} · <button class="app-link" onclick="clearCaches()">清理缓存</button>${(() => { const t = _lastErrText(); return t !== '无' ? `<div class="app-err">最近错误 · ${esc(t)} <button class="btn ghost small" onclick="localStorage.removeItem('pretrade_last_error'); render()">清除</button></div>` : ''; })()}</div>
     </div>
   `;
   // Assign stagger indexes to panels and list rows
@@ -11758,8 +11778,15 @@ function impliedVol(price, S, K, T, type) {
   }
   return (lo + hi) / 2;
 }
+const __optModelMemo = new WeakMap();
 function _optModel(x) {
   if (!x || x.kind === 'stock') return null;
+  if (__optModelMemo.has(x)) return __optModelMemo.get(x);
+  const m = _optModelCalc(x);
+  __optModelMemo.set(x, m);
+  return m;
+}
+function _optModelCalc(x) {
   const S = x.und, K = x.strike, dte = _dteOf(x);
   if (S == null || K == null || dte == null) return null;
   const type = x.kind === 'short_put' || x.kind === 'long_put' ? 'put' : 'call';
@@ -12755,7 +12782,7 @@ function renderGreeksPage() {
     </div>
     <div class="rk-page">
       ${_riskSourceNotice(R)}
-      ${R.c.isSchwab ? _greeksHTML(R) + _leapsLabHTML(R) + _betaPanelHTML(R) : ''}
+      ${R.c.isSchwab ? _safe('Greeks', () => _greeksHTML(R)) + _safe('LEAPS', () => _leapsLabHTML(R)) + _safe('Beta', () => _betaPanelHTML(R)) : ''}
     </div>`;
 }
 
@@ -13048,7 +13075,7 @@ function _tradeLegHTML() {
          : `<div class="cq-leg"><span>底仓 LEAPS</span><span class="rk-quiet">Schwab 无该标的 LEAPS · 手填:</span>
              <span class="cq-manual">Strike ${inp('in-pmcc-long-strike', 'pmccLongStrike', 'K', 'inputmode="decimal"')} 到期 ${inp('in-pmcc-long-expiry', 'pmccLongExpiry', '', 'type="date"')}
              现价 ${inp('in-pmcc-long-mark', 'pmccLongMark', 'mark', 'inputmode="decimal"')} 成本 ${inp('in-pmcc-long-cost', 'pmccLongCost', 'cost', 'inputmode="decimal"')}</span></div>`)
-    : (stk ? `<div class="cq-leg"><span>正股</span><b>${Math.round(stk.qty)} 股</b>${stk.cost > 0 ? `<span>成本 ${(stk.cost / stk.qty).toFixed(2)}</span>` : ''}<span class="rk-quiet">Schwab</span></div>`
+    : (stk ? `<div class="cq-leg"><span>正股</span><b>${Math.round(stk.qty)} 股</b>${stk.cost > 0 ? `<span>成本 ${(stk.cost / stk.qty).toFixed(2)}</span>` : ''}${(() => { const w = _safe('持股成本', computeWheel, null), r = w && w.rows.find(x => x.T === stk.ticker); return r && r.adj != null ? `<span>调整后 <b class="rk-t-acc">${r.adj.toFixed(2)}</b></span>` : ''; })()}<span class="rk-quiet">Schwab</span></div>`
            : `<div class="cq-leg"><span>正股</span><span class="rk-quiet">Schwab 无该标的正股 · 成本取下方「底仓成本价」</span></div>`);
   return leg;
 }
@@ -13382,7 +13409,7 @@ async function fetchCrisis(force) {
     else __crisisErr = r.status === 404 ? '需 Worker v7' : (b && b.message) || `HTTP ${r.status}`;
   } catch (e) { __crisisErr = '网络错误'; }
   finally { __crisisBusy = false; }
-  const el = document.getElementById('rk-crisis'); if (el) { el.innerHTML = _crisisInnerHTML(computeRisk()); _fitChartText(); }
+  const el = document.getElementById('rk-crisis'); if (el) { el.innerHTML = _safe('历史危机', () => _crisisInnerHTML(computeRisk())); _fitChartText(); }
 }
 // reprice the book under per-ticker moves (instant), optional IV multiplier
 function _shockBook(c, moveOf, ivMult = 1) {
@@ -13435,7 +13462,7 @@ async function fetchVarData() {
   const tickers = [...new Set(['SPY', ...p.positions.map(x => x.ticker)])];
   __varBusy = true;
   try { await fetchPrices(tickers, { maxAge: 6 * 3600e3 }); } finally { __varBusy = false; }
-  const el = document.getElementById('rk-var'); if (el) { el.innerHTML = _varInnerHTML(computeRisk()); _fitChartText(); }
+  const el = document.getElementById('rk-var'); if (el) { el.innerHTML = _safe('VaR', () => _varInnerHTML(computeRisk())); _fitChartText(); }
 }
 function computeVaR(c) {
   const spy = __px.SPY && __px.SPY.bars;
@@ -13491,7 +13518,7 @@ function _varInnerHTML(R) {
 /* ---------- Performance (Worker /history + /navseries) ---------- */
 const HIST_KEY = 'pretrade_history_tx', NAVS_KEY = 'pretrade_navseries', PERF_START_KEY = 'pretrade_perf_start';
 const FLOW_TYPES = ['ACH_RECEIPT', 'ACH_DISBURSEMENT', 'CASH_RECEIPT', 'CASH_DISBURSEMENT', 'ELECTRONIC_FUND', 'WIRE_IN', 'WIRE_OUT', 'JOURNAL'];
-let __perfBusy = false, __perfErr = null, __perfPeriod = 'ytd';
+let __perfBusy = false, __perfErr = null, __perfPeriod = 'ytd', __perfMonth = null;
 function loadHist() { try { const c = JSON.parse(localStorage.getItem(HIST_KEY) || 'null'); return c && Array.isArray(c.data) ? c : null; } catch (e) { return null; } }
 function loadNavs() { try { const c = JSON.parse(localStorage.getItem(NAVS_KEY) || 'null'); return c && Array.isArray(c.data) ? c : null; } catch (e) { return null; } }
 function loadPerfStart() { try { const o = JSON.parse(localStorage.getItem(PERF_START_KEY) || '{}'); return o && typeof o === 'object' ? o : {}; } catch (e) { return {}; } }
@@ -13527,6 +13554,33 @@ window.setPerfStart = v => {
   _pushPerfState._last = null; _pushPerfState();
   const y = window.scrollY; render(); window.scrollTo(0, y);
 };
+window.setPerfMonth = i => {
+  __perfMonth = __perfMonth === i ? null : i;
+  const el = document.getElementById('pf-months-wrap'), p = computePerf();
+  if (el && p) el.innerHTML = _monthsHTML(p);
+  if (__perfMonth != null) { const d = document.getElementById('pf-month-detail'); if (d && d.getBoundingClientRect().top > window.innerHeight - 120) d.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
+};
+function _monthDetailHTML(p, mi) {
+  const y0 = new Date(_thisYear(), mi, 1).getTime(), y1 = new Date(_thisYear(), mi + 1, 1).getTime();
+  const lots = p.all.filter(l => (l.closeTs || 0) >= y0 && l.closeTs < y1).sort((a, b) => a.closeTs - b.closeTs);
+  const s = _statsOf(lots), by = {};
+  lots.forEach(l => { by[l.strategy] = (by[l.strategy] || 0) + l.pnl; });
+  const dt = ts => { const d = new Date(ts); return `${d.getMonth() + 1}/${d.getDate()}`; };
+  const lab = l => l.kind === 'stock' ? `${l.ticker} ${Math.round(l.qty)} 股` : `${l.ticker} ${l.strike}${l.putCall === 'PUT' ? 'P' : 'C'} ${_md(l.expiry)} × ${l.qty}`;
+  const M = { trade: '平仓', expired: '到期', assigned: '被行权' };
+  return `
+    <div class="pf-detail" id="pf-month-detail">
+      <div class="pf-detail-head"><b>${mi + 1} 月</b>
+        <span class="${_thCls(s.pnl)}">${_fmtSigned(s.pnl)}</span><span class="rk-quiet">${s.n} 笔 · 胜率 ${s.wr != null ? s.wr.toFixed(0) + '%' : '—'}${s.capture != null ? ` · 留存 ${s.capture.toFixed(0)}%` : ''}</span>
+        <button class="gl-x" onclick="setPerfMonth(${mi})" aria-label="收起">×</button></div>
+      <div class="rk-chips">${Object.entries(by).sort((a, b) => b[1] - a[1]).map(([k, v]) => `<span class="rk-chip ${v >= 0 ? 'rk-c-safe' : 'rk-c-alert'}">${esc(k)} ${_fmtSigned(v)}</span>`).join('')}</div>
+      <div class="rk-table-wrap"><table class="rk-table">
+        <thead><tr><th>日期</th><th>合约</th><th>策略</th><th>盈亏</th><th>方式</th><th>天数</th><th>留存</th></tr></thead>
+        <tbody>${lots.map(l => `<tr><td>${dt(l.closeTs)}</td><td>${esc(lab(l))}</td><td>${esc(l.strategy)}</td><td class="${_thCls(l.pnl)}">${_fmtSigned(l.pnl)}</td>
+          <td>${M[l.method] || ''}</td><td>${l.openTs ? Math.round((l.closeTs - l.openTs) / 86400000) : '—'}</td><td>${l.capture != null ? l.capture.toFixed(0) + '%' : '—'}</td></tr>`).join('')}</tbody>
+      </table></div>
+    </div>`;
+}
 window.setPerfPeriod = p => { __perfPeriod = p; const y = window.scrollY; render(); window.scrollTo(0, y); };
 
 /* FIFO lot matching over normalized transactions */
@@ -13649,8 +13703,8 @@ function _monthsHTML(p) {
   const mx = Math.max(1, ...p.months.map(m => Math.abs(m.pnl))), cur = new Date().getMonth();
   return `<div class="pf-months">${p.months.map((m, i) => {
     const a = m.n ? 0.08 + Math.min(1, Math.abs(m.pnl) / mx) * 0.5 : 0, col = m.pnl >= 0 ? 'var(--pass)' : 'var(--fail)';
-    return `<div class="pf-m${i > cur ? ' future' : ''}" style="--a:${a.toFixed(2)};--c:${col}"><span>${i + 1} 月</span><b class="${m.n ? _thCls(m.pnl) : 'rk-quiet'}">${m.n ? _fmtSigned(m.pnl) : '—'}</b><em>${m.n ? m.n + ' 笔' : ''}</em></div>`;
-  }).join('')}</div>`;
+    return `<${m.n ? 'button' : 'div'} class="pf-m${i > cur ? ' future' : ''}${__perfMonth === i ? ' on' : ''}${m.n ? ' click' : ''}" style="--a:${a.toFixed(2)};--c:${col}"${m.n ? ` onclick="setPerfMonth(${i})" aria-expanded="${__perfMonth === i}"` : ''}><span>${i + 1} 月</span><b class="${m.n ? _thCls(m.pnl) : 'rk-quiet'}">${m.n ? _fmtSigned(m.pnl) : '—'}</b><em>${m.n ? m.n + ' 笔' : ''}</em></${m.n ? 'button' : 'div'}>`;
+  }).join('')}</div>${__perfMonth != null ? _monthDetailHTML(p, __perfMonth) : ''}`;
 }
 function _navCurveHTML(p) {
   const s = (loadNavs() || {}).data || [];
@@ -13694,7 +13748,7 @@ function renderPerformancePage() {
               : `<div class="pf-start rk-quiet">年初净值 ${_fmtUsd(st)} <button class="btn ghost small" onclick="setPerfStart('')">修改</button></div>`}
       </section>
       <section class="rk-block"><h3 class="rk-block-title">净值</h3>${_navCurveHTML(p)}</section>
-      <section class="rk-block"><h3 class="rk-block-title">月度已实现 · ${_thisYear()}</h3>${_monthsHTML(p)}</section>
+      <section class="rk-block"><h3 class="rk-block-title rk-title-row"><span>月度已实现 · ${_thisYear()}</span><span class="rk-quiet">点月份看明细</span></h3><div id="pf-months-wrap">${_safe('月度', () => _monthsHTML(p))}</div></section>
       <section class="rk-block"><h3 class="rk-block-title">按策略</h3>
         <div class="rk-table-wrap"><table class="rk-table">
           <thead><tr><th>策略</th><th>笔数</th><th>胜率</th><th>已实现</th><th class="pf-opt">均盈</th><th class="pf-opt">均亏</th><th>盈亏比</th><th>期望值</th><th>留存</th><th class="pf-opt">天数</th></tr></thead>
@@ -13707,6 +13761,7 @@ function renderPerformancePage() {
           <thead><tr><th>标的</th><th>笔数</th><th>胜率</th><th>已实现</th><th>期望值</th></tr></thead>
           <tbody>${tick.map(({ k, s }) => `<tr><td>${esc(k)}</td><td>${s.n}</td><td>${s.wr != null ? s.wr.toFixed(0) + '%' : '—'}</td><td class="${_thCls(s.pnl)}">${_fmtSigned(s.pnl)}</td><td class="${_thCls(s.exp)}">${s.exp != null ? _fmtSigned(s.exp) : '—'}</td></tr>`).join('') || '<tr><td colspan="5" class="rk-quiet">无</td></tr>'}</tbody>
         </table></div></section>
+      ${_safe('持股成本', _wheelHTML)}
       ${p.assigns.length ? `<section class="rk-block"><h3 class="rk-block-title">被行权</h3>
         <div class="rk-table-wrap"><table class="rk-table">
           <thead><tr><th>日期</th><th>合约</th><th>权利金</th><th>正股已实现</th><th>正股浮动</th><th>合计</th></tr></thead>
@@ -13722,6 +13777,157 @@ function renderPerformancePage() {
         </table></div>
         <div class="rk-note">先进先出配对开平仓; 已实现含手续费. 交易记录 ${_ago(p.at)}读取${p.status && p.status !== 'ok' ? ` · <span class="rk-t-alert">${esc(p.status)}</span>` : ''}.</div></section>
     </div>`;
+}
+
+/* ---------- wheel cost basis: premiums lower the real cost of shares held ---------- */
+function computeWheel() {
+  const h = loadHist(); if (!h) return null;
+  const { closed } = buildPerfLots(h.data);
+  const pos = getPortfolio().positions;
+  const held = pos.filter(x => x.kind === 'stock' && (x.side || 1) > 0 && (Number(x.qty) || 0) > 0);
+  if (!held.length) return { rows: [] };
+  const txs = h.data.slice().sort((a, b) => (a.ts || 0) - (b.ts || 0));
+  const isAssign = t => /ASSIGN|EXERCIS/i.test(t.desc || '');
+  const rows = held.map(sx => {
+    const T = sx.ticker, ev = [];
+    txs.forEach(t => {
+      const opts = t.items.filter(i => i.asset === 'OPTION' && i.ticker === T), eqs = t.items.filter(i => (i.asset === 'EQUITY' || i.asset === 'COLLECTIVE_INVESTMENT') && i.ticker === T);
+      const allOpts = t.items.filter(i => i.asset === 'OPTION'), allEq = t.items.filter(i => i.asset === 'EQUITY' || i.asset === 'COLLECTIVE_INVESTMENT');
+      opts.forEach(i => {
+        if (t.type === 'RECEIVE_AND_DELIVER') { ev.push({ ts: t.ts, kind: isAssign(t) ? 'opt_assigned' : 'opt_expired', i, cash: 0 }); return; }
+        const cash = allOpts.length === 1 && !allEq.length ? (t.net ?? i.cost ?? 0) : (i.cost ?? 0);
+        ev.push({ ts: t.ts, kind: 'opt', i, cash, open: i.effect === 'OPENING' || (i.effect == null && cash > 0) });
+      });
+      eqs.forEach(i => {
+        const qty = Math.abs(i.amount || 0); if (!qty) return;
+        let cash = allEq.length === 1 && !allOpts.length ? (t.net ?? i.cost ?? 0) : (i.cost ?? 0);
+        const buy = cash < 0 || (cash === 0 && (i.amount || 0) > 0) || (t.type === 'RECEIVE_AND_DELIVER' && (i.amount || 0) > 0);
+        if (t.type === 'RECEIVE_AND_DELIVER' || !cash) {        // assignment / call-away: priced at the strike
+          const k = closed.find(l => l.ticker === T && l.method === 'assigned' && Math.abs((l.closeTs || 0) - t.ts) < 4 * 86400000);
+          const px = k ? k.strike : (i.price || 0);
+          cash = (buy ? -1 : 1) * px * qty;
+        }
+        ev.push({ ts: t.ts, kind: buy ? 'buy' : 'sell', qty, cash, assigned: t.type === 'RECEIVE_AND_DELIVER' });
+      });
+    });
+    // walk shares; keep the last cycle that started at 0
+    let shares = 0, cyc = null, opening = false;
+    ev.forEach(e => {
+      if (e.kind === 'buy') {
+        if (shares <= 0) {
+          cyc = { start: e.ts, ev: [], buyCost: 0, bought: 0, sold: 0, sells: 0, prem: 0 };
+          const k = closed.filter(l => l.ticker === T && l.putCall === 'PUT' && l.method === 'assigned' && Math.abs((l.closeTs || 0) - e.ts) < 4 * 86400000);
+          k.forEach(l => { cyc.prem += l.openCash; cyc.ev.push({ ts: l.closeTs, kind: 'csp', label: `${l.strike}P 被行权 · 权利金`, cash: l.openCash }); });
+        }
+        shares += e.qty; cyc.buyCost += -e.cash; cyc.bought += e.qty;
+        cyc.ev.push({ ts: e.ts, kind: 'buy', label: `${e.assigned ? '接股' : '买入'} ${e.qty} 股 @ ${(-e.cash / e.qty).toFixed(2)}`, cash: e.cash });
+      } else if (e.kind === 'sell') {
+        shares -= e.qty;
+        if (cyc) { cyc.sells += e.cash; cyc.sold += e.qty; cyc.ev.push({ ts: e.ts, kind: 'sell', label: `${e.assigned ? '被行权卖出' : '卖出'} ${e.qty} 股 @ ${(e.cash / e.qty).toFixed(2)}`, cash: e.cash }); }
+        if (shares <= 0) { cyc = null; shares = 0; }
+      } else if (cyc && shares > 0 && e.kind === 'opt') {
+        const i = e.i, tag = `${i.strike}${i.putCall === 'PUT' ? 'P' : 'C'} ${_md(i.expiry)}`;
+        cyc.prem += e.cash;
+        cyc.ev.push({ ts: e.ts, kind: 'opt', label: `${e.cash >= 0 ? '卖出' : '买回'} ${tag} × ${Math.abs(i.amount || 0)}`, cash: e.cash });
+      } else if (cyc && shares > 0 && e.kind === 'opt_expired') {
+        const i = e.i; cyc.ev.push({ ts: e.ts, kind: 'exp', label: `${i.strike}${i.putCall === 'PUT' ? 'P' : 'C'} ${_md(i.expiry)} 到期作废`, cash: 0 });
+      }
+    });
+    const sh = Number(sx.qty) || 0, px = _stockPx(sx), schwabAvg = sx.avg;
+    if (!cyc || Math.abs(shares - sh) > 0.5) {
+      // holding predates the record window (or counts disagree): start from Schwab's average, add every premium on record
+      const prem = ev.filter(e => e.kind === 'opt').reduce((s, e) => s + e.cash, 0);
+      const base = (schwabAvg || 0) * sh;
+      const adj = sh ? (base - prem) / sh : null;
+      return { T, shares: sh, px, schwabAvg, buyAvg: schwabAvg, prem, adj, partial: true, cycleStart: null, events: ev.filter(e => e.kind === 'opt').map(e => ({ ts: e.ts, label: `${e.cash >= 0 ? '卖出' : '买回'} ${e.i.strike}${e.i.putCall === 'PUT' ? 'P' : 'C'} ${_md(e.i.expiry)}`, cash: e.cash })) };
+    }
+    const net = cyc.buyCost - cyc.sells - cyc.prem;
+    return { T, shares: sh, px, schwabAvg, buyAvg: cyc.bought ? cyc.buyCost / cyc.bought : null, prem: cyc.prem, sells: cyc.sells, adj: net / sh, partial: false, cycleStart: cyc.start, events: cyc.ev };
+  });
+  return { rows: rows.sort((a, b) => (b.prem || 0) - (a.prem || 0)) };
+}
+function _wheelHTML() {
+  const w = computeWheel();
+  if (!w) return '';
+  if (!w.rows.length) return `<section class="rk-block"><h3 class="rk-block-title">持股成本</h3><div class="rk-quiet">当前没有持有正股.</div></section>`;
+  const dt = ts => { const d = new Date(ts); return `${String(d.getFullYear()).slice(2)}/${d.getMonth() + 1}/${d.getDate()}`; };
+  const f2 = v => v == null ? '—' : v.toFixed(2);
+  return `
+    <section class="rk-block">
+      <h3 class="rk-block-title">持股成本</h3>
+      <div class="rk-table-wrap"><table class="rk-table rk-dd-table wh-table">
+        <thead><tr><th>标的</th><th>股数</th><th>买入均价</th><th>累计权利金</th><th>调整后成本</th><th>降低</th><th>现价</th><th>较调整后</th></tr></thead>
+        ${w.rows.map(r => {
+          const down = r.buyAvg != null && r.adj != null ? r.buyAvg - r.adj : null, vs = r.px != null && r.adj ? (r.px / r.adj - 1) * 100 : null;
+          return `<tbody class="rk-dd">
+            <tr class="rk-dd-head" tabindex="0" role="button" onclick="this.parentElement.classList.toggle('open')" onkeydown="if(event.key==='Enter')this.click()">
+              <td><span class="rk-caret">▸</span><b>${esc(r.T)}</b>${r.partial ? ' <span class="rk-quiet">起点早于记录</span>' : ''}</td>
+              <td>${Math.round(r.shares)}</td><td>${f2(r.buyAvg)}</td>
+              <td class="${_thCls(r.prem)}">${_fmtSigned(r.prem)}</td>
+              <td><b class="rk-t-acc">${f2(r.adj)}</b></td>
+              <td>${down != null ? `<span class="${down >= 0 ? 'rk-t-safe' : 'rk-t-alert'}">${down >= 0 ? '−' : '+'}${Math.abs(down).toFixed(2)}</span> <span class="rk-quiet">${r.buyAvg ? (Math.abs(down) / r.buyAvg * 100).toFixed(1) + '%' : ''}</span>` : '—'}</td>
+              <td>${f2(r.px)}</td>
+              <td class="${vs == null ? '' : vs >= 0 ? 'rk-t-safe' : 'rk-t-alert'}">${vs != null ? (vs >= 0 ? '+' : '') + vs.toFixed(1) + '%' : '—'}</td></tr>
+            ${r.events.map(e => `<tr class="rk-dd-row"><td>${dt(e.ts)}</td><td colspan="5">${esc(e.label)}</td><td colspan="2" class="${_thCls(e.cash)}">${e.cash ? _fmtSigned(e.cash) : '—'}</td></tr>`).join('')}
+            <tr class="rk-dd-row"><td></td><td colspan="7" class="rk-quiet">Schwab 均价 ${f2(r.schwabAvg)}${r.cycleStart ? ` · 本轮自 ${dt(r.cycleStart)} 起` : ''}</td></tr>
+          </tbody>`; }).join('')}
+      </table></div>
+      <div class="rk-note">调整后成本 = (买入总成本 − 卖出回款 − 净权利金) ÷ 当前股数. 本轮从持股由 0 变为正数起算, 含被行权那张 CSP 的权利金及之后所有期权收付 (含未平仓 call 已收的权利金). 买入价按行权价计; Schwab 均价通常已按税务规则扣除 put 权利金, 仅供对照. 起点早于 2 年记录的, 以 Schwab 均价为起点.</div>
+    </section>`;
+}
+
+/* ---------- fault isolation: one broken block never takes the page down ---------- */
+const LAST_ERR_KEY = 'pretrade_last_error';
+function _reportErr(where, e) {
+  const msg = (e && (e.message || e.reason && e.reason.message)) || String(e);
+  const stack = String((e && e.stack) || '').split('\n').slice(0, 3).map(s => s.trim()).join(' | ');
+  try { localStorage.setItem(LAST_ERR_KEY, JSON.stringify({ where, msg, stack, at: Date.now(), build: APP_BUILD })); } catch (er) {}
+  try { console.error('[checklist]', where, e); } catch (er) {}
+  const now = Date.now();
+  if (typeof showToast === 'function' && now - (_reportErr._t || 0) > 4000) { _reportErr._t = now; showToast('出错: ' + where, 'error', String(msg).slice(0, 120)); }
+}
+window.addEventListener('error', e => _reportErr('页面', e.error || e.message));
+window.addEventListener('unhandledrejection', e => _reportErr('后台', e.reason));
+function _safe(label, fn, fallback) {
+  try { return fn(); }
+  catch (e) { _reportErr(label, e); return fallback !== undefined ? fallback : `<section class="rk-block rk-err"><b>${esc(label)}</b> 出错: ${esc(String(e && e.message || e).slice(0, 160))}</section>`; }
+}
+// Rebuildable caches only. Inputs, snapshots, settings and both connections are never touched.
+const CACHE_KEYS = ['pretrade_schwab_cache', 'pretrade_schwab_closed', 'pretrade_betas', 'pretrade_crisis', 'pretrade_history_tx',
+  'pretrade_navseries', 'pretrade_last_error', 'pretrade_watchlist', 'pretrade_panel_collapse'];
+function _sanitizeRiskHist() {
+  // device-only trend: keep every well-formed day, drop anything malformed
+  let kept = 0, dropped = 0;
+  try {
+    const raw = JSON.parse(localStorage.getItem('pretrade_risk_hist') || '[]');
+    const ok = (Array.isArray(raw) ? raw : []).filter(e => {
+      const good = e && typeof e === 'object' && /^\d{4}-\d{2}-\d{2}$/.test(String(e.d)) && isFinite(e.s) && e.s >= 0 && e.s <= 100;
+      if (!good) dropped++;
+      return good;
+    }).map(e => ({ d: e.d, s: +e.s, v: e.v && typeof e.v === 'object' && !Array.isArray(e.v)
+      ? Object.fromEntries(Object.entries(e.v).filter(([, x]) => isFinite(x)).map(([k, x]) => [k, +x])) : {} }));
+    kept = ok.length;
+    localStorage.setItem('pretrade_risk_hist', JSON.stringify(ok));
+  } catch (e) { try { localStorage.removeItem('pretrade_risk_hist'); } catch (er) {} }
+  return { kept, dropped };
+}
+window.clearCaches = () => {
+  if (!confirm('清理缓存?\n\n清除: Schwab 持仓缓存、平仓记录、β、历史危机、交易记录、净值曲线 (会自动重新下载).\n保留: snapshot 记录、所有设置、Sync 和 Schwab 连接, 无需重新输入.\n\n页面会重新加载.')) return;
+  const before = CACHE_KEYS.filter(k => { try { return localStorage.getItem(k) != null; } catch (e) { return false; } }).length;
+  CACHE_KEYS.forEach(k => { try { localStorage.removeItem(k); } catch (e) {} });
+  const h = _sanitizeRiskHist();
+  try { sessionStorage.setItem('pretrade_cleared', JSON.stringify({ n: before, dropped: h.dropped })); } catch (e) {}
+  location.reload();
+};
+function _clearedNotice() {
+  try {
+    const c = JSON.parse(sessionStorage.getItem('pretrade_cleared') || 'null'); if (!c) return;
+    sessionStorage.removeItem('pretrade_cleared');
+    setTimeout(() => showToast('缓存已清理', 'success', `清除 ${c.n} 项${c.dropped ? ` · 风险趋势剔除 ${c.dropped} 条损坏记录` : ''} · 正在重新读取 Schwab`), 600);
+  } catch (e) {}
+}
+function _lastErrText() {
+  try { const e = JSON.parse(localStorage.getItem(LAST_ERR_KEY) || 'null'); return e ? `${new Date(e.at).toLocaleString()} · ${e.where} · ${e.msg} · ${e.build}${e.stack ? ' · ' + e.stack : ''}` : '无'; } catch (er) { return '无'; }
 }
 
 /* ---------- composite decomposition ---------- */
@@ -13779,11 +13985,11 @@ function riskCardHTML() {
 function _refreshRiskCard() {
   const el = document.getElementById('risk-card');
   if (!el) return;
-  el.outerHTML = riskCardHTML();
+  el.outerHTML = _safe('综合风险', riskCardHTML, '<span id="risk-card" hidden></span>');
   const gk = document.getElementById('gk-card');
-  if (gk) gk.outerHTML = greeksCardHTML() || '<span id="gk-card" hidden></span>';
+  if (gk) gk.outerHTML = _safe('Greeks', greeksCardHTML, '') || '<span id="gk-card" hidden></span>';
   const pf = document.getElementById('pf-card');
-  if (pf) pf.outerHTML = perfCardHTML() || '<span id="pf-card" hidden></span>';
+  if (pf) pf.outerHTML = _safe('Performance', perfCardHTML, '') || '<span id="pf-card" hidden></span>';
   animateRiskGauges();
 }
 
@@ -14060,6 +14266,8 @@ function _riskDiagnosticsHTML(R) {
     ['余额字段', balLine],
     ['未计入', R.vars.filter(v => !v.available && !v.na).map(v => `${v.def.label} (${v.reason})`).join(' · ') || '无'],
     ['不适用', R.vars.filter(v => v.na).map(v => `${v.def.label} (${v.na})`).join(' · ') || '无'],
+    ['最近错误', _lastErrText()],
+    ['版本', APP_BUILD],
   ];
   return `
     <details class="rk-block">
@@ -14070,13 +14278,20 @@ function _riskDiagnosticsHTML(R) {
 }
 
 function renderRiskPage() {
-  const R = computeRisk();
-  _recordRiskHistory(R);
+  let R;
+  try { R = computeRisk(); }
+  catch (e) {
+    _reportErr('风险计算', e);
+    $app.innerHTML = `<div class="header"><div class="brand">Pre-Trade Checklist</div><div class="header-actions"><button class="btn ghost" onclick="hideRiskDashboard()">← 返回</button></div></div>
+      <div class="rk-page"><div class="rk-notice">风险计算出错: ${esc(String(e && e.message || e))}<div class="rk-notice-why">请截图发给开发者. 版本 ${APP_BUILD}</div><div class="rk-notice-act"><button class="btn small" onclick="clearCaches()">清理缓存后重试</button></div></div></div>`;
+    return;
+  }
+  _safe('风险记录', () => _recordRiskHistory(R), null);
   const s = R.composite, lvl = s != null ? riskLevel(s) : null;
   const src = _prSourceInfo();
   const prev = _riskPrev();
   const tr = _riskTrend(R);
-  const groups = RISK_CATS.map(cat => {
+  const groups = _safe('风险变量', () => RISK_CATS.map(cat => {
     const vs = R.vars.filter(v => v.def.cat === cat.id && !v.hidden);
     const scored = vs.filter(v => v.available && v.w > 0);
     const catAvg = scored.length ? scored.reduce((a, v) => a + v.score * v.w, 0) / scored.reduce((a, v) => a + v.w, 0) : null;
@@ -14087,7 +14302,7 @@ function renderRiskPage() {
         <h3 class="rk-group-title">${esc(cat.label)}${cl ? `<span class="rk-group-score rk-t-${cl.key}">${Math.round(catAvg)}</span>` : ''}</h3>
         ${on.map(v => _riskRowHTML(v, prev)).join('')}${off.map(v => _riskRowHTML(v, prev)).join('')}
       </section>`;
-  }).join('');
+  }).join(''));
   $app.innerHTML = `
     <div class="header">
       <div class="brand">Pre-Trade Checklist</div>
@@ -14110,19 +14325,19 @@ function renderRiskPage() {
             <span>${R.used.length} 项 · 覆盖 ${Math.round(R.coverage * 100)}%</span></div>
         </div>
       </section>
-      ${_riskDecompHTML(R)}
-      ${_mgmtHTML(R)}
-      ${_reconHTML()}
-      <div class="rk-groups">${groups}</div>
-      ${_stressHTML(R)}
-      ${R.c.isSchwab ? `<section class="rk-block"><h3 class="rk-block-title rk-title-row"><span>历史危机 ${_qBtn('crisis', 'short')}</span><button class="btn ghost small" onclick="fetchCrisis(true)">刷新</button></h3><div id="rk-crisis">${_crisisInnerHTML(R)}</div></section>
-      <section class="rk-block"><h3 class="rk-block-title">VaR ${_qBtn('var', 'short')}</h3><div id="rk-var">${_varInnerHTML(R)}</div></section>` : ''}
+      ${_safe('构成', () => _riskDecompHTML(R))}
+      ${_safe('待处理仓位', () => _mgmtHTML(R))}
+      ${_safe('持仓对账', () => _reconHTML())}
+      <div class="rk-groups">${_safe('风险变量', () => groups)}</div>
+      ${_safe('压力测试', () => _stressHTML(R))}
+      ${R.c.isSchwab ? `<section class="rk-block"><h3 class="rk-block-title rk-title-row"><span>历史危机 ${_qBtn('crisis', 'short')}</span><button class="btn ghost small" onclick="fetchCrisis(true)">刷新</button></h3><div id="rk-crisis"><div class="rk-quiet">计算中…</div></div></section>
+      <section class="rk-block"><h3 class="rk-block-title">VaR ${_qBtn('var', 'short')}</h3><div id="rk-var"><div class="rk-quiet">计算中…</div></div></section>` : ''}
       ${R.c.isSchwab && R.c.pos.some(x => x.kind !== 'stock') ? `<button class="rk-linkrow" onclick="showGreeksPage()">Greeks ▸</button>` : ''}
-      ${_tickerChartHTML(R)}
-      ${_expiryChartHTML(R)}
-      ${_moneynessHTML(R)}
+      ${_safe('单一标的', () => _tickerChartHTML(R))}
+      ${_safe('CSP 到期', () => _expiryChartHTML(R))}
+      ${_safe('距行权价', () => _moneynessHTML(R))}
       <section class="rk-block"><h3 class="rk-block-title">邮件提醒</h3><div id="rk-alerts">${_alertsInnerHTML()}</div></section>
-      ${_weightsEditorHTML(R)}
+      ${_safe('权重', () => _weightsEditorHTML(R))}
       <details class="rk-block">
         <summary class="rk-block-title">算法</summary>
         <div class="rk-method">
@@ -14133,9 +14348,16 @@ function renderRiskPage() {
           <p>开仓模拟: 同一算法; 保证金类不模拟.</p>
         </div>
       </details>
-      ${_riskDiagnosticsHTML(R)}
+      ${_safe('数据诊断', () => _riskDiagnosticsHTML(R))}
     </div>`;
-  setTimeout(() => { _loadAlertHealth(); if (R.c.isSchwab) { fetchCrisis(); fetchVarData(); } }, 0);
+  setTimeout(() => {
+    _loadAlertHealth();
+    if (!R.c.isSchwab) return;
+    const c1 = document.getElementById('rk-crisis'); if (c1) c1.innerHTML = _safe('历史危机', () => _crisisInnerHTML(R));
+    const v1 = document.getElementById('rk-var'); if (v1) v1.innerHTML = _safe('VaR', () => _varInnerHTML(R));
+    _fitChartText();
+    fetchCrisis(); fetchVarData();
+  }, 30);
 }
 
 /* ---------- post-trade: composite before → after ---------- */
@@ -14164,6 +14386,7 @@ function _simCompositeHTML(t) {
 /* Boot */
 
 loadTheme();
+_clearedNotice();
 loadTrendRange();
 loadDensity();
 // Clean up deprecated panel collapse state (feature was removed)
