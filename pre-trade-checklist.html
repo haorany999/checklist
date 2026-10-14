@@ -2187,6 +2187,9 @@
   .rk-err b { color: var(--fail); margin-right: 6px; }
   .app-err { margin: 6px auto 0; max-width: 92%; font-size: 10.5px; color: var(--fail); word-break: break-word; line-height: 1.5; }
   .app-link { background: none; border: none; padding: 0; font: inherit; color: var(--accent); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+  .header-sticky { position: sticky; top: 0; z-index: 40; margin: calc(-1 * env(safe-area-inset-top, 0px)) -16px 12px;
+    padding: calc(8px + env(safe-area-inset-top, 0px)) 16px 8px; background: color-mix(in srgb, var(--bg) 86%, transparent);
+    -webkit-backdrop-filter: blur(14px) saturate(160%); backdrop-filter: blur(14px) saturate(160%); border-bottom: 1px solid var(--border); }
   .pr-sim-risk { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 10px; margin-top: 8px; padding: 6px 9px;
     border-radius: 4px; background: var(--panel-2); font-size: 12px; color: var(--text-dim); }
   .pr-sim-risk span { font-size: 10.5px; color: var(--text-faint); margin-left: auto; }
@@ -3919,7 +3922,7 @@ function render() {
     try { renderRiskPage(); }
     catch (e) {
       _reportErr('风险页', e);
-      $app.innerHTML = `<div class="header"><div class="brand">Pre-Trade Checklist</div><div class="header-actions"><button class="btn ghost" onclick="hideRiskDashboard()">← 返回</button></div></div>
+      $app.innerHTML = `<div class="header header-sticky"><div class="brand">Pre-Trade Checklist</div><div class="header-actions"><button class="btn ghost" onclick="hideRiskDashboard()">← 返回</button></div></div>
         <div class="rk-page"><div class="rk-notice">风险页出错: ${esc(String(e && e.message || e))}<div class="rk-notice-why">请截图发给开发者 · 版本 ${APP_BUILD}</div><div class="rk-notice-act"><button class="btn small" onclick="clearCaches()">清理缓存后重试</button></div></div></div>`;
     }
     _postRender(); return;
@@ -4569,7 +4572,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.14-v14.1';
+const APP_BUILD = '2026.10.14-v15';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
@@ -8052,7 +8055,7 @@ function renderHistoryPage() {
   const history = getActiveHistory();
 
   $app.innerHTML = `
-    <div class="header">
+    <div class="header header-sticky">
       <div class="brand">Pre-Trade Checklist</div>
       <div class="header-actions">
         <button class="btn ghost" onclick="hideHistory()">← 返回</button>
@@ -12773,7 +12776,7 @@ function greeksCardHTML() {
 function renderGreeksPage() {
   const R = computeRisk();
   $app.innerHTML = `
-    <div class="header">
+    <div class="header header-sticky">
       <div class="brand">Pre-Trade Checklist</div>
       <div class="header-actions">
         <button class="btn ghost" onclick="state._view = null; render(); window.scrollTo(0, 0)">← 返回</button>
@@ -13415,12 +13418,15 @@ async function fetchCrisis(force) {
 function _shockBook(c, moveOf, ivMult = 1) {
   let pnl = 0; const per = []; const assigned = [];
   c.pos.forEach(x => {
-    const mv = moveOf(x.ticker);
-    if (mv == null) return;
+    const raw = moveOf(x.ticker);
+    if (raw == null || !isFinite(raw)) return;
+    const mv = Math.max(-0.95, raw);                         // a stock can't fall 100%+; β estimates can overshoot
     if (x.kind === 'stock') { const px = _stockPx(x); if (px == null) return; const v = (x.side || 1) * (Number(x.qty) || 0) * px * mv; pnl += v; per.push({ x, mv, v }); return; }
     const m = _optModel(x); if (!m) return;
     const S1 = m.S * (1 + mv), sig = Math.min(3, m.sigma * ivMult);
-    const v = (bsGreeks(S1, m.K, m.T, sig, m.type, BS_RATE, m.q).price - bsGreeks(m.S, m.K, m.T, m.sigma, m.type, BS_RATE, m.q).price) * m.mult;
+    const g1 = bsGreeks(S1, m.K, m.T, sig, m.type, BS_RATE, m.q), g0 = bsGreeks(m.S, m.K, m.T, m.sigma, m.type, BS_RATE, m.q);
+    if (!g1 || !g0) return;
+    const v = (g1.price - g0.price) * m.mult;
     pnl += v; per.push({ x, mv, v });
     if (x.kind === 'short_put' && S1 < x.strike) assigned.push(x);
   });
@@ -13434,7 +13440,7 @@ function _crisisInnerHTML(R) {
   const c = R.c, d = cr.data;
   const rows = d.scenarios.map(s => {
     let est = 0;
-    const res = _shockBook(c, t => { const r = d.moves[t] ? d.moves[t][s.id] : null; if (r != null) return r; if (s.spy == null) return null; est++; return _betaInfo(t).beta * s.spy; },
+    const res = _shockBook(c, t => { const r = d.moves[t] ? d.moves[t][s.id] : null; if (r != null) return r; if (s.spy == null) return null; est++; return Math.max(-0.95, _betaInfo(t).beta * s.spy); },
       s.vix != null ? Math.max(0.6, Math.min(2.5, 1 + s.vix)) : 1);
     return { s, res, est };
   });
@@ -13449,10 +13455,10 @@ function _crisisInnerHTML(R) {
           <td class="${_thCls(res.pnl)}">${_fmtSigned(res.pnl)}</td><td class="${_thCls(res.pnl)}">${pct(res.pnl) != null ? pct(res.pnl).toFixed(1) + '%' : '—'}</td>
           <td>${res.assigned.length ? `${res.assigned.length} 笔 · ${_fmtUsd(res.aN)}` : '—'}</td>
           <td class="${res.cashPct == null ? '' : res.cashPct < 0 ? 'rk-t-danger' : res.cashPct < 10 ? 'rk-t-alert' : ''}">${res.cashPct != null ? res.cashPct.toFixed(1) + '%' : '—'}</td></tr>
-        ${res.per.sort((a, b) => a.v - b.v).map(p => `<tr class="rk-dd-row"><td>${esc(_posLabel(p.x))}${d.moves[p.x.ticker] && d.moves[p.x.ticker][s.id] == null ? ' <span class="rk-quiet">β 估算</span>' : ''}</td><td>${(p.mv * 100).toFixed(1)}%</td><td class="${_thCls(p.v)}">${_fmtSigned(p.v)}</td><td></td><td></td><td></td></tr>`).join('')}
+        ${res.per.sort((a, b) => a.v - b.v).map(p => `<tr class="rk-dd-row"><td>${esc(_posLabel(p.x))}${!(d.moves[p.x.ticker] && d.moves[p.x.ticker][s.id] != null) ? ` <span class="rk-quiet">β 估算${p.mv <= -0.95 ? ' · 上限 −95%' : ''}</span>` : ''}</td><td>${(p.mv * 100).toFixed(1)}%</td><td class="${_thCls(p.v)}">${_fmtSigned(p.v)}</td><td></td><td></td><td></td></tr>`).join('')}
       </tbody>`).join('')}
     </table></div>
-    <div class="rk-note">各标的按该期间实际涨跌瞬时作用于现有持仓; 期间尚未上市的按 β × SPY 估算. IV 按 VIX 同期变化等比放大 (上限 2.5 倍).</div>`;
+    <div class="rk-note">各标的按该期间实际涨跌瞬时作用于现有持仓; 期间尚未上市的按 β × SPY 估算, 单只跌幅上限 −95%. IV 按 VIX 同期变化等比放大 (上限 2.5 倍).</div>`;
 }
 
 /* ---------- historical VaR (Worker /prices) ---------- */
@@ -13529,11 +13535,10 @@ async function fetchPerf(force) {
   if (!force && h && Date.now() - h.at < 30 * 60000) return;
   __perfBusy = true;
   try {
-    const [r1, r2] = await Promise.all([_wfetch(`/history?from=${_thisYear() - 1}-01-01`), _wfetch('/navseries')]);
-    const b1 = await r1.json().catch(() => null), b2 = await r2.json().catch(() => null);
+    const r1 = await _wfetch(`/history?from=${_thisYear() - 1}-01-01`);
+    const b1 = await r1.json().catch(() => null);
     if (r1.ok && b1 && Array.isArray(b1.transactions)) { try { localStorage.setItem(HIST_KEY, JSON.stringify({ data: b1.transactions, at: Date.now(), status: b1.status })); } catch (e) {} __perfErr = null; }
     else __perfErr = r1.status === 404 ? '需 Worker v7' : (b1 && b1.message) || `HTTP ${r1.status}`;
-    if (r2.ok && b2 && Array.isArray(b2.series)) { try { localStorage.setItem(NAVS_KEY, JSON.stringify({ data: b2.series, at: Date.now() })); } catch (e) {} }
   } catch (e) { __perfErr = '网络错误'; }
   finally { __perfBusy = false; }
   _pushPerfState();
@@ -13717,7 +13722,7 @@ function _navCurveHTML(p) {
 function renderPerformancePage() {
   const p = computePerf(), st = loadPerfStart()[_thisYear()];
   const head = `
-    <div class="header">
+    <div class="header header-sticky">
       <div class="brand">Pre-Trade Checklist</div>
       <div class="header-actions"><button class="btn ghost" onclick="state._view = null; render(); window.scrollTo(0, 0)">← 返回</button>
         <button class="btn ghost" onclick="fetchPerf(true)">刷新</button></div>
@@ -13747,7 +13752,6 @@ function renderPerformancePage() {
         ${!st ? `<div class="pf-start">年初净值 <input inputmode="decimal" placeholder="12 月 31 日 NAV" onchange="setPerfStart(this.value)"> <span class="rk-quiet">月结单上的数字, 只填一次</span></div>`
               : `<div class="pf-start rk-quiet">年初净值 ${_fmtUsd(st)} <button class="btn ghost small" onclick="setPerfStart('')">修改</button></div>`}
       </section>
-      <section class="rk-block"><h3 class="rk-block-title">净值</h3>${_navCurveHTML(p)}</section>
       <section class="rk-block"><h3 class="rk-block-title rk-title-row"><span>月度已实现 · ${_thisYear()}</span><span class="rk-quiet">点月份看明细</span></h3><div id="pf-months-wrap">${_safe('月度', () => _monthsHTML(p))}</div></section>
       <section class="rk-block"><h3 class="rk-block-title">按策略</h3>
         <div class="rk-table-wrap"><table class="rk-table">
@@ -14282,7 +14286,7 @@ function renderRiskPage() {
   try { R = computeRisk(); }
   catch (e) {
     _reportErr('风险计算', e);
-    $app.innerHTML = `<div class="header"><div class="brand">Pre-Trade Checklist</div><div class="header-actions"><button class="btn ghost" onclick="hideRiskDashboard()">← 返回</button></div></div>
+    $app.innerHTML = `<div class="header header-sticky"><div class="brand">Pre-Trade Checklist</div><div class="header-actions"><button class="btn ghost" onclick="hideRiskDashboard()">← 返回</button></div></div>
       <div class="rk-page"><div class="rk-notice">风险计算出错: ${esc(String(e && e.message || e))}<div class="rk-notice-why">请截图发给开发者. 版本 ${APP_BUILD}</div><div class="rk-notice-act"><button class="btn small" onclick="clearCaches()">清理缓存后重试</button></div></div></div>`;
     return;
   }
@@ -14304,7 +14308,7 @@ function renderRiskPage() {
       </section>`;
   }).join(''));
   $app.innerHTML = `
-    <div class="header">
+    <div class="header header-sticky">
       <div class="brand">Pre-Trade Checklist</div>
       <div class="header-actions">
         <button class="btn ghost" onclick="hideRiskDashboard()">← 返回</button>
