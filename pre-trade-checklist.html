@@ -2884,6 +2884,27 @@
     body.theme-pro .gl-q::after { content: ''; position: absolute; inset: -7px; }
     body.theme-pro .gl-x { min-width: 36px; min-height: 36px; display: inline-flex; align-items: center; justify-content: center; }
   }
+  /* 3D · time slider + decomposition */
+  .sf-time { display: flex; align-items: center; gap: 10px; padding: 8px 2px 2px; }
+  .sf-play { flex: 0 0 auto; width: 32px; height: 28px; border: 1px solid var(--border); border-radius: var(--radius, 6px); background: var(--panel-2); color: var(--accent); font-size: 11px; cursor: pointer; }
+  .sf-play:hover { border-color: var(--accent); }
+  .sf-range { flex: 1; min-width: 0; accent-color: var(--accent); height: 28px; }
+  .sf-tlab { flex: 0 0 auto; min-width: 84px; text-align: right; font: 600 12px var(--mono); color: var(--text); }
+  .sf-parts:empty { display: none; }
+  .sf-parts { margin-top: 8px; }
+  .sf-parts-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: 11.5px; color: var(--text-dim); margin-bottom: 6px; }
+  .sf-parts-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 6px; }
+  .sf-part { position: relative; display: flex; justify-content: space-between; align-items: baseline; gap: 6px; padding: 6px 8px 8px; background: var(--panel-2); border: 1px solid var(--border); border-radius: var(--radius, 6px); cursor: pointer; text-align: left; overflow: hidden; color: var(--text); }
+  .sf-part b { font: 700 12px var(--mono); }
+  .sf-part span { font: 600 12px var(--mono); }
+  .sf-part i { position: absolute; left: 0; bottom: 0; height: 3px; }
+  .sf-part i.pos { background: var(--pass); } .sf-part i.neg { background: var(--fail); }
+  .sf-part.off { opacity: 0.4; } .sf-part.off b { text-decoration: line-through; }
+  .sf-part:hover { border-color: var(--border-hi); }
+  body.theme-pro .sf-play, body.theme-pro .sf-part { border-radius: 2px; }
+  @media (pointer: coarse) { .sf-play { width: 40px; height: 34px; } .sf-range { height: 34px; } .sf-part { min-height: 36px; } }
+  .sf-panel.fs .sf-time { position: absolute; left: 12px; right: 12px; bottom: 10px; z-index: 3; background: color-mix(in srgb, var(--panel) 85%, transparent); padding: 6px 8px; border-radius: var(--radius, 6px); }
+  .sf-panel.fs .sf-parts { display: none; }
 </style>
 </head>
 <body class="theme-slate">
@@ -4897,7 +4918,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.15-v18.2';
+const APP_BUILD = '2026.10.15-v19';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
@@ -12257,6 +12278,14 @@ function _mEval(m, S1, d, dv, metric) {
   return 0;
 }
 const _IV_SHIFTS = (() => { const a = []; for (let v = -10; v <= 30.001; v += 2.5) a.push(v); return a; })();
+function portfolioSurfaceParts(pos, metric) {
+  const base = portfolioSurface(pos, metric), tickers = [...new Set(pos.map(x => x.ticker))];
+  if (tickers.length > 1) {
+    base.parts = {};
+    tickers.forEach(t => { base.parts[t] = portfolioSurface(pos.filter(x => x.ticker === t), metric).z; });
+  }
+  return base;
+}
 function portfolioSurface(pos, metric) {
   const xs = []; for (let v = -30; v <= 20.001; v += 2.5) xs.push(v / 100);
   const ivMode = metric === 'pnl_iv';
@@ -12327,6 +12356,12 @@ function surfacePanelHTML({ metrics, build, def = 'pnl', height = 320 }) {
           <div class="sf-fs-read"></div><div class="sf-rotate">横过手机看得更清楚</div></div>
         <div class="sf-grid" hidden></div>
       </div>
+      <div class="sf-time"${data.ys.length < 3 ? ' hidden' : ''}>
+        <button class="sf-play" onclick="sfPlay('${id}')" aria-label="播放" title="从头播放">▶</button>
+        <input type="range" class="sf-range" min="0" max="${data.ys.length - 1}" step="1" value="0" oninput="sfTime('${id}', this.value)" aria-label="时间">
+        <span class="sf-tlab"></span>
+      </div>
+      <div class="sf-parts"></div>
       <div class="sf-pin"></div>
       <div class="rk-note sf-desc"></div>
     </div>`;
@@ -12384,24 +12419,37 @@ function drawSurface(id) {
   ctx.beginPath(); box.forEach((p, k) => k ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.closePath(); ctx.stroke();
   if (st.data.palette === 'diverge' && zmin < 0 && zmax > 0) {
     const z0 = Zw(0), q = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([X, Y]) => P(X, Y, z0));
-    ctx.setLineDash([3, 4]); ctx.strokeStyle = _rgba(txt, 0.45);
-    ctx.beginPath(); q.forEach((p, k) => k ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.closePath(); ctx.stroke(); ctx.setLineDash([]);
+    // zero plane: a soft gold dashed outline (muted gold on light backgrounds so it stays visible)
+    const bg = _cssColor('--bg'), light = (bg[0] * 0.299 + bg[1] * 0.587 + bg[2] * 0.114) > 140;
+    ctx.setLineDash([4, 4]); ctx.lineWidth = 1.25; ctx.strokeStyle = light ? 'rgba(160, 120, 28, 0.62)' : 'rgba(232, 204, 132, 0.58)';
+    ctx.beginPath(); q.forEach((p, k) => k ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.closePath(); ctx.stroke(); ctx.setLineDash([]); ctx.lineWidth = 1;
   }
+  // the selected day: a faint wall across the box, so the slice being read is obvious
+  if (st.pin && ny > 2) {
+    const yj = Yw(st.pin.j), wall = [P(-1, yj, zb), P(1, yj, zb), P(1, yj, 0.62), P(-1, yj, 0.62)];
+    ctx.beginPath(); wall.forEach((p, k) => k ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.closePath();
+    ctx.fillStyle = _rgba(acc, 0.07); ctx.fill(); ctx.setLineDash([2, 3]); ctx.strokeStyle = _rgba(acc, 0.4); ctx.lineWidth = 1; ctx.stroke(); ctx.setLineDash([]);
+  }
+  // soft light, fixed to the viewer (up-left-front): ambient + diffuse + a gentle highlight
+  const Lx = -0.36, Ly = -0.66, Lz = -0.66, Ll = Math.hypot(Lx, Ly, Lz), lx = Lx / Ll, ly = Ly / Ll, lz = Lz / Ll;
+  const hx = lx, hy = ly, hz = lz - 1, hl = Math.hypot(hx, hy, hz), Hx = hx / hl, Hy = hy / hl, Hz = hz / hl;
   const quads = [];
   for (let i = 0; i < nx - 1; i++) for (let j = 0; j < ny - 1; j++) {
     const w = [[i, j], [i + 1, j], [i + 1, j + 1], [i, j + 1]].map(([a, b]) => [Xw(a), Yw(b), Zw(z[a][b])]);
-    const pr = w.map(p => P(...p));
-    const ux = w[2][0] - w[0][0], uy = w[2][1] - w[0][1], uz = w[2][2] - w[0][2], vx = w[3][0] - w[1][0], vy = w[3][1] - w[1][1], vz = w[3][2] - w[1][2];
+    const pr = w.map(p => P(...p)), v = w.map(p => P0(...p));
+    const ux = v[2][0] - v[0][0], uy = v[2][1] - v[0][1], uz = v[2][2] - v[0][2], vx = v[3][0] - v[1][0], vy = v[3][1] - v[1][1], vz = v[3][2] - v[1][2];
     let nx_ = uy * vz - uz * vy, ny_ = uz * vx - ux * vz, nz_ = ux * vy - uy * vx;
-    const nl = Math.hypot(nx_, ny_, nz_) || 1;
-    const light = Math.abs((nx_ * -0.35 + ny_ * -0.45 + nz_ * 0.82) / nl);
-    quads.push({ pr, depth: pr.reduce((s, p) => s + p[2], 0) / 4, c: col((z[i][j] + z[i + 1][j] + z[i + 1][j + 1] + z[i][j + 1]) / 4), light });
+    const nl = Math.hypot(nx_, ny_, nz_) || 1; nx_ /= nl; ny_ /= nl; nz_ /= nl;
+    if (nz_ > 0) { nx_ = -nx_; ny_ = -ny_; nz_ = -nz_; }                  // face the viewer
+    const diff = Math.max(0, nx_ * lx + ny_ * ly + nz_ * lz), spec = Math.pow(Math.max(0, nx_ * Hx + ny_ * Hy + nz_ * Hz), 28);
+    quads.push({ pr, depth: pr.reduce((s, p) => s + p[2], 0) / 4, c: col((z[i][j] + z[i + 1][j] + z[i + 1][j + 1] + z[i][j + 1]) / 4), diff, spec });
   }
   quads.sort((a, b) => b.depth - a.depth);
   quads.forEach(q => {
     ctx.beginPath(); q.pr.forEach((p, k) => k ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.closePath();
-    ctx.fillStyle = _rgba(q.c.map(v => v * (0.72 + 0.28 * q.light)), 0.96); ctx.fill();
-    ctx.strokeStyle = _rgba(line, 0.55); ctx.lineWidth = 0.6; ctx.stroke();
+    const sh = 0.6 + 0.4 * q.diff, fc = q.c.map(v => Math.min(255, v * sh + 255 * 0.16 * q.spec));
+    ctx.fillStyle = _rgba(fc, 1); ctx.fill();
+    ctx.strokeStyle = _rgba(fc.map(v => v * 0.8), 0.45); ctx.lineWidth = 0.5; ctx.stroke();
   });
   // pinned row / column and point
   if (st.pin) {
@@ -12470,15 +12518,71 @@ function _sfRefresh(id) {
   const g = el.querySelector('.sf-grid'); g.hidden = st.mode !== 'grid';
   el.querySelector('.sf-stage').style.height = st.mode === 'grid' ? 'auto' : (el.classList.contains('fs') ? '' : st.height + 'px');
   if (st.mode === 'grid') g.innerHTML = _sfGridSVG(id); else drawSurface(id);
+  const tm = el.querySelector('.sf-time');
+  if (tm) {
+    const D = st.data, ny = D.ys.length, j = st.pin ? st.pin.j : 0, rg = tm.querySelector('.sf-range');
+    tm.hidden = ny < 3; rg.max = ny - 1; if (+rg.value !== j) rg.value = j;
+    tm.querySelector('.sf-tlab').textContent = `${D.yTitle} ${D.yFmt(D.ys[j])}`;
+    tm.querySelector('.sf-play').textContent = st.playing ? '❚❚' : '▶';
+  }
+  const pt = el.querySelector('.sf-parts'); if (pt) pt.innerHTML = _sfPartsHTML(id);
   el.querySelector('.sf-pin').innerHTML = _sfPinHTML(id);
   const fr = el.querySelector('.sf-fs-read');
   if (fr) fr.innerHTML = st.pin ? `${esc(st.data.xTitle)} ${esc(st.data.xFmt(st.data.xs[st.pin.i]))} · ${esc(st.data.yFmt(st.data.ys[st.pin.j]))} <b>${esc(st.data.fmt(st.data.z[st.pin.i][st.pin.j]))}</b>` : '';
   const meta = GRID_METRICS[st.metric];
   el.querySelector('.sf-desc').textContent = (st.data.scope === 'S' ? meta.S : meta.P) + (st.data.modeled != null ? ` ${st.data.modeled}/${st.data.total} 个仓位建模.` : '');
 }
+function _sfApplyExcl(st) {
+  const D = st.data; if (!D || !D.parts) return;
+  if (!D.zAll) D.zAll = D.z;
+  const ex = st.excl || new Set();
+  if (!ex.size) { D.z = D.zAll; return; }
+  D.z = D.zAll.map((row, i) => row.map((_, j) => Object.entries(D.parts).reduce((s, [t, zp]) => s + (ex.has(t) ? 0 : zp[i][j]), 0)));
+}
+function _sfPartsHTML(id) {
+  const st = __surf[id], D = st.data;
+  if (!D.parts || !st.pin) return '';
+  const { i, j } = st.pin, ex = st.excl || new Set();
+  const rows = Object.entries(D.parts).map(([t, zp]) => ({ t, v: zp[i][j] })).sort((a, b) => Math.abs(b.v) - Math.abs(a.v));
+  const mx = Math.max(1e-9, ...rows.map(r => Math.abs(r.v)));
+  const div = D.palette === 'diverge';
+  return `
+    <div class="sf-parts-head"><span>按标的 · ${esc(D.xTitle)} ${esc(D.xFmt(D.xs[i]))} · ${esc(D.yFmt(D.ys[j]))}</span>
+      ${ex.size ? `<button class="app-link" onclick="sfPartsAll('${id}')">全部显示</button>` : '<span class="rk-quiet">点标的从曲面中拿掉</span>'}</div>
+    <div class="sf-parts-list">${rows.map(r => `<button class="sf-part${ex.has(r.t) ? ' off' : ''}" onclick="sfPart('${id}','${esc(r.t)}')" aria-pressed="${!ex.has(r.t)}">
+      <b>${esc(r.t)}</b><span class="${div ? (r.v >= 0 ? 'rk-t-safe' : 'rk-t-alert') : ''}">${esc(D.fmt(r.v))}</span>
+      <i class="${div ? (r.v >= 0 ? 'pos' : 'neg') : 'pos'}" style="width:${(Math.abs(r.v) / mx * 100).toFixed(0)}%"></i></button>`).join('')}</div>`;
+}
+window.sfPart = (id, t) => {
+  const st = __surf[id]; if (!st) return;
+  st.excl = st.excl || new Set();
+  if (st.excl.has(t)) st.excl.delete(t); else st.excl.add(t);
+  _sfApplyExcl(st); _sfRefresh(id);
+};
+window.sfPartsAll = id => { const st = __surf[id]; if (!st) return; st.excl = new Set(); _sfApplyExcl(st); _sfRefresh(id); };
+window.sfTime = (id, v) => {
+  const st = __surf[id]; if (!st) return;
+  const D = st.data, i = st.pin ? st.pin.i : (D.origin && D.origin[0] >= 0 ? D.origin[0] : Math.floor(D.xs.length / 2));
+  st.pin = { i, j: Math.max(0, Math.min(D.ys.length - 1, +v)) };
+  _sfRefresh(id);
+};
+window.sfPlay = id => {
+  const st = __surf[id]; if (!st) return;
+  if (st.playing) { clearInterval(st.playing); st.playing = null; _sfRefresh(id); return; }
+  const n = st.data.ys.length;
+  if (!st.pin || st.pin.j >= n - 1) sfTime(id, 0);
+  st.playing = setInterval(() => {
+    const s = __surf[id];
+    if (!s || !document.getElementById(id)) { clearInterval(st.playing); return; }
+    if (s.pin.j >= s.data.ys.length - 1) { clearInterval(s.playing); s.playing = null; _sfRefresh(id); return; }
+    sfTime(id, s.pin.j + 1);
+  }, 260);
+  _sfRefresh(id);
+};
 window.sfMetric = (id, metric) => {
   const st = __surf[id]; if (!st) return;
   st.metric = metric; st.data = st.cache[metric] || (st.cache[metric] = st.build(metric));
+  _sfApplyExcl(st);
   if (st.pin) st.pin = { i: Math.min(st.pin.i, st.data.xs.length - 1), j: Math.min(st.pin.j, st.data.ys.length - 1) };
   if (st.data.ys !== (st._lastYs || st.data.ys) && st.data.origin) st.pin = { i: st.pin ? st.pin.i : st.data.origin[0], j: Math.max(0, st.data.origin[1]) };
   st._lastYs = st.data.ys;
@@ -12570,19 +12674,22 @@ function _bindSurface(id) {
     return best;
   };
   const dist2 = () => { const [a, b] = [...pts.values()]; return Math.hypot(a.x - b.x, a.y - b.y); };
+  const stopSpin = () => { if (st.spin) { cancelAnimationFrame(st.spin); st.spin = 0; } };
   cv.addEventListener('pointerdown', e => {
+    stopSpin();
     pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
     try { cv.setPointerCapture(e.pointerId); } catch (er) {}
     tip.hidden = true;
     if (pts.size === 2 && (st.active || e.pointerType !== 'touch')) { pinch = { d: dist2(), z: st.zoom || 1 }; drag = null; return; }
-    drag = { x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY, t: e.pointerType, moved: 0 };
+    drag = { x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY, t: e.pointerType, moved: 0, vx: 0, vy: 0, ts: performance.now() };
     el.classList.add('dragging');
   });
   cv.addEventListener('pointermove', e => {
     if (pts.has(e.pointerId)) pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (pinch && pts.size === 2) { st.zoom = Math.max(0.6, Math.min(3, pinch.z * dist2() / pinch.d)); redraw(); return; }
     if (drag) {
-      const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+      const dx = e.clientX - drag.x, dy = e.clientY - drag.y, now = performance.now(), dt = Math.max(1, now - drag.ts);
+      drag.vx = drag.vx * 0.4 + dx / dt * 0.6; drag.vy = drag.vy * 0.4 + dy / dt * 0.6; drag.ts = now;    // px per ms, smoothed
       drag.moved += Math.abs(dx) + Math.abs(dy);
       st.yaw += dx * 0.012;
       // touch when inactive: only horizontal rotation (vertical swipes belong to page scroll)
@@ -12603,7 +12710,21 @@ function _bindSurface(id) {
     const d = drag; drag = null; el.classList.remove('dragging');
     if (!d || e.type === 'pointercancel') return;
     const moved = Math.hypot(e.clientX - d.x0, e.clientY - d.y0);
-    if (moved >= 8) return;
+    if (moved >= 8) {
+      // flick: keep turning at release speed, then ease to a stop
+      const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const fresh = performance.now() - d.ts < 80;
+      const cap = (v, m) => Math.max(-m, Math.min(m, v));                      // at most ~85° of coasting
+      let vy = cap(d.vx * 0.012 * 16, 0.09), vp = (d.t !== 'touch' || st.active) ? cap(d.vy * 0.01 * 16, 0.04) : 0;
+      if (!reduce && fresh && (Math.abs(vy) > 0.012 || Math.abs(vp) > 0.012)) {
+        const step = () => {
+          st.yaw += vy; st.pitch = Math.max(0.12, Math.min(1.5, st.pitch + vp)); vy *= 0.94; vp *= 0.9; drawSurface(id);
+          st.spin = Math.abs(vy) > 0.0006 || Math.abs(vp) > 0.0006 ? requestAnimationFrame(step) : 0;
+        };
+        st.spin = requestAnimationFrame(step);
+      }
+      return;
+    }
     const now = Date.now();
     if (now - lastTap < 320) { lastTap = 0; sfView(id, 'def'); return; }      // double tap: reset view + zoom
     lastTap = now;
@@ -13002,7 +13123,7 @@ function _leapsLabHTML(R) {
 function _greeksVizHTML(R) {
   const pos = R.c.pos;
   if (!R.c.isSchwab || !pos.some(x => _optModel(x))) return '';
-  const panel = surfacePanelHTML({ metrics: P_METRICS, build: k => portfolioSurface(pos, k), height: 360 });
+  const panel = surfacePanelHTML({ metrics: P_METRICS, build: k => portfolioSurfaceParts(pos, k), height: 360 });
   const cal = thetaCalendar(pos);
   const sc = _thetaScatterSVG(pos);
   const tot = cal.days.reduce((s, d) => s + d.sell, 0), cost = cal.days.reduce((s, d) => s + d.buy, 0);
@@ -14150,7 +14271,7 @@ function renderPerformancePage() {
       <section class="rk-block"><h3 class="rk-block-title rk-title-row"><span>月度已实现 · ${_thisYear()}</span><span class="rk-quiet">点月份看明细</span></h3><div id="pf-months-wrap">${_safe('月度', () => _monthsHTML(p))}</div></section>
       <section class="rk-block"><h3 class="rk-block-title">按策略</h3>
         <div class="rk-table-wrap"><table class="rk-table">
-          <thead><tr><th>策略</th><th>笔数</th><th>胜率</th><th>已实现</th><th class="pf-opt">均盈</th><th class="pf-opt">均亏</th><th>盈亏比</th><th>期望值</th><th>留存</th><th class="pf-opt">天数</th></tr></thead>
+          <thead><tr><th>策略</th><th>笔数</th><th>胜率</th><th>已实现</th><th class="pf-opt">均盈</th><th class="pf-opt">均亏</th><th>盈亏比</th><th>期望值</th><th>留存</th><th class="pf-opt" title="已平仓交易从开仓到平仓的平均天数">平均持有</th></tr></thead>
           <tbody>${strat.map(({ k, s }) => `<tr><td>${esc(k)}</td><td>${s.n}</td><td>${s.wr != null ? s.wr.toFixed(0) + '%' : '—'}</td><td class="${_thCls(s.pnl)}">${_fmtSigned(s.pnl)}</td>
             <td class="pf-opt">${s.avgW != null ? _fmtSigned(s.avgW) : '—'}</td><td class="pf-opt">${s.avgL != null ? _fmtSigned(s.avgL) : '—'}</td><td>${n0(s.pf)}</td><td class="${_thCls(s.exp)}">${s.exp != null ? _fmtSigned(s.exp) : '—'}</td>
             <td>${s.capture != null ? s.capture.toFixed(0) + '%' : '—'}</td><td class="pf-opt">${s.days != null ? s.days.toFixed(0) : '—'}</td></tr>`).join('') || '<tr><td colspan="10" class="rk-quiet">无平仓记录</td></tr>'}</tbody>
