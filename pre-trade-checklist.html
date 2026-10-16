@@ -2995,6 +2995,55 @@
   .wf-chart .wf-bar[role="button"] { cursor: pointer; } .wf-chart .wf-bar[role="button"]:hover rect { opacity: 0.85; }
   .pos-page h3[id^="sec-"] { scroll-margin-top: 70px; }
   .wf-chart .wf-val.rk-t-safe { fill: var(--pass); } .wf-chart .wf-val.rk-t-alert { fill: var(--rk-alert, var(--fail)); } .wf-chart .wf-val.rk-t-danger { fill: var(--fail); }
+  /* v25 · desktop dashboard (Pro, ≥ 1000 px): even KPI tiles, slim notices, balanced columns */
+  @media (min-width: 1000px) {
+    body.theme-pro .app:has(.pd) { max-width: 1400px; padding-left: 24px; padding-right: 24px; }
+    body.theme-pro .pd .sync-mini { display: flex; align-items: center; gap: 10px; padding: 6px 12px; margin-bottom: 10px; min-height: 0; }
+    body.theme-pro .pd .sync-mini-main { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+    body.theme-pro .pd .sync-mini-title { font-size: 12px; } body.theme-pro .pd .sync-mini-sub { font-size: 11px; color: var(--text-faint); }
+    body.theme-pro .pd-kpis { gap: 10px; margin-bottom: 12px; grid-template-columns: 1.15fr 1.1fr 1fr 1fr 1.05fr; align-items: stretch; }
+    body.theme-pro .pd-kpis > * { display: flex; flex-direction: column; min-width: 0; margin: 0 !important; height: 100%; box-sizing: border-box; }
+    /* one hero number per tile, two supporting numbers underneath */
+    body.theme-pro .pd-kpis .gk-cells { grid-template-columns: 1fr 1fr; gap: 0; flex: 1; align-content: start; }
+    body.theme-pro .pd-kpis .gk-cell { padding: 0 8px 0 0; border-left: 0 !important; min-width: 0; }
+    body.theme-pro .pd-kpis .gk-cell:first-child { grid-column: 1 / -1; padding: 2px 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    body.theme-pro .pd-kpis .gk-cell:first-child b { font-size: 24px; letter-spacing: -0.02em; }
+    body.theme-pro .pd-kpis .gk-cell:nth-child(3) { padding-left: 10px; border-left: 1px solid var(--border) !important; }
+    body.theme-pro .pd-kpis .gk-cell b { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 15px; }
+    body.theme-pro .pd-kpis .gk-cell span { white-space: nowrap; }
+    body.theme-pro .pd-kpis .gk-cell em { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    body.theme-pro .pd-kpis .gk-title { margin-bottom: 10px; }
+    body.theme-pro .pd-kpis .rk-card-drivers .rk-chip:nth-child(n+3) { display: none; }
+    body.theme-pro .pd-kpis .rk-card-meta { margin-top: auto; }
+    body.theme-pro .pd-kpis .sc-minis { grid-template-columns: repeat(2, 1fr); gap: 6px; flex: 1; }
+    body.theme-pro .pd-kpis .sc-mini { flex-direction: row; align-items: baseline; justify-content: space-between; padding: 7px 9px; }
+    body.theme-pro .pd-kpis .scan-card-line { margin-top: 8px; }
+    /* columns: actions + to-dos on the left, the risk table on the right */
+    body.theme-pro .pd-cols { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 12px; }
+    body.theme-pro .pd-side .main-nav-widget:has(.main-nav-readonly) { display: none; }
+    body.theme-pro .pd-mg .rk-mg { padding: 8px 0; }
+    body.theme-pro .pd-mg .rk-block-title .app-link { margin-left: auto; font-size: 11px; text-transform: none; letter-spacing: 0; }
+  }
+  /* v25 · wide sub-pages on desktop: two columns under a full-width overview */
+  @media (min-width: 1200px) {
+    body.theme-pro .app:has(.rk-page) { max-width: 1400px; padding-left: 24px; padding-right: 24px; }
+    body.theme-pro .rk-page, body.theme-pro .rk-page.pos-page { max-width: none; }
+    body.theme-pro .risk-page, body.theme-pro .gk-page, body.theme-pro .pf-page { column-count: 2; column-gap: 12px; }
+    body.theme-pro .risk-page > *, body.theme-pro .gk-page > *, body.theme-pro .pf-page > * { break-inside: avoid; -webkit-column-break-inside: avoid; }
+    body.theme-pro .risk-page > .rk-hero, body.theme-pro .risk-page > .rk-decomp, body.theme-pro .risk-page > .rk-groups, body.theme-pro .risk-page > .rk-notice,
+    body.theme-pro .risk-page > details, body.theme-pro .risk-page > .rk-linkrow,
+    body.theme-pro .gk-page > .rk-block:first-of-type, body.theme-pro .gk-page > .rk-notice,
+    body.theme-pro .pf-page > .rk-block:first-of-type, body.theme-pro .pf-page > details { column-span: all; -webkit-column-span: all; }
+    body.theme-pro .risk-page > .rk-groups { margin-bottom: 10px; }
+    body.theme-pro .scan-page .rk-block:has(.sc-row) { display: grid; grid-template-columns: 1fr 1fr; gap: 0 18px; }
+    body.theme-pro .scan-page .rk-block:has(.sc-row) .sc-row:nth-child(2) { border-top: none; padding-top: 2px; }
+  }
+  @media (min-width: 1200px) {
+    body.theme-pro #pnl-block { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 0 18px; align-items: start; }
+    body.theme-pro #pnl-block > .rk-block-title, body.theme-pro #pnl-block > .rk-note { grid-column: 1 / -1; }
+    body.theme-pro #pnl-block > .rk-figs { grid-template-columns: 1fr; }
+    body.theme-pro #pnl-block > .wf-chart { max-height: 300px; width: 100%; }
+  }
 </style>
 </head>
 <body class="theme-slate">
@@ -5010,7 +5059,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.16-v24';
+const APP_BUILD = '2026.10.16-v25';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
@@ -6148,11 +6197,12 @@ function renderPicker() {
       ${forcedTradeReminderHTML()}
       ${daysSinceLastSnapshotHTML()}
       ${marketSignalHTML()}
+      ${_safe('待处理仓位', _mgmtMiniHTML, '')}
       </div><div class="pd-side">
       ${mainNavWidgetHTML()}
       ${portfolioRiskHTML()}
       </div></div>
-      ${pickerFooterHTML()}
+      ${loadSchwabCfg() && !getActiveHistory().length ? '' : pickerFooterHTML()}
       <div class="app-build">版本 ${APP_BUILD} · <button class="app-link" onclick="clearCaches()">清理缓存</button>${(() => { const t = _lastErrText(); return t !== '无' ? `<div class="app-err">最近错误 · ${esc(t)} <button class="btn ghost small" onclick="localStorage.removeItem('pretrade_last_error'); render()">清除</button></div>` : ''; })()}</div>
     </div>
   `;
@@ -12014,6 +12064,21 @@ function _mgmtChips(items, max = 3) {
   if (g.length > max) shown.push(`<span class="rk-chip rk-c-watch">+${g.slice(max).reduce((s, x) => s + x.n, 0)}</span>`);
   return shown.join('');
 }
+// home dashboard: the same to-do list as the risk page, first six rows
+function _mgmtMiniHTML() {
+  const R = computeRisk(); if (!R.c.isSchwab) return '';
+  const items = _mgmtItems(R.c);
+  const row = it => { const i = R.c.pos.indexOf(it.x), pnl = _posPnl(it.x); return `
+    <div class="rk-mg gl-row" role="button" tabindex="0" onclick="openOptionLab(${i})" onkeydown="if(event.key==='Enter')openOptionLab(${i})">
+      <div class="rk-mg-top"><span class="rk-pill rk-c-${it.level}">${esc(it.tag)}</span><b class="rk-mg-pos">${esc(_posLabel(it.x))}</b>
+        ${pnl != null ? `<span class="rk-mg-pnl ${_thCls(pnl)}">${_fmtSigned(pnl)}</span>` : ''}</div>
+      <div class="rk-mg-sub">${esc(it.facts)} · <span class="rk-mg-act">${esc(it.act)}</span></div></div>`; };
+  return `
+    <section class="rk-block rk-mgmt pd-mg">
+      <h3 class="rk-block-title rk-title-row"><span>待处理仓位${items.length ? ` <span class="rk-count">${items.length}</span>` : ''}</span><button class="app-link" onclick="showRiskDashboard()">风险页 ▸</button></h3>
+      ${items.length ? items.slice(0, 6).map(row).join('') + (items.length > 6 ? `<button class="app-link" onclick="showRiskDashboard()">还有 ${items.length - 6} 笔 ▸</button>` : '') : '<div class="rk-quiet">暂无需要处理的仓位.</div>'}
+    </section>`;
+}
 function _mgmtHTML(R) {
   if (!R.c.isSchwab) return '';
   const items = _mgmtItems(R.c);
@@ -13524,7 +13589,7 @@ function renderGreeksPage() {
         ${loadSchwabCfg() ? `<button class="btn ghost" onclick="refreshSchwab({ force: true })">刷新 Schwab</button>` : ''}
       </div>
     </div>
-    <div class="rk-page">
+    <div class="rk-page gk-page">
       ${_riskSourceNotice(R)}
       ${R.c.isSchwab ? _safe('Greeks', () => _greeksHTML(R)) + _safe('盈亏归因', _attribHTML) + _safe('LEAPS', () => _leapsLabHTML(R)) + _safe('Beta', () => _betaPanelHTML(R)) : ''}
     </div>`;
@@ -14457,16 +14522,17 @@ function positionsCardHTML() {
 function perfCardHTML() {
   if (!loadSchwabCfg()) return '';
   const p = computePerf();
-  const cell = (label, v, cls) => `<div class="gk-cell"><span>${label}</span><b class="${cls || ''}">${v}</b></div>`;
+  const cell = (label, v, cls, sub) => `<div class="gk-cell"><span>${label}</span><b class="${cls || ''}">${v}</b>${sub ? `<em>${sub}</em>` : ''}</div>`;
   const pc = v => v == null ? '—' : `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`;
+  const hasYtd = p && p.ytd != null;
+  // hero: YTD when the start-of-year NAV is known, otherwise this year's realized P&L
+  const cells = !p ? [cell('YTD', '—'), cell('已实现', '—'), cell('胜率', '—')]
+    : hasYtd ? [cell('YTD', _fmtSigned(p.ytd), _thCls(p.ytd), pc(p.ytdPct)), cell('已实现', _fmtSigned(p.realizedYtd), _thCls(p.realizedYtd)), cell('胜率', p.stats.wr != null ? p.stats.wr.toFixed(0) + '%' : '—')]
+    : [cell('今年已实现', _fmtSigned(p.realizedYtd), _thCls(p.realizedYtd), `${p.stats.n} 笔 · 填年初净值后显示 YTD`), cell('胜率', p.stats.wr != null ? p.stats.wr.toFixed(0) + '%' : '—'), cell('期望值 / 笔', p.stats.exp != null ? _fmtSigned(p.stats.exp) : '—', p.stats.exp != null ? _thCls(p.stats.exp) : '')];
   return `
     <div class="gk-card" id="pf-card" role="button" tabindex="0" onclick="showPerformance()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showPerformance();}">
       <div class="gk-title">Performance <span>${p ? `${_thisYear()} ▸` : (__perfErr ? esc(__perfErr) : '读取中…')}</span></div>
-      <div class="gk-cells">
-        ${cell('YTD', p && p.ytd != null ? _fmtSigned(p.ytd) : '—', p && p.ytd != null ? _thCls(p.ytd) : '')}
-        ${cell('YTD %', p ? pc(p.ytdPct) : '—', p && p.ytdPct != null ? _thCls(p.ytdPct * 100) : '')}
-        ${cell('已实现', p ? _fmtSigned(p.realizedYtd) : '—', p ? _thCls(p.realizedYtd) : '')}
-      </div>
+      <div class="gk-cells">${cells.join('')}</div>
     </div>`;
 }
 window.showPerformance = () => { closeOptionLab(); state._view = 'performance'; render(); window.scrollTo(0, 0); fetchPerf(); };
@@ -16055,7 +16121,7 @@ function renderRiskPage() {
         ${loadSchwabCfg() ? `<button class="btn ghost" onclick="refreshSchwab({ force: true })">刷新 Schwab</button>` : ''}
       </div>
     </div>
-    <div class="rk-page">
+    <div class="rk-page risk-page">
       ${_riskSourceNotice(R)}
       <section class="rk-hero">
         <div class="rk-hero-gauge">${riskGaugeSVG(s, 'composite', false)}</div>
