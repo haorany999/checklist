@@ -2975,6 +2975,16 @@
   .sc-row.sc-ready { box-shadow: inset 3px 0 0 var(--pass); padding-left: 10px; }
   body.theme-pro .sc-mini, body.theme-pro .sc-tab { border-radius: 2px; }
   @media (max-width: 560px) { .sc-tabs { grid-template-columns: repeat(2, 1fr); } }
+  /* v23 · expiry legend under the surface, wheel detail */
+  .sf-expl:empty { display: none; }
+  .sf-expl { margin-top: 6px; font-size: 11.5px; color: var(--text-dim); display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+  .sf-expl b { color: #D9B562; font-family: var(--mono); font-weight: 600; } body.theme-pro-light .sf-expl b { color: #8A6512; }
+  .sf-expdot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #E2C27A; margin-right: 4px; } body.theme-pro-light .sf-expdot { background: #A0781C; }
+  .wh-card { width: min(720px, 100%); max-height: 86vh; overflow: auto; }
+  .wh-detail td:nth-child(2) { white-space: normal; min-width: 180px; }
+  .wh-host > td { padding: 6px 0 10px !important; background: transparent !important; }
+  .wh-g.wh-buy td, .wh-g.wh-sell td { color: var(--text-dim); }
+  .wh-open { font-family: var(--mono); color: var(--accent); text-decoration: none; }
 </style>
 </head>
 <body class="theme-slate">
@@ -4990,7 +5000,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.16-v22';
+const APP_BUILD = '2026.10.16-v23';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
@@ -9554,6 +9564,8 @@ function buildSyncPayload() {
       betaMode: (function() { try { return localStorage.getItem(BETA_MODE_KEY) || ''; } catch (e) { return ''; } })(),
       perfStart: (function() { try { return localStorage.getItem(PERF_START_KEY) || ''; } catch (e) { return ''; } })(),
       scanCfg: (function() { try { return localStorage.getItem(SCAN_CFG_KEY) || ''; } catch (e) { return ''; } })(),
+      wheelCkpt: (function() { try { return localStorage.getItem(WHEEL_CKPT_KEY) || ''; } catch (e) { return ''; } })(),
+      histStart: (function() { try { return localStorage.getItem(HIST_START_KEY) || ''; } catch (e) { return ''; } })(),
       density: (function() { try { return localStorage.getItem(DENSITY_KEY) || ''; } catch (e) { return ''; } })(),
       trendRange: (function() { try { return localStorage.getItem(TREND_RANGE_KEY) || ''; } catch (e) { return ''; } })(),
       themeCustom: (function() { try { return localStorage.getItem(THEME_CUSTOM_KEY) || ''; } catch (e) { return ''; } })(),
@@ -9580,6 +9592,8 @@ function applyRemotePayload(remote, mode) {
     if (typeof s.riskWeights === 'string' && s.riskWeights) { try { JSON.parse(s.riskWeights); localStorage.setItem(RISK_WEIGHTS_KEY, s.riskWeights); } catch (e) {} }
     if (typeof s.betaOverrides === 'string' && s.betaOverrides) { try { JSON.parse(s.betaOverrides); localStorage.setItem(BETA_OVR_KEY, s.betaOverrides); } catch (e) {} }
     if (s.betaMode === 'beta' || s.betaMode === 'flat') { try { localStorage.setItem(BETA_MODE_KEY, s.betaMode); } catch (e) {} }
+    if (typeof s.wheelCkpt === 'string' && s.wheelCkpt) { try { const inc = JSON.parse(s.wheelCkpt), cur = loadWheelCkpt(); if (inc.asOf && (!cur || inc.asOf > cur.asOf)) localStorage.setItem(WHEEL_CKPT_KEY, s.wheelCkpt); } catch (e) {} }
+    if (typeof s.histStart === 'string' && /^\d{4}$/.test(s.histStart)) { const cur = parseInt(localStorage.getItem(HIST_START_KEY) || '9999', 10); if (+s.histStart < cur) localStorage.setItem(HIST_START_KEY, s.histStart); }
     if (typeof s.scanCfg === 'string' && s.scanCfg) { try { JSON.parse(s.scanCfg); localStorage.setItem(SCAN_CFG_KEY, s.scanCfg); } catch (e) {} }
     if (typeof s.perfStart === 'string' && s.perfStart) { try { const o = JSON.parse(s.perfStart); localStorage.setItem(PERF_START_KEY, JSON.stringify({ ...loadPerfStart(), ...o })); } catch (e) {} }
     if (typeof s.density === 'string' && s.density) localStorage.setItem(DENSITY_KEY, s.density);
@@ -12410,7 +12424,7 @@ function portfolioSurface(pos, metric) {
   }, 0)));
   const f = _gridFmt(metric, 'P');
   const events = ivMode ? [] : pos.filter(x => x.kind !== 'stock').map(x => ({ x, d: _dteOf(x) })).filter(e => e.d != null && e.d >= 0 && e.d <= 45)
-    .map(e => ({ d: Math.max(0, Math.round(e.d)), t: e.x.ticker, label: `${e.x.ticker} ${e.x.strike}${e.x.kind.endsWith('put') ? 'P' : 'C'}` })).sort((a, b) => a.d - b.d);
+    .map(e => ({ d: Math.max(0, Math.round(e.d)), t: e.x.ticker, exp: e.x.expiry, label: `${e.x.ticker} ${e.x.strike}${e.x.kind.endsWith('put') ? 'P' : 'C'}` })).sort((a, b) => a.d - b.d);
   return { xs, ys, z, metric, scope: 'P', modeled: items.length, total: pos.length, fmt: f.fmt, zFmt: f.fmt, axis: f.axis, events,
     xFmt: v => `${v > 0 ? '+' : ''}${Math.round(v * 100)}%`, xTitle: _mktTitle(),
     yFmt: ivMode ? v => `IV ${v > 0 ? '+' : ''}${v}` : d => `${d} 天`, yTitle: ivMode ? 'IV 变化' : '天数',
@@ -12467,6 +12481,7 @@ function surfacePanelHTML({ metrics, build, def = 'pnl', height = 320, time = tr
         <span class="sf-tlab"></span>
       </div>
       <div class="sf-parts"></div>
+      <div class="sf-expl"></div>
       <div class="sf-pin"></div>
       <div class="rk-note sf-desc"></div>
     </div>`;
@@ -12594,7 +12609,6 @@ function drawSurface(id) {
       const a = P(1, Yw(j), zb), b = P(1.1, Yw(j), zb);
       ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke();
       ctx.beginPath(); ctx.arc(b[0], b[1], 2.4, 0, Math.PI * 2); ctx.fill();
-      ctx.fillText([...new Set(ts)].join(' '), b[0] + 5, b[1] + 3);
     });
     ctx.restore();
   }
@@ -12651,6 +12665,10 @@ function _sfRefresh(id) {
     tm.querySelector('.sf-play').textContent = st.playing ? '❚❚' : '▶';
   }
   const pt = el.querySelector('.sf-parts'); if (pt) pt.innerHTML = _sfPartsHTML(id);
+  const xl = el.querySelector('.sf-expl');
+  if (xl) { const ev = st.data.yTitle === '天数' ? (st.data.events || []) : [], by = {};
+    ev.forEach(e => { const k = e.exp || ''; (by[k] = by[k] || new Set()).add(e.t); });
+    xl.innerHTML = ev.length ? `<i class="sf-expdot"></i>到期 · ${Object.entries(by).sort().map(([d, s]) => `<b>${esc(_md(d))}</b> ${esc([...s].join(' '))}`).join(' · ')}` : ''; }
   el.querySelector('.sf-pin').innerHTML = _sfPinHTML(id);
   const fr = el.querySelector('.sf-fs-read');
   if (fr) fr.innerHTML = st.pin ? `${esc(st.data.xTitle)} ${esc(st.data.xFmt(st.data.xs[st.pin.i]))} · ${esc(st.data.yFmt(st.data.ys[st.pin.j]))} <b>${esc(st.data.fmt(st.data.z[st.pin.i][st.pin.j]))}</b>` : '';
@@ -13296,8 +13314,8 @@ function _leapsLabHTML(R) {
     <section class="rk-block">
       <h3 class="rk-block-title">LEAPS</h3>
       ${ok.length ? `<div class="rk-figs">
-        ${fig('正股等值', _fmtUsd(usd), `${Math.round(sum('shares')).toLocaleString()} 股`)}
-        ${fig('杠杆 λ', val > 0 ? (usd / val).toFixed(2) + '×' : '—', `市值 ${_fmtUsd(val)}`)}
+        ${fig('正股等值市值', _fmtUsd(usd), R.c.nav ? `${(usd / R.c.nav * 100).toFixed(0)}% NAV · 按 Delta 折算` : '按 Delta 折算')}
+        ${fig('杠杆 λ', val > 0 ? (usd / val).toFixed(2) + '×' : '—', val > 0 ? `每 $1 LEAPS 控制 $${(usd / val).toFixed(1)} · 市值 ${_fmtUsd(val)}` : '')}
         ${fig('时间价值', _fmtUsd(extr), `${carryW.toFixed(1)}%/年`, 'rk-t-watch')}
         ${fig('Theta/月', _fmtSigned(sum('thetaMonth')), `Vega ${_fmtSigned(sum('vegaUsd'))}/点`, sum('thetaMonth') >= 0 ? 'rk-t-safe' : 'rk-t-alert')}
       </div>` : ''}
@@ -14248,9 +14266,14 @@ async function fetchPerf(force) {
   if (!force && h && Date.now() - h.at < 30 * 60000) return;
   __perfBusy = true;
   try {
-    const r1 = await _wfetch(`/history?from=${_thisYear() - 1}-01-01`);
+    await _pullWheelCkpt();
+    const r1 = await _wfetch(`/history?from=${_histStartYear()}-01-01`);
     const b1 = await r1.json().catch(() => null);
-    if (r1.ok && b1 && Array.isArray(b1.transactions)) { try { localStorage.setItem(HIST_KEY, JSON.stringify({ data: b1.transactions, at: Date.now(), status: b1.status })); } catch (e) {} __perfErr = null; }
+    if (r1.ok && b1 && Array.isArray(b1.transactions)) {
+      const pack = d => JSON.stringify({ data: d, at: Date.now(), status: b1.status });
+      try { localStorage.setItem(HIST_KEY, pack(b1.transactions)); }
+      catch (e) { try { const cut = Date.parse(`${_thisYear() - 1}-01-01`); localStorage.setItem(HIST_KEY, pack(b1.transactions.filter(t => (t.ts || 0) >= cut))); } catch (er) {} }   // device storage full: keep 2 years, the checkpoint covers the rest
+      __perfErr = null; }
     else __perfErr = r1.status === 404 ? '需 Worker v7' : (b1 && b1.message) || `HTTP ${r1.status}`;
   } catch (e) { __perfErr = '网络错误'; }
   finally { __perfBusy = false; }
@@ -14535,75 +14558,157 @@ function renderPerformancePage() {
     </div>`;
 }
 
-/* ---------- wheel cost basis: premiums lower the real cost of shares held ---------- */
+/* ---------- wheel cost basis: events → walk (optionally from a yearly checkpoint) ---------- */
+const WHEEL_CKPT_KEY = 'pretrade_wheel_ckpt', HIST_START_KEY = 'pretrade_hist_start';
+function loadWheelCkpt() { try { const c = JSON.parse(localStorage.getItem(WHEEL_CKPT_KEY) || 'null'); return c && c.asOf && c.tickers ? c : null; } catch (e) { return null; } }
+function _histStartYear() {
+  let y = parseInt(localStorage.getItem(HIST_START_KEY) || '', 10);
+  if (!(y > 2000)) { y = _thisYear() - 1; try { localStorage.setItem(HIST_START_KEY, String(y)); } catch (e) {} }
+  return y;
+}
+function _wheelEvents(T, txs, closed) {
+  const isAssign = t => /ASSIGN|EXERCIS/i.test(t.desc || ''), ev = [];
+  txs.forEach(t => {
+    const opts = t.items.filter(i => i.asset === 'OPTION' && i.ticker === T), eqs = t.items.filter(i => (i.asset === 'EQUITY' || i.asset === 'COLLECTIVE_INVESTMENT') && i.ticker === T);
+    const allOpts = t.items.filter(i => i.asset === 'OPTION'), allEq = t.items.filter(i => i.asset === 'EQUITY' || i.asset === 'COLLECTIVE_INVESTMENT');
+    opts.forEach(i => {
+      const key = `${i.strike}${i.putCall === 'PUT' ? 'P' : 'C'}|${i.expiry}`;
+      if (t.type === 'RECEIVE_AND_DELIVER') { ev.push({ ts: t.ts, kind: isAssign(t) ? 'opt_assigned' : 'opt_expired', key, K: i.strike, pc: i.putCall, exp: i.expiry, q: Math.abs(i.amount || 0), cash: 0 }); return; }
+      const cash = allOpts.length === 1 && !allEq.length ? (t.net ?? i.cost ?? 0) : (i.cost ?? 0);
+      const long = (i.effect === 'OPENING' && cash < 0) || (i.effect === 'CLOSING' && cash > 0);      // LEAPS etc.: not wheel premium
+      if (!long) ev.push({ ts: t.ts, kind: 'opt', key, K: i.strike, pc: i.putCall, exp: i.expiry, q: Math.abs(i.amount || 0), cash });
+    });
+    eqs.forEach(i => {
+      const qty = Math.abs(i.amount || 0); if (!qty) return;
+      let cash = allEq.length === 1 && !allOpts.length ? (t.net ?? i.cost ?? 0) : (i.cost ?? 0);
+      const buy = cash < 0 || (cash === 0 && (i.amount || 0) > 0) || (t.type === 'RECEIVE_AND_DELIVER' && (i.amount || 0) > 0);
+      if (t.type === 'RECEIVE_AND_DELIVER' || !cash) {
+        const k = closed.find(l => l.ticker === T && l.method === 'assigned' && Math.abs((l.closeTs || 0) - t.ts) < 4 * 86400000);
+        cash = (buy ? -1 : 1) * (k ? k.strike : (i.price || 0)) * qty;
+      }
+      ev.push({ ts: t.ts, kind: buy ? 'buy' : 'sell', qty, cash, assigned: t.type === 'RECEIVE_AND_DELIVER' });
+    });
+  });
+  return ev;
+}
+// walk the share count; the cycle restarts whenever the holding goes 0 → positive
+function _wheelWalk(ev, T, closed, seed, fromTs, untilTs) {
+  let shares = seed ? seed.shares : 0, cyc = seed ? JSON.parse(JSON.stringify(seed.cyc)) : null;
+  ev.forEach(e => {
+    if (fromTs != null && e.ts < fromTs) return;
+    if (untilTs != null && e.ts >= untilTs) return;
+    if (e.kind === 'buy') {
+      if (shares <= 0) {
+        cyc = { start: e.ts, ev: [], buyCost: 0, bought: 0, sold: 0, sells: 0, prem: 0 };
+        closed.filter(l => l.ticker === T && l.putCall === 'PUT' && l.method === 'assigned' && Math.abs((l.closeTs || 0) - e.ts) < 4 * 86400000)
+          .forEach(l => { cyc.prem += l.openCash; cyc.ev.push({ ts: l.closeTs, kind: 'csp', key: `${l.strike}P|${l.expiry}`, K: l.strike, pc: 'PUT', exp: l.expiry, cash: l.openCash }); });
+      }
+      shares += e.qty; cyc.buyCost += -e.cash; cyc.bought += e.qty;
+      cyc.ev.push({ ts: e.ts, kind: 'buy', qty: e.qty, cash: e.cash, assigned: e.assigned });
+    } else if (e.kind === 'sell') {
+      shares -= e.qty;
+      if (cyc) { cyc.sells += e.cash; cyc.sold += e.qty; cyc.ev.push({ ts: e.ts, kind: 'sell', qty: e.qty, cash: e.cash, assigned: e.assigned }); }
+      if (shares <= 0) { cyc = null; shares = 0; }
+    } else if (cyc && shares > 0 && (e.kind === 'opt' || e.kind === 'opt_expired' || e.kind === 'opt_assigned')) {
+      if (e.kind === 'opt') cyc.prem += e.cash;
+      cyc.ev.push({ ts: e.ts, kind: e.kind, key: e.key, K: e.K, pc: e.pc, exp: e.exp, q: e.q, cash: e.cash });
+    }
+  });
+  return { shares, cyc };
+}
+// one line per contract (sell + buy-back + expiry merged), with the running adjusted cost
+function _wheelGroups(cyc) {
+  const rows = [], byKey = {};
+  cyc.ev.slice().sort((a, b) => a.ts - b.ts).forEach(e => {
+    if (e.kind === 'buy' || e.kind === 'sell') { rows.push({ ts: e.ts, kind: e.kind, label: `${e.kind === 'buy' ? (e.assigned ? '接股' : '买入') : (e.assigned ? '被行权卖出' : '卖出')} ${e.qty} 股 @ ${(Math.abs(e.cash) / e.qty).toFixed(2)}`, net: e.cash, qty: e.qty }); return; }
+    if (e.kind === 'csp') { rows.push({ ts: e.ts, kind: 'csp', label: `${e.K}P ${_md(e.exp)} 被行权 · 权利金`, net: e.cash, acts: [`收 ${_fmtSigned(e.cash)}`] }); return; }
+    let g = byKey[e.key];
+    if (!g || g.done) { g = byKey[e.key] = { ts: e.ts, end: e.ts, kind: 'opt', label: `${e.K}${e.pc === 'PUT' ? 'P' : 'C'} ${_md(e.exp)}`, net: 0, acts: [] }; rows.push(g); }
+    g.end = e.ts;
+    if (e.kind === 'opt') { g.net += e.cash; g.acts.push(`${e.cash >= 0 ? '卖出' : '买回'} ${_fmtSigned(e.cash)}`); }
+    else { g.acts.push(e.kind === 'opt_expired' ? '到期作废' : '被行权'); g.done = true; }
+  });
+  let shares = 0, outlay = 0;
+  rows.forEach(r => {
+    if (r.kind === 'buy') { shares += r.qty; outlay += -r.net; }
+    else if (r.kind === 'sell') { shares -= r.qty; outlay -= r.net; }
+    else { r.per = shares > 0 ? r.net / shares : null; outlay -= r.net; }
+    r.after = shares > 0 ? outlay / shares : null;
+  });
+  return rows;
+}
 function computeWheel() {
   const h = loadHist(); if (!h) return null;
   const { closed } = buildPerfLots(h.data);
   const pos = getPortfolio().positions;
   const held = pos.filter(x => x.kind === 'stock' && (x.side || 1) > 0 && (Number(x.qty) || 0) > 0);
+  const txs = h.data.slice().sort((a, b) => (a.ts || 0) - (b.ts || 0)), histStart = txs.length ? txs[0].ts : Date.now();
+  const ck = loadWheelCkpt(), ckTs = ck ? Date.parse(ck.asOf + 'T00:00:00') : null;
+  // the record no longer reaches back to the checkpoint → continue from it instead of re-deriving
+  const useCk = ck && ckTs && histStart > ckTs - 86400000;
+  const tickers = [...new Set([...held.map(x => x.ticker), ...(ck ? Object.keys(ck.tickers) : [])])];
+  const evBy = {}; tickers.forEach(T => { evBy[T] = _wheelEvents(T, txs, closed); });
+  _maybeWriteCkpt(evBy, closed, histStart);
   if (!held.length) return { rows: [] };
-  const txs = h.data.slice().sort((a, b) => (a.ts || 0) - (b.ts || 0));
-  const isAssign = t => /ASSIGN|EXERCIS/i.test(t.desc || '');
   const rows = held.map(sx => {
-    const T = sx.ticker, ev = [];
-    txs.forEach(t => {
-      const opts = t.items.filter(i => i.asset === 'OPTION' && i.ticker === T), eqs = t.items.filter(i => (i.asset === 'EQUITY' || i.asset === 'COLLECTIVE_INVESTMENT') && i.ticker === T);
-      const allOpts = t.items.filter(i => i.asset === 'OPTION'), allEq = t.items.filter(i => i.asset === 'EQUITY' || i.asset === 'COLLECTIVE_INVESTMENT');
-      opts.forEach(i => {
-        if (t.type === 'RECEIVE_AND_DELIVER') { ev.push({ ts: t.ts, kind: isAssign(t) ? 'opt_assigned' : 'opt_expired', i, cash: 0 }); return; }
-        const cash = allOpts.length === 1 && !allEq.length ? (t.net ?? i.cost ?? 0) : (i.cost ?? 0);
-        // long options (LEAPS bought / sold) are separate positions, not wheel premium
-        const long = (i.effect === 'OPENING' && cash < 0) || (i.effect === 'CLOSING' && cash > 0);
-        if (!long) ev.push({ ts: t.ts, kind: 'opt', i, cash, open: i.effect === 'OPENING' || (i.effect == null && cash > 0) });
-      });
-      eqs.forEach(i => {
-        const qty = Math.abs(i.amount || 0); if (!qty) return;
-        let cash = allEq.length === 1 && !allOpts.length ? (t.net ?? i.cost ?? 0) : (i.cost ?? 0);
-        const buy = cash < 0 || (cash === 0 && (i.amount || 0) > 0) || (t.type === 'RECEIVE_AND_DELIVER' && (i.amount || 0) > 0);
-        if (t.type === 'RECEIVE_AND_DELIVER' || !cash) {        // assignment / call-away: priced at the strike
-          const k = closed.find(l => l.ticker === T && l.method === 'assigned' && Math.abs((l.closeTs || 0) - t.ts) < 4 * 86400000);
-          const px = k ? k.strike : (i.price || 0);
-          cash = (buy ? -1 : 1) * px * qty;
-        }
-        ev.push({ ts: t.ts, kind: buy ? 'buy' : 'sell', qty, cash, assigned: t.type === 'RECEIVE_AND_DELIVER' });
-      });
-    });
-    // walk shares; keep the last cycle that started at 0
-    let shares = 0, cyc = null, opening = false;
-    ev.forEach(e => {
-      if (e.kind === 'buy') {
-        if (shares <= 0) {
-          cyc = { start: e.ts, ev: [], buyCost: 0, bought: 0, sold: 0, sells: 0, prem: 0 };
-          const k = closed.filter(l => l.ticker === T && l.putCall === 'PUT' && l.method === 'assigned' && Math.abs((l.closeTs || 0) - e.ts) < 4 * 86400000);
-          k.forEach(l => { cyc.prem += l.openCash; cyc.ev.push({ ts: l.closeTs, kind: 'csp', label: `${l.strike}P 被行权 · 权利金`, cash: l.openCash }); });
-        }
-        shares += e.qty; cyc.buyCost += -e.cash; cyc.bought += e.qty;
-        cyc.ev.push({ ts: e.ts, kind: 'buy', label: `${e.assigned ? '接股' : '买入'} ${e.qty} 股 @ ${(-e.cash / e.qty).toFixed(2)}`, cash: e.cash });
-      } else if (e.kind === 'sell') {
-        shares -= e.qty;
-        if (cyc) { cyc.sells += e.cash; cyc.sold += e.qty; cyc.ev.push({ ts: e.ts, kind: 'sell', label: `${e.assigned ? '被行权卖出' : '卖出'} ${e.qty} 股 @ ${(e.cash / e.qty).toFixed(2)}`, cash: e.cash }); }
-        if (shares <= 0) { cyc = null; shares = 0; }
-      } else if (cyc && shares > 0 && e.kind === 'opt') {
-        const i = e.i, tag = `${i.strike}${i.putCall === 'PUT' ? 'P' : 'C'} ${_md(i.expiry)}`;
-        cyc.prem += e.cash;
-        cyc.ev.push({ ts: e.ts, kind: 'opt', label: `${e.cash >= 0 ? '卖出' : '买回'} ${tag} × ${Math.abs(i.amount || 0)}`, cash: e.cash });
-      } else if (cyc && shares > 0 && e.kind === 'opt_expired') {
-        const i = e.i; cyc.ev.push({ ts: e.ts, kind: 'exp', label: `${i.strike}${i.putCall === 'PUT' ? 'P' : 'C'} ${_md(i.expiry)} 到期作废`, cash: 0 });
-      }
-    });
+    const T = sx.ticker, seed = useCk && ck.tickers[T] ? ck.tickers[T] : null;
+    const { shares, cyc } = _wheelWalk(evBy[T], T, closed, seed, seed ? ckTs : null, null);
     const sh = Number(sx.qty) || 0, px = _stockPx(sx), schwabAvg = sx.avg;
     if (!cyc || Math.abs(shares - sh) > 0.5) {
-      // holding predates the record window (or counts disagree): start from Schwab's average, add every premium on record
-      const prem = ev.filter(e => e.kind === 'opt').reduce((s, e) => s + e.cash, 0);
-      const base = (schwabAvg || 0) * sh;
-      const adj = sh ? (base - prem) / sh : null;
-      return { T, shares: sh, px, schwabAvg, buyAvg: schwabAvg, prem, adj, partial: true, cycleStart: null, events: ev.filter(e => e.kind === 'opt').map(e => ({ ts: e.ts, label: `${e.cash >= 0 ? '卖出' : '买回'} ${e.i.strike}${e.i.putCall === 'PUT' ? 'P' : 'C'} ${_md(e.i.expiry)}`, cash: e.cash })) };
+      const prem = evBy[T].filter(e => e.kind === 'opt').reduce((s, e) => s + e.cash, 0), base = (schwabAvg || 0) * sh;
+      const pseudo = { ev: [{ ts: histStart, kind: 'buy', qty: sh, cash: -base, assigned: false }, ...evBy[T].filter(e => e.kind !== 'buy' && e.kind !== 'sell')] };
+      return { T, shares: sh, px, schwabAvg, buyAvg: schwabAvg, prem, adj: sh ? (base - prem) / sh : null, partial: true, cycleStart: null, groups: _wheelGroups(pseudo) };
     }
     const net = cyc.buyCost - cyc.sells - cyc.prem;
-    return { T, shares: sh, px, schwabAvg, buyAvg: cyc.bought ? cyc.buyCost / cyc.bought : null, prem: cyc.prem, sells: cyc.sells, adj: net / sh, partial: false, cycleStart: cyc.start, events: cyc.ev };
+    return { T, shares: sh, px, schwabAvg, buyAvg: cyc.bought ? cyc.buyCost / cyc.bought : null, prem: cyc.prem, sells: cyc.sells, adj: net / sh, partial: false, cycleStart: cyc.start, fromCkpt: !!seed, groups: _wheelGroups(cyc) };
   });
   return { rows: rows.sort((a, b) => (b.prem || 0) - (a.prem || 0)) };
 }
+// every Jan 1 (once the record covers it): save each holding's cycle so the cost keeps rolling even if old records disappear
+function _maybeWriteCkpt(evBy, closed, histStart) {
+  const asOf = `${_thisYear()}-01-01`, ts = Date.parse(asOf + 'T00:00:00'), cur = loadWheelCkpt();
+  if (cur && cur.asOf >= asOf) return;
+  if (histStart >= ts) return;                                    // can't see across the boundary yet
+  const tickers = {};
+  Object.entries(evBy).forEach(([T, ev]) => {
+    const seed = cur && cur.tickers[T] && histStart > Date.parse(cur.asOf + 'T00:00:00') - 86400000 ? cur.tickers[T] : null;
+    const { shares, cyc } = _wheelWalk(ev, T, closed, seed, seed ? Date.parse(cur.asOf + 'T00:00:00') : null, ts);
+    if (cyc && shares > 0) tickers[T] = { shares, cyc: { ...cyc, ev: cyc.ev.slice(-60) } };
+  });
+  const ck = { asOf, at: Date.now(), tickers };
+  try { localStorage.setItem(WHEEL_CKPT_KEY, JSON.stringify(ck)); } catch (e) {}
+  if (typeof scheduleAutoPushToGist === 'function') scheduleAutoPushToGist();
+  if (loadSchwabCfg()) _wfetch('/wheel/ckpt', { method: 'POST', body: JSON.stringify(ck), headers: { 'Content-Type': 'application/json' } }).catch(() => {});
+}
+async function _pullWheelCkpt() {
+  if (!loadSchwabCfg()) return;
+  try { const r = await _wfetch('/wheel/ckpt'), b = await r.json().catch(() => null), cur = loadWheelCkpt();
+    if (r.ok && b && b.asOf && b.tickers && (!cur || b.asOf > cur.asOf)) localStorage.setItem(WHEEL_CKPT_KEY, JSON.stringify(b)); } catch (e) {}
+}
+function _wheelDetailHTML(r, opts = {}) {
+  const g = r.groups || [], n = g.length, shown = opts.all ? g : g.slice(-10), hidden = n - shown.length;
+  const dt = ts => { const d = new Date(ts); return `${String(d.getFullYear()).slice(2)}/${d.getMonth() + 1}/${d.getDate()}`; };
+  const rowsH = shown.map(x => `<tr class="wh-g wh-${x.kind}"><td>${dt(x.ts)}${x.end && x.end !== x.ts ? `–${dt(x.end).slice(3)}` : ''}</td>
+    <td><b>${esc(x.label)}</b>${x.acts && x.acts.length ? ` <span class="rk-quiet">${esc(x.acts.join(' → '))}</span>` : ''}</td>
+    <td class="${x.kind === 'buy' || x.kind === 'sell' ? '' : _thCls(x.net)}">${_fmtSigned(x.net)}</td>
+    <td class="${x.per == null ? '' : x.per >= 0 ? 'rk-t-safe' : 'rk-t-alert'}">${x.per == null ? '—' : `${x.per >= 0 ? '−' : '+'}${Math.abs(x.per).toFixed(2)}`}</td>
+    <td class="rk-t-acc">${x.after != null ? x.after.toFixed(2) : '—'}</td></tr>`).reverse().join('');
+  return `<div class="rk-table-wrap"><table class="rk-table wh-detail">
+    <thead><tr><th>日期</th><th>合约 / 事件</th><th>净收付</th><th>每股成本</th><th>之后成本</th></tr></thead>
+    <tbody>${rowsH}</tbody></table></div>
+    ${hidden > 0 ? `<button class="app-link" onclick="showWheelDetail('${esc(r.T)}', true)">展开更早的 ${hidden} 笔</button>` : ''}
+    <div class="rk-note">每张合约的卖出、买回、到期合并为一行. 每股成本 = 这一笔净收付 ÷ 当时股数 (− 表示降低). 之后成本 = 截至这一笔的调整后成本.${r.fromCkpt ? ' 早期记录来自每年的成本存档.' : ''}${r.partial ? ' 持股早于记录范围, 以 Schwab 均价为起点.' : ''}</div>`;
+}
+window.showWheelDetail = (T, all) => {
+  const w = computeWheel(), r = w && w.rows.find(x => x.T === T); if (!r) return;
+  const old = document.getElementById('wh-modal'); if (old) old.remove();
+  const m = document.createElement('div'); m.id = 'wh-modal'; m.className = 'snap-confirm';
+  m.innerHTML = `<div class="snap-card wh-card"><div class="snap-head" style="display:flex;align-items:baseline;gap:10px"><b>${esc(T)}</b><span class="rk-quiet">${r.shares} 股 · 调整后成本 <b class="rk-t-acc">${r.adj != null ? r.adj.toFixed(2) : '—'}</b> · 累计权利金 ${_fmtSigned(r.prem)}</span>
+    <button class="gl-x" style="margin-left:auto" onclick="document.getElementById('wh-modal').remove()" aria-label="关闭">×</button></div>${_wheelDetailHTML(r, { all })}</div>`;
+  m.addEventListener('click', e => { if (e.target === m) m.remove(); });
+  document.body.appendChild(m);
+};
+
 function _wheelHTML() {
   const w = computeWheel();
   if (!w) return '';
@@ -14626,7 +14731,7 @@ function _wheelHTML() {
               <td>${down != null ? `<span class="${down >= 0 ? 'rk-t-safe' : 'rk-t-alert'}">${down >= 0 ? '−' : '+'}${Math.abs(down).toFixed(2)}</span> <span class="rk-quiet">${r.buyAvg ? (Math.abs(down) / r.buyAvg * 100).toFixed(1) + '%' : ''}</span>` : '—'}</td>
               <td>${f2(r.px)}</td>
               <td class="${vs == null ? '' : vs >= 0 ? 'rk-t-safe' : 'rk-t-alert'}">${vs != null ? (vs >= 0 ? '+' : '') + vs.toFixed(1) + '%' : '—'}</td></tr>
-            ${r.events.map(e => `<tr class="rk-dd-row"><td>${dt(e.ts)}</td><td colspan="5">${esc(e.label)}</td><td colspan="2" class="${_thCls(e.cash)}">${e.cash ? _fmtSigned(e.cash) : '—'}</td></tr>`).join('')}
+            <tr class="rk-dd-row wh-host"><td colspan="8">${_wheelDetailHTML(r)}</td></tr>
             <tr class="rk-dd-row"><td></td><td colspan="7" class="rk-quiet">Schwab 均价 ${f2(r.schwabAvg)}${r.cycleStart ? ` · 本轮自 ${dt(r.cycleStart)} 起` : ''}</td></tr>
           </tbody>`; }).join('')}
       </table></div>
@@ -15102,7 +15207,7 @@ function renderPositionsPage() {
       <div class="rk-figs">
         ${fig('成本', _fmtUsd(lT.cost), `${_pct(pn(lT.cost))} NAV`)}
         ${fig('市值', _fmtUsd(lT.val), `浮盈 ${sgn(lT.val - lT.cost)} · ${lT.cost ? _pct((lT.val - lT.cost) / lT.cost * 100) : '—'}`, _thCls(lT.val - lT.cost))}
-        ${fig('正股等值', `${Math.round(lT.sh).toLocaleString()} 股`, '按 Delta 折算')}
+        ${(() => { const usd = sum(lpRows, r => r.s ? r.s.shares * r.s.m.S : 0); return fig('正股等值市值', _fmtUsd(usd), `${_pct(pn(usd))} NAV · 每 $1 LEAPS 控制 $${lT.val > 0 ? (usd / lT.val).toFixed(1) : '—'}`); })()}
         ${fig(`时间价值 ${_qBtn('carry', 'long')}`, _fmtUsd(lT.ext), `每月 Theta ${sgn(lT.th * 30)}`, 'rk-t-watch')}
         ${fig('平均持有', avgHeld != null ? avgHeld.toFixed(0) + ' 天' : '—', '仍持有的 LEAPS')}
       </div>
@@ -15127,7 +15232,7 @@ function renderPositionsPage() {
       <h3 class="rk-block-title">正股 · ${stk.length} 只</h3>
       <div class="rk-table-wrap"><table class="rk-table">
         <thead><tr><th>标的</th><th>股数</th><th>Schwab 均价</th><th>调整后成本 ${_qBtn('adj_cost', 'long')}</th><th>现价</th><th>市值</th><th>% NAV</th><th>浮盈</th><th>持有</th><th>CC 覆盖</th></tr></thead>
-        <tbody>${stRows.map(r => `<tr><td><b>${esc(r.x.ticker)}</b></td><td>${Math.round(r.q)}</td><td>${r.x.avg != null ? r.x.avg.toFixed(2) : '—'}</td><td class="rk-t-acc">${r.adj != null ? r.adj.toFixed(2) : '—'}</td>
+        <tbody>${stRows.map(r => `<tr><td><b>${esc(r.x.ticker)}</b></td><td>${Math.round(r.q)}</td><td>${r.x.avg != null ? r.x.avg.toFixed(2) : '—'}</td><td class="rk-t-acc">${r.adj != null ? `<button class="app-link wh-open" onclick="showWheelDetail('${esc(r.x.ticker)}')">${r.adj.toFixed(2)} ▸</button>` : '—'}</td>
           <td>${r.px != null ? r.px.toFixed(2) : '—'}</td><td>${money(r.val)}</td><td>${_pct(pn(r.val))}</td><td class="${_thCls(r.pnl)}">${sgn(r.pnl)}</td><td>${r.held ? r.held.days + ' 天' : '—'}</td>
           <td>${r.cover != null ? r.cover.toFixed(0) + '%' : '—'}</td></tr>`).join('')}</tbody>
       </table></div>
