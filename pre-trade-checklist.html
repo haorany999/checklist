@@ -3044,6 +3044,17 @@
     body.theme-pro #pnl-block > .rk-figs { grid-template-columns: 1fr; }
     body.theme-pro #pnl-block > .wf-chart { max-height: 300px; width: 100%; }
   }
+  /* v26 · LEAPS room */
+  .room { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
+  .room-main { display: flex; flex-direction: column; gap: 2px; min-width: 240px; }
+  .room-main b { font: 700 28px var(--mono); letter-spacing: -0.02em; }
+  .room-main span { font-size: 12px; color: var(--text-dim); }
+  .room-sim { flex: 1; min-width: 260px; display: flex; flex-direction: column; gap: 6px; font-size: 12.5px; color: var(--text-dim); }
+  .room-sim label { display: flex; align-items: center; gap: 6px; }
+  .room-sim input { width: 140px; padding: 6px 8px; font-family: var(--mono); font-size: 13px; border: 1px solid var(--border); border-radius: 4px; background: var(--panel-2); color: var(--text); }
+  .room-sim b, .room-line b { font-family: var(--mono); }
+  .room-line { margin: 6px 0 2px; font-size: 12px; color: var(--text-dim); }
+  #leaps-room:empty { display: none; }
 </style>
 </head>
 <body class="theme-slate">
@@ -5059,7 +5070,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.16-v25';
+const APP_BUILD = '2026.10.16-v26';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
@@ -13086,6 +13097,10 @@ function _pruneCharts() { Object.keys(__charts).forEach(id => { if (!document.qu
 
 /* ---------- Greek help cards ---------- */
 const GREEK_HELP = {
+  leaps_room: { t: '还能买 LEAPS', def: '现在还能花多少钱买期权而不借钱 = Schwab 期权购买力 (Option Buying Power) 与现金 + SWVXX 中较小的那个. Schwab 已经扣掉了 CSP 占用的保证金.',
+    read: '两个门槛要分清: 期权购买力花到 0 = 保证金缓冲用完 (还没借钱, 但市场再跌就可能追保); 现金余额 < 0 = 开始借钱 (付 margin 利息). CSP 被行权时要用现金接股, 所以下面那行「全部 CSP 被行权时需借」会随你花掉的钱变大.',
+    long: 'SWVXX 需要先卖出才是现金; 如果 Schwab 的购买力没把 SWVXX 算进去, 卖出后额度会上升. 购买力随股价和保证金要求变化, 以刷新后的数字为准.',
+    ex: '期权购买力 $30,487 · 现金 + SWVXX $62,500 · CSP 名义 $67,500: 现在最多买 $30,487 的 LEAPS. 花掉 $10,000 后, 全部 CSP 被行权时需借 $15,000 (原本 $5,000).' },
   expect: { t: '期望值', def: '这个策略平均每做一笔赚 (或亏) 多少钱 = 胜率 × 平均盈利 − 败率 × 平均亏损.',
     read: '它回答"按我现在的做法, 长期做下去是赚还是亏". 为正: 有优势; 为负: 做得越多亏得越多. 卖方策略常见"胜率高、期望值却为负", 只看胜率会被误导. 笔数少时 (< 20) 波动很大, 只作参考.',
     short: '提高期望值的两个方向: 减少大亏 (止损 / roll 规则) 或提高平均盈利 (选更好的权利金). 胜率本身不重要.',
@@ -13847,6 +13862,7 @@ function _cqRefresh() {
   if (el && !el.contains(document.activeElement)) el.innerHTML = cspQuoteInnerHTML();
   const lg = document.getElementById('cq-leg-wrap');
   if (lg && !lg.contains(document.activeElement)) lg.innerHTML = _tradeLegHTML();
+  const lr = document.getElementById('leaps-room'); if (lr) lr.innerHTML = _safe('额度', _leapsRoomLineHTML, '');
   _cqPreviewSoon();
 }
 function _cqPreviewSoon() {
@@ -13857,7 +13873,7 @@ function _cqPreviewSoon() {
     p.innerHTML = cspPreviewInnerHTML(); mountSurfaces();
   }, 250);
 }
-window._cqManualChanged = () => { _cqLocalFill(); _cqPreviewSoon(); };
+window._cqManualChanged = () => { _cqLocalFill(); _cqPreviewSoon(); const lr = document.getElementById('leaps-room'); if (lr) lr.innerHTML = _safe('额度', _leapsRoomLineHTML, ''); };
 window.toggleCspPreview = open => {
   state.cspPreviewOpen = !!open;
   const p = document.getElementById('csp-preview');
@@ -13866,7 +13882,8 @@ window.toggleCspPreview = open => {
 window.fetchCspQuote = fetchCspQuote;
 function _quoteBlocksHTML() {
   return `
-    <div class="cq" id="csp-quote">${cspQuoteInnerHTML()}</div>`;
+    <div class="cq" id="csp-quote">${cspQuoteInnerHTML()}</div>
+    <div id="leaps-room">${_safe('额度', _leapsRoomLineHTML, '')}</div>`;
 }
 function _previewBlockHTML() {
   return `
@@ -15170,6 +15187,43 @@ let __pnlMode = 'sleeve';
 window.setPnlMode = m => { __pnlMode = m; const el = document.getElementById('pnl-block'); if (el) { el.outerHTML = _pnlBlockHTML(); _fitChartText(); } };
 const PNL_SLEEVES = [['stock', '正股', x => x.kind === 'stock'], ['leaps', 'LEAPS', x => x.kind === 'leaps'], ['csp', 'CSP', x => x.kind === 'short_put'],
   ['sc', 'Short call', x => x.kind === 'short_call'], ['oth', '其他期权', x => x.kind === 'long_call' || x.kind === 'long_put']];
+/* ---------- how much can still go into LEAPS: Schwab's option buying power, never more than the cash ---------- */
+function _leapsRoom(spend = 0) {
+  const R = computeRisk(), c = R.c; if (!c.isSchwab) return null;
+  let bp = null; for (const k of ['buyingPowerNonMarginableTrade', 'optionBuyingPower', 'availableFundsNonMarginableTrade']) { const v = _balPick(c.bal, [k]); if (v != null) { bp = v; break; } }
+  const pf = getPortfolio(), cash = (pf.cash || 0) + (pf.swvxx || 0);
+  const cspN = c.pos.filter(x => x.kind === 'short_put').reduce((s, x) => s + (x.exposure || 0), 0);
+  const limit = bp == null ? cash : Math.min(bp, cash);
+  return { bp, cash, cspN, limit, by: bp != null && bp <= cash ? 'bp' : 'cash', left: limit - spend, borrowAll: Math.max(0, cspN - (cash - spend)), spend };
+}
+function _roomOutHTML(r) {
+  return `${r.spend > 0 ? `花完后还能买 <b class="${r.left < 0 ? 'rk-t-danger' : ''}">${_fmtUsd(Math.max(0, r.left))}</b>${r.left < 0 ? ` <span class="rk-t-danger">(超出 ${_fmtUsd(-r.left)})</span>` : ''} · ` : ''}`
+    + (r.borrowAll > 0 ? `全部 CSP 被行权时需借 <b class="rk-t-alert">${_fmtUsd(r.borrowAll)}</b>` : `全部 CSP 被行权也<b class="rk-t-safe">不需要借钱</b>`);
+}
+window.roomSim = v => {
+  const spend = Math.max(0, parseFloat(String(v).replace(/[$,\s]/g, '')) || 0), r = _leapsRoom(spend), el = document.getElementById('room-out');
+  if (r && el) el.innerHTML = _roomOutHTML(r);
+};
+function _roomBlockHTML() {
+  const r = _leapsRoom(0); if (!r) return '';
+  return `
+    <section class="rk-block" id="room-block">
+      <h3 class="rk-block-title">还能买 LEAPS ${_qBtn('leaps_room', 'long')}</h3>
+      <div class="room">
+        <div class="room-main"><b class="${r.limit <= 0 ? 'rk-t-danger' : 'rk-t-acc'}">${_fmtUsd(Math.max(0, r.limit))}</b>
+          <span>${r.by === 'bp' ? '受 Schwab 期权购买力限制' : '受现金限制'} · 现金 + SWVXX ${_fmtUsd(r.cash)} · CSP 名义 ${_fmtUsd(r.cspN)}</span></div>
+        <div class="room-sim"><label>模拟花费 $ <input inputmode="decimal" placeholder="例如 10000" oninput="roomSim(this.value)"></label>
+          <div id="room-out">${_roomOutHTML(r)}</div></div>
+      </div>
+    </section>`;
+}
+// LEAPS checklist: one line under the quote
+function _leapsRoomLineHTML() {
+  if (state.strategy !== 'leaps' || !loadSchwabCfg()) return '';
+  const q = _cspQuoteFresh(), mark = q && q.option ? q.option.mark : null, n = parseInt(state.leapsContracts, 10) || 1;
+  const spend = mark > 0 ? mark * 100 * n : 0, r = _leapsRoom(spend); if (!r) return '';
+  return `<div class="room-line">还能买 LEAPS <b class="rk-t-acc">${_fmtUsd(Math.max(0, r.limit))}</b>${spend ? ` · 这笔 ${n} 张约 ${_fmtUsd(spend)}` : ''} · ${_roomOutHTML(r)}</div>`;
+}
 function _pnlWaterfallSVG(items, total) {
   const W = _chartW(), H = 210, L = 8, R = 8, T = 22, B = 34, n = items.length + 1, bw = Math.min(64, (W - L - R) / n * 0.62), X = i => L + (i + 0.5) * (W - L - R) / n;
   let run = 0; const segs = items.map(it => { const a = run; run += it.v; return { ...it, a, b: run }; });
@@ -15368,7 +15422,7 @@ function renderPositionsPage() {
           <td class="${_thCls(_posPnl(x))}">${sgn(_posPnl(x))}</td><td>${_days(_dteOf(x))}</td><td>${h ? h.days + ' 天' : '—'}</td><td>${sgn(_dollarDelta(x))}</td>`); }).join('')}</tbody>
       </table></div>
     </section>` : '';
-  $app.innerHTML = head + `<div class="rk-page pos-page">${_safe('浮动盈亏', _pnlBlockHTML)}${_safe('组合构成', () => comp)}${_safe('CSP', () => cspHTML)}${_safe('Short call', () => scHTML)}${_safe('LEAPS', () => lpHTML)}${_safe('正股', () => stHTML)}${_safe('其他期权', () => othHTML)}
+  $app.innerHTML = head + `<div class="rk-page pos-page">${_safe('浮动盈亏', _pnlBlockHTML)}${_safe('还能买 LEAPS', _roomBlockHTML, '')}${_safe('组合构成', () => comp)}${_safe('CSP', () => cspHTML)}${_safe('Short call', () => scHTML)}${_safe('LEAPS', () => lpHTML)}${_safe('正股', () => stHTML)}${_safe('其他期权', () => othHTML)}
     ${loadHist() ? '' : '<div class="rk-note">持有天数需要交易记录, 正在读取…</div>'}</div>`;
 }
 
