@@ -2921,6 +2921,28 @@
     width: 15px; height: 15px; font-size: 9.5px; vertical-align: 1px; margin-left: 2px; text-transform: none; letter-spacing: 0; }
   .sc-chips .gl-q { align-self: center; }
   .gl-lab.sf-exp-row { fill: #D9B562; }
+  /* positions page */
+  body.theme-pro .app:has(.pos-page) { max-width: 1240px; }
+  body.theme-pro .rk-page.pos-page { max-width: none; }
+  .pc-bar { display: flex; height: 12px; gap: 2px; margin: 4px 0 12px; border-radius: var(--radius, 6px); overflow: hidden; }
+  .pc-bar i, .pc-sw { display: block; }
+  .pc-sw { display: inline-block; width: 9px; height: 9px; margin-right: 7px; vertical-align: 0; }
+  .pc-csp { background: var(--accent); } .pc-stk { background: #8B95A3; } .pc-leaps { background: #A371F7; } .pc-oth { background: #E2C27A; }
+  .pc-free { background: var(--pass); } .pc-neg { background: var(--fail); } .pc-sc { background: transparent; box-shadow: inset 0 0 0 1px var(--text-faint); }
+  .pc-prog { display: inline-block; width: 46px; height: 5px; background: var(--panel-2); border: 1px solid var(--border); vertical-align: 1px; margin-right: 4px; position: relative; }
+  .pc-prog i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--pass); }
+  .pos-page .rk-table td, .pos-page .rk-table th { white-space: nowrap; }
+  /* sortable tables */
+  .sortable-th { cursor: pointer; user-select: none; -webkit-user-select: none; }
+  .sortable-th:hover { color: var(--text); }
+  .sortable-th.s-asc::after { content: ' ▲'; font-size: 8px; color: var(--accent); }
+  .sortable-th.s-desc::after { content: ' ▼'; font-size: 8px; color: var(--accent); }
+  .pf-mmode { margin-bottom: 10px; }
+  @media (pointer: coarse) {
+    .sf-desc .gl-q, .sf-parts-head .gl-q, .rk-fig-label .gl-q, .gk-cell .gl-q, .tc-cell .gl-q, .sc-figs .gl-q, .rk-table th .gl-q, .rk-block-title .gl-q, .rk-card-title .gl-q, .rk-hero-level .gl-q, .rk-legend .gl-q {
+      width: 20px; height: 20px; font-size: 11px; }
+    .rk-table th { padding-top: 8px; padding-bottom: 8px; }
+  }
 </style>
 </head>
 <body class="theme-slate">
@@ -4254,6 +4276,7 @@ function _viewKey() {
   if (state._view === 'greeks') return 'greeks';
   if (state._view === 'performance') return 'performance';
   if (state._view === 'scan') return 'scan';
+  if (state._view === 'positions') return 'positions';
   if (!state.strategy) return 'picker';
   if (state.strategy === 'leaps') {
     if (!state.leapsStyle || !state.leapsPhase) return 'leaps-config';
@@ -4290,6 +4313,7 @@ function render() {
   }
   if (state._view === 'greeks') { _safe('Greeks 页', renderGreeksPage, null); _postRender(); setTimeout(() => fetchSnaps(), 0); return; }
   if (state._view === 'scan') { _safe('CSP 扫描', renderScanPage, null); _postRender(); return; }
+  if (state._view === 'positions') { _safe('持仓', renderPositionsPage, null); _postRender(); return; }
   if (state._view === 'performance') { _safe('Performance', renderPerformancePage, null); _postRender(); return; }
   if (!state.strategy) { renderPicker(); _postRender(); return; }
   if (state.strategy === 'leaps') {
@@ -4934,7 +4958,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.15-v20';
+const APP_BUILD = '2026.10.15-v21.1';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
@@ -10683,7 +10707,7 @@ async function refreshSchwab({ force = false } = {}) {
 // Repaint what depends on the data without stealing focus from an input
 function _afterSchwabChange(dataChanged) {
   if (state._view === 'history') return;
-  if (state._view === 'risk' || state._view === 'greeks' || state._view === 'performance' || state._view === 'scan') {
+  if (state._view === 'risk' || state._view === 'greeks' || state._view === 'performance' || state._view === 'scan' || state._view === 'positions') {
     const ae = document.activeElement;
     if (!(ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA'))) { const y = window.scrollY; render(); window.scrollTo(0, y); }
     return;
@@ -10873,7 +10897,7 @@ function portfolioRiskHTML() {
       </div>
       <div class="pr-rows" id="pr-rows">${portfolioRowsHTML()}</div>
       <div class="pr-schwab" id="pr-schwab">${_schwabStatusInnerHTML()}</div>
-      <button class="pr-detail-btn" onclick="showHoldingsModal()">查看持仓 ▸</button>
+      <button class="pr-detail-btn" onclick="showPositions()">查看持仓 ▸</button>
     </div>
   `;
 }
@@ -12892,6 +12916,10 @@ function _pruneCharts() { Object.keys(__charts).forEach(id => { if (!document.qu
 
 /* ---------- Greek help cards ---------- */
 const GREEK_HELP = {
+  theta_cal: { t: 'Theta 日历', def: '从今天起, 股价和 IV 都不变时, 每天时间价值的变化. 卖方合计 = 你卖出的期权现在剩下的时间价值, 会在到期前衰减掉的部分.',
+    read: '它不是"总共收了多少权利金": 开仓权利金是历史数字, 这里按每张合约此刻的价格计算. 若股价已靠近行权价或 IV 上升, 剩余时间价值可能比当初收到的权利金还多 (这时仓位是浮亏的).',
+    short: '卖方合计越大, 说明从现在起时间还能为你赚的越多; 但也常常意味着仓位离行权价更近、风险更高.',
+    ex: '卖出 RDDT 130P 收 $450; 股价从 145 跌到 133, 现在这张 put 值 $620 (其中时间价值 $620): 日历里它贡献 +$620, 比当初的 $450 多, 同时浮亏 $170.' },
   sf_pnl: { t: '盈亏 (曲面)', def: '某个价格、某一天, 组合 (或这张合约) 相对今天的盈亏, 单位美元. 每个仓位按自己剩余的时间老化, 不是平均.',
     read: '绿赚红亏. 合约到期时按内在价值结算, 之后锁定不变: 曲面在到期日"跳"一下然后变平. 时间滑块下方的刻度是各合约的到期日.',
     short: '模型假设到期后什么都不做: 不续卖新的 CC / CSP; 被行权按行权价结算. 实际续卖会有额外收益, 这里不计入.',
@@ -13216,7 +13244,7 @@ function _greeksVizHTML(R) {
     ${panel}
     <div class="rk-sub-title">Theta 日历</div>
     ${_thetaCalendarSVG(cal)}
-    <div class="rk-legend"><span><i class="rk-sw gl-sw-sell"></i>卖方 ${_fmtSigned(tot)}</span><span><i class="rk-sw gl-sw-buy"></i>买方 ${_fmtSigned(cost)}</span><span><i class="rk-sw gl-sw-cum"></i>累计 ${_fmtSigned(tot + cost)}</span><span class="rk-legend-note">${cal.N} 天 · 股价 / IV 不变 · 卖方剩余时间价值 − 买方损耗</span></div>
+    <div class="rk-legend"><span><i class="rk-sw gl-sw-sell"></i>卖方 ${_fmtSigned(tot)} ${_qBtn('theta_cal', 'short')}</span><span><i class="rk-sw gl-sw-buy"></i>买方 ${_fmtSigned(cost)}</span><span><i class="rk-sw gl-sw-cum"></i>累计 ${_fmtSigned(tot + cost)}</span><span class="rk-legend-note">${cal.N} 天 · 股价 / IV 不变 · 卖方剩余时间价值 − 买方损耗</span></div>
     ${sc ? `<div class="rk-sub-title">Theta 效率</div>${sc}
     <div class="rk-legend"><span><i class="rk-sw rk-f-safe"></i>&gt; 21 天</span><span><i class="rk-sw rk-f-watch"></i>≤ 21 天</span><span><i class="rk-sw rk-f-danger"></i>≤ 7 天</span><span class="rk-legend-note">点大小 = 保证金</span></div>` : ''}`;
 }
@@ -14124,7 +14152,7 @@ function _varInnerHTML(R) {
 /* ---------- Performance (Worker /history + /navseries) ---------- */
 const HIST_KEY = 'pretrade_history_tx', NAVS_KEY = 'pretrade_navseries', PERF_START_KEY = 'pretrade_perf_start';
 const FLOW_TYPES = ['ACH_RECEIPT', 'ACH_DISBURSEMENT', 'CASH_RECEIPT', 'CASH_DISBURSEMENT', 'ELECTRONIC_FUND', 'WIRE_IN', 'WIRE_OUT', 'JOURNAL'];
-let __perfBusy = false, __perfErr = null, __perfPeriod = 'ytd', __perfMonth = null;
+let __perfBusy = false, __perfErr = null, __perfPeriod = 'ytd', __perfMonth = null, __perfMMode = 'real';
 function loadHist() { try { const c = JSON.parse(localStorage.getItem(HIST_KEY) || 'null'); return c && Array.isArray(c.data) ? c : null; } catch (e) { return null; } }
 function loadNavs() { try { const c = JSON.parse(localStorage.getItem(NAVS_KEY) || 'null'); return c && Array.isArray(c.data) ? c : null; } catch (e) { return null; } }
 function loadPerfStart() { try { const o = JSON.parse(localStorage.getItem(PERF_START_KEY) || '{}'); return o && typeof o === 'object' ? o : {}; } catch (e) { return {}; } }
@@ -14139,10 +14167,11 @@ async function fetchPerf(force) {
     const b1 = await r1.json().catch(() => null);
     if (r1.ok && b1 && Array.isArray(b1.transactions)) { try { localStorage.setItem(HIST_KEY, JSON.stringify({ data: b1.transactions, at: Date.now(), status: b1.status })); } catch (e) {} __perfErr = null; }
     else __perfErr = r1.status === 404 ? '需 Worker v7' : (b1 && b1.message) || `HTTP ${r1.status}`;
+    try { const r2 = await _wfetch('/navseries'), b2 = await r2.json().catch(() => null); if (r2.ok && b2 && Array.isArray(b2.series)) localStorage.setItem(NAVS_KEY, JSON.stringify({ data: b2.series, at: Date.now() })); } catch (e) {}
   } catch (e) { __perfErr = '网络错误'; }
   finally { __perfBusy = false; }
   _pushPerfState();
-  if (state._view === 'performance') { const y = window.scrollY; render(); window.scrollTo(0, y); } else _refreshRiskCard();
+  if (state._view === 'performance' || state._view === 'positions') { const y = window.scrollY; render(); window.scrollTo(0, y); } else _refreshRiskCard();
 }
 function _pushPerfState() {
   const st = loadPerfStart()[_thisYear()], p = computePerf();
@@ -14180,7 +14209,7 @@ function _monthDetailHTML(p, mi) {
         <button class="gl-x" onclick="setPerfMonth(${mi})" aria-label="收起">×</button></div>
       <div class="rk-chips">${Object.entries(by).sort((a, b) => b[1] - a[1]).map(([k, v]) => `<span class="rk-chip ${v >= 0 ? 'rk-c-safe' : 'rk-c-alert'}">${esc(k)} ${_fmtSigned(v)}</span>`).join('')}</div>
       <div class="rk-table-wrap"><table class="rk-table">
-        <thead><tr><th>日期</th><th>合约</th><th>策略</th><th>盈亏</th><th>方式</th><th>天数</th><th>留存</th></tr></thead>
+        <thead><tr><th>日期</th><th>合约</th><th>策略</th><th>盈亏</th><th>方式</th><th>天数</th><th>留存 (卖方)</th></tr></thead>
         <tbody>${lots.map(l => `<tr><td>${dt(l.closeTs)}</td><td>${esc(lab(l))}</td><td>${esc(l.strategy)}</td><td class="${_thCls(l.pnl)}">${_fmtSigned(l.pnl)}</td>
           <td>${M[l.method] || ''}</td><td>${l.openTs ? Math.round((l.closeTs - l.openTs) / 86400000) : '—'}</td><td>${l.capture != null ? l.capture.toFixed(0) + '%' : '—'}</td></tr>`).join('')}</tbody>
       </table></div>
@@ -14232,7 +14261,7 @@ function buildPerfLots(txs) {
       }
     });
   });
-  return { closed, flows, income, assignEvents, stockOpen };
+  return { closed, flows, income, assignEvents, stockOpen, openOpt: open };
 }
 function _consume(q, qty, cash, ts, closed, item, method) {
   let left = qty;
@@ -14285,7 +14314,7 @@ function computePerf() {
     const unreal = held && px != null ? (px - a.strike) * held : 0;
     return { ...a, prem, realized: a.stockPnl || 0, unreal, held, total: prem + (a.stockPnl || 0) + unreal };
   });
-  return { lots, all: closed, flowsYtd, incomeYtd, startNav, nav, ytd, ytdPct, months, byStrat, byTicker, assigns,
+  return { lots, all: closed, flows, flowsYtd, incomeYtd, startNav, nav, ytd, ytdPct, months, byStrat, byTicker, assigns,
     stats: _statsOf(lots), realizedYtd: closed.filter(l => (l.closeTs || 0) >= y0).reduce((s, l) => s + l.pnl, 0), at: h.at, status: h.status };
 }
 function perfCardHTML() {
@@ -14304,7 +14333,39 @@ function perfCardHTML() {
     </div>`;
 }
 window.showPerformance = () => { closeOptionLab(); state._view = 'performance'; render(); window.scrollTo(0, 0); fetchPerf(); };
+function _navMonths(p) {
+  const s = ((loadNavs() || {}).data || []).filter(x => x && x[0] && x[1] > 0).sort((a, b) => a[0] < b[0] ? -1 : 1), y = _thisYear();
+  const flowsOn = (a, b) => (p.flows || []).filter(f => { const d = new Date(f.ts).toISOString().slice(0, 10); return d > a && d <= b; }).reduce((t, f) => t + f.amt, 0);
+  return Array.from({ length: 12 }, (_, m) => {
+    const ms = `${y}-${String(m + 1).padStart(2, '0')}`, inM = s.filter(x => x[0].startsWith(ms));
+    if (!inM.length) return null;
+    const before = s.filter(x => x[0] < ms + '-01').pop(), start = before || inM[0], end = inM[inM.length - 1];
+    return { pnl: end[1] - start[1] - flowsOn(start[0], end[0]), from: start[0], to: end[0], partial: !before, days: inM };
+  });
+}
+window.setPerfMMode = m => { __perfMMode = m; __perfMonth = null; const el = document.getElementById('pf-months-wrap'), p = computePerf(); if (el && p) el.innerHTML = _monthsHTML(p); };
 function _monthsHTML(p) {
+  const seg = `<div class="rk-presets pf-mmode"><button class="rk-preset${__perfMMode === 'real' ? ' active' : ''}" onclick="setPerfMMode('real')">已实现</button><button class="rk-preset${__perfMMode === 'total' ? ' active' : ''}" onclick="setPerfMMode('total')">总盈亏 (含浮动)</button></div>`;
+  if (__perfMMode === 'total') {
+    const nm = _navMonths(p), cur = new Date().getMonth(), mx = Math.max(1, ...nm.filter(Boolean).map(m => Math.abs(m.pnl))), first = nm.find(Boolean);
+    return seg + `<div class="pf-months">${nm.map((m, i) => {
+      const a = m ? 0.08 + Math.min(1, Math.abs(m.pnl) / mx) * 0.5 : 0, col = m && m.pnl >= 0 ? 'var(--pass)' : 'var(--fail)';
+      return `<${m ? 'button' : 'div'} class="pf-m${i > cur ? ' future' : ''}${__perfMonth === i ? ' on' : ''}${m ? ' click' : ''}" style="--a:${a.toFixed(2)};--c:${col}"${m ? ` onclick="setPerfMonth(${i})"` : ''}>
+        <span>${i + 1} 月</span><b class="${m ? _thCls(m.pnl) : 'rk-quiet'}">${m ? _fmtSigned(m.pnl) : '—'}</b><em>${m ? (m.partial ? `自 ${+m.from.slice(5, 7)}/${+m.from.slice(8)}` : `${m.days.length} 天`) : ''}</em></${m ? 'button' : 'div'}>`; }).join('')}</div>
+      ${__perfMonth != null && nm[__perfMonth] ? _navMonthDetailHTML(p, nm[__perfMonth], __perfMonth) : ''}
+      <div class="rk-note">总盈亏 = 月末净值 − 上月末净值 − 当月净入金, 包含已实现和浮动盈亏. 净值由 Worker 每个交易日记录${first ? `, 从 ${first.from} 开始` : ', 尚无记录'}; 之前的月份没有数据.</div>`;
+  }
+  return seg + _monthsRealHTML(p);
+}
+function _navMonthDetailHTML(p, m, mi) {
+  const rows = m.days.map((x, k) => { const prev = k ? m.days[k - 1] : null; return { d: x[0], nav: x[1], chg: prev ? x[1] - prev[1] : null }; });
+  return `<div class="pf-detail" id="pf-month-detail"><div class="pf-detail-head"><b>${mi + 1} 月 · 总盈亏</b><span class="${_thCls(m.pnl)}">${_fmtSigned(m.pnl)}</span>
+    <span class="rk-quiet">${m.days.length} 个交易日</span><button class="gl-x" onclick="setPerfMonth(${mi})" aria-label="收起">×</button></div>
+    <div class="rk-table-wrap"><table class="rk-table"><thead><tr><th>日期</th><th>净值</th><th>当日变化</th></tr></thead>
+    <tbody>${rows.slice().reverse().map(r => `<tr><td>${esc(r.d.slice(5))}</td><td>${_fmtUsd(r.nav)}</td><td class="${r.chg == null ? '' : _thCls(r.chg)}">${r.chg == null ? '—' : _fmtSigned(r.chg)}</td></tr>`).join('')}</tbody></table></div>
+    <div class="rk-note">当日变化未扣除当天的入金出金.</div></div>`;
+}
+function _monthsRealHTML(p) {
   const mx = Math.max(1, ...p.months.map(m => Math.abs(m.pnl))), cur = new Date().getMonth();
   return `<div class="pf-months">${p.months.map((m, i) => {
     const a = m.n ? 0.08 + Math.min(1, Math.abs(m.pnl) / mx) * 0.5 : 0, col = m.pnl >= 0 ? 'var(--pass)' : 'var(--fail)';
@@ -14347,7 +14408,7 @@ function renderPerformancePage() {
           ${fig('已实现', _fmtSigned(s.pnl), `${s.n} 笔${p.incomeYtd ? ` · 股息利息 ${_fmtSigned(p.incomeYtd)}` : ''}`, _thCls(s.pnl))}
           ${fig(`胜率 ${_qBtn('winpf', 'short')}`, s.wr != null ? s.wr.toFixed(0) + '%' : '—', `盈亏比 ${n0(s.pf)}`)}
           ${fig(`期望值 / 笔 ${_qBtn('winpf', 'short')}`, s.exp != null ? _fmtSigned(s.exp) : '—', `均盈 ${s.avgW != null ? _fmtSigned(s.avgW) : '—'} · 均亏 ${s.avgL != null ? _fmtSigned(s.avgL) : '—'}`, s.exp != null ? _thCls(s.exp) : '')}
-          ${fig(`权利金留存 ${_qBtn('capture', 'short')}`, s.capture != null ? s.capture.toFixed(0) + '%' : '—', `卖方平仓时 · 平均持有 ${s.days != null ? s.days.toFixed(0) : '—'} 天`, 'rk-t-watch')}
+          ${fig(`权利金留存 (卖方) ${_qBtn('capture', 'short')}`, s.capture != null ? s.capture.toFixed(0) + '%' : '—', `卖方平仓时 · 平均持有 ${s.days != null ? s.days.toFixed(0) : '—'} 天`, 'rk-t-watch')}
         </div>
         ${!st ? `<div class="pf-start">年初净值 <input inputmode="decimal" placeholder="12 月 31 日 NAV" onchange="setPerfStart(this.value)"> <span class="rk-quiet">月结单上的数字, 只填一次</span></div>`
               : `<div class="pf-start rk-quiet">年初净值 ${_fmtUsd(st)} <button class="btn ghost small" onclick="setPerfStart('')">修改</button></div>`}
@@ -14355,7 +14416,7 @@ function renderPerformancePage() {
       <section class="rk-block"><h3 class="rk-block-title rk-title-row"><span>月度已实现 · ${_thisYear()}</span><span class="rk-quiet">点月份看明细</span></h3><div id="pf-months-wrap">${_safe('月度', () => _monthsHTML(p))}</div></section>
       <section class="rk-block"><h3 class="rk-block-title">按策略</h3>
         <div class="rk-table-wrap"><table class="rk-table">
-          <thead><tr><th>策略</th><th>笔数</th><th>胜率</th><th>已实现</th><th class="pf-opt">均盈</th><th class="pf-opt">均亏</th><th>盈亏比</th><th>期望值</th><th>留存</th><th class="pf-opt">平均持有 ${_qBtn('avg_hold', 'short')}</th></tr></thead>
+          <thead><tr><th>策略</th><th>笔数</th><th>胜率</th><th>已实现</th><th class="pf-opt">均盈</th><th class="pf-opt">均亏</th><th>盈亏比</th><th>期望值</th><th>留存 (卖方)</th><th class="pf-opt">平均持有 ${_qBtn('avg_hold', 'short')}</th></tr></thead>
           <tbody>${strat.map(({ k, s }) => `<tr><td>${esc(k)}</td><td>${s.n}</td><td>${s.wr != null ? s.wr.toFixed(0) + '%' : '—'}</td><td class="${_thCls(s.pnl)}">${_fmtSigned(s.pnl)}</td>
             <td class="pf-opt">${s.avgW != null ? _fmtSigned(s.avgW) : '—'}</td><td class="pf-opt">${s.avgL != null ? _fmtSigned(s.avgL) : '—'}</td><td>${n0(s.pf)}</td><td class="${_thCls(s.exp)}">${s.exp != null ? _fmtSigned(s.exp) : '—'}</td>
             <td>${s.capture != null ? s.capture.toFixed(0) + '%' : '—'}</td><td class="pf-opt">${s.days != null ? s.days.toFixed(0) : '—'}</td></tr>`).join('') || '<tr><td colspan="10" class="rk-quiet">无平仓记录</td></tr>'}</tbody>
@@ -14375,7 +14436,7 @@ function renderPerformancePage() {
         </table></div></section>` : ''}
       <section class="rk-block"><h3 class="rk-block-title">平仓记录</h3>
         <div class="rk-table-wrap"><table class="rk-table">
-          <thead><tr><th>日期</th><th>合约</th><th>策略</th><th>盈亏</th><th>方式</th><th>天数</th><th>留存</th></tr></thead>
+          <thead><tr><th>日期</th><th>合约</th><th>策略</th><th>盈亏</th><th>方式</th><th>天数</th><th>留存 (卖方)</th></tr></thead>
           <tbody>${recent.map(l => `<tr><td>${dt(l.closeTs)}</td><td>${esc(lotLabel(l))}</td><td>${esc(l.strategy)}</td><td class="${_thCls(l.pnl)}">${_fmtSigned(l.pnl)}</td>
             <td>${M[l.method] || ''}</td><td>${l.openTs ? Math.round((l.closeTs - l.openTs) / 86400000) : '—'}</td><td>${l.capture != null ? l.capture.toFixed(0) + '%' : '—'}</td></tr>`).join('') || '<tr><td colspan="7" class="rk-quiet">无</td></tr>'}</tbody>
         </table></div>
@@ -14400,7 +14461,9 @@ function computeWheel() {
       opts.forEach(i => {
         if (t.type === 'RECEIVE_AND_DELIVER') { ev.push({ ts: t.ts, kind: isAssign(t) ? 'opt_assigned' : 'opt_expired', i, cash: 0 }); return; }
         const cash = allOpts.length === 1 && !allEq.length ? (t.net ?? i.cost ?? 0) : (i.cost ?? 0);
-        ev.push({ ts: t.ts, kind: 'opt', i, cash, open: i.effect === 'OPENING' || (i.effect == null && cash > 0) });
+        // long options (LEAPS bought / sold) are separate positions, not wheel premium
+        const long = (i.effect === 'OPENING' && cash < 0) || (i.effect === 'CLOSING' && cash > 0);
+        if (!long) ev.push({ ts: t.ts, kind: 'opt', i, cash, open: i.effect === 'OPENING' || (i.effect == null && cash > 0) });
       });
       eqs.forEach(i => {
         const qty = Math.abs(i.amount || 0); if (!qty) return;
@@ -14902,6 +14965,229 @@ function _attribInnerHTML() {
 function _attribHTML() {
   return `<section class="rk-block"><h3 class="rk-block-title rk-title-row"><span>盈亏归因 ${_qBtn('attrib', 'short')}</span><button class="btn ghost small" onclick="fetchSnaps(true)">刷新</button></h3><div id="attr-slot">${_safe('盈亏归因', _attribInnerHTML)}</div></section>`;
 }
+
+/* ═════════════ v21 · Positions page: sleeves, CSP / short calls / LEAPS / stock ═════════════ */
+let __lotsMemo = { at: null, v: null };
+function _openLots() {
+  const h = loadHist(); if (!h) return null;
+  if (__lotsMemo.at !== h.at) __lotsMemo = { at: h.at, v: buildPerfLots(h.data) };
+  return __lotsMemo.v;
+}
+// first still-open fill of this position (FIFO), from the transaction history
+function _heldSince(x) {
+  const L = _openLots();
+  let lots = null;
+  if (L) {
+    if (x.kind === 'stock') lots = L.stockOpen[x.ticker];
+    else { const key = String(x.symbol || '').replace(/\s+/g, ''); const k = Object.keys(L.openOpt || {}).find(s => s.replace(/\s+/g, '') === key); lots = k ? L.openOpt[k] : null; }
+  }
+  const ts = lots && lots.length ? Math.min(...lots.filter(l => l.qty > 0).map(l => l.ts || Infinity)) : null;
+  if (ts && isFinite(ts)) return { ts, days: Math.max(0, Math.floor((Date.now() - ts) / 864e5)) };
+  if (x.kind === 'leaps' && typeof _leapsOpenTs === 'function') { const t = _leapsOpenTs(x); if (t) return { ts: t, days: Math.max(0, Math.floor((Date.now() - t) / 864e5)), approx: true }; }
+  return null;
+}
+window.showPositions = () => { closeOptionLab(); state._view = 'positions'; render(); window.scrollTo(0, 0); if (!loadHist()) fetchPerf(); };
+function _pct(v, d = 1) { return v == null || !isFinite(v) ? '—' : `${v >= 0 ? '' : '−'}${Math.abs(v).toFixed(d)}%`; }
+function _days(v) { return v == null ? '—' : `${v}`; }
+function renderPositionsPage() {
+  const head = `<div class="header header-sticky"><div class="brand">Pre-Trade Checklist</div><div class="header-actions">
+    <button class="btn ghost" onclick="state._view = null; render(); window.scrollTo(0, 0)">← 返回</button><button class="btn ghost" onclick="refreshSchwab(true)">刷新 Schwab</button></div></div>`;
+  const R = computeRisk(), c = R.c, pf = getPortfolio();
+  if (!c.isSchwab) { $app.innerHTML = head + '<div class="rk-page"><div class="rk-notice">需要连接 Schwab.</div></div>'; return; }
+  const nav = c.nav || 0, pos = c.pos, idx = x => pos.indexOf(x), pn = v => nav ? v / nav * 100 : null;
+  const by = k => pos.filter(x => x.kind === k);
+  const csp = by('short_put'), sc = by('short_call'), lp = by('leaps'), stk = pos.filter(x => x.kind === 'stock' && (x.side || 1) > 0), oth = pos.filter(x => ['long_call', 'long_put'].includes(x.kind));
+  const mv = x => x.marketValue != null ? x.marketValue : 0, sum = (a, f) => a.reduce((s, x) => s + (f(x) || 0), 0);
+  const theta = x => x.theta != null ? x.theta * 100 * (Number(x.qty) || 0) * (_isShortPos(x) ? -1 : 1) : 0;
+  const cash = (pf.cash || 0) + (pf.swvxx || 0), cspN = sum(csp, x => x.exposure), free = cash - cspN;
+  const mgTag = new Map(_mgmtItems(c).map(it => [it.x, it]));
+  const tag = x => { const it = mgTag.get(x); return it ? `<span class="rk-pill rk-c-${it.level}">${esc(it.tag)}</span>` : ''; };
+  const row = (x, cells) => `<tr class="gl-row" role="button" tabindex="0" onclick="openOptionLab(${idx(x)})" onkeydown="if(event.key==='Enter')openOptionLab(${idx(x)})">${cells}</tr>`;
+  const fig = (label, val, sub, cls = 'rk-t-acc') => `<div class="rk-fig"><span class="rk-fig-val ${cls}">${val}</span><span class="rk-fig-label">${label}</span>${sub ? `<span class="rk-fig-sub">${sub}</span>` : ''}</div>`;
+  const money = v => v == null ? '—' : _fmtUsd(v), sgn = v => v == null ? '—' : _fmtSigned(v);
+
+  /* ── composition ── */
+  const sleeves = [
+    { k: 'csp', label: 'CSP 担保名义', v: cspN, n: csp.length, pnl: sum(csp, _posPnl), th: sum(csp, theta), dd: sum(csp, _dollarDelta), cls: 'pc-csp' },
+    { k: 'stk', label: '正股', v: sum(stk, mv), n: stk.length, pnl: sum(stk, _posPnl), th: 0, dd: sum(stk, _dollarDelta), cls: 'pc-stk' },
+    { k: 'leaps', label: 'LEAPS', v: sum(lp, mv), n: lp.length, pnl: sum(lp, _posPnl), th: sum(lp, theta), dd: sum(lp, _dollarDelta), cls: 'pc-leaps' },
+    { k: 'oth', label: '其他期权', v: sum(oth, mv), n: oth.length, pnl: sum(oth, _posPnl), th: sum(oth, theta), dd: sum(oth, _dollarDelta), cls: 'pc-oth' },
+    { k: 'sc', label: 'Short call (负债)', v: sum(sc, x => -mv(x)), n: sc.length, pnl: sum(sc, _posPnl), th: sum(sc, theta), dd: sum(sc, _dollarDelta), cls: 'pc-sc', liab: true },
+    { k: 'free', label: '自由现金', v: free, n: null, pnl: null, th: null, dd: null, cls: free >= 0 ? 'pc-free' : 'pc-neg' },
+  ];
+  const barTot = sleeves.filter(s => !s.liab).reduce((s, x) => s + Math.max(0, x.v), 0) || 1;
+  const bar = sleeves.filter(s => !s.liab && s.v > 0).map(s => `<i class="${s.cls}" style="width:${(s.v / barTot * 100).toFixed(2)}%" title="${esc(s.label)} ${_fmtUsd(s.v)}"></i>`).join('');
+  const tickers = [...new Set(pos.map(x => x.ticker))];
+  const tk = tickers.map(t => { const P = pos.filter(x => x.ticker === t);
+    return { t, stk: sum(P.filter(x => x.kind === 'stock'), mv), csp: sum(P.filter(x => x.kind === 'short_put'), x => x.exposure), leaps: sum(P.filter(x => x.kind === 'leaps'), mv),
+      sc: P.filter(x => x.kind === 'short_call').reduce((s, x) => s + (Number(x.qty) || 0), 0), oth: sum(P.filter(x => ['long_call', 'long_put'].includes(x.kind)), mv),
+      dd: sum(P, _dollarDelta), pnl: sum(P, _posPnl) }; })
+    .map(r => ({ ...r, exp: r.stk + r.csp + r.leaps + r.oth })).sort((a, b) => b.exp - a.exp);
+  const comp = `
+    <section class="rk-block">
+      <h3 class="rk-block-title">组合构成 · NAV ${_fmtUsd(nav)}</h3>
+      <div class="pc-bar">${bar}</div>
+      <div class="rk-table-wrap"><table class="rk-table">
+        <thead><tr><th>板块</th><th>仓位</th><th>金额</th><th>% NAV</th><th>浮盈</th><th>美元 Delta ${_qBtn('usd_delta', 'short')}</th><th>Theta/天</th></tr></thead>
+        <tbody>${sleeves.map(s => `<tr><td><i class="pc-sw ${s.cls}"></i>${esc(s.label)}</td><td>${s.n ?? '—'}</td><td>${money(s.v)}</td><td class="${s.k === 'free' && s.v < 0 ? 'rk-t-danger' : ''}">${_pct(pn(s.v))}</td>
+          <td class="${s.pnl == null ? '' : _thCls(s.pnl)}">${s.pnl == null ? '—' : sgn(s.pnl)}</td><td>${s.dd == null ? '—' : sgn(s.dd)}</td><td class="${s.th == null ? '' : _thCls(s.th)}">${s.th == null ? '—' : sgn(s.th)}</td></tr>`).join('')}</tbody>
+      </table></div>
+      <div class="rk-sub-title">按标的</div>
+      <div class="rk-table-wrap"><table class="rk-table">
+        <thead><tr><th>标的</th><th>正股</th><th>CSP 名义</th><th>LEAPS</th><th>Short call</th><th>总敞口</th><th>% NAV</th><th>美元 Delta</th><th>浮盈</th></tr></thead>
+        <tbody>${tk.map(r => `<tr><td><b>${esc(r.t)}</b></td><td>${r.stk ? money(r.stk) : '—'}</td><td>${r.csp ? money(r.csp) : '—'}</td><td>${r.leaps ? money(r.leaps) : '—'}</td><td>${r.sc ? r.sc + ' 张' : '—'}</td>
+          <td>${money(r.exp)}</td><td>${_pct(pn(r.exp))}</td><td>${sgn(r.dd)}</td><td class="${_thCls(r.pnl)}">${sgn(r.pnl)}</td></tr>`).join('')}</tbody>
+      </table></div>
+      <div class="rk-note">总敞口 = 正股市值 + CSP 名义 + LEAPS 市值 + 其他期权市值 (被行权时最多要承担的金额). 自由现金 = Cash + SWVXX − 全部 CSP 名义. 点表头可以排序.</div>
+    </section>`;
+
+  /* ── CSP ── */
+  const cspRows = csp.map(x => {
+    const q = Number(x.qty) || 0, credit = (x.avg || 0) * 100 * q, val = Math.abs(mv(x)), intr = x.und != null ? Math.max(0, x.strike - x.und) * 100 * q : 0;
+    const held = _heldSince(x), dte = _dteOf(x), life = held && dte != null ? held.days + dte : null;
+    return { x, q, credit, val, ext: Math.max(0, val - intr), cap: _captured(x), pnl: _posPnl(x), dte, held, dist: _distPct(x), th: theta(x),
+      be: x.strike - (x.avg || 0), ann: life ? credit / (x.exposure || 1) * 365 / Math.max(1, life) * 100 : null, rem: dte ? val / (x.exposure || 1) * 365 / Math.max(1, dte) * 100 : null };
+  });
+  const cT = { credit: sum(cspRows, r => r.credit), val: sum(cspRows, r => r.val), ext: sum(cspRows, r => r.ext), th: sum(cspRows, r => r.th), pnl: sum(cspRows, r => r.pnl) };
+  const wDte = cspN ? sum(cspRows, r => (r.dte || 0) * (r.x.exposure || 0)) / cspN : null;
+  const cspHTML = csp.length ? `
+    <section class="rk-block">
+      <h3 class="rk-block-title">CSP · ${csp.length} 笔</h3>
+      <div class="rk-figs">
+        ${fig('总名义', _fmtUsd(cspN), `${_pct(pn(cspN))} NAV · 加权 ${wDte != null ? wDte.toFixed(0) : '—'} 天`)}
+        ${fig('自由现金', _fmtUsd(free), `${_pct(pn(free))} NAV · 现金 ${_fmtUsd(cash)} − 名义`, free < 0 ? 'rk-t-danger' : free / (nav || 1) < 0.1 ? 'rk-t-alert' : 'rk-t-safe')}
+        ${fig('开仓权利金', _fmtUsd(cT.credit), `当前价值 ${_fmtUsd(cT.val)}`)}
+        ${fig(`已赚 ${_qBtn('capture', 'short')}`, cT.credit ? _pct((cT.credit - cT.val) / cT.credit * 100, 0) : '—', `浮盈 ${sgn(cT.pnl)}`, _thCls(cT.pnl))}
+        ${fig('剩余时间价值', _fmtUsd(cT.ext), '价格不变时还能赚的部分')}
+        ${fig(`Theta/天 ${_qBtn('theta_day', 'short')}`, sgn(cT.th), '', _thCls(cT.th))}
+      </div>
+      <div class="rk-table-wrap"><table class="rk-table">
+        <thead><tr><th>合约</th><th>名义</th><th>% NAV</th><th>开仓权利金</th><th>当前价值</th><th>剩余时间价值</th><th>已赚</th><th>浮盈</th><th>DTE</th><th>持有</th><th>距行权价</th><th>盈亏平衡</th><th>开仓年化</th><th>Theta/天</th><th>状态</th></tr></thead>
+        <tbody>${cspRows.map(r => row(r.x, `<td><b>${esc(_posLabel(r.x))}</b>${r.x.strategy ? ` <span class="rk-quiet">${esc(r.x.strategy)}</span>` : ''}</td><td>${money(r.x.exposure)}</td><td>${_pct(pn(r.x.exposure))}</td>
+          <td>${money(r.credit)}</td><td>${money(r.val)}</td><td>${money(r.ext)}</td><td class="${r.cap != null && r.cap >= 50 ? 'rk-t-safe' : ''}">${r.cap != null ? r.cap.toFixed(0) + '%' : '—'}</td><td class="${_thCls(r.pnl)}">${sgn(r.pnl)}</td>
+          <td>${_days(r.dte)}</td><td>${r.held ? r.held.days + ' 天' : '—'}</td><td class="${r.dist != null && r.dist < 3 ? 'rk-t-danger' : r.dist != null && r.dist < 8 ? 'rk-t-alert' : ''}">${_pct(r.dist)}</td>
+          <td>${r.be.toFixed(2)}</td><td>${r.ann != null ? r.ann.toFixed(0) + '%' : '—'}</td><td class="${_thCls(r.th)}">${sgn(r.th)}</td><td>${tag(r.x)}</td>`)).join('')}
+          <tr class="rk-total"><td>合计</td><td>${money(cspN)}</td><td>${_pct(pn(cspN))}</td><td>${money(cT.credit)}</td><td>${money(cT.val)}</td><td>${money(cT.ext)}</td><td></td><td class="${_thCls(cT.pnl)}">${sgn(cT.pnl)}</td><td></td><td></td><td></td><td></td><td></td><td class="${_thCls(cT.th)}">${sgn(cT.th)}</td><td></td></tr></tbody>
+      </table></div>
+      <div class="rk-note">名义 = 行权价 × 100 × 张数 (价差按宽度). 开仓年化 = 开仓权利金 ÷ 名义, 按开仓到到期的总天数折算. 剩余时间价值 = 当前价值 − 内在价值, 也就是 Theta 日历里卖方那部分. 点任意一行打开合约面板.</div>
+    </section>` : '';
+
+  /* ── short calls ── */
+  const wheel = (() => { try { return computeWheel(); } catch (e) { return null; } })();
+  const scRows = sc.map(x => {
+    const q = Number(x.qty) || 0, credit = (x.avg || 0) * 100 * q, val = Math.abs(mv(x)), held = _heldSince(x);
+    const sh = stk.filter(s => s.ticker === x.ticker).reduce((s, y) => s + (Number(y.qty) || 0), 0), hasLeaps = lp.some(l => l.ticker === x.ticker);
+    const cover = x.nakedQty > 0 ? '裸卖' : sh >= 100 ? '正股' : hasLeaps ? 'LEAPS (PMCC)' : x.wing ? '价差' : '—';
+    const w = wheel && wheel.rows ? wheel.rows.find(r => r.T === x.ticker) : null;
+    return { x, q, credit, val, cap: _captured(x), pnl: _posPnl(x), dte: _dteOf(x), held, dist: _distPct(x), th: theta(x), cover, room: w && w.adj ? (x.strike / w.adj - 1) * 100 : null, adj: w ? w.adj : null };
+  });
+  const scHTML = sc.length ? `
+    <section class="rk-block">
+      <h3 class="rk-block-title">Short call · CC / PMCC · ${sc.length} 笔</h3>
+      <div class="rk-table-wrap"><table class="rk-table">
+        <thead><tr><th>合约</th><th>覆盖</th><th>开仓权利金</th><th>当前价值</th><th>已赚</th><th>浮盈</th><th>DTE</th><th>持有</th><th>距行权价</th><th>行权价 vs 调整后成本 ${_qBtn('adj_cost', 'long')}</th><th>Theta/天</th><th>状态</th></tr></thead>
+        <tbody>${scRows.map(r => row(r.x, `<td><b>${esc(_posLabel(r.x))}</b></td><td class="${r.cover === '裸卖' ? 'rk-t-danger' : ''}">${esc(r.cover)}</td><td>${money(r.credit)}</td><td>${money(r.val)}</td>
+          <td class="${r.cap != null && r.cap >= 50 ? 'rk-t-safe' : r.cap != null && r.cap < 0 ? 'rk-t-alert' : ''}">${r.cap != null ? r.cap.toFixed(0) + '%' : '—'}</td><td class="${_thCls(r.pnl)}">${sgn(r.pnl)}</td><td>${_days(r.dte)}</td><td>${r.held ? r.held.days + ' 天' : '—'}</td>
+          <td class="${r.dist != null && r.dist < 3 ? 'rk-t-danger' : r.dist != null && r.dist < 8 ? 'rk-t-alert' : ''}">${_pct(r.dist)}</td>
+          <td class="${r.room == null ? '' : r.room >= 0 ? 'rk-t-safe' : 'rk-t-danger'}">${r.room != null ? `${r.room >= 0 ? '+' : '−'}${Math.abs(r.room).toFixed(1)}% <span class="rk-quiet">(${r.adj.toFixed(2)})</span>` : '—'}</td>
+          <td class="${_thCls(r.th)}">${sgn(r.th)}</td><td>${tag(r.x)}</td>`)).join('')}</tbody>
+      </table></div>
+      <div class="rk-note">行权价 vs 调整后成本: 为正时即使被 call 走也是盈利的; 为负说明这张 CC 的行权价低于本轮 wheel 的真实成本.</div>
+    </section>` : '';
+
+  /* ── LEAPS ── */
+  const lpRows = lp.map(x => { const s = _leapsStats(x), cost = x.cost || 0, val = mv(x), held = _heldSince(x), dte = _dteOf(x), tg = _leapsTargetFor(x);
+    const pnlPct = cost > 0 ? (val - cost) / cost * 100 : null;
+    return { x, s, cost, val, pnlPct, pnl: val - cost, held, dte, toExit: dte != null ? dte - LEAPS_EXIT_DTE : null, tg, prog: pnlPct != null ? pnlPct / tg.pct * 100 : null }; });
+  const lT = { cost: sum(lpRows, r => r.cost), val: sum(lpRows, r => r.val), sh: sum(lpRows, r => r.s ? r.s.shares : 0), ext: sum(lpRows, r => r.s ? r.s.extr * 100 * (Number(r.x.qty) || 0) : 0), th: sum(lpRows, r => theta(r.x)) };
+  const avgHeld = (() => { const h = lpRows.filter(r => r.held); return h.length ? h.reduce((s, r) => s + r.held.days, 0) / h.length : null; })();
+  const lpHTML = lp.length ? `
+    <section class="rk-block">
+      <h3 class="rk-block-title">LEAPS · ${lp.length} 笔</h3>
+      <div class="rk-figs">
+        ${fig('成本', _fmtUsd(lT.cost), `${_pct(pn(lT.cost))} NAV`)}
+        ${fig('市值', _fmtUsd(lT.val), `浮盈 ${sgn(lT.val - lT.cost)} · ${lT.cost ? _pct((lT.val - lT.cost) / lT.cost * 100) : '—'}`, _thCls(lT.val - lT.cost))}
+        ${fig('正股等值', `${Math.round(lT.sh).toLocaleString()} 股`, '按 Delta 折算')}
+        ${fig(`时间价值 ${_qBtn('carry', 'long')}`, _fmtUsd(lT.ext), `每月 Theta ${sgn(lT.th * 30)}`, 'rk-t-watch')}
+        ${fig('平均持有', avgHeld != null ? avgHeld.toFixed(0) + ' 天' : '—', '仍持有的 LEAPS')}
+      </div>
+      <div class="rk-table-wrap"><table class="rk-table">
+        <thead><tr><th>合约</th><th>成本</th><th>市值</th><th>浮盈</th><th>浮盈 %</th><th>止盈进度</th><th>持有</th><th>DTE</th><th>距退出</th><th>Δ</th><th>正股等值</th><th>λ ${_qBtn('lambda', 'long')}</th><th>时间价值/年</th><th>状态</th></tr></thead>
+        <tbody>${lpRows.map(r => row(r.x, `<td><b>${esc(_posLabel(r.x))}</b></td><td>${money(r.cost)}</td><td>${money(r.val)}</td><td class="${_thCls(r.pnl)}">${sgn(r.pnl)}</td><td class="${_thCls(r.pnl)}">${_pct(r.pnlPct)}</td>
+          <td>${r.prog != null ? `<span class="pc-prog"><i style="width:${Math.max(0, Math.min(100, r.prog)).toFixed(0)}%"></i></span> ${Math.max(0, r.prog).toFixed(0)}% <span class="rk-quiet">/ +${r.tg.pct}%</span>` : '—'}</td>
+          <td>${r.held ? r.held.days + ' 天' + (r.held.approx ? '*' : '') : '—'}</td><td>${_days(r.dte)}</td>
+          <td class="${r.toExit != null && r.toExit <= 0 ? 'rk-t-danger' : r.toExit != null && r.toExit < 90 ? 'rk-t-alert' : ''}">${r.toExit != null ? (r.toExit <= 0 ? '已到退出线' : r.toExit + ' 天') : '—'}</td>
+          <td>${r.s ? r.s.delta.toFixed(2) : '—'}</td><td>${r.s ? Math.round(r.s.shares) + ' 股' : '—'}</td><td>${r.s && r.s.lambda != null ? r.s.lambda.toFixed(1) : '—'}</td>
+          <td>${r.s ? r.s.carry.toFixed(1) + '%' : '—'}</td><td>${tag(r.x)}</td>`)).join('')}</tbody>
+      </table></div>
+      <div class="rk-note">距退出 = DTE − 180 (SOP: 剩 6 个月无条件退出或 roll). 止盈进度按你的 LEAPS 风格目标 (替代正股 +150% · 平衡 +100% · 波段 +50%). 持有天数来自交易记录${lpRows.some(r => r.held && r.held.approx) ? '; * 来自 checklist 的开仓记录' : ''}.</div>
+    </section>` : '';
+
+  /* ── stock ── */
+  const stRows = stk.map(x => { const px = _stockPx(x), q = Number(x.qty) || 0, w = wheel && wheel.rows ? wheel.rows.find(r => r.T === x.ticker) : null;
+    const cc = sc.filter(s => s.ticker === x.ticker).reduce((s, y) => s + (Number(y.qty) || 0), 0);
+    return { x, px, q, val: mv(x), pnl: _posPnl(x), held: _heldSince(x), adj: w ? w.adj : null, cover: q >= 100 ? cc * 100 / q * 100 : null }; });
+  const stHTML = stk.length ? `
+    <section class="rk-block">
+      <h3 class="rk-block-title">正股 · ${stk.length} 只</h3>
+      <div class="rk-table-wrap"><table class="rk-table">
+        <thead><tr><th>标的</th><th>股数</th><th>Schwab 均价</th><th>调整后成本 ${_qBtn('adj_cost', 'long')}</th><th>现价</th><th>市值</th><th>% NAV</th><th>浮盈</th><th>持有</th><th>CC 覆盖</th></tr></thead>
+        <tbody>${stRows.map(r => `<tr><td><b>${esc(r.x.ticker)}</b></td><td>${Math.round(r.q)}</td><td>${r.x.avg != null ? r.x.avg.toFixed(2) : '—'}</td><td class="rk-t-acc">${r.adj != null ? r.adj.toFixed(2) : '—'}</td>
+          <td>${r.px != null ? r.px.toFixed(2) : '—'}</td><td>${money(r.val)}</td><td>${_pct(pn(r.val))}</td><td class="${_thCls(r.pnl)}">${sgn(r.pnl)}</td><td>${r.held ? r.held.days + ' 天' : '—'}</td>
+          <td>${r.cover != null ? r.cover.toFixed(0) + '%' : '—'}</td></tr>`).join('')}</tbody>
+      </table></div>
+    </section>` : '';
+  const othHTML = oth.length ? `
+    <section class="rk-block">
+      <h3 class="rk-block-title">其他期权 · ${oth.length} 笔</h3>
+      <div class="rk-table-wrap"><table class="rk-table">
+        <thead><tr><th>合约</th><th>类型</th><th>成本</th><th>市值</th><th>浮盈</th><th>DTE</th><th>持有</th><th>美元 Delta</th></tr></thead>
+        <tbody>${oth.map(x => { const h = _heldSince(x); return row(x, `<td><b>${esc(_posLabel(x))}</b></td><td>${esc(x.strategy || _KIND_LABEL[x.kind] || x.kind)}</td><td>${money(x.cost)}</td><td>${money(mv(x))}</td>
+          <td class="${_thCls(_posPnl(x))}">${sgn(_posPnl(x))}</td><td>${_days(_dteOf(x))}</td><td>${h ? h.days + ' 天' : '—'}</td><td>${sgn(_dollarDelta(x))}</td>`); }).join('')}</tbody>
+      </table></div>
+    </section>` : '';
+  $app.innerHTML = head + `<div class="rk-page pos-page">${_safe('组合构成', () => comp)}${_safe('CSP', () => cspHTML)}${_safe('Short call', () => scHTML)}${_safe('LEAPS', () => lpHTML)}${_safe('正股', () => stHTML)}${_safe('其他期权', () => othHTML)}
+    ${loadHist() ? '' : '<div class="rk-note">持有天数需要交易记录, 正在读取…</div>'}</div>`;
+}
+
+/* ═════════════ v21 · every table sorts by any column ═════════════ */
+function _cellKey(td) {
+  if (!td) return { n: null, s: '' };
+  const t = td.textContent.replace(/\s+/g, ' ').trim();
+  if (!t || /^[—–-]$/.test(t)) return { n: null, s: '' };
+  const d = t.match(/^(\d{1,2})\/(\d{1,2})(?:\b|$)/);
+  if (d && !/[A-Za-z]/.test(t.slice(0, 6))) return { n: +d[1] * 100 + +d[2], s: t };
+  const m = t.replace(/[$,]/g, '').replace(/−/g, '-').match(/^([+-]?)\s*(\d+(?:\.\d+)?)/);
+  if (m) { let v = parseFloat(m[1] + m[2]); const unit = t.match(/^[+−-]?\$?\d[\d,.]*\s*([kKmMbB])\b/); if (unit) v *= { k: 1e3, m: 1e6, b: 1e9 }[unit[1].toLowerCase()]; return { n: v, s: t }; }
+  return { n: null, s: t };
+}
+function _sortTable(tb, ci, th) {
+  const dir = th.dataset.dir === 'desc' ? 'asc' : th.dataset.dir === 'asc' ? 'desc' : null;
+  const units = tb.tBodies.length > 1 ? Array.from(tb.tBodies).map(b => ({ el: b, key: _cellKey(b.rows[0] && b.rows[0].cells[ci]), total: false }))
+    : Array.from(tb.tBodies[0] ? tb.tBodies[0].rows : []).map(r => ({ el: r, key: _cellKey(r.cells[ci]), total: r.classList.contains('rk-total') }));
+  const numeric = units.filter(u => !u.total && u.key.n != null).length >= units.filter(u => !u.total && u.key.s).length * 0.6;
+  const d = dir || (numeric ? 'desc' : 'asc');
+  const cmp = (a, b) => {
+    if (numeric) { if (a.key.n == null) return 1; if (b.key.n == null) return -1; return d === 'asc' ? a.key.n - b.key.n : b.key.n - a.key.n; }
+    return d === 'asc' ? a.key.s.localeCompare(b.key.s, 'zh') : b.key.s.localeCompare(a.key.s, 'zh');
+  };
+  const body = units.filter(u => !u.total).sort(cmp), tail = units.filter(u => u.total);
+  const parent = tb.tBodies.length > 1 ? tb : tb.tBodies[0];
+  [...body, ...tail].forEach(u => parent.appendChild(u.el));
+  tb.querySelectorAll('thead th').forEach(h => { if (h !== th) { delete h.dataset.dir; h.classList.remove('s-asc', 's-desc'); } });
+  th.dataset.dir = d; th.classList.toggle('s-asc', d === 'asc'); th.classList.toggle('s-desc', d === 'desc');
+}
+function _bindSortable(root) {
+  (root || document).querySelectorAll('table.rk-table').forEach(tb => {
+    if (tb.dataset.sortBound || !tb.tHead || !tb.tBodies.length) return;
+    tb.dataset.sortBound = '1';
+    Array.from(tb.tHead.rows[0].cells).forEach((th, ci) => {
+      th.classList.add('sortable-th'); th.setAttribute('aria-sort', 'none');
+      th.addEventListener('click', e => { if (e.target.closest('.gl-q, button, input, a')) return; _sortTable(tb, ci, th); });
+    });
+  });
+}
+new MutationObserver(() => { clearTimeout(_bindSortable._t); _bindSortable._t = setTimeout(() => _bindSortable(), 30); }).observe(document.documentElement, { childList: true, subtree: true });
 
 /* ---------- fault isolation: one broken block never takes the page down ---------- */
 const LAST_ERR_KEY = 'pretrade_last_error';
