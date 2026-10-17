@@ -3097,6 +3097,25 @@
   body.theme-pro .sticky-action-bar .btn, body.theme-pro .sab-btn-snapshot { border-radius: 2px !important; }
   .fuel-bar .fuel-fill.fz-safe { background: var(--pass); } .fuel-bar .fuel-fill.fz-watch { background: #D9B44A; }
   .fuel-bar .fuel-fill.fz-alert { background: #E5793B; } .fuel-bar .fuel-fill.fz-danger { background: var(--fail); }
+  /* v28 · price action line, mini chart, stop/target estimate */
+  .pa-line { margin: 8px 0 4px; display: flex; flex-direction: column; gap: 3px; font-size: 12px; }
+  .pa-line .pa-win { margin-left: 8px; font-size: 11px; color: var(--text-faint); }
+  .pa-line .pa-win .app-link { font-size: 11px; } .pa-line .pa-win .app-link.on { color: var(--text); font-weight: 700; text-decoration: none; }
+  .tch { margin-top: 8px; }
+  .tch-svg .tch-up, .tch-svg .tch-dn { stroke-width: 1; } .tch-svg .tch-up { stroke: var(--pass); } .tch-svg .tch-dn { stroke: var(--fail); }
+  .tch-svg .tch-upb { fill: var(--pass); } .tch-svg .tch-dnb { fill: var(--fail); }
+  .tch-svg .tch-upv { fill: color-mix(in srgb, var(--pass) 45%, transparent); } .tch-svg .tch-dnv { fill: color-mix(in srgb, var(--fail) 45%, transparent); }
+  .tch-svg .tch-proj { fill: none; stroke: var(--text-faint); stroke-dasharray: 2 2; }
+  .tch-svg .tch-avgv { stroke: var(--text); stroke-width: 1.1; opacity: 0.75; }
+  .tch-svg .tch-reb { fill: color-mix(in srgb, var(--accent) 10%, transparent); } .tch-svg .tch-reblab { fill: var(--accent); }
+  .tch-svg .tch-low { stroke: #E5793B; stroke-dasharray: 4 3; stroke-width: 1.2; } .tch-svg .tch-low-t { fill: #E5793B; }
+  .tch-svg .tch-pw { stroke: var(--pass); stroke-dasharray: 1 3; } .tch-svg .tch-pw-t { fill: var(--pass); }
+  .tch-svg .tch-cw { stroke: var(--fail); stroke-dasharray: 1 3; } .tch-svg .tch-cw-t { fill: var(--fail); }
+  .tch-leg { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 10.5px; color: var(--text-faint); margin-top: 2px; }
+  .tch-leg i { display: inline-block; width: 10px; height: 2px; margin-right: 4px; vertical-align: 3px; }
+  .tch-leg .tch-lg-low { background: #E5793B; } .tch-leg .tch-lg-avg { background: var(--text); }
+  .lvl-est { margin-top: 6px; padding: 7px 10px; border-left: 2px solid var(--accent); background: var(--panel-2); font-size: 12px; display: flex; flex-direction: column; gap: 2px; }
+  .lvl-est b { font-family: var(--mono); }
 </style>
 </head>
 <body class="theme-slate">
@@ -3480,6 +3499,10 @@ function leapsOpenItems() {
     title: '正股当前价',
     desc: '本次开仓时正股价格。用于自动计算 R:R。',
     numeric: { placeholder: 'e.g. 180.50', unit: '$', priceField: true } });
+  base.push({ group: 'Price action · 价格行为', id: 'no_new_low',
+    title: `收盘未创 ${_newLowWin() === 60 ? '3 个月' : '20 日'}新低 (自动)`,
+    desc: `最近一根已收盘日 K 不是近 ${_newLowWin() === 60 ? '60' : '20'} 个交易日的最低收盘价, 且盘中价未跌破该最低收盘价. 左侧超卖 + 右侧确认: 等超卖后第一个不再创新低的交易日.`,
+    hard: true });
   base.push({ group: 'Trade plan · 交易计划', id: 'stop_level',
     title: '正股止损位',
     desc: '触发即平 LEAPS. 必须低于当前价. 未设止损视为无纪律.',
@@ -3533,18 +3556,22 @@ function leapsOpenItems() {
   if (state.leapsPhase === 'entry') {
     const g = 'Entry signals (首笔 · 左衰)';
     base.push({ group: g, id: 'mj2',
-      title: 'MJ2 系统给出信号', desc: 'MJ2 已触发. 无信号一律不开.', hard: true });
+      title: 'MJ2 系统在最近 3 个交易日内给出信号', desc: 'MJ2 已触发 (最近 3 个交易日内). 无信号一律不开. 与「收盘未创新低」配合: 超卖信号之后等第一个企稳日.', hard: true });
     base.push({ group: g, id: 'kdj_j_leaps',
-      title: '日线 KDJ J 值 ≤ 15 (backup: 防 MJ2 失灵)',
-      desc: 'J ≤ 15 = 显著超卖. 与 MJ2 双重确认, MJ2 假信号亦可拦截. J > 15 超卖不足.',
+      title: '日线 KDJ J 最近 3 个交易日内 ≤ 15 (backup: 防 MJ2 失灵)',
+      desc: '最近 3 个交易日的 J 最低值 ≤ 15 = 显著超卖 (自动从日 K 计算). 左侧超卖 + 右侧确认: 超卖之后、收盘不再创新低时入场.',
       hard: true,
       numeric: { placeholder: 'J', unit: '', max: 15, comparator: '≤' } });
     base.push({ group: g, id: 'exhaustion',
       title: '左侧动能衰竭',
       desc: 'MACD 红柱缩小 + RSI 下跌斜率放缓 (动能衰竭). 或 RSI ≤ 30 (超卖). 或底背离.' });
     base.push({ group: g, id: 'reversal_confirm',
-      title: '止跌 K 线 + 放量确认',
-      desc: '止跌 K 线 (锤头 / 十字星 / 吞没 / 长下影 / 早晨之星) + 量 > 5MA × 1.2. 单纯指标超卖不足, 需 K 线与量能确认.' });
+      title: '止跌 K 线形态',
+      desc: '止跌 K 线 (锤头 / 十字星 / 吞没 / 长下影 / 早晨之星). 量能由下一条自动判断.' });
+    base.push({ group: g, id: 'vol_confirm',
+      title: '放量确认 (自动)',
+      desc: '止跌当日成交量 > 前 5 日均量 × 1.2. 盘中按已成交量推算全天量.',
+      hard: true });
   }
   if (state.leapsPhase === 'add_left') {
     const g = 'Add signals (加仓 · 左衰)';
@@ -3553,18 +3580,22 @@ function leapsOpenItems() {
       desc: '每周至多 1 笔, 不区分信号类型. 周内二次加仓多为情绪化操作.',
       hard: true });
     base.push({ group: g, id: 'mj2_add_left',
-      title: 'MJ2 系统给出信号', desc: 'MJ2 已触发, 加仓也要有系统确认.', hard: true });
+      title: 'MJ2 系统在最近 3 个交易日内给出信号', desc: 'MJ2 已触发 (最近 3 个交易日内), 加仓也要有系统确认.', hard: true });
     base.push({ group: g, id: 'kdj_j_leaps_add',
-      title: '日线 KDJ J 值 ≤ 15 (backup: 防 MJ2 失灵)',
-      desc: 'J ≤ 15 = 显著超卖. 加仓较首笔需更强双重确认.',
+      title: '日线 KDJ J 最近 3 个交易日内 ≤ 15 (backup: 防 MJ2 失灵)',
+      desc: '最近 3 个交易日的 J 最低值 ≤ 15 (自动). 加仓较首笔需更强双重确认.',
       hard: true,
       numeric: { placeholder: 'J', unit: '', max: 15, comparator: '≤' } });
     base.push({ group: g, id: 'exhaustion_add',
       title: '左侧动能再度衰竭',
       desc: 'MACD 红柱缩小 + RSI 下跌斜率放缓, 或 RSI ≤ 30, 或底背离. 加仓较首笔更严格, 二次探底假信号偏多.' });
     base.push({ group: g, id: 'reversal_confirm_add_left',
-      title: '止跌 K 线 + 放量确认',
-      desc: '止跌 K 线 (锤头 / 十字星 / 吞没 / 长下影 / 早晨之星) + 量 > 5MA × 1.2.' });
+      title: '止跌 K 线形态',
+      desc: '止跌 K 线 (锤头 / 十字星 / 吞没 / 长下影 / 早晨之星). 量能由下一条自动判断.' });
+    base.push({ group: g, id: 'vol_confirm_add_left',
+      title: '放量确认 (自动)',
+      desc: '止跌当日成交量 > 前 5 日均量 × 1.2. 盘中按已成交量推算全天量.',
+      hard: true });
     base.push({ group: g, id: 'first_pos_reviewed',
       title: '首笔仓位状态已审视',
       desc: '首笔浮亏 ≤ 20%. 若首笔 -30% 以上, 支撑位判断已错, 应止损而非加仓. 或首笔已回本以上.',
@@ -3579,8 +3610,12 @@ function leapsOpenItems() {
     base.push({ group: g, id: 'right_ma',
       title: '日线收复 5MA、10MA 或 20MA 之一', desc: '任一即可。' });
     base.push({ group: g, id: 'reversal_confirm_right',
-      title: '右侧 K 线形态 + 放量确认',
-      desc: '右侧形态 (反包/吞没/锤头/十字星) + 量 > 5MA × 1.2. 缩量 = 空头没了但多头也没进.' });
+      title: '右侧 K 线形态',
+      desc: '右侧形态 (反包 / 吞没 / 锤头 / 十字星). 量能由下一条自动判断.' });
+    base.push({ group: g, id: 'vol_confirm_right',
+      title: '放量确认 (自动)',
+      desc: '当日量 > 前 5 日均量 × 1.2, 且非缩量反弹: 近 20 日低点以来上涨日的平均量 ≥ 低点前 20 日均量. 缩量反弹 = 空头没了但多头也没进.',
+      hard: true });
     base.push({ group: g, id: 'above_ema21_sma50',
       title: '站稳 EMA21 或 SMA50 之上',
       desc: '更长周期均线之上, 趋势更可靠。' });
@@ -3595,8 +3630,12 @@ function leapsOpenItems() {
       title: '日线 MACD 低位金叉确立',
       desc: '滞后指标, 严禁作为第一买点。' });
     base.push({ group: g, id: 'reversal_confirm_macd',
-      title: '金叉当日 K 线 + 放量确认',
-      desc: '金叉当日或前日出现右侧 K 线 + 量 > 5MA × 1.2. 缩量金叉 = 假信号.' });
+      title: '金叉当日 K 线形态',
+      desc: '金叉当日或前日出现右侧 K 线. 量能由下一条自动判断.' });
+    base.push({ group: g, id: 'vol_confirm_macd',
+      title: '放量确认 (自动)',
+      desc: '当日量 > 前 5 日均量 × 1.2, 且非缩量反弹 (低点以来上涨日均量 ≥ 低点前 20 日均量). 缩量金叉 = 假信号.',
+      hard: true });
     base.push({ group: g, id: 'price_above_ma',
       title: '价格站稳短周期均线之上 (5/10/20MA)',
       desc: '价格 + 均线协同, 非光靠 MACD 指标。' });
@@ -3798,6 +3837,9 @@ function cspItems() {
   base.push({ group: 'Underlying · 标的', id: 'strike_support',
     title: '行权价位于多次测试的关键支撑下方',
     desc: '过去 6-12 月内 2 次以上触及的水平位. 行权价设于支撑下方形成双重保护.' });
+  base.push({ group: 'Technical · 技术面', id: 'csp_new_low',
+    title: '收盘未创 20 日新低 (提醒)',
+    desc: '正在创新低时卖 put 容易接飞刀. 不阻断: 考虑等企稳, 或把行权价放到 Put Wall / 支撑位下方, 或缩小张数.' });
   base.push({ group: 'Underlying · 标的', id: 'bb_below_mid',
     title: '价格位于 BB 中轨之下',
     desc: '中轨之下 = 已进入回调, 非情绪高点. 支撑与 GEX 提供主保护, BB 仅作粗筛.' });
@@ -5112,7 +5154,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.16-v27';
+const APP_BUILD = '2026.10.17-v28';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
@@ -7217,6 +7259,7 @@ function itemHTML(it) {
           <span class="item-numeric-req">${esc(req)}</span>
           ${verdictText}
         </div>
+        ${it.id === 'stop_level' || it.id === 'target_level' ? `<div id="lvl-est-${esc(it.id)}">${_safe('估算', () => _levelEstHTML(it.id), '')}</div>` : ''}
       </div>
     `;
   }
@@ -13905,6 +13948,7 @@ function _cqRefresh() {
   const lg = document.getElementById('cq-leg-wrap');
   if (lg && !lg.contains(document.activeElement)) lg.innerHTML = _tradeLegHTML();
   const lr = document.getElementById('leaps-room'); if (lr) lr.innerHTML = _safe('额度', _leapsRoomLineHTML, '');
+  _updLevelEst();
   _cqPreviewSoon();
 }
 function _cqPreviewSoon() {
@@ -14098,7 +14142,7 @@ async function fetchPrices(tickers, { maxAge = 60000 } = {}) {
 /* ---------- technical indicators (daily) ---------- */
 function _sma(a, n, i = a.length - 1) { if (i + 1 < n) return null; let s = 0; for (let k = i - n + 1; k <= i; k++) s += a[k]; return s / n; }
 function _emaSeries(a, n) { const k = 2 / (n + 1), out = []; a.forEach((v, i) => out.push(i ? v * k + out[i - 1] * (1 - k) : v)); return out; }
-function techOf(bars) {
+function techOf(bars, live = false) {
   if (!bars || bars.length < 30) return null;
   const c = bars.map(b => b.c), h = bars.map(b => b.h), l = bars.map(b => b.l), n = c.length, px = c[n - 1];
   // RSI 14 (Wilder)
@@ -14108,13 +14152,13 @@ function techOf(bars) {
   for (let i = 15; i < n; i++) { const d = c[i] - c[i - 1]; ag = (ag * 13 + Math.max(0, d)) / 14; al = (al * 13 + Math.max(0, -d)) / 14; }
   const rsi = al === 0 ? 100 : 100 - 100 / (1 + ag / al);
   // KDJ 9,3,3
-  let K = 50, D = 50;
+  let K = 50, D = 50; const Js = [];
   for (let i = 8; i < n; i++) {
     const hh = Math.max(...h.slice(i - 8, i + 1)), ll = Math.min(...l.slice(i - 8, i + 1));
     const rsv = hh === ll ? 50 : (c[i] - ll) / (hh - ll) * 100;
-    K = 2 / 3 * K + rsv / 3; D = 2 / 3 * D + K / 3;
+    K = 2 / 3 * K + rsv / 3; D = 2 / 3 * D + K / 3; Js[i] = 3 * K - 2 * D;
   }
-  const J = 3 * K - 2 * D;
+  const J = 3 * K - 2 * D, J3 = Math.min(...[Js[n - 1], Js[n - 2], Js[n - 3]].filter(v => v != null));
   // Bollinger 20, 2σ
   const mid = _sma(c, 20), sd = Math.sqrt(c.slice(-20).reduce((s, v) => s + (v - mid) ** 2, 0) / 20);
   const up = mid + 2 * sd, lo = mid - 2 * sd;
@@ -14136,7 +14180,37 @@ function techOf(bars) {
     sma5: ma(5), sma10: ma(10), sma20: ma(20), sma50: ma(50), sma200: ma(200), ema21: ema21[n - 1],
     sma5p: maPrev(5), sma10p: maPrev(10), sma20p: maPrev(20), ema21p: ema21[n - 2], sma50p: maPrev(50),
     dif: dif[n - 1], dea: dea[n - 1], cross, crossLow: crossAt != null && dif[crossAt] < 0, hv, hi52: hi, lo52, pos52: hi > lo52 ? (px - lo52) / (hi - lo52) : null,
-    prevClose: c[n - 2], _above2: above2 };
+    prevClose: c[n - 2], _above2: above2, J3, ..._pxExtra(bars, live) };
+}
+/* ---------- v28 · price action: closing low + volume (completed bars only; a live bar's volume is projected) ---------- */
+const NEWLOW_KEY = 'pretrade_newlow_win';
+function _newLowWin() { return localStorage.getItem(NEWLOW_KEY) === '60' ? 60 : 20; }
+window.setNewLowWin = w => { try { localStorage.setItem(NEWLOW_KEY, String(w)); } catch (e) {} const y = window.scrollY; render(); window.scrollTo(0, y); refreshTech(); };
+function _sessionFrac() {
+  try { const p = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', hour: 'numeric', minute: 'numeric', hour12: false }).formatToParts(new Date());
+    const hh = (+p.find(x => x.type === 'hour').value) % 24, mm = +p.find(x => x.type === 'minute').value;
+    return Math.max(0, Math.min(1, (hh * 60 + mm - 570) / 390)); } catch (e) { return 1; }
+}
+function _pxExtra(bars, live) {
+  const n = bars.length; if (n < 65) return {};
+  const done = live ? bars.slice(0, -1) : bars, c = done.map(b => b.c), m = c.length, last = c[m - 1], px = bars[n - 1].c;
+  const win = _newLowWin(), minOf = (k, excl) => Math.min(...c.slice(Math.max(0, m - k), excl ? m - 1 : m));
+  const low20 = minOf(20), low60 = minOf(60), lowW = win === 60 ? low60 : low20;
+  const closeLow20 = last <= minOf(20, true), closeLow60 = last <= minOf(60, true);
+  const breakNow = live && px < lowW;
+  const newLowHit = (win === 60 ? closeLow60 : closeLow20) || breakNow;
+  // volume: the signal day is today when live (projected to a full session), otherwise the last completed day
+  const v = bars.map(b => b.v || 0), frac = live ? _sessionFrac() : 1;
+  const useLive = live && frac >= 0.08, si = useLive ? n - 1 : (live ? n - 2 : n - 1);
+  const sigVol = useLive ? v[n - 1] / Math.max(0.08, frac) : v[si];
+  const avg = (a) => a.length ? a.reduce((s, x) => s + x, 0) / a.length : null;
+  const avg5 = avg(v.slice(Math.max(0, si - 5), si)), dayOK = avg5 != null && sigVol > avg5 * 1.2;
+  // rebound leg: from the lowest close of the last 20 completed days
+  const base = live ? n - 1 : n, lowIdx = (() => { let k = base - 20, best = k; for (let i = Math.max(0, base - 20); i < base; i++) if (bars[i].c < bars[best].c) best = i; return best; })();
+  const ups = []; for (let i = lowIdx + 1; i < n; i++) if (bars[i].c > bars[i - 1].c) ups.push(i === n - 1 && useLive ? sigVol : v[i]);
+  const avg20v = avg(v.slice(Math.max(0, lowIdx - 19), lowIdx + 1)), upAvg = avg(ups);
+  const reboundOK = ups.length > 0 && avg20v != null && upAvg >= avg20v;
+  return { win, lastClose: last, low20, low60, lowW, closeLow20, closeLow60, breakNow, newLowHit, also60: closeLow60, sigVol, projected: useLive && frac < 1, avg5, dayOK, lowIdx, lowDay: bars[lowIdx].d, upDays: ups.length, upAvg, avg20v, reboundOK };
 }
 // checklist ids this can decide, and how
 function _techFills(t) {
@@ -14144,7 +14218,10 @@ function _techFills(t) {
   const c1 = t.px, c0 = t.prevClose;
   const above = (now, prev) => now != null && c1 > now;
   const stayed = (now, prev) => now != null && prev != null && c1 > now && c0 > prev;
-  v.kdj_j_leaps = v.kdj_j_leaps_add = v.kdj_j = t.J.toFixed(1);
+  v.kdj_j = t.J.toFixed(1);
+  v.kdj_j_leaps = v.kdj_j_leaps_add = (t.J3 != null ? t.J3 : t.J).toFixed(1);         // LEAPS: lowest J of the last 3 sessions
+  if (t.newLowHit != null) { v.no_new_low = pf(!t.newLowHit); v.csp_new_low = pf(!t.newLowHit); }
+  if (t.dayOK != null) { v.vol_confirm = v.vol_confirm_add_left = pf(t.dayOK); v.vol_confirm_right = v.vol_confirm_macd = pf(t.dayOK && t.reboundOK); }
   v.bb_below_mid = pf(c1 < t.mid);
   v.bb_above_mid = pf(c1 > t.mid);
   v.bb_upper_zone = pf(c1 > (t.mid + t.up) / 2);
@@ -14156,7 +14233,8 @@ function _techFills(t) {
   return v;
 }
 const _TECH_LABEL = { kdj_j_leaps: 'KDJ J', kdj_j_leaps_add: 'KDJ J', kdj_j: 'KDJ J', bb_below_mid: '布林', bb_above_mid: '布林', bb_upper_zone: '布林',
-  right_ma: '均线', above_ema21_sma50: '均线', price_above_ma: '均线', macd_golden: 'MACD', below_200ma: '200MA' };
+  right_ma: '均线', above_ema21_sma50: '均线', price_above_ma: '均线', macd_golden: 'MACD', below_200ma: '200MA',
+  no_new_low: '收盘新低', csp_new_low: '收盘新低', vol_confirm: '放量', vol_confirm_add_left: '放量', vol_confirm_right: '放量', vol_confirm_macd: '放量' };
 let __techTimer = 0;
 function scheduleTech() { clearTimeout(__techTimer); __techTimer = setTimeout(() => { refreshTech(); refreshGexStrip(); }, 700); }
 async function refreshTech(force) {
@@ -14165,7 +14243,7 @@ async function refreshTech(force) {
   if (force && __px[t]) __px[t].at = 0;
   _techRender(true);
   await fetchPrices([t]);
-  const tech = __px[t] && techOf(__px[t].bars);
+  const tech = __px[t] && techOf(__px[t].bars, __px[t].live);
   if (tech) {
     const ids = new Set(currentItems().map(i => i.id));
     const fills = Object.fromEntries(Object.entries(_techFills(tech)).filter(([k]) => ids.has(k)));
@@ -14177,6 +14255,87 @@ function _techRender(loading) {
   const el = document.getElementById('tech-strip');
   if (el) el.innerHTML = techStripInnerHTML(loading);
 }
+/* ---------- v28 · price-action line + mini chart in the technicals strip ---------- */
+function _paLineHTML(x) {
+  if (x.newLowHit == null) return '';
+  const f2 = v => v == null ? '—' : v.toFixed(2), wl = x.win === 60 ? '3 个月' : '20 日';
+  const nl = x.newLowHit ? `<span class="rk-t-danger">${x.breakNow ? `盘中跌破 ${wl}最低收盘 ${f2(x.lowW)}` : `收盘 ${f2(x.lastClose)} 是 ${wl}新低`}${x.also60 && x.win === 20 ? ' · 同时是 3 个月新低' : ''}</span>`
+    : `<span class="rk-t-safe">收盘 ${f2(x.lastClose)} 未创${wl}新低</span> <span class="rk-quiet">(${wl}最低收盘 ${f2(x.lowW)})</span>`;
+  const big = v => v == null ? '—' : v >= 1e6 ? (v / 1e6).toFixed(1) + 'M' : (v / 1e3).toFixed(0) + 'K';
+  const vol = `${x.dayOK ? '<span class="rk-t-safe">放量 ✓</span>' : '<span class="rk-t-alert">未放量</span>'} <span class="rk-quiet">当日 ${big(x.sigVol)}${x.projected ? ' (推算全天)' : ''} vs 5 日均量 × 1.2 = ${big(x.avg5 * 1.2)}</span>`;
+  const reb = x.upDays ? `${x.reboundOK ? '<span class="rk-t-safe">反弹段量能 ✓</span>' : '<span class="rk-t-alert">缩量反弹</span>'} <span class="rk-quiet">${x.lowDay.slice(5)} 低点以来 ${x.upDays} 个上涨日均量 ${big(x.upAvg)} vs 20 日均量 ${big(x.avg20v)}</span>` : `<span class="rk-quiet">${x.lowDay.slice(5)} 低点之后还没有上涨日</span>`;
+  return `<div class="pa-line"><div>${nl} <span class="pa-win">窗口 <button class="app-link${x.win === 20 ? ' on' : ''}" onclick="setNewLowWin(20)">1 个月</button> / <button class="app-link${x.win === 60 ? ' on' : ''}" onclick="setNewLowWin(60)">3 个月</button></span></div><div>${vol}</div><div>${reb}</div></div>`;
+}
+function _techChartSVG(t, x) {
+  const p = __px[t]; if (!p || !p.bars || p.bars.length < 70) return '';
+  const all = p.bars, N = Math.min(63, all.length), bars = all.slice(-N), off = all.length - N, closes = all.map(b => b.c);
+  const W = _chartW(), L = 6, R = 52, T = 8, PH = 168, G = 10, VH = 46, B = 18, H = T + PH + G + VH + B, cw = (W - L - R) / N;
+  const sma = (k, i) => i + 1 >= k ? closes.slice(i + 1 - k, i + 1).reduce((s, v) => s + v, 0) / k : null;
+  const MAS = [[5, '#7FA7E8'], [10, '#B48CEB'], [20, '#D9B562'], [50, '#4FC1B5'], [200, '#E9825F']];
+  const G0 = __gex[t] && !__gex[t].err && __gex[t].g ? __gex[t].g : null;
+  const levels = [x.lowW, G0 && G0.putWall, G0 && G0.callWall].filter(v => v > 0);
+  let lo = Math.min(...bars.map(b => b.l)), hi = Math.max(...bars.map(b => b.h));
+  levels.forEach(v => { if (v > lo * 0.85 && v < hi * 1.15) { lo = Math.min(lo, v); hi = Math.max(hi, v); } });
+  const pad = (hi - lo) * 0.05; lo -= pad; hi += pad;
+  const Y = v => T + (hi - v) / (hi - lo) * PH, X = i => L + (i + 0.5) * cw;
+  const vMax = Math.max(...bars.map(b => b.v || 0), x.sigVol || 0) || 1, VY = v => T + PH + G + VH - v / vMax * VH;
+  const lowLocal = x.lowIdx != null ? x.lowIdx - off : null;
+  let s = '';
+  if (lowLocal != null && lowLocal >= 0) s += `<rect x="${(L + lowLocal * cw).toFixed(1)}" y="${T + PH + G}" width="${((N - lowLocal) * cw).toFixed(1)}" height="${VH}" class="tch-reb"/><text x="${(L + lowLocal * cw + 3).toFixed(1)}" y="${T + PH + G + 10}" class="rk-ch-lab tch-reblab">反弹段</text>`;
+  bars.forEach((b, i) => { const up = b.c >= b.o, cx = X(i), bw = Math.max(1.5, cw * 0.62);
+    s += `<line x1="${cx.toFixed(1)}" x2="${cx.toFixed(1)}" y1="${Y(b.h).toFixed(1)}" y2="${Y(b.l).toFixed(1)}" class="${up ? 'tch-up' : 'tch-dn'}"/>`
+      + `<rect x="${(cx - bw / 2).toFixed(1)}" y="${Y(Math.max(b.o, b.c)).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(1, Math.abs(Y(b.o) - Y(b.c))).toFixed(1)}" class="${up ? 'tch-upb' : 'tch-dnb'}"/>`
+      + `<rect x="${(cx - bw / 2).toFixed(1)}" y="${VY(b.v || 0).toFixed(1)}" width="${bw.toFixed(1)}" height="${(T + PH + G + VH - VY(b.v || 0)).toFixed(1)}" class="${up ? 'tch-upv' : 'tch-dnv'}"/>`; });
+  if (x.projected && x.sigVol) { const i = N - 1, bw = Math.max(1.5, cw * 0.62); s += `<rect x="${(X(i) - bw / 2).toFixed(1)}" y="${VY(x.sigVol).toFixed(1)}" width="${bw.toFixed(1)}" height="${(T + PH + G + VH - VY(x.sigVol)).toFixed(1)}" class="tch-proj"/>`; }
+  MAS.forEach(([k, col]) => { const pts = bars.map((_, i) => { const v = sma(k, off + i); return v == null ? null : `${X(i).toFixed(1)},${Y(v).toFixed(1)}`; }).filter(Boolean);
+    if (pts.length > 1) s += `<polyline points="${pts.join(' ')}" fill="none" stroke="${col}" stroke-width="1.1" opacity="0.9"/>`; });
+  const av = bars.map((_, i) => { const j = off + i; if (j < 20) return null; const a = all.slice(j - 19, j + 1).reduce((q, b) => q + (b.v || 0), 0) / 20; return `${X(i).toFixed(1)},${VY(a).toFixed(1)}`; }).filter(Boolean);
+  if (av.length > 1) s += `<polyline points="${av.join(' ')}" fill="none" class="tch-avgv"/>`;
+  const hline = (v, cls, lab) => v > lo && v < hi ? `<line x1="${L}" x2="${W - R}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}" class="${cls}"/><text x="${W - R + 3}" y="${(Y(v) + 3).toFixed(1)}" class="rk-ch-lab ${cls}-t">${lab}</text>` : '';
+  s += hline(x.lowW, 'tch-low', `${x.win === 60 ? '60' : '20'}日低 ${x.lowW.toFixed(1)}`);
+  if (G0) { s += hline(G0.putWall, 'tch-pw', `Put ${G0.putWall}`); s += hline(G0.callWall, 'tch-cw', `Call ${G0.callWall}`); }
+  const taken = [x.lowW, G0 && G0.putWall, G0 && G0.callWall].filter(v => v > lo && v < hi).map(Y);
+  if (!taken.some(y => Math.abs(y - (T + 6)) < 11)) s += `<text x="${W - R + 3}" y="${T + 9}" class="rk-ch-lab">${hi.toFixed(0)}</text>`;
+  if (!taken.some(y => Math.abs(y - (T + PH - 3)) < 11)) s += `<text x="${W - R + 3}" y="${T + PH}" class="rk-ch-lab">${lo.toFixed(0)}</text>`;
+  s += `<text x="${L}" y="${H - 4}" class="rk-ch-lab">${bars[0].d.slice(5)}</text><text x="${W - R}" y="${H - 4}" text-anchor="end" class="rk-ch-lab">${bars[N - 1].d.slice(5)}</text>`;
+  const leg = MAS.map(([k, col]) => `<span><i style="background:${col}"></i>MA${k}</span>`).join('') + '<span><i class="tch-lg-low"></i>新低线</span><span><i class="tch-lg-avg"></i>20 日均量</span>';
+  return `<div class="tch"><svg class="rk-chart tch-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(t)} 日 K 与成交量">${s}</svg><div class="tch-leg">${leg}</div></div>`;
+}
+/* ---------- v28 · LEAPS stop / target → option P&L estimate ---------- */
+function _levelEstHTML(id) {
+  if (state.strategy !== 'leaps') return '';
+  const lvl = parseFloat(state.items[id]); if (!(lvl > 0)) return '';
+  const K = parseFloat(state.leapsStrike), exp = state.tradeExpiry, n = parseInt(state.leapsContracts, 10) || 1;
+  const q = _cspQuoteFresh(), o = q && q.option, entry = o && o.mark > 0 ? o.mark : null, iv = o && o.iv > 0 ? o.iv / 100 : null;
+  const S0 = q && q.underlying && q.underlying.price ? q.underlying.price : parseFloat(state.items.entry_price) || null;
+  if (!(K > 0) || !entry || !iv || !(S0 > 0) || !/^\d{4}-\d{2}-\d{2}$/.test(exp || '')) return '<div class="lvl-est rk-quiet">填好行权价、到期日并读到报价后, 这里显示期权的预计盈亏.</div>';
+  const dte = Math.max(1, (Date.parse(exp + 'T16:00:00') - Date.now()) / 864e5), cost = entry * 100 * n;
+  const val = (S, d, dv) => { const g = bsGreeks(S, K, Math.max(1e-4, (dte - d) / 365), Math.max(0.01, iv + dv / 100), 'call'); return g ? g.price : 0; };
+  const pl = (S, d, dv) => (val(S, d, dv) - entry) * 100 * n, nav = computeRisk().c.nav || getPortfolio().nav || 0;
+  const pc = v => `${v >= 0 ? '+' : '−'}${Math.abs(v).toFixed(1)}%`, money = v => _fmtSigned(Math.round(v));
+  const now = pl(lvl, 0, 0), isStop = id === 'stop_level';
+  if (isStop && lvl >= S0) return '<div class="lvl-est rk-t-alert">止损位应低于现价.</div>';
+  if (!isStop && lvl <= S0) return '<div class="lvl-est rk-t-alert">止盈位应高于现价.</div>';
+  const alt30 = pl(lvl, 30, 0), altIv = pl(lvl, 0, isStop ? 5 : -5);
+  let extra = '';
+  if (isStop) {
+    // where the LEAPS itself would hit the −50% rule
+    let a = S0 * 0.2, b = S0; const f = S => val(S, 0, 0) - 0.5 * entry;
+    if (f(a) < 0 && f(b) > 0) { for (let k = 0; k < 40; k++) { const m = (a + b) / 2; if (f(m) > 0) b = m; else a = m; } }
+    const s50 = (a + b) / 2;
+    if (val(lvl, 0, 0) < 0.5 * entry) extra = `<div class="rk-t-alert">按这个止损位, 期权会先亏到 −50% (你的 LEAPS 止损规则), 对应股价约 $${s50.toFixed(2)}.</div>`;
+    else extra = `<div class="rk-quiet">期权亏到 −50% 对应股价约 $${s50.toFixed(2)}, 你的止损位会先触发.</div>`;
+  } else {
+    const st = parseFloat(state.items.stop_level);
+    if (st > 0 && st < S0) { const loss = pl(st, 0, 0), rrO = loss < 0 ? now / -loss : null, ep = parseFloat(state.items.entry_price) || S0, rrS = (lvl - ep) / (ep - st);
+      if (rrO != null) extra = `<div>按期权计算盈亏比 <b class="${rrO >= rrThreshold() ? 'rk-t-safe' : 'rk-t-alert'}">${rrO.toFixed(2)} : 1</b> <span class="rk-quiet">(按股价 ${rrS > 0 ? rrS.toFixed(2) : '—'} : 1 · 规则 ≥ ${rrThreshold()} : 1)</span></div>`; }
+  }
+  return `<div class="lvl-est"><div>${isStop ? '止损' : '止盈'} $${lvl}: 预计${now < 0 ? '亏损' : '盈利'} <b class="${now < 0 ? 'rk-t-danger' : 'rk-t-safe'}">${money(now)}</b>
+      <span class="rk-quiet">仓位 ${pc(now / cost * 100)}${nav ? ` · NAV ${pc(now / nav * 100)}` : ''} · 立刻到达、IV 不变</span></div>
+    <div class="rk-quiet">30 天后才到达: ${money(alt30)} · 同时 IV ${isStop ? '上升' : '下降'} 5 点: ${money(altIv)}</div>${extra}</div>`;
+}
+function _updLevelEst() { ['stop_level', 'target_level'].forEach(id => { const el = document.getElementById('lvl-est-' + id); if (el) el.innerHTML = _safe('估算', () => _levelEstHTML(id), ''); }); }
+document.addEventListener('input', e => { const id = e.target && e.target.id || ''; if (/^num-(stop_level|target_level|entry_price)$/.test(id) || id === 'in-leaps-strike' || id === 'in-leaps-contracts') setTimeout(_updLevelEst, 0); });
 function techStripInnerHTML(loading) {
   const t = _normTicker(state.ticker);
   if (!t) return '';
@@ -14184,7 +14343,7 @@ function techStripInnerHTML(loading) {
   const p = __px[t];
   if (!p || (loading && !p.bars)) return `<div class="tc-head"><b>技术面</b><span class="rk-quiet">读取中…</span></div>`;
   if (p.err) return `<div class="tc-head"><b>技术面</b><span class="rk-t-alert">${esc(p.err)}</span></div>`;
-  const x = techOf(p.bars);
+  const x = techOf(p.bars, p.live);
   if (!x) return `<div class="tc-head"><b>技术面</b><span class="rk-quiet">历史不足</span></div>`;
   const f2 = v => v == null ? '—' : v.toFixed(2), rel = (ma, label) => ma == null ? '' : `<span class="tc-ma ${x.px >= ma ? 'up' : 'dn'}">${label} ${f2(ma)}</span>`;
   const cell = (label, val, sub, cls) => `<div class="tc-cell"><span>${label}</span><b class="${cls || ''}">${val}</b>${sub ? `<em>${sub}</em>` : ''}</div>`;
@@ -14203,6 +14362,8 @@ function techStripInnerHTML(loading) {
       ${cell('52 周', x.pos52 != null ? (x.pos52 * 100).toFixed(0) + '%' : '—', `${f2(x.lo52)} – ${f2(x.hi52)}`)}
     </div>
     <div class="tc-mas">${rel(x.sma5, 'MA5')}${rel(x.sma10, 'MA10')}${rel(x.sma20, 'MA20')}${rel(x.ema21, 'EMA21')}${rel(x.sma50, 'MA50')}${rel(x.sma200, 'MA200')}</div>
+    ${_safe('价格行为', () => _paLineHTML(x), '')}
+    ${_safe('技术位图', () => _techChartSVG(t, x), '')}
     ${filled.length ? `<div class="cq-note">已自动填入 ${filled.join(' · ')}; 手改过的不覆盖.</div>` : ''}`;
 }
 
@@ -15096,7 +15257,7 @@ function scanTicker(t, cfg) {
   const G = __gex[t];
   if (!G || G.err) return { t, err: G ? G.err : '无数据' };
   const S = G.S, dMax = { assign: 30, neutral: 25, premium: 15 }[cfg.intent];
-  const tech = __px[t] && techOf(__px[t].bars);
+  const tech = __px[t] && techOf(__px[t].bars, __px[t].live);
   const all = G.cs.filter(o => o.type === 'P' && o.dte >= 20 && o.dte <= 45 && o.strike < S && o.bid > 0 && o.delta != null).map(o => {
     const mid = o.mark != null ? o.mark : (o.bid + o.ask) / 2, d = Math.round(Math.abs(o.delta) * 100);
     return { K: o.strike, exp: o.expiry, dte: o.dte, d, mid, bid: o.bid, ask: o.ask, oi: o.oi || 0, iv: o.iv,
@@ -15587,9 +15748,9 @@ async function _scanCSP(cfg, prog) {
   const ranked = P.pool.map(t => { const f = P.F[t]; return { t, off: f.hi52 ? 1 - f.last / f.hi52 : null, pos52: f.hi52 > f.lo52 ? (f.last - f.lo52) / (f.hi52 - f.lo52) : 0.5 }; })
     .filter(r => r.off != null && r.off >= 0.03 && r.off <= 0.5).sort((a, b) => a.pos52 - b.pos52).slice(0, 60);
   prog(`读取 ${ranked.length} 只的日线…`); await _pricesBatched(ranked.map(r => r.t));
-  const tech = ranked.map(r => ({ ...r, x: __px[r.t] && techOf(__px[r.t].bars) })).filter(r => r.x && r.x.px < r.x.mid).sort((a, b) => b.x.hv - a.x.hv).slice(0, 20);
+  const tech = ranked.map(r => ({ ...r, x: __px[r.t] && techOf(__px[r.t].bars, __px[r.t].live) })).filter(r => r.x && r.x.px < r.x.mid).sort((a, b) => b.x.hv - a.x.hv).slice(0, 20);
   for (let i = 0; i < tech.length; i += 2) { prog(`读取期权链 ${Math.min(i + 2, tech.length)} / ${tech.length}…`); await Promise.all(tech.slice(i, i + 2).map(r => fetchGex(r.t, { maxAge: 10 * 60000 }))); }
-  const rows = tech.map(r => ({ ...scanTicker(r.t, cfg), mcap: P.F[r.t].mcap, ndx: P.ndx.has(r.t), name: P.F[r.t].name }));
+  const rows = tech.map(r => ({ ...scanTicker(r.t, cfg), mcap: P.F[r.t].mcap, ndx: P.ndx.has(r.t), name: P.F[r.t].name, newLow: !!r.x.newLowHit }));
   const ok = rows.filter(x => x.best).sort((a, b) => b.best.roc - a.best.roc).slice(0, cfg.top);
   return { funnel: [P.all.length, P.pool.length, ranked.length, tech.length, ok.length], rows: ok, none: rows.filter(x => !x.best).length, hasCap: P.hasCap, src: P.U.source };
 }
@@ -15601,7 +15762,7 @@ async function _scanLEAPS(cfg, prog) {
   const tech = ranked.map(r => { const bars = __px[r.t] && __px[r.t].bars, x = bars && techOf(bars); if (!x) return null;
     const c = bars.map(b => b.c), s250 = c.length >= 250 ? c.slice(-250).reduce((s, v) => s + v, 0) / 250 : null;
     const d200 = x.sma200 ? (x.px / x.sma200 - 1) * 100 : null, d250 = s250 ? (x.px / s250 - 1) * 100 : null;
-    return { ...r, x, d200, d250 }; }).filter(r => r && r.x.J <= 15).sort((a, b) => a.x.J - b.x.J).slice(0, 12);
+    return { ...r, x, d200, d250 }; }).filter(r => r && r.x.J3 <= 15 && !r.x.newLowHit).sort((a, b) => a.x.J3 - b.x.J3).slice(0, 12);
   const [lo, hi] = LEAPS_STYLES[cfg.leapsStyle].slice(1), from = _addDays(_todayISO(), 400), to = _addDays(_todayISO(), 800);
   const rows = [];
   for (let i = 0; i < tech.length; i++) {
@@ -15615,7 +15776,7 @@ async function _scanLEAPS(cfg, prog) {
         return { K: o.strike, exp: o.expiry, dte: o.dte, d: Math.round(o.delta * 100), mid: o.mark, carry: ext / o.strike / Math.max(0.1, o.dte / 365) * 100, lam: o.delta * S / o.mark,
           spread: o.ask > 0 ? (o.ask - o.bid) / ((o.ask + o.bid) / 2) * 100 : null, oi: o.oi || 0 };
       }).sort((a, b) => a.carry - b.carry);
-      if (cands.length) rows.push({ t: r.t, S, best: cands[0], alts: cands.slice(1, 3), J: r.x.J, rsi: r.x.rsi, d200: r.d200, d250: r.d250, pos52: r.pos52, mcap: P.F[r.t].mcap, ndx: P.ndx.has(r.t), name: P.F[r.t].name });
+      if (cands.length) rows.push({ t: r.t, S, best: cands[0], alts: cands.slice(1, 3), J: r.x.J3, rsi: r.x.rsi, d200: r.d200, d250: r.d250, pos52: r.pos52, mcap: P.F[r.t].mcap, ndx: P.ndx.has(r.t), name: P.F[r.t].name });
     } catch (e) {}
   }
   return { funnel: [P.all.length, P.pool.length, ranked.length, tech.length, rows.length], rows, hasCap: P.hasCap, src: P.U.source };
@@ -15627,7 +15788,7 @@ async function _scanPMCC(cfg, prog) {
   const dmax = PMCC_MODES[cfg.pmccMode][1], rows = [];
   for (const x of lps) {
     const cost = x.cost || 0, val = x.marketValue || 0, prof = cost > 0 ? (val - cost) / cost * 100 : null, tg = _leapsTargetFor(x).pct;
-    const t = __px[x.ticker] && techOf(__px[x.ticker].bars);
+    const t = __px[x.ticker] && techOf(__px[x.ticker].bars, __px[x.ticker].live);
     const checks = [
       { k: 'LEAPS 浮盈 ≥ 15%', ok: prof != null && prof >= 15, v: prof != null ? _pct(prof, 0) : '—' },
       { k: `距止盈 (+${tg}%) ≥ 10%`, ok: prof != null && tg - prof >= 10, v: prof != null ? _pct(tg - prof, 0) : '—' },
@@ -15655,7 +15816,7 @@ async function _scanCC(cfg, prog) {
   for (const x of stk) {
     const lots = Math.floor((Number(x.qty) || 0) / 100), covered = c.pos.filter(s => s.kind === 'short_call' && s.ticker === x.ticker).reduce((s, y) => s + (Number(y.qty) || 0), 0), free = lots - covered;
     const w = wheel && wheel.rows ? wheel.rows.find(r => r.T === x.ticker) : null, cost = w && w.adj ? w.adj : x.avg;
-    const t = __px[x.ticker] && techOf(__px[x.ticker].bars);
+    const t = __px[x.ticker] && techOf(__px[x.ticker].bars, __px[x.ticker].live);
     const checks = [
       { k: '有未覆盖的 100 股', ok: free >= 1, v: `${free} / ${lots} 张` },
       { k: `KDJ J > ${kmin}`, ok: !!t && t.J > kmin, v: t ? t.J.toFixed(0) : '—' },
@@ -15739,7 +15900,7 @@ function renderScanPage() {
   if (tab === 'csp') { cfgHTML = poolCfg + `<div class="sc-cfg-row"><span class="sc-lab">意图</span>${seg('intent', Object.entries(SCAN_INTENTS), cfg.intent)}<label class="sc-oi">OI ≥ <input inputmode="numeric" value="${cfg.oiMin}" onchange="setScanCfg('oiMin', this.value)"></label></div>`;
     note = `硬规则: DTE 20–45 · Δ ≤ ${{ assign: 30, neutral: 25, premium: 15 }[cfg.intent]} · 30 天 ROC ≥ 2% · OI ≥ ${cfg.oiMin} · 行权价 &lt; GEX Put Wall. 先按 52 周位置和布林中轨粗筛, 再读期权链. 结果最多 ${cfg.top} 个.`; }
   if (tab === 'leaps') { cfgHTML = poolCfg + `<div class="sc-cfg-row"><span class="sc-lab">风格</span>${seg('leapsStyle', Object.entries(LEAPS_STYLES).map(([k, v]) => [k, v[0]]), cfg.leapsStyle)}</div>`;
-    const ls = LEAPS_STYLES[cfg.leapsStyle]; note = `规则: 市值 ≥ $20B · KDJ J ≤ 15 · DTE ≥ 400 · Δ ${ls[1]}–${ls[2]}. 每只取时间价值/年最低的一张. 支撑位 / 财报 / IVP 需要你确认.`; }
+    const ls = LEAPS_STYLES[cfg.leapsStyle]; note = `规则: 市值 ≥ $20B · 近 3 日 KDJ J ≤ 15 · 收盘未创 ${_newLowWin() === 60 ? '3 个月' : '20 日'}新低 · DTE ≥ 400 · Δ ${ls[1]}–${ls[2]}. 每只取时间价值/年最低的一张. 支撑位 / 财报 / IVP 需要你确认.`; }
   if (tab === 'pmcc') { cfgHTML = `<div class="sc-cfg-row"><span class="sc-lab">模式</span>${seg('pmccMode', Object.entries(PMCC_MODES).map(([k, v]) => [k, v[0]]), cfg.pmccMode)}</div>`;
     note = `逐张检查你持有的 LEAPS: 浮盈 ≥ 15% · 距止盈 ≥ 10% · KDJ J > 78 · 布林中轨与上轨中点之上. 全部满足时给出 short call: DTE ≤ 30 · Δ ≤ ${PMCC_MODES[cfg.pmccMode][1]} · 行权价 &gt; Call Wall 且 ≥ LEAPS 行权价 + 成本.`; }
   if (tab === 'cc') { cfgHTML = `<div class="sc-cfg-row"><span class="sc-lab">模式</span>${seg('ccMode', Object.entries(CC_MODES).map(([k, v]) => [k, v[0]]), cfg.ccMode)}</div>`;
@@ -15756,14 +15917,14 @@ function renderScanPage() {
       <button class="btn small" onclick="openScanChecklist('${esc(x.t)}', ${b.K}, '${esc(b.exp)}', 'csp')">开 checklist</button></div>
       <div class="sc-figs"><span><em>30 天 ROC ${_qBtn('roc30', 'short')}</em><b class="rk-t-safe">${b.roc.toFixed(2)}%</b></span><span><em>年化</em><b>${b.ann.toFixed(0)}%</b></span><span><em>Δ</em><b>${b.d}</b></span><span><em>DTE</em><b>${b.dte}</b></span>
         <span><em>权利金</em><b>${b.mid.toFixed(2)}</b></span><span><em>距现价</em><b>${b.away.toFixed(1)}%</b></span><span><em>OI</em><b>${b.oi.toLocaleString()}</b></span><span><em>名义</em><b>${_fmtUsd(b.K * 100)}</b></span></div>
-      <div class="sc-chips">${chip(b.wall, `Put Wall ${x.putWall ?? '—'}`)}${chip(x.bb, '布林中轨下')}${x.rsi != null ? `<span class="sc-chip">RSI ${x.rsi.toFixed(0)}</span>` : ''}<span class="sc-chip">${x.gexPos ? '正 Gamma' : '负 Gamma'}</span>${b.spread != null && b.spread > 15 ? `<span class="sc-chip no">价差 ${b.spread.toFixed(0)}%</span>${_qBtn('spread', 'short')}` : ''}</div>
+      <div class="sc-chips">${chip(b.wall, `Put Wall ${x.putWall ?? '—'}`)}${chip(x.bb, '布林中轨下')}${x.newLow ? '<span class="sc-chip no">20 日新低</span>' : ''}${x.rsi != null ? `<span class="sc-chip">RSI ${x.rsi.toFixed(0)}</span>` : ''}<span class="sc-chip">${x.gexPos ? '正 Gamma' : '负 Gamma'}</span>${b.spread != null && b.spread > 15 ? `<span class="sc-chip no">价差 ${b.spread.toFixed(0)}%</span>${_qBtn('spread', 'short')}` : ''}</div>
       ${x.alts.length ? `<div class="sc-alts">其他: ${x.alts.map(o => `<button class="app-link" onclick="openScanChecklist('${esc(x.t)}', ${o.K}, '${esc(o.exp)}', 'csp')">${o.K}P ${esc(_md(o.exp))}</button> <span class="rk-quiet">Δ${o.d} · ${o.roc.toFixed(2)}%</span>`).join(' · ')}</div>` : ''}</div>`; }).join('') : '<div class="rk-quiet">没有符合全部规则的合约.</div>';
   else if (tab === 'leaps') body = r.rows.length ? r.rows.map(x => { const b = x.best; return `
     <div class="sc-row"><div class="sc-top"><b class="sc-t">${esc(x.t)}</b><b class="sc-k">${b.K}C ${esc(_md(b.exp))}</b><span class="rk-quiet">现价 ${x.S.toFixed(2)}</span> ${meta(x)}
       <button class="btn small" onclick="openScanChecklist('${esc(x.t)}', ${b.K}, '${esc(b.exp)}', 'leaps')">开 checklist</button></div>
       <div class="sc-figs"><span><em>时间价值/年 ${_qBtn('carry', 'long')}</em><b class="rk-t-watch">${b.carry.toFixed(1)}%</b></span><span><em>Δ</em><b>${b.d}</b></span><span><em>DTE</em><b>${b.dte}</b></span><span><em>价格</em><b>${b.mid.toFixed(2)}</b></span>
         <span><em>λ ${_qBtn('lambda', 'long')}</em><b>${b.lam.toFixed(1)}</b></span><span><em>每张</em><b>${_fmtUsd(b.mid * 100)}</b></span></div>
-      <div class="sc-chips"><span class="sc-chip ok">KDJ J ${x.J.toFixed(0)} ✓</span><span class="sc-chip">RSI ${x.rsi.toFixed(0)}</span>${x.d200 != null ? `<span class="sc-chip ${Math.abs(x.d200) <= 5 ? 'ok' : ''}">距 200MA ${x.d200 >= 0 ? '+' : ''}${x.d200.toFixed(1)}%</span>` : ''}${x.d250 != null ? `<span class="sc-chip ${Math.abs(x.d250) <= 5 ? 'ok' : ''}">距 250MA ${x.d250 >= 0 ? '+' : ''}${x.d250.toFixed(1)}%</span>` : ''}<span class="sc-chip">52 周位置 ${(x.pos52 * 100).toFixed(0)}%</span>${b.spread != null && b.spread > 15 ? `<span class="sc-chip no">价差 ${b.spread.toFixed(0)}%</span>` : ''}</div>
+      <div class="sc-chips"><span class="sc-chip ok">近 3 日 J 最低 ${x.J.toFixed(0)} ✓</span><span class="sc-chip ok">收盘未创新低 ✓</span><span class="sc-chip">RSI ${x.rsi.toFixed(0)}</span>${x.d200 != null ? `<span class="sc-chip ${Math.abs(x.d200) <= 5 ? 'ok' : ''}">距 200MA ${x.d200 >= 0 ? '+' : ''}${x.d200.toFixed(1)}%</span>` : ''}${x.d250 != null ? `<span class="sc-chip ${Math.abs(x.d250) <= 5 ? 'ok' : ''}">距 250MA ${x.d250 >= 0 ? '+' : ''}${x.d250.toFixed(1)}%</span>` : ''}<span class="sc-chip">52 周位置 ${(x.pos52 * 100).toFixed(0)}%</span>${b.spread != null && b.spread > 15 ? `<span class="sc-chip no">价差 ${b.spread.toFixed(0)}%</span>` : ''}</div>
       ${x.alts.length ? `<div class="sc-alts">其他: ${x.alts.map(o => `<button class="app-link" onclick="openScanChecklist('${esc(x.t)}', ${o.K}, '${esc(o.exp)}', 'leaps')">${o.K}C ${esc(_md(o.exp))}</button> <span class="rk-quiet">Δ${o.d} · ${o.carry.toFixed(1)}%/年</span>`).join(' · ')}</div>` : ''}</div>`; }).join('') : '<div class="rk-quiet">目前没有 KDJ J ≤ 15 且有合适合约的标的.</div>';
   else body = r.rows.length ? r.rows.map(x => `
     <div class="sc-row${x.ready ? ' sc-ready' : ''}"><div class="sc-top"><b class="sc-t">${esc(tab === 'pmcc' ? x.label : x.t)}</b>${tab === 'cc' ? `<span class="rk-quiet">${x.shares} 股 · 调整后成本 ${x.cost != null ? x.cost.toFixed(2) : '—'}</span>` : `<span class="rk-quiet">安全线 ${x.floor.toFixed(2)} (行权价 + 成本)</span>`}
