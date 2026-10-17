@@ -3055,6 +3055,48 @@
   .room-sim b, .room-line b { font-family: var(--mono); }
   .room-line { margin: 6px 0 2px; font-size: 12px; color: var(--text-dim); }
   #leaps-room:empty { display: none; }
+  /* v27 · fuel bar */
+  .fuel { margin-top: 14px; }
+  .fuel-head { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-size: 12.5px; color: var(--text-dim); margin-bottom: 6px; }
+  .fuel-head b { font-family: var(--mono); font-size: 14px; }
+  .fuel-bar { position: relative; display: flex; height: 12px; background: var(--panel-2); border-radius: 2px; overflow: visible; }
+  .fuel-bar .fz { display: block; height: 100%; opacity: 0.28; }
+  .fz-safe { background: var(--pass); } .fz-watch { background: #D9B44A; } .fz-alert { background: #E5793B; } .fz-danger { background: var(--fail); }
+  .fuel-fill { position: absolute; left: 0; top: 3px; bottom: 3px; background: var(--text); opacity: 0.55; border-radius: 1px; }
+  .fuel-add { position: absolute; top: 3px; bottom: 3px; background: repeating-linear-gradient(90deg, var(--accent) 0 4px, transparent 4px 7px); }
+  .fuel-mark { position: absolute; top: -3px; bottom: -3px; width: 2px; margin-left: -1px; background: var(--text); }
+  .fuel-scale { position: relative; height: 14px; margin-top: 3px; font: 10px var(--mono); color: var(--text-faint); }
+  .fuel-scale span { position: absolute; transform: translateX(-50%); } .fuel-scale span:first-child { left: 0; transform: none; } .fuel-scale span:last-child { transform: none; }
+  /* v27 · Pro polish: one visual language across checklist, history, modals */
+  body.theme-pro .fuel-fill { opacity: 0.85; } body.theme-pro .fuel-bar .fz { opacity: 0.18; }
+  body.theme-pro .status-bar { padding-top: 10px; padding-bottom: 10px; }
+  body.theme-pro .status-main { font-size: 24px; letter-spacing: 0.03em; line-height: 1.15; font-weight: 800; }
+  body.theme-pro .status-meta { font-size: 11px; letter-spacing: 0.06em; }
+  body.theme-pro .status-tally { font-size: 12px; margin-top: 4px; gap: 12px; }
+  body.theme-pro .progress-bar { height: 3px; border-radius: 0; }
+  body.theme-pro .btn.primary { background: var(--accent); border: 1px solid var(--accent); color: #fff; border-radius: 2px; box-shadow: none; }
+  body.theme-pro .btn.primary:hover:not(:disabled) { filter: brightness(1.08); }
+  body.theme-pro .btn.primary:disabled, body.theme-pro .btn.primary[disabled] { background: transparent; border: 1px dashed var(--border-hi); color: var(--text-faint); opacity: 1; cursor: not-allowed; }
+  body.theme-pro .btn.primary.big { min-height: 44px; font-size: 14px; letter-spacing: 0.04em; }
+  body.theme-pro .sticky-action-bar { background: var(--panel); backdrop-filter: none; -webkit-backdrop-filter: none; box-shadow: none; border-top: 1px solid var(--border); }
+  body.theme-pro .sab-btn-snapshot { border-radius: 2px; min-height: 38px; padding: 0 18px; font-weight: 700; }
+  body.theme-pro .history-page-title { font-size: 18px; font-weight: 700; letter-spacing: 0.02em; }
+  body.theme-pro .history-page-header { margin-bottom: 10px; }
+  body.theme-pro .tc-head b, body.theme-pro .vol-head b, body.theme-pro .gex-title, body.theme-pro .tc-head > b:first-child { font-size: 12.5px; font-weight: 600; letter-spacing: 0.04em; color: var(--text); }
+  body.theme-pro .picker-title { font-size: 15px; font-weight: 700; letter-spacing: 0.02em; }
+  body.theme-pro .picker-sub { font-size: 12px; }
+  body.theme-pro .config-title { font-size: 11px; letter-spacing: 0.08em; color: var(--text-dim); }
+  body.theme-pro .ticker-bar { border-radius: 2px; }
+  body.theme-pro input, body.theme-pro select, body.theme-pro textarea { border-radius: 2px; }
+  body.theme-pro .modal, body.theme-pro .modal-content, body.theme-pro .snap-card, body.theme-pro .gl-modal { border-radius: 2px; }
+  body.theme-pro .history-entry, body.theme-pro .history-item { border-radius: 2px; }
+  @media (max-width: 640px) { body.theme-pro .status-main { font-size: 22px; } }
+  body.theme-pro .history-item.swipeable { position: relative; overflow: hidden; }
+  body.theme-pro .history-item.swipeable .history-main { z-index: 1; background: var(--panel); }
+  body.theme-pro .history-item.swipeable .history-actions { z-index: 0; }
+  body.theme-pro .sticky-action-bar .btn, body.theme-pro .sab-btn-snapshot { border-radius: 2px !important; }
+  .fuel-bar .fuel-fill.fz-safe { background: var(--pass); } .fuel-bar .fuel-fill.fz-watch { background: #D9B44A; }
+  .fuel-bar .fuel-fill.fz-alert { background: #E5793B; } .fuel-bar .fuel-fill.fz-danger { background: var(--fail); }
 </style>
 </head>
 <body class="theme-slate">
@@ -5070,7 +5112,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.16-v26';
+const APP_BUILD = '2026.10.16-v27';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
@@ -13099,7 +13141,7 @@ function _pruneCharts() { Object.keys(__charts).forEach(id => { if (!document.qu
 const GREEK_HELP = {
   leaps_room: { t: '还能买 LEAPS', def: '现在还能花多少钱买期权而不借钱 = Schwab 期权购买力 (Option Buying Power) 与现金 + SWVXX 中较小的那个. Schwab 已经扣掉了 CSP 占用的保证金.',
     read: '两个门槛要分清: 期权购买力花到 0 = 保证金缓冲用完 (还没借钱, 但市场再跌就可能追保); 现金余额 < 0 = 开始借钱 (付 margin 利息). CSP 被行权时要用现金接股, 所以下面那行「全部 CSP 被行权时需借」会随你花掉的钱变大.',
-    long: 'SWVXX 需要先卖出才是现金; 如果 Schwab 的购买力没把 SWVXX 算进去, 卖出后额度会上升. 购买力随股价和保证金要求变化, 以刷新后的数字为准.',
+    long: '仓位油量条: 满油箱 = NAV (全部是现金时的购买力), 已用 = NAV − 期权购买力 (正股、CSP 保证金、LEAPS 占掉的部分). 绿 ≤ 60% 充足 · 黄 60–75% 可以加但要挑 · 橙 75–90% 接近满仓 · 红 > 90% 基本满了. SWVXX 需要先卖出才是现金; 购买力随股价和保证金要求变化, 以刷新后的数字为准.',
     ex: '期权购买力 $30,487 · 现金 + SWVXX $62,500 · CSP 名义 $67,500: 现在最多买 $30,487 的 LEAPS. 花掉 $10,000 后, 全部 CSP 被行权时需借 $15,000 (原本 $5,000).' },
   expect: { t: '期望值', def: '这个策略平均每做一笔赚 (或亏) 多少钱 = 胜率 × 平均盈利 − 败率 × 平均亏损.',
     read: '它回答"按我现在的做法, 长期做下去是赚还是亏". 为正: 有优势; 为负: 做得越多亏得越多. 卖方策略常见"胜率高、期望值却为负", 只看胜率会被误导. 笔数少时 (< 20) 波动很大, 只作参考.',
@@ -15193,8 +15235,26 @@ function _leapsRoom(spend = 0) {
   let bp = null; for (const k of ['buyingPowerNonMarginableTrade', 'optionBuyingPower', 'availableFundsNonMarginableTrade']) { const v = _balPick(c.bal, [k]); if (v != null) { bp = v; break; } }
   const pf = getPortfolio(), cash = (pf.cash || 0) + (pf.swvxx || 0);
   const cspN = c.pos.filter(x => x.kind === 'short_put').reduce((s, x) => s + (x.exposure || 0), 0);
-  const limit = bp == null ? cash : Math.min(bp, cash);
-  return { bp, cash, cspN, limit, by: bp != null && bp <= cash ? 'bp' : 'cash', left: limit - spend, borrowAll: Math.max(0, cspN - (cash - spend)), spend };
+  const limit = bp == null ? cash : Math.min(bp, cash), nav = c.nav || 0;
+  // how full the book is: NAV is the full tank, option buying power is what's left of it
+  const used = nav && bp != null ? Math.max(0, Math.min(100, (nav - bp) / nav * 100)) : null;
+  const usedAfter = used != null ? Math.max(0, Math.min(100, (nav - bp + spend) / nav * 100)) : null;
+  return { bp, cash, cspN, nav, limit, used, usedAfter, by: bp != null && bp <= cash ? 'bp' : 'cash', left: limit - spend, borrowAll: Math.max(0, cspN - (cash - spend)), spend };
+}
+const FUEL_ZONES = [[60, 'safe', '充足'], [75, 'watch', '可以加, 要挑'], [90, 'alert', '接近满仓'], [100, 'danger', '基本满了']];
+function _fuelZone(p) { return FUEL_ZONES.find(z => p <= z[0]) || FUEL_ZONES[3]; }
+function _fuelHTML(r) {
+  if (r.used == null) return '';
+  const z = _fuelZone(r.used), za = _fuelZone(r.usedAfter), mv = r.spend > 0 && r.usedAfter > r.used;
+  let prev = 0;
+  const segs = FUEL_ZONES.map(([to, k]) => { const w = to - prev; prev = to; return `<i class="fz fz-${k}" style="width:${w}%"></i>`; }).join('');
+  return `<div class="fuel" id="fuel">
+    <div class="fuel-head"><span>仓位已用 <b class="rk-t-${z[1]}">${r.used.toFixed(0)}%</b> · ${z[2]} · 剩 ${(100 - r.used).toFixed(0)}%</span>
+      ${mv ? `<span>这笔之后 <b class="rk-t-${za[1]}">${r.usedAfter.toFixed(0)}%</b> · ${za[2]}</span>` : ''}</div>
+    <div class="fuel-bar">${segs}<span class="fuel-fill fz-${z[1]}" style="width:${r.used.toFixed(1)}%"></span>${mv ? `<span class="fuel-add" style="left:${r.used.toFixed(1)}%;width:${(r.usedAfter - r.used).toFixed(1)}%"></span>` : ''}
+      <span class="fuel-mark" style="left:${(mv ? r.usedAfter : r.used).toFixed(1)}%"></span></div>
+    <div class="fuel-scale"><span>0</span><span style="left:60%">60</span><span style="left:75%">75</span><span style="left:90%">90</span><span style="right:0">100%</span></div>
+  </div>`;
 }
 function _roomOutHTML(r) {
   return `${r.spend > 0 ? `花完后还能买 <b class="${r.left < 0 ? 'rk-t-danger' : ''}">${_fmtUsd(Math.max(0, r.left))}</b>${r.left < 0 ? ` <span class="rk-t-danger">(超出 ${_fmtUsd(-r.left)})</span>` : ''} · ` : ''}`
@@ -15203,6 +15263,7 @@ function _roomOutHTML(r) {
 window.roomSim = v => {
   const spend = Math.max(0, parseFloat(String(v).replace(/[$,\s]/g, '')) || 0), r = _leapsRoom(spend), el = document.getElementById('room-out');
   if (r && el) el.innerHTML = _roomOutHTML(r);
+  const fu = document.getElementById('fuel'); if (r && fu) fu.outerHTML = _fuelHTML(r);
 };
 function _roomBlockHTML() {
   const r = _leapsRoom(0); if (!r) return '';
@@ -15215,6 +15276,7 @@ function _roomBlockHTML() {
         <div class="room-sim"><label>模拟花费 $ <input inputmode="decimal" placeholder="例如 10000" oninput="roomSim(this.value)"></label>
           <div id="room-out">${_roomOutHTML(r)}</div></div>
       </div>
+      ${_fuelHTML(r)}
     </section>`;
 }
 // LEAPS checklist: one line under the quote
@@ -15222,7 +15284,8 @@ function _leapsRoomLineHTML() {
   if (state.strategy !== 'leaps' || !loadSchwabCfg()) return '';
   const q = _cspQuoteFresh(), mark = q && q.option ? q.option.mark : null, n = parseInt(state.leapsContracts, 10) || 1;
   const spend = mark > 0 ? mark * 100 * n : 0, r = _leapsRoom(spend); if (!r) return '';
-  return `<div class="room-line">还能买 LEAPS <b class="rk-t-acc">${_fmtUsd(Math.max(0, r.limit))}</b>${spend ? ` · 这笔 ${n} 张约 ${_fmtUsd(spend)}` : ''} · ${_roomOutHTML(r)}</div>`;
+  const fz = r.usedAfter != null ? _fuelZone(r.usedAfter) : null;
+  return `<div class="room-line">还能买 LEAPS <b class="rk-t-acc">${_fmtUsd(Math.max(0, r.limit))}</b>${spend ? ` · 这笔 ${n} 张约 ${_fmtUsd(spend)}` : ''}${fz ? ` · 仓位${spend ? '将' : ''}用到 <b class="rk-t-${fz[1]}">${r.usedAfter.toFixed(0)}%</b>` : ''} · ${_roomOutHTML(r)}</div>`;
 }
 function _pnlWaterfallSVG(items, total) {
   const W = _chartW(), H = 210, L = 8, R = 8, T = 22, B = 34, n = items.length + 1, bw = Math.min(64, (W - L - R) / n * 0.62), X = i => L + (i + 0.5) * (W - L - R) / n;
