@@ -3203,6 +3203,13 @@
   .tep-nudge { margin-top: 8px; padding: 7px 10px; border-left: 2px solid var(--accent); background: var(--panel-2); font-size: 12.5px; color: var(--text); }
   #stk-chart { touch-action: pan-y; }
   .stk-tools .stk-lock.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  /* v37 · GEX chart markers */
+  .gex-chart .gex-cw { stroke: #EF5350; stroke-width: 1.6; stroke-dasharray: 6 4; } .gex-chart text.gex-cw-t { fill: #EF5350 !important; }
+  .gex-chart .gex-pw { stroke: #26A69A; stroke-width: 1.6; stroke-dasharray: 6 4; } .gex-chart text.gex-pw-t { fill: #26A69A !important; }
+  body .gex-chart text.gex-lab { font: 700 11px var(--mono) !important; font-size: calc(var(--fs, 11px) * 1.05) !important; }
+  .gex-chart text.gex-spot-t { fill: var(--text) !important; } .gex-chart text.gex-flip-t { fill: #D9B562 !important; } .gex-chart text.gex-mp-t { fill: #8B95A3 !important; } .gex-chart text.gex-mark-t { fill: var(--accent) !important; }
+  .gex-chart line.gex-spot { stroke: var(--text) !important; stroke-width: 1.4; stroke-dasharray: 2 3; } .gex-chart line.gex-mark { stroke: var(--accent) !important; stroke-width: 1.8; stroke-dasharray: none; }
+  .gex-chart line.gex-flip { stroke: #D9B562 !important; } .gex-chart line.gex-mp { stroke: #8B95A3 !important; }
 </style>
 </head>
 <body class="theme-slate">
@@ -5250,7 +5257,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.17-v36';
+const APP_BUILD = '2026.10.17-v37';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
@@ -15248,15 +15255,22 @@ async function fetchGex(t, { maxAge = 10 * 60000 } = {}) {
 function _gexChartSVG(G, mark) {
   const S = G.S, rows = G.g.rows.filter(r => r.K >= S * 0.85 && r.K <= S * 1.15);
   if (rows.length < 3) return '';
-  const W = _chartW(), H = 170, L = 8, R = 8, T = 16, B = 22;
-  const k0 = rows[0].K, k1 = rows[rows.length - 1].K, mx = Math.max(...rows.map(r => Math.abs(r.net))) || 1;
-  const X = k => L + (k - k0) / (k1 - k0 || 1) * (W - L - R), Y0 = T + (H - T - B) / 2, Y = v => Y0 - v / mx * (H - T - B) / 2;
-  const bw = Math.max(2, (W - L - R) / rows.length * 0.7);
-  const vline = (k, cls, label, dy = 0) => k == null || k < k0 || k > k1 ? '' : `<line x1="${X(k).toFixed(1)}" x2="${X(k).toFixed(1)}" y1="${T}" y2="${H - B}" class="${cls}"/><text x="${X(k).toFixed(1)}" y="${T - 4 + dy}" text-anchor="middle" class="rk-ch-lab ${cls}-t">${esc(label)}</text>`;
+  const k0 = rows[0].K, k1 = rows[rows.length - 1].K, f = v => v == null ? '' : (v >= 100 ? Math.round(v) : +v.toFixed(1));
+  // vertical markers: walls dashed, labels stacked in rows so they never overlap
+  const marks = [[G.g.putWall, 'gex-pw', `Put Wall ${f(G.g.putWall)}`], [G.g.callWall, 'gex-cw', `Call Wall ${f(G.g.callWall)}`], [S, 'gex-spot', `现价 ${f(S)}`],
+    [G.g.flip, 'gex-flip', `Flip ${f(G.g.flip)}`], [G.maxPain, 'gex-mp', `Max Pain ${f(G.maxPain)}`], [mark || null, 'gex-mark', `你的 ${f(mark)}`]].filter(m => m[0] != null && m[0] >= k0 && m[0] <= k1);
+  const W = _chartW(), L = 8, R = 8, B = 22, cwPx = 6.4;
+  const X = k => L + (k - k0) / (k1 - k0 || 1) * (W - L - R);
+  const lanes = []; marks.sort((a, b) => a[0] - b[0]).forEach(m => { const w = m[2].length * cwPx + 8, x = Math.min(W - R - w / 2, Math.max(L + w / 2, X(m[0])));
+    let lane = lanes.findIndex(end => end + 4 < x - w / 2); if (lane < 0) { lanes.push(0); lane = lanes.length - 1; } lanes[lane] = x + w / 2; m.push(lane, x); });
+  const T = 10 + lanes.length * 15, H = T + 150 + B, mx = Math.max(...rows.map(r => Math.abs(r.net))) || 1;
+  const Y0 = T + (H - T - B) / 2, Y = v => Y0 - v / mx * (H - T - B) / 2, bw = Math.max(2, (W - L - R) / rows.length * 0.7);
+  const vlines = marks.map(([k, cls, label, lane, lx]) => `<line x1="${X(k).toFixed(1)}" x2="${X(k).toFixed(1)}" y1="${(10 + lane * 15 + 4).toFixed(1)}" y2="${H - B}" class="${cls}"/>`
+    + `<text x="${lx.toFixed(1)}" y="${(10 + lane * 15).toFixed(1)}" text-anchor="middle" class="gex-lab ${cls}-t">${esc(label)}</text>`).join('');
   return `<svg class="rk-chart gex-chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="各行权价 GEX">
     <line x1="${L}" x2="${W - R}" y1="${Y0}" y2="${Y0}" class="gex-zero"/>
     ${rows.map(r => `<rect x="${(X(r.K) - bw / 2).toFixed(1)}" y="${Math.min(Y0, Y(r.net)).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(0.5, Math.abs(Y(r.net) - Y0)).toFixed(1)}" class="${r.net >= 0 ? 'gex-pos' : 'gex-neg'}"><title>${r.K} · ${_fmtBig(r.net)} / 1%</title></rect>`).join('')}
-    ${vline(S, 'gex-spot', '现价')}${vline(G.g.flip, 'gex-flip', 'Flip', 10)}${vline(G.maxPain, 'gex-mp', 'Max Pain', 20)}${mark ? vline(mark, 'gex-mark', '你的', 30) : ''}
+    ${vlines}
     <text x="${L}" y="${H - 6}" class="rk-ch-lab">${k0}</text><text x="${W - R}" y="${H - 6}" text-anchor="end" class="rk-ch-lab">${k1}</text>
   </svg>`;
 }
