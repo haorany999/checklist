@@ -3201,6 +3201,8 @@
   .stk-cw-chip { background: #EF5350; } .stk-pw-chip { background: #26A69A; } .stk-flip-chip { background: #D9B562; color: #1a1a1a; }
   .stk-mp-chip { background: #8B95A3; } .stk-adj-chip { background: #A371F7; } .stk-now-chip { background: var(--text); color: var(--bg); }
   .tep-nudge { margin-top: 8px; padding: 7px 10px; border-left: 2px solid var(--accent); background: var(--panel-2); font-size: 12.5px; color: var(--text); }
+  #stk-chart { touch-action: pan-y; }
+  .stk-tools .stk-lock.active { background: var(--accent); color: #fff; border-color: var(--accent); }
 </style>
 </head>
 <body class="theme-slate">
@@ -5248,7 +5250,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.17-v35';
+const APP_BUILD = '2026.10.17-v36';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
@@ -16155,16 +16157,21 @@ function _stkW() {
 function _stkR(W) { return W > 600 ? 214 : 40; }
 window.addEventListener('resize', () => { clearTimeout(_stkW._t); _stkW._t = setTimeout(() => { if (state._view === 'stock') _stkRedraw(); }, 200); });
 function _sma1(a, k, i) { return i + 1 >= k ? a.slice(i + 1 - k, i + 1).reduce((s, v) => s + v, 0) / k : null; }
-let __stkZoom = { n: 126, end: null }, __stkMA = new Set(), __stkDrag = null;
+let __stkZoom = { n: 126, end: null }, __stkMA = new Set(), __stkDrag = null, __stkPinch = null;
+let __stkLock = localStorage.getItem('pretrade_stk_lock') !== '0';   // lock = zoom around the current price (latest bar stays at the right edge)
 const STK_MAS = [[5, '#7FA7E8'], [10, '#B48CEB'], [20, '#D9B562'], [50, '#4FC1B5'], [200, '#E9825F']];
 window.setStockRange = n => { __stkZoom = { n, end: null }; _stkRedraw(); };
-window.stkZoom = f => { const p = __px[__stockT]; if (!p || !p.bars) return; const all = p.bars.length, end = __stkZoom.end ?? all, n = Math.max(20, Math.min(all, Math.round(__stkZoom.n * f)));
+window.stkZoom = f => { const p = __px[__stockT]; if (!p || !p.bars) return; const all = p.bars.length, n = Math.max(20, Math.min(all, Math.round(__stkZoom.n * f)));
+  const end = __stkLock ? all : (__stkZoom.end ?? all);
   __stkZoom = { n, end: Math.min(all, Math.max(n, end)) }; if (__stkZoom.end >= all) __stkZoom.end = null; _stkRedraw(); };
+window.stkToNow = () => { __stkZoom = { n: __stkZoom.n, end: null }; _stkRedraw(); };
+window.toggleStkLock = () => { __stkLock = !__stkLock; try { localStorage.setItem('pretrade_stk_lock', __stkLock ? '1' : '0'); } catch (e) {} if (__stkLock) __stkZoom.end = null; _stkRedraw(); };
 window.toggleStkMA = k => { if (__stkMA.has(k)) __stkMA.delete(k); else __stkMA.add(k); _stkRedraw(); };
 function _stkRedraw() { const el = document.getElementById('stk-chart'); if (el) el.innerHTML = _stockChartSVG(__stockT); const os = document.getElementById('stk-osc'); if (os) os.innerHTML = _stockOscSVG(__stockT); const bar = document.getElementById('stk-tools'); if (bar) bar.outerHTML = _stkToolsHTML(); }
 function _stkToolsHTML() {
   return `<div class="stk-tools" id="stk-tools"><span class="rk-presets">${[[63, '3 个月'], [126, '6 个月'], [252, '1 年']].map(([k, lb]) => `<button class="rk-preset${__stkZoom.n === k && __stkZoom.end == null ? ' active' : ''}" onclick="setStockRange(${k})">${lb}</button>`).join('')}</span>
     <span class="rk-presets"><button class="rk-preset" onclick="stkZoom(0.7)" aria-label="放大">＋</button><button class="rk-preset" onclick="stkZoom(1.4)" aria-label="缩小">−</button></span>
+    <span class="rk-presets"><button class="rk-preset" onclick="stkToNow()" title="跳回最新的 K 线">回到现价</button><button class="rk-preset stk-lock${__stkLock ? ' active' : ''}" onclick="toggleStkLock()" title="打开: 缩放以现价为基准, 最新 K 线固定在右侧, 拖动不平移">${__stkLock ? '已锁定现价' : '锁定现价'}</button></span>
     <span class="stk-ma">${STK_MAS.map(([k, col]) => `<button class="stk-ma-btn${__stkMA.has(k) ? ' on' : ''}" style="--c:${col}" onclick="toggleStkMA(${k})">MA${k}</button>`).join('')}</span></div>`;
 }
 function _stockChartSVG(t) {
@@ -16205,28 +16212,45 @@ function _stockChartSVG(t) {
     tags.forEach(tg => { const y = Y(tg.v); s += `<line x1="${L}" x2="${W - R}" y1="${y.toFixed(1)}" y2="${y.toFixed(1)}" class="${tg.cls}"/><circle cx="${W - R + 6}" cy="${y.toFixed(1)}" r="4" class="${tg.cls}-bg"/>`; });
     const legend = `<div class="stk-legend">${tags.map(tg => `<span class="stk-chipl ${tg.cls}-chip">${esc(tg.lab)}</span>`).join('')}</div>`;
     return `<svg class="rk-chart stk-svg stk-k" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(t)} 日 K">${s}</svg>${legend}${!g ? '<div class="rk-quiet">期权链读取中, Call / Put Wall 稍后出现.</div>' : ''}
-      <div class="stk-hint rk-quiet">${N} 根日 K · ${window.matchMedia && matchMedia('(pointer: coarse)').matches ? '左右拖动平移 · ＋ / − 缩放 · 双击恢复' : '滚轮缩放 · 拖动平移 · 双击恢复'}</div>`;
+      <div class="stk-hint rk-quiet">${N} 根日 K · ${_stkHint()}</div>`;
   }
   const TH = 22;                                                // tag height: one 13px line + padding
   tags.forEach(tg => { const y = Y(tg.v); let ly = Math.min(H - B - TH / 2, Math.max(y, last + TH + 2)); last = ly;
     s += `<line x1="${L}" x2="${W - R}" y1="${y.toFixed(1)}" y2="${y.toFixed(1)}" class="${tg.cls}"/>${Math.abs(ly - y) > 2 ? `<line x1="${W - R}" x2="${W - R + 5}" y1="${y.toFixed(1)}" y2="${ly.toFixed(1)}" class="${tg.cls}"/>` : ''}<rect x="${W - R + 5}" y="${(ly - TH / 2).toFixed(1)}" width="${R - 8}" height="${TH}" rx="3" class="${tg.cls}-bg"/><text x="${W - R + 11}" y="${(ly + 4.5).toFixed(1)}" class="stk-tag ${tg.cls}-t">${esc(tg.lab)}</text>`; });
   const missing = !g ? '<div class="rk-quiet">期权链读取中, Call / Put Wall 稍后出现.</div>' : '';
   return `<svg class="rk-chart stk-svg stk-k" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(t)} 日 K">${s}</svg>${missing}
-    <div class="stk-hint rk-quiet">${N} 根日 K · ${window.matchMedia && matchMedia('(pointer: coarse)').matches ? '左右拖动平移 · ＋ / − 缩放 · 双击恢复' : '滚轮缩放 · 拖动平移 · 双击恢复'}</div>`;
+    <div class="stk-hint rk-quiet">${N} 根日 K · ${_stkHint()}</div>`;
+}
+function _stkHint() {
+  const touch = window.matchMedia && matchMedia('(pointer: coarse)').matches;
+  return __stkLock ? `已锁定现价: ${touch ? '双指或 ＋ / −' : '滚轮或 ＋ / −'} 缩放都以现价为基准 · 关掉锁定才能拖动看历史`
+    : `${touch ? '双指缩放 · 左右拖动平移' : '滚轮缩放 · 拖动平移'} · 「回到现价」跳回最新 · 双击恢复`;
 }
 function _stkBind() {
   const el = document.getElementById('stk-chart'); if (!el || el.dataset.bound) return; el.dataset.bound = '1';
   const plotFrac = e => { const sv = el.querySelector('svg'); if (!sv) return 0.5; const r = sv.getBoundingClientRect(), vb = sv.viewBox.baseVal, x = (e.clientX - r.left) / r.width * vb.width; const R = _stkR(vb.width); return Math.max(0, Math.min(1, (x - 48) / (vb.width - 48 - R))); };
   el.addEventListener('wheel', e => { const p = __px[__stockT]; if (!p || !p.bars) return; e.preventDefault();
-    const A = p.bars.length, end = __stkZoom.end ?? A, n = __stkZoom.n, f = plotFrac(e), idx = end - n + f * n;
-    const n2 = Math.max(20, Math.min(A, Math.round(n * (e.deltaY > 0 ? 1.15 : 1 / 1.15)))), e2 = Math.max(n2, Math.min(A, Math.round(idx - f * n2 + n2)));
+    const A = p.bars.length, end = __stkZoom.end ?? A, n = __stkZoom.n, f = __stkLock ? 1 : plotFrac(e), idx = end - n + f * n;
+    const n2 = Math.max(20, Math.min(A, Math.round(n * (e.deltaY > 0 ? 1.15 : 1 / 1.15)))), e2 = __stkLock ? A : Math.max(n2, Math.min(A, Math.round(idx - f * n2 + n2)));
     __stkZoom = { n: n2, end: e2 >= A ? null : e2 }; _stkRedraw(); }, { passive: false });
-  el.addEventListener('pointerdown', e => { if (e.button > 0) return; __stkDrag = { x: e.clientX, end: __stkZoom.end ?? (__px[__stockT] ? __px[__stockT].bars.length : 0) }; });
-  el.addEventListener('pointermove', e => { if (!__stkDrag) return; const p = __px[__stockT], sv = el.querySelector('svg'); if (!p || !sv) return;
+  const pts = new Map();
+  el.addEventListener('pointerdown', e => { if (e.button > 0) return; pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pts.size === 2) { const [a, b] = [...pts.values()]; __stkPinch = { d: Math.hypot(a.x - b.x, a.y - b.y) || 1, n: __stkZoom.n, mid: (a.x + b.x) / 2 }; __stkDrag = null; return; }
+    __stkDrag = __stkLock ? null : { x: e.clientX, end: __stkZoom.end ?? (__px[__stockT] ? __px[__stockT].bars.length : 0) }; });
+  el.addEventListener('pointermove', e => {
+    if (pts.has(e.pointerId)) pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (__stkPinch && pts.size >= 2) { const p = __px[__stockT]; if (!p || !p.bars) return; e.preventDefault();
+      const [a, b] = [...pts.values()], d = Math.hypot(a.x - b.x, a.y - b.y) || 1, A = p.bars.length, n2 = Math.max(20, Math.min(A, Math.round(__stkPinch.n * __stkPinch.d / d)));
+      if (n2 === __stkZoom.n) return;
+      if (__stkLock) __stkZoom = { n: n2, end: null };
+      else { const end = __stkZoom.end ?? A, f = plotFrac({ clientX: __stkPinch.mid }), idx = end - __stkZoom.n + f * __stkZoom.n, e2 = Math.max(n2, Math.min(A, Math.round(idx - f * n2 + n2))); __stkZoom = { n: n2, end: e2 >= A ? null : e2 }; }
+      _stkRedraw(); return; }
+    if (!__stkDrag) return; const p = __px[__stockT], sv = el.querySelector('svg'); if (!p || !sv) return;
     const A = p.bars.length, r = sv.getBoundingClientRect(), plotPx = r.width * (1 - (48 + _stkR(sv.viewBox.baseVal.width)) / sv.viewBox.baseVal.width), per = plotPx / __stkZoom.n, d = Math.round((e.clientX - __stkDrag.x) / per);
     if (!d) return; const e2 = Math.max(__stkZoom.n, Math.min(A, __stkDrag.end - d)); __stkZoom = { n: __stkZoom.n, end: e2 >= A ? null : e2 }; _stkRedraw(); });
-  ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => el.addEventListener(ev, () => { __stkDrag = null; }));
+  ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => el.addEventListener(ev, e => { pts.delete(e.pointerId); if (pts.size < 2) __stkPinch = null; __stkDrag = null; }));
   el.addEventListener('dblclick', () => { __stkZoom = { n: 126, end: null }; _stkRedraw(); });
+  el.addEventListener('touchmove', e => { if (e.touches && e.touches.length > 1) e.preventDefault(); }, { passive: false });   // two fingers zoom the chart, not the page
 }
 
 function _stockOscSVG(t) {
