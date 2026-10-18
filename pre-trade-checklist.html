@@ -3210,6 +3210,23 @@
   .gex-chart text.gex-spot-t { fill: var(--text) !important; } .gex-chart text.gex-flip-t { fill: #D9B562 !important; } .gex-chart text.gex-mp-t { fill: #8B95A3 !important; } .gex-chart text.gex-mark-t { fill: var(--accent) !important; }
   .gex-chart line.gex-spot { stroke: var(--text) !important; stroke-width: 1.4; stroke-dasharray: 2 3; } .gex-chart line.gex-mark { stroke: var(--accent) !important; stroke-width: 1.8; stroke-dasharray: none; }
   .gex-chart line.gex-flip { stroke: #D9B562 !important; } .gex-chart line.gex-mp { stroke: #8B95A3 !important; }
+  /* v38 · one palette for sleeves (high contrast on dark and light), visible thin guides */
+  :root { --sl-csp: #4C8DFF; --sl-stk: #C3CAD4; --sl-leaps: #B98AF5; --sl-oth: #F0B44C; }
+  body.theme-pro-light { --sl-csp: #2563EB; --sl-stk: #6B7280; --sl-leaps: #8B5CF6; --sl-oth: #D97706; }
+  .tkx .rk-sw-stock, .pc-stk { background: var(--sl-stk) !important; } .tkx .rk-sw-leaps, .pc-leaps { background: var(--sl-leaps) !important; }
+  .tkx .rk-sw-csp, .pc-csp { background: var(--sl-csp) !important; } .tkx .rk-sw-oth, .pc-oth { background: var(--sl-oth) !important; }
+  .tkx .rk-seg { box-shadow: inset -1px 0 0 var(--panel); }
+  .pc-bar i { box-shadow: inset -2px 0 0 var(--panel); }
+  .tkx-track { overflow: visible; }
+  .tkx-guide { position: absolute; top: -4px; bottom: -4px; width: 0; border-left: 1px dashed color-mix(in srgb, var(--text) 55%, transparent); pointer-events: none; }
+  .tkx-guide.strong { border-left: 1px solid color-mix(in srgb, var(--fail) 85%, transparent); }
+  .tkx-scale { position: relative; height: 12px; }
+  .tkx-scale i { position: absolute; transform: translateX(-50%); font: 600 10.5px var(--mono); font-style: normal; color: var(--text-dim); }
+  .tkx-scale i.strong { color: var(--fail); }
+  .stk-lvhelp { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; font-size: 12px; color: var(--text-dim); margin: 4px 0 2px; }
+  .stk-lvhelp span[class^="sw-"] { display: inline-block; width: 14px; height: 0; border-top: 2px dashed; margin-right: 3px; vertical-align: 3px; }
+  .stk-lvhelp .sw-cw { border-color: #EF5350; } .stk-lvhelp .sw-pw { border-color: #26A69A; } .stk-lvhelp .sw-flip { border-color: #D9B562; } .stk-lvhelp .sw-mp { border-color: #8B95A3; border-top-style: dotted; }
+  body .stk-svg text.stk-ax-yr { fill: var(--text) !important; font-weight: 700 !important; }
 </style>
 </head>
 <body class="theme-slate">
@@ -5257,7 +5274,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.17-v37';
+const APP_BUILD = '2026.10.17-v38';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
@@ -13374,7 +13391,10 @@ const GREEK_HELP = {
   gflip: { t: 'Gamma Flip', def: '净 GEX 由正转负的价格.', read: '现价在 Flip 上方: 波动通常较温和; 跌破 Flip 后, 做市商对冲会加速下跌.', ex: 'Flip 148, 现价 172: 还有约 14% 的缓冲.' },
   maxpain: { t: 'Max Pain', def: '到期时让所有期权买方总价值最小的价格.', read: '有说法认为股价到期会被"吸"向 Max Pain, 证据有限, 只作参考.', ex: 'Max Pain 150, 现价 155: 不代表股价一定会跌到 150.' },
   vix: { t: 'VIX 百分位', def: 'VIX 当前值在过去一年中的位置.', read: '高百分位: 权利金贵, 但市场在担心; 低百分位: 权利金偏薄.', ex: '一年 31 百分位: 比过去一年 69% 的日子都低.' },
-  vix_ts: { t: '期限结构', def: '比较 VIX9D / VIX / VIX3M: 短、中、长期的隐含波动.', read: '正常 (contango): 短期低于长期. 倒挂: 短期恐慌高于长期, 卖方应暂停新开.', ex: 'VIX / VIX3M 0.89: 正常; ≥ 1.00: 倒挂.' },
+  vix_ts: { t: '期限结构', def: '比较不同期限的隐含波动: VIX9D (9 天) / VIX (30 天) / VIX3M (3 个月). 主看 VIX ÷ VIX3M, 辅看 VIX9D ÷ VIX. 这一格是实时判断, 随最新数据变化.',
+    read: '正常 (contango, VIX ÷ VIX3M < 0.95): 近期比远期平静, 卖方环境最好. 平坦 (0.95–1.00): 近期担忧升温, 谨慎, 缩小规模. 倒挂 (backwardation, ≥ 1.00): 近期恐慌高于远期, 暂停新开卖方. 另外 VIX9D 比 VIX 高 10% 以上 = 短期恐慌, 同样暂停.',
+    short: '倒挂通常出现在急跌中, 往往也是权利金最贵的时候; 规则选择先等期限结构恢复正常再卖, 用少赚一点换不在恐慌中加仓.',
+    ex: 'VIX 15.6 / VIX3M 17.5 = 0.89: 正常. VIX 22 / VIX3M 21 = 1.05: 倒挂, 暂停.' },
   vrp: { t: 'VRP', def: '隐含波动 − 实际波动 (这里用 VIX − SPY 过去 20 天的实际波动).', read: '为正: 期权比实际波动贵, 卖方有溢价; 为负: 卖方没有优势.', ex: '+14.7: 期权定价比实际波动高 14.7 点.' },
   vvix: { t: 'VVIX', def: 'VIX 本身的隐含波动, "波动率的波动".', read: '≥ 110: 波动率本身可能剧烈变化, Vega 风险上升.', ex: '89: 平稳.' },
   pctb: { t: '布林 %B', def: '价格在布林带中的位置: 0% = 下轨, 50% = 中轨, 100% = 上轨.', read: '低于 50% 在中轨下方 (CSP 规则之一); 超过 100% 或低于 0% 是突破布林带.', ex: '%B 20%: 接近下轨.' },
@@ -15377,12 +15397,6 @@ function volInnerHTML() {
   const f1 = v => v == null ? '—' : v.toFixed(1);
   const tsTxt = r.ts2 == null ? '—' : r.ts2 >= 1 ? '倒挂' : r.ts2 >= 0.95 ? '平坦' : '正常';
   const cell = (label, val, sub, cls) => `<div class="tc-cell"><span>${label}</span><b class="${cls || ''}">${val}</b>${sub ? `<em>${sub}</em>` : ''}</div>`;
-  const pts = [['9 天', r.v9], ['30 天', r.v], ['3 个月', r.v3]].filter(p => p[1] != null);
-  const W = 150, H = 54, lo = Math.min(...pts.map(p => p[1])) * 0.92, hi = Math.max(...pts.map(p => p[1])) * 1.05;
-  const tsX = i => 16 + i * (W - 32) / Math.max(1, pts.length - 1), tsY = v => H - 14 - (v - lo) / (hi - lo || 1) * (H - 24);
-  const ts = pts.length >= 2 ? `<svg class="vol-ts" viewBox="0 0 ${W} ${H}" aria-label="VIX 期限结构">
-      <polyline points="${pts.map((p, i) => `${tsX(i).toFixed(1)},${tsY(p[1]).toFixed(1)}`).join(' ')}" class="vol-ts-line vol-${r.level}"/>
-      ${pts.map((p, i) => `<circle cx="${tsX(i).toFixed(1)}" cy="${tsY(p[1]).toFixed(1)}" r="2.8" class="vol-ts-dot"/><text x="${tsX(i).toFixed(1)}" y="${H - 2}" text-anchor="middle" class="rk-ch-lab">${p[0]}</text>`).join('')}</svg>` : '';
   const hist = r.hist;
   const chart = _lineChartSVG({ xs: hist.map((_, i) => i), series: [{ ys: hist.map(b => b.c), cls: 'gl-l1', label: 'VIX' }], w: _chartW(), h: 130, zero: false, xTicks: 4,
     xFmt: i => { const b = hist[Math.round(i)]; return b ? `${+b.d.slice(5, 7)}/${+b.d.slice(8)}` : ''; }, yFmt: v => v.toFixed(0), tipFmt: v => v.toFixed(2) });
@@ -15397,7 +15411,7 @@ function volInnerHTML() {
         ${cell(`VVIX ${_qBtn('vvix', 'short')}`, r.vv != null ? r.vv.toFixed(0) : '—', '波动率的波动', r.vv >= 110 ? 'rk-t-alert' : '')}
         ${cell('SPY 回撤', r.dd != null ? r.dd.toFixed(1) + '%' : '—', r.ma200 ? (r.spyPx >= r.ma200 ? '200MA 上方' : '200MA 下方') : '', r.dd <= -10 ? 'rk-t-alert' : '')}
       </div>
-      ${ts}
+      
     </div>
     ${chart}
     <div class="rk-note">暂停: 期限结构倒挂 / VIX9D 高于 VIX 10% 以上 / 高波动下实际波动超过隐含. 谨慎: 接近平坦 / VIX ≥ 85 百分位 / VVIX ≥ 110 / VRP 为负. ${_ago(r.at)}.</div>`;
@@ -15624,14 +15638,14 @@ function _tickerBlocksHTML(c) {
     return `
     <section class="rk-block tkx" id="tkx-${mode}">
       <h3 class="rk-block-title rk-title-row"><span>${title}</span><span class="rk-quiet tkx-sub">${note}</span></h3>
-      <div class="rk-legend"><span><i class="rk-sw rk-sw-stock"></i>正股</span><span><i class="rk-sw rk-sw-leaps"></i>LEAPS</span><span><i class="rk-sw rk-sw-csp"></i>CSP 名义</span><span><i class="rk-sw rk-sw-oth"></i>其他期权</span><span class="rk-legend-note">虚线 20% / 30% NAV</span></div>
-      <div class="tkx-head${extra ? ' x' : ''}"><span>标的</span><span>构成</span><span>金额</span><span>% NAV</span>${extra ? '<span>美元 Delta</span><span>浮盈</span><span>Short call</span>' : ''}</div>
+      <div class="rk-legend"><span><i class="rk-sw rk-sw-stock"></i>正股</span><span><i class="rk-sw rk-sw-leaps"></i>LEAPS</span><span><i class="rk-sw rk-sw-csp"></i>CSP 名义</span><span><i class="rk-sw rk-sw-oth"></i>其他期权</span><span class="rk-legend-note">竖线 = 20% / 30% NAV</span></div>
+      <div class="tkx-head${extra ? ' x' : ''}"><span>标的</span><span class="tkx-scale"><i style="left:${G(20)}">20%</i><i class="strong" style="left:${G(30)}">30%</i></span><span>金额</span><span>% NAV</span>${extra ? '<span>美元 Delta</span><span>浮盈</span><span>Short call</span>' : ''}</div>
       ${rows.map(r => { const lv = riskLevel(_scoreMax(r.pct, [20, 30, 40]));
         const tip = `正股 ${_fmtUsd(r.stk)} · LEAPS ${_fmtUsd(r.lp)} · CSP ${_fmtUsd(r.csp)}${r.oth ? ' · 其他 ' + _fmtUsd(r.oth) : ''}`;
         return `<div class="tkx-row${extra ? ' x' : ''}" title="${esc(tip)}">
           <button class="tkx-t" onclick="showStock('${esc(r.t)}')">${esc(r.t)}</button>
           <div class="rk-bar-track tkx-track"><i class="rk-seg rk-sw-stock" style="width:${W(r.stk)}"></i><i class="rk-seg rk-sw-leaps" style="width:${W(r.lp)}"></i><i class="rk-seg rk-sw-csp" style="width:${W(r.csp)}"></i><i class="rk-seg rk-sw-oth" style="width:${W(r.oth)}"></i>
-            <em class="rk-guide" style="left:${G(20)}"></em><em class="rk-guide strong" style="left:${G(30)}"></em></div>
+            <em class="tkx-guide" style="left:${G(20)}"></em><em class="tkx-guide strong" style="left:${G(30)}"></em></div>
           <span class="tkx-amt">${_fmtUsd(r.total)}</span>
           <span class="tkx-pct rk-t-${lv.key}">${r.pct.toFixed(1)}%</span>
           ${extra ? `<span class="tkx-num">${_fmtSigned(r.dd)}</span><span class="tkx-num ${_thCls(r.pnl)}">${_fmtSigned(r.pnl)}</span><span class="tkx-num${r.sc ? '' : ' rk-quiet'}">${r.sc ? r.sc + ' 张' : '—'}</span>` : ''}
@@ -16208,8 +16222,9 @@ function _stockChartSVG(t) {
   const raw = (hi - lo) / 5, mag = Math.pow(10, Math.floor(Math.log10(raw))), step = [1, 2, 2.5, 5, 10].map(m => m * mag).find(s => s >= raw) || raw;
   let s = '';
   for (let v = Math.ceil(lo / step) * step; v <= hi; v += step) s += `<line x1="${L}" x2="${W - R}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}" class="stk-grid"/><text x="${L - 6}" y="${(Y(v) + 4).toFixed(1)}" text-anchor="end" class="stk-ax">${v.toFixed(step < 1 ? 2 : 0)}</text>`;
-  const ticks = W <= 600 ? 3 : 5, md = d => W <= 600 ? `${+d.slice(5, 7)}/${+d.slice(8)}` : d.slice(2);
-  for (let k = 0; k <= ticks; k++) { const i = Math.min(N - 1, Math.round(k * (N - 1) / ticks)); s += `<text x="${X(i).toFixed(1)}" y="${H - 6}" text-anchor="${k === 0 ? 'start' : k === ticks ? 'end' : 'middle'}" class="stk-ax">${md(bars[i].d)}</text>`; }
+  const ticks = W <= 600 ? 3 : 6; let prevY = null;
+  for (let k = 0; k <= ticks; k++) { const i = Math.min(N - 1, Math.round(k * (N - 1) / ticks)), d = bars[i].d, yr = d.slice(0, 4), lab = `${prevY !== yr ? yr + '/' : ''}${+d.slice(5, 7)}/${+d.slice(8)}`; prevY = yr;
+    s += `<text x="${X(i).toFixed(1)}" y="${H - 6}" text-anchor="${k === 0 ? 'start' : k === ticks ? 'end' : 'middle'}" class="stk-ax${lab.length > 6 ? ' stk-ax-yr' : ''}">${lab}</text>`; }
   // moving averages (only those switched on)
   STK_MAS.filter(([k]) => __stkMA.has(k)).forEach(([k, col]) => { const pts = bars.map((_, i) => { const v = _sma1(c, k, start + i); return v == null ? null : `${X(i).toFixed(1)},${Y(v).toFixed(1)}`; }).filter(Boolean);
     if (pts.length > 1) s += `<polyline points="${pts.join(' ')}" fill="none" stroke="${col}" stroke-width="1.4" opacity="0.95"/>`; });
@@ -16340,6 +16355,7 @@ function renderStockPage() {
       <h3 class="rk-block-title">日 K · 期权关键价位</h3>
       ${_stkToolsHTML()}
       <div id="stk-chart">${_safe('日 K', () => _stockChartSVG(t), '')}</div>
+      <div class="stk-lvhelp"><span class="sw-cw"></span>Call Wall · <span class="sw-pw"></span>Put Wall ${_qBtn('gex', 'short')} <span class="sw-flip"></span>Gamma Flip ${_qBtn('gflip', 'short')} <span class="sw-mp"></span>Max Pain ${_qBtn('maxpain', 'short')}</div>
       <div id="stk-osc">${_safe('副图', () => _stockOscSVG(t), '')}</div>
       ${_safe('价格行为', () => _paLineHTML(x), '')}
     </section>`;
@@ -16371,7 +16387,6 @@ function renderStockPage() {
       <h3 class="rk-block-title">你和 ${esc(t)}</h3>
       ${P.length ? `<div class="rk-table-wrap"><table class="rk-table"><thead><tr><th>仓位</th><th>DTE</th><th>浮盈</th></tr></thead><tbody>${P.map(z => `<tr class="gl-row" role="button" onclick="openOptionLab(${computeRisk().c.pos.indexOf(z)})"><td><b>${esc(_posLabel(z))}</b></td><td>${_dteOf(z) ?? '—'}</td><td class="${_thCls(_posPnl(z) || 0)}">${_fmtSigned(_posPnl(z) || 0)}</td></tr>`).join('')}</tbody></table></div>` : '<div class="rk-quiet">目前没有仓位.</div>'}
       ${wr && wr.adj ? `<div class="stk-line">wheel 调整后成本 <button class="app-link wh-open" onclick="showWheelDetail('${esc(t)}')">${wr.adj.toFixed(2)} ▸</button> · 累计权利金 ${_fmtSigned(wr.prem)}</div>` : ''}
-      ${bt ? `<div class="stk-line">已平仓 ${bt.n ?? '—'} 笔 · 胜率 ${bt.wr != null ? bt.wr.toFixed(0) + '%' : '—'} · 已实现 <span class="${_thCls(bt.pnl || 0)}">${_fmtSigned(bt.pnl || 0)}</span></div>` : ''}
       ${hist.length ? `<div class="stk-line rk-quiet">最近的 checklist: ${hist.map(h => `${esc(h.strategy)} ${esc(h.verdict)} (${esc(String(h.timestamp || '').slice(0, 10))})`).join(' · ')}</div>` : ''}
     </section>`;
   const oppBlock = `
