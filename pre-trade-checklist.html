@@ -5274,7 +5274,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.17-v38';
+const APP_BUILD = '2026.10.17-v39';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
@@ -11014,16 +11014,49 @@ function _schwabPositions(data) {
       if (p.kind === 'short_put') exposure = (strike || 0) * 100 * qty;
       else if (p.kind === 'leaps') exposure = cost || 0;
       else if (p.kind === 'stock') exposure = rawQty > 0 ? (cost || 0) : 0;
-      return { kind: p.kind, ticker: _normTicker(p.ticker) || '?', strike, qty, expiry: p.expiry || null,
+      return _cleanGreeks({ kind: p.kind, ticker: _normTicker(p.ticker) || '?', strike, qty, expiry: p.expiry || null,
         exposure, cost, marketValue: _num(p.marketValue), unparsed: p.kind === 'short_put' && strike == null,
         side: rawQty < 0 ? -1 : 1, price: _num(p.price), delta: _num(p.delta), theta: _num(p.theta),
         iv: _num(p.iv), und: _num(p.underlyingPrice), dte: _num(p.dte), gamma: _num(p.gamma),
         vega: _num(p.vega), mark: _num(p.mark), symbol: p.symbol || null,
         // per-share entry price; fall back to total cost ÷ shares when averagePrice is missing
-        avg: _num(p.averagePrice) ?? (cost > 0 && qty > 0 ? cost / (qty * (p.kind === 'stock' ? 1 : 100)) : null) };
+        avg: _num(p.averagePrice) ?? (cost > 0 && qty > 0 ? cost / (qty * (p.kind === 'stock' ? 1 : 100)) : null) });
     });
 }
 
+/* Schwab sends −999 (and sometimes nonsense) when it has no Greeks for a contract. Anything implausible is
+   treated as missing and rebuilt from the option model; if that's impossible the position is left out of the
+   Greeks totals and flagged. Per-share units, as Schwab reports them: Δ, Γ, Θ per day, Vega per vol point. */
+function _greekBad(k, v, x) {
+  if (v == null) return false;
+  if (!isFinite(v) || v <= -998) return true;
+  const mk = x.mark || 0, S = x.und || 0;
+  if (k === 'delta') return Math.abs(v) > 1.0001;
+  if (k === 'gamma') return v < 0 || v > 5;
+  if (k === 'theta') return Math.abs(v) > Math.max(1, mk + 0.5);
+  if (k === 'vega') return v < 0 || v > Math.max(5, S * 0.5);
+  if (k === 'iv') return v <= 0.5 || v > 500;
+  return false;
+}
+function _cleanGreeks(x) {
+  if (!x || x.kind === 'stock') return x;
+  const bad = ['delta', 'gamma', 'theta', 'vega', 'iv'].filter(k => _greekBad(k, x[k], x));
+  if (!bad.length) return x;
+  bad.forEach(k => { x[k] = null; });
+  const type = x.kind === 'short_put' || x.kind === 'long_put' ? 'put' : 'call', S = x.und, K = x.strike;
+  const dte = x.dte != null ? x.dte : x.expiry ? (Date.parse(x.expiry + 'T16:00:00') - Date.now()) / 864e5 : null, T = dte != null ? Math.max(0, dte) / 365 : null;
+  const sig = x.iv != null ? x.iv / 100 : (x.mark > 0 && S > 0 && K > 0 && T > 0 ? impliedVol(x.mark, S, K, T, type) : null);
+  const g = S > 0 && K > 0 && T > 0 && sig > 0 ? bsGreeks(S, K, T, sig, type) : null;
+  if (g) { ['delta', 'gamma', 'theta', 'vega'].forEach(k => { if (x[k] == null) x[k] = g[k]; }); if (x.iv == null) x.iv = sig * 100; x.greekSrc = 'model'; }
+  else { x.delta = x.gamma = x.theta = x.vega = null; x.greekSrc = 'missing'; }
+  x.greekBad = bad;
+  return x;
+}
+function _greekQualityHTML(pos) {
+  const f = (pos || []).filter(x => x.greekSrc);
+  if (!f.length) return '';
+  return `<div class="rk-notice gq-note">${f.map(x => `<b>${esc(_posLabel(x))}</b>`).join('、')}: Schwab 返回了无效的 Greeks (例如 −999 占位值), ${f.every(x => x.greekSrc === 'model') ? '已用期权模型估算' : f.some(x => x.greekSrc === 'model') ? '能估算的已用期权模型估算, 其余暂不计入 Greeks 合计' : '暂不计入 Greeks 合计'}. 通常是盘后或报价暂停, 刷新后会恢复.</div>`;
+}
 // The single seam: Schwab when fresh, otherwise manual inputs + local history.
 function getPortfolio() {
   const sc = _schwabUsable();
@@ -15462,6 +15495,10 @@ async function fetchSnaps(force) {
 }
 const ATTR_KEYS = ['theta', 'delta', 'gamma', 'vega', 'other'];
 const ATTR_LABEL = { theta: 'Theta', delta: 'Delta', gamma: 'Gamma', vega: 'Vega', other: '其他' };
+function _snapGreeksBad(p) {
+  if (!p || p.k === 'stock') return false;
+  return ['de', 'ga', 'th', 've', 'iv'].some(k => p[k] != null && (!isFinite(p[k]) || p[k] <= -998)) || (p.de != null && Math.abs(p.de) > 1.0001) || (p.th != null && Math.abs(p.th) > Math.max(1, (p.m || 0) + 0.5));
+}
 function computeAttribution(snaps) {
   const days = [];
   for (let i = 1; i < snaps.length; i++) {
@@ -15471,6 +15508,7 @@ function computeAttribution(snaps) {
     s1.pos.forEach(p1 => {
       const p0 = m0.get(p1.s);
       if (!p0 || p0.q !== p1.q || p0.k !== p1.k) { if (p0 || p1) day.skipped++; return; }
+      if (_snapGreeksBad(p0) || _snapGreeksBad(p1)) { day.skipped++; return; }      // Schwab's −999 placeholders in an old snapshot
       const dS = p1.u != null && p0.u != null ? p1.u - p0.u : 0;
       const r = { theta: 0, delta: 0, gamma: 0, vega: 0 };
       let actual;
@@ -16665,6 +16703,7 @@ function _moneynessHTML(R) {
       </table></div>
     </section>`;
 }
+function _greeksHTML(R, ...rest) { return _greekQualityHTML(R && R.c ? R.c.pos : []) + _greeksHTMLInner(R, ...rest); }
 // NAV elasticity to SPY: β-weighted dollar delta ÷ NAV, now and after −10% / −20% (gamma raises it for put sellers)
 function _portfolioLeverage(c) {
   if (!c.nav || !c.pos.length) return null;
@@ -16676,7 +16715,7 @@ function _portfolioLeverage(c) {
   const now = at(0);
   return now == null ? null : { now, m10: at(-0.1), m20: at(-0.2), nom: (stockMV + cspN + lpN) / c.nav };
 }
-function _greeksHTML(R) {
+function _greeksHTMLInner(R) {
   const c = R.c;
   if (!c.isSchwab) return '';
   const opts = c.pos.filter(x => x.kind !== 'stock');
