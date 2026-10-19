@@ -3238,6 +3238,11 @@
   .rk-trend-btn { cursor: pointer; border: 0; background: transparent; font: inherit; padding: 2px 4px; }
   .rk-trend-btn:hover { text-decoration: underline; }
   @media (pointer: coarse) { .rk-trend-btn { min-height: 30px; } }
+  /* v42 · progress bars with a time tick */
+  .pc-prog { position: relative; } .pc-prog.t { width: 64px; }
+  .pc-prog em { position: absolute; top: -3px; bottom: -3px; width: 2px; margin-left: -1px; background: var(--text); opacity: 0.85; }
+  .pc-ahead { font-size: 10.5px; margin-left: 2px; }
+  .pc-cell { white-space: nowrap; }
 </style>
 </head>
 <body class="theme-slate">
@@ -5285,7 +5290,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.17-v41';
+const APP_BUILD = '2026.10.17-v42';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
@@ -15831,6 +15836,11 @@ function _pnlBlockHTML() {
       <div class="rk-note">${__pnlMode === 'sleeve' ? '点柱子跳到该板块明细.' : '影响最大的 7 个标的, 其余合并为「其他」.'} 卖方浮盈 = 开仓权利金 − 当前价值.</div>
     </section>`;
 }
+function _progBarHTML(prog, timePct, label) {
+  const p = Math.max(0, Math.min(100, prog || 0)), ahead = timePct != null ? prog - timePct : null;
+  return `<span class="pc-prog${timePct != null ? ' t' : ''}" title="${timePct != null ? `时间已过 ${timePct.toFixed(0)}%` : ''}"><i style="width:${p.toFixed(0)}%"></i>${timePct != null ? `<em style="left:${Math.max(0, Math.min(100, timePct)).toFixed(0)}%"></em>` : ''}</span> ${Math.max(0, prog).toFixed(0)}%${label ? ` <span class="rk-quiet">${label}</span>` : ''}${ahead != null ? ` <span class="${ahead >= 0 ? 'rk-t-safe' : 'rk-t-alert'} pc-ahead">${ahead >= 0 ? '快于' : '慢于'}时间</span>` : ''}`;
+}
+const SHORT_TP = 50;                                              // CSP / CC rule: buy back at 50% of the premium
 function renderPositionsPage() {
   const head = `<div class="header header-sticky"><div class="brand">Pre-Trade Checklist</div><div class="header-actions">
     <button class="btn ghost" onclick="state._view = null; render(); window.scrollTo(0, 0)">← 返回</button><button class="btn ghost" onclick="refreshSchwab(true)">刷新 Schwab</button></div></div>`;
@@ -15882,7 +15892,8 @@ function renderPositionsPage() {
     const q = Number(x.qty) || 0, credit = (x.avg || 0) * 100 * q, val = Math.abs(mv(x)), intr = x.und != null ? Math.max(0, x.strike - x.und) * 100 * q : 0;
     const held = _heldSince(x), dte = _dteOf(x), life = held && dte != null ? held.days + dte : null;
     return { x, q, credit, val, ext: Math.max(0, val - intr), cap: _captured(x), pnl: _posPnl(x), dte, held, dist: _distPct(x), th: theta(x),
-      be: x.strike - (x.avg || 0), ann: life ? credit / (x.exposure || 1) * 365 / Math.max(1, life) * 100 : null, rem: dte ? val / (x.exposure || 1) * 365 / Math.max(1, dte) * 100 : null };
+      be: x.strike - (x.avg || 0), ann: life ? credit / (x.exposure || 1) * 365 / Math.max(1, life) * 100 : null, rem: dte ? val / (x.exposure || 1) * 365 / Math.max(1, dte) * 100 : null,
+      timePct: life ? held.days / life * 100 : null };
   });
   const cT = { credit: sum(cspRows, r => r.credit), val: sum(cspRows, r => r.val), ext: sum(cspRows, r => r.ext), th: sum(cspRows, r => r.th), pnl: sum(cspRows, r => r.pnl) };
   const wDte = cspN ? sum(cspRows, r => (r.dte || 0) * (r.x.exposure || 0)) / cspN : null;
@@ -15898,9 +15909,9 @@ function renderPositionsPage() {
         ${fig(`Theta/天 ${_qBtn('theta_day', 'short')}`, sgn(cT.th), '', _thCls(cT.th))}
       </div>
       <div class="rk-table-wrap"><table class="rk-table">
-        <thead><tr><th>合约</th><th>名义</th><th>% NAV</th><th>开仓权利金</th><th>当前价值</th><th>剩余时间价值</th><th>已赚</th><th>浮盈</th><th>DTE</th><th>持有</th><th>距行权价</th><th>盈亏平衡</th><th>开仓年化</th><th>Theta/天</th><th>状态</th></tr></thead>
+        <thead><tr><th>合约</th><th>名义</th><th>% NAV</th><th>开仓权利金</th><th>当前价值</th><th>剩余时间价值</th><th>止盈进度 (赚 ${SHORT_TP}%)</th><th>浮盈</th><th>DTE</th><th>持有</th><th>距行权价</th><th>盈亏平衡</th><th>开仓年化</th><th>Theta/天</th><th>状态</th></tr></thead>
         <tbody>${cspRows.map(r => row(r.x, `<td><b>${esc(_posLabel(r.x))}</b>${r.x.strategy ? ` <span class="rk-quiet">${esc(r.x.strategy)}</span>` : ''}</td><td>${money(r.x.exposure)}</td><td>${_pct(pn(r.x.exposure))}</td>
-          <td>${money(r.credit)}</td><td>${money(r.val)}</td><td>${money(r.ext)}</td><td class="${r.cap != null && r.cap >= 50 ? 'rk-t-safe' : ''}">${r.cap != null ? r.cap.toFixed(0) + '%' : '—'}</td><td class="${_thCls(r.pnl)}">${sgn(r.pnl)}</td>
+          <td>${money(r.credit)}</td><td>${money(r.val)}</td><td>${money(r.ext)}</td><td class="pc-cell">${r.cap != null ? _progBarHTML(r.cap / SHORT_TP * 100, r.timePct, `已赚 ${r.cap.toFixed(0)}%`) : '—'}</td><td class="${_thCls(r.pnl)}">${sgn(r.pnl)}</td>
           <td>${_days(r.dte)}</td><td>${r.held ? r.held.days + ' 天' : '—'}</td><td class="${r.dist != null && r.dist < 3 ? 'rk-t-danger' : r.dist != null && r.dist < 8 ? 'rk-t-alert' : ''}">${_pct(r.dist)}</td>
           <td>${r.be.toFixed(2)}</td><td>${r.ann != null ? r.ann.toFixed(0) + '%' : '—'}</td><td class="${_thCls(r.th)}">${sgn(r.th)}</td><td>${tag(r.x)}</td>`)).join('')}
           <tr class="rk-total"><td>合计</td><td>${money(cspN)}</td><td>${_pct(pn(cspN))}</td><td>${money(cT.credit)}</td><td>${money(cT.val)}</td><td>${money(cT.ext)}</td><td></td><td class="${_thCls(cT.pnl)}">${sgn(cT.pnl)}</td><td></td><td></td><td></td><td></td><td></td><td class="${_thCls(cT.th)}">${sgn(cT.th)}</td><td></td></tr></tbody>
@@ -15915,15 +15926,16 @@ function renderPositionsPage() {
     const sh = stk.filter(s => s.ticker === x.ticker).reduce((s, y) => s + (Number(y.qty) || 0), 0), hasLeaps = lp.some(l => l.ticker === x.ticker);
     const cover = x.nakedQty > 0 ? '裸卖' : sh >= 100 ? '正股' : hasLeaps ? 'LEAPS (PMCC)' : x.wing ? '价差' : '—';
     const w = wheel && wheel.rows ? wheel.rows.find(r => r.T === x.ticker) : null;
-    return { x, q, credit, val, cap: _captured(x), pnl: _posPnl(x), dte: _dteOf(x), held, dist: _distPct(x), th: theta(x), cover, room: w && w.adj ? (x.strike / w.adj - 1) * 100 : null, adj: w ? w.adj : null };
+    const dte = _dteOf(x), life = held && dte != null ? held.days + dte : null;
+    return { x, q, credit, val, cap: _captured(x), pnl: _posPnl(x), dte, held, dist: _distPct(x), th: theta(x), cover, room: w && w.adj ? (x.strike / w.adj - 1) * 100 : null, adj: w ? w.adj : null, timePct: life ? held.days / life * 100 : null };
   });
   const scHTML = sc.length ? `
     <section class="rk-block">
       <h3 class="rk-block-title" id="sec-sc">Short call · CC / PMCC · ${sc.length} 笔</h3>
       <div class="rk-table-wrap"><table class="rk-table">
-        <thead><tr><th>合约</th><th>覆盖</th><th>开仓权利金</th><th>当前价值</th><th>已赚</th><th>浮盈</th><th>DTE</th><th>持有</th><th>距行权价</th><th>行权价 vs 调整后成本 ${_qBtn('adj_cost', 'long')}</th><th>Theta/天</th><th>状态</th></tr></thead>
+        <thead><tr><th>合约</th><th>覆盖</th><th>开仓权利金</th><th>当前价值</th><th>止盈进度 (赚 ${SHORT_TP}%)</th><th>浮盈</th><th>DTE</th><th>持有</th><th>距行权价</th><th>行权价 vs 调整后成本 ${_qBtn('adj_cost', 'long')}</th><th>Theta/天</th><th>状态</th></tr></thead>
         <tbody>${scRows.map(r => row(r.x, `<td><b>${esc(_posLabel(r.x))}</b></td><td class="${r.cover === '裸卖' ? 'rk-t-danger' : ''}">${esc(r.cover)}</td><td>${money(r.credit)}</td><td>${money(r.val)}</td>
-          <td class="${r.cap != null && r.cap >= 50 ? 'rk-t-safe' : r.cap != null && r.cap < 0 ? 'rk-t-alert' : ''}">${r.cap != null ? r.cap.toFixed(0) + '%' : '—'}</td><td class="${_thCls(r.pnl)}">${sgn(r.pnl)}</td><td>${_days(r.dte)}</td><td>${r.held ? r.held.days + ' 天' : '—'}</td>
+          <td class="pc-cell">${r.cap != null ? _progBarHTML(r.cap / SHORT_TP * 100, r.timePct, `已赚 ${r.cap.toFixed(0)}%`) : '—'}</td><td class="${_thCls(r.pnl)}">${sgn(r.pnl)}</td><td>${_days(r.dte)}</td><td>${r.held ? r.held.days + ' 天' : '—'}</td>
           <td class="${r.dist != null && r.dist < 3 ? 'rk-t-danger' : r.dist != null && r.dist < 8 ? 'rk-t-alert' : ''}">${_pct(r.dist)}</td>
           <td class="${r.room == null ? '' : r.room >= 0 ? 'rk-t-safe' : 'rk-t-danger'}">${r.room != null ? `${r.room >= 0 ? '+' : '−'}${Math.abs(r.room).toFixed(1)}% <span class="rk-quiet">(${r.adj.toFixed(2)})</span>` : '—'}</td>
           <td class="${_thCls(r.th)}">${sgn(r.th)}</td><td>${tag(r.x)}</td>`)).join('')}</tbody>
@@ -15948,15 +15960,14 @@ function renderPositionsPage() {
         ${fig('平均持有', avgHeld != null ? avgHeld.toFixed(0) + ' 天' : '—', '仍持有的 LEAPS')}
       </div>
       <div class="rk-table-wrap"><table class="rk-table">
-        <thead><tr><th>合约</th><th>成本</th><th>市值</th><th>浮盈</th><th>浮盈 %</th><th>止盈进度</th><th>持有</th><th>DTE</th><th>距退出</th><th>Δ</th><th>正股等值</th><th>λ ${_qBtn('lambda', 'long')}</th><th>时间价值/年</th><th>状态</th></tr></thead>
-        <tbody>${lpRows.map(r => row(r.x, `<td><b>${esc(_posLabel(r.x))}</b></td><td>${money(r.cost)}</td><td>${money(r.val)}</td><td class="${_thCls(r.pnl)}">${sgn(r.pnl)}</td><td class="${_thCls(r.pnl)}">${_pct(r.pnlPct)}</td>
-          <td>${r.prog != null ? `<span class="pc-prog"><i style="width:${Math.max(0, Math.min(100, r.prog)).toFixed(0)}%"></i></span> ${Math.max(0, r.prog).toFixed(0)}% <span class="rk-quiet">/ +${r.tg.pct}%</span>` : '—'}</td>
+        <thead><tr><th>合约</th><th>成本</th><th>投入 % NAV</th><th>市值</th><th>市值 % NAV</th><th>浮盈</th><th>浮盈 %</th><th>止盈进度</th><th>持有</th><th>DTE</th><th>距退出</th><th>Δ</th><th>正股等值</th><th>λ ${_qBtn('lambda', 'long')}</th></tr></thead>
+        <tbody>${lpRows.map(r => row(r.x, `<td><b>${esc(_posLabel(r.x))}</b></td><td>${money(r.cost)}</td><td>${_pct(pn(r.cost))}</td><td>${money(r.val)}</td><td>${_pct(pn(r.val))}</td><td class="${_thCls(r.pnl)}">${sgn(r.pnl)}</td><td class="${_thCls(r.pnl)}">${_pct(r.pnlPct)}</td>
+          <td class="pc-cell">${r.prog != null ? _progBarHTML(r.prog, null, `/ +${r.tg.pct}% ${r.tg.style ? '' : '(默认)'}`) : '—'}</td>
           <td>${r.held ? r.held.days + ' 天' + (r.held.approx ? '*' : '') : '—'}</td><td>${_days(r.dte)}</td>
           <td class="${r.toExit != null && r.toExit <= 0 ? 'rk-t-danger' : r.toExit != null && r.toExit < 90 ? 'rk-t-alert' : ''}">${r.toExit != null ? (r.toExit <= 0 ? '已到退出线' : r.toExit + ' 天') : '—'}</td>
-          <td>${r.s ? r.s.delta.toFixed(2) : '—'}</td><td>${r.s ? Math.round(r.s.shares) + ' 股' : '—'}</td><td>${r.s && r.s.lambda != null ? r.s.lambda.toFixed(1) : '—'}</td>
-          <td>${r.s ? r.s.carry.toFixed(1) + '%' : '—'}</td><td>${tag(r.x)}</td>`)).join('')}</tbody>
+          <td>${r.s ? r.s.delta.toFixed(2) : '—'}</td><td>${r.s ? Math.round(r.s.shares) + ' 股' : '—'}</td><td>${r.s && r.s.lambda != null ? r.s.lambda.toFixed(1) : '—'}</td>`)).join('')}</tbody>
       </table></div>
-      <div class="rk-note">距退出 = DTE − 180. 止盈进度按风格目标 (+150% / +100% / +50%)${lpRows.some(r => r.held && r.held.approx) ? '; * 来自 checklist 的开仓记录' : ''}.</div>
+      <div class="rk-note">止盈进度 = 浮盈 % ÷ 风格目标 (替代正股 +150% · 平衡 +100% · 波段 +50%), 风格取自这笔 LEAPS 的 checklist 记录, 找不到时按平衡 (默认). 距退出 = DTE − 180${lpRows.some(r => r.held && r.held.approx) ? '; * 来自 checklist 的开仓记录' : ''}.</div>
     </section>` : '';
 
   /* ── stock ── */
