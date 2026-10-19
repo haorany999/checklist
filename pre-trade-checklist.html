@@ -3227,6 +3227,13 @@
   .stk-lvhelp span[class^="sw-"] { display: inline-block; width: 14px; height: 0; border-top: 2px dashed; margin-right: 3px; vertical-align: 3px; }
   .stk-lvhelp .sw-cw { border-color: #EF5350; } .stk-lvhelp .sw-pw { border-color: #26A69A; } .stk-lvhelp .sw-flip { border-color: #D9B562; } .stk-lvhelp .sw-mp { border-color: #8B95A3; border-top-style: dotted; }
   body .stk-svg text.stk-ax-yr { fill: var(--text) !important; font-weight: 700 !important; }
+  /* v40 · GEX range picker, leverage breakdown */
+  .gx-range { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; margin: 2px 0 8px; }
+  .gx-exp { font: 12px var(--mono); padding: 5px 6px; background: var(--panel); color: var(--text); border: 1px solid var(--border); border-radius: 2px; }
+  .gx-lab { font-size: 12px; text-transform: none; letter-spacing: 0; font-weight: 500; }
+  details#lev-block > summary { cursor: pointer; list-style: none; } details#lev-block > summary::-webkit-details-marker { display: none; }
+  details#lev-block > summary::before { content: '▸ '; } details#lev-block[open] > summary::before { content: '▾ '; }
+  @media (pointer: coarse) { .gx-exp { min-height: 34px; } }
 </style>
 </head>
 <body class="theme-slate">
@@ -5274,7 +5281,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.17-v39';
+const APP_BUILD = '2026.10.17-v40';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
@@ -13384,7 +13391,7 @@ const GREEK_HELP = {
     read: '它回答"按我现在的做法, 长期做下去是赚还是亏". 为正: 有优势; 为负: 做得越多亏得越多. 卖方策略常见"胜率高、期望值却为负", 只看胜率会被误导. 笔数少时 (< 20) 波动很大, 只作参考.',
     short: '提高期望值的两个方向: 减少大亏 (止损 / roll 规则) 或提高平均盈利 (选更好的权利金). 胜率本身不重要.',
     ex: 'Short call: 胜率 80%, 均盈 $185, 均亏 $1,351 → 0.8 × 185 − 0.2 × 1,351 ≈ −$115 / 笔.' },
-  port_lev: { t: '组合杠杆', def: '大盘 (SPY) 动 1% 时, NAV 动百分之几 = 按 β 换算的美元 Delta 合计 ÷ NAV. 和 LEAPS 的 λ 是同一个概念, 放大到整个组合.',
+  port_lev: { t: '组合杠杆', def: '大盘 (SPY) 动 1% 时, NAV 动百分之几 = Σ (每个仓位的美元 Delta × 该股的 β) ÷ NAV. 始终按每只股票自己的 β 计算 (手动 > 计算 > 缺失时 1.0), 不受 β 加权开关影响. 拆解见 Greeks 页「组合杠杆拆解」, 那里也有按净值实际算出的 β 作对照.',
     read: '1.0x = 和满仓 SPY 一样敏感; 0.7x = 大盘跌 1%, NAV 约跌 0.7%. 下跌时卖出的 put Delta 变大 (自动加杠杆), 而 LEAPS 和正股的美元 Delta 变小 (自动减杠杆), 两者会部分抵消; 所以同时给出跌 10% / 跌 20% 时的杠杆, 看净效果. 名义杠杆 = (正股市值 + CSP 名义 + LEAPS 正股等值) ÷ NAV: 假设 put 全被行权、LEAPS 全换成股票时持有多少股票.',
     short: '跌 20% 时明显高于当下 (例如 0.8x → 1.5x): 卖 put 的影响占主导, 下跌会自动加杠杆, 最该防; 基本持平: LEAPS / 正股抵消了卖 put 的 Gamma.',
     ex: '当下 0.85x · 跌 10%: 1.10x · 跌 20%: 1.42x · 名义 1.6x.' },
@@ -13871,7 +13878,7 @@ function greeksCardHTML() {
       <div class="gk-cells">
         ${cell(`美元 Delta ${_qBtn('usd_delta', 'short')}`, _fmtSigned(s.usd))}
         ${cell(`Theta/天 ${_qBtn('theta_day', 'short')}`, _fmtSigned(s.theta), s.theta >= 0 ? 'rk-t-safe' : 'rk-t-alert')}
-        ${(() => { const nav = R.c.nav; if (!nav) return ''; const lev = R.c.pos.reduce((a, x) => a + (_dollarDelta(x) || 0) * _betaOf(x.ticker), 0) / nav;
+        ${(() => { const L = _portfolioLeverage(R.c); if (!L) return ''; const lev = L.now;
           return cell(`组合杠杆 ${_qBtn('port_lev', 'short')}`, `${lev.toFixed(2)}x`, lev >= 1.5 ? 'rk-t-danger' : lev >= 1 ? 'rk-t-alert' : 'rk-t-acc'); })()}
       </div>
     </div>`;
@@ -15289,6 +15296,46 @@ function _monthlyExpiry(cs) {                       // nearest 3rd-Friday expiry
   const oi = {}; cs.forEach(o => { oi[o.expiry] = (oi[o.expiry] || 0) + (o.oi || 0); });
   return exps.sort((a, b) => (oi[b] || 0) - (oi[a] || 0))[0] || null;
 }
+const GEX_RANGES = [['near', '最近到期'], ['w1', '7 天'], ['d30', '30 天'], ['d50', '50 天'], ['all', '180 天']];
+let __gexRange = localStorage.getItem('pretrade_gex_range') || 'd50';
+const __gexWide = {};
+async function fetchGexWide(t) {
+  if (!t || !loadSchwabCfg()) return null;
+  if (__gexWide[t] && Date.now() - __gexWide[t].at < 15 * 60000) return __gexWide[t];
+  const from = _todayISO(), to = _addDays(from, 180);
+  try {
+    const [rp, rc] = await Promise.all(['P', 'C'].map(ty => _wfetch(`/chain?ticker=${encodeURIComponent(t)}&type=${ty}&from=${from}&to=${to}&strikeCount=60`)));
+    const [bp, bc] = await Promise.all([rp.json().catch(() => null), rc.json().catch(() => null)]);
+    if (!rp.ok || !rc.ok || !bp || !bc) { __gexWide[t] = { at: Date.now(), err: (bp && bp.message) || `HTTP ${rp.status}` }; return __gexWide[t]; }
+    __gexWide[t] = { at: Date.now(), S: bp.underlying || bc.underlying, cs: [...bp.contracts.map(o => ({ ...o, type: 'P' })), ...bc.contracts.map(o => ({ ...o, type: 'C' }))] };
+  } catch (e) { __gexWide[t] = { at: Date.now(), err: '网络错误' }; }
+  return __gexWide[t];
+}
+// the GEX the user is looking at (range picker); checklist rules keep using __gex[t] (50 days)
+function _gexView(t) {
+  const base = __gex[t]; if (!base || base.err || !base.cs) return base;
+  const wide = __gexRange === 'all' || __gexRange.startsWith('e:') ? __gexWide[t] : null;
+  const src = wide && !wide.err && wide.cs ? wide : base;
+  let cs = src.cs; const exps = [...new Set(cs.map(o => o.expiry))].sort();
+  let label;
+  if (__gexRange.startsWith('e:')) { const e = __gexRange.slice(2); cs = cs.filter(o => o.expiry === e); label = `${_md(e)} 到期`; }
+  else if (__gexRange === 'near') { cs = cs.filter(o => o.expiry === exps[0]); label = `最近到期 ${exps[0] ? _md(exps[0]) : ''}`; }
+  else { const mx = { w1: 7, d30: 30, d50: 50, all: 180 }[__gexRange] || 50; cs = cs.filter(o => o.dte <= mx); label = `${mx} 天内到期`; }
+  if (!cs.length) return { ...base, label: `${label} · 没有合约`, empty: true };
+  const g = gexCompute(src.S, cs), ex2 = [...new Set(cs.map(o => o.expiry))].sort(), mx = _monthlyExpiry(cs) || ex2[ex2.length - 1];
+  return { ...src, cs, g, mx, maxPain: mx ? maxPainOf(cs, mx) : null, label: `${label} · ${ex2.length} 个到期日`, exps: [...new Set([...exps, ...((__gexWide[t] && __gexWide[t].cs) || []).map(o => o.expiry)])].sort(), err: g ? null : '所选范围没有数据' };
+}
+window.setGexRange = (v, t) => {
+  __gexRange = v; try { localStorage.setItem('pretrade_gex_range', v); } catch (e) {}
+  const redraw = () => { const y = window.scrollY; render(); window.scrollTo(0, y); };
+  if ((v === 'all' || v.startsWith('e:')) && t && !(__gexWide[t] && __gexWide[t].cs)) { redraw(); fetchGexWide(t).then(redraw); } else redraw();
+};
+function _gexRangeHTML(t) {
+  const V = _gexView(t), exps = V && V.exps ? V.exps : [];
+  return `<div class="gx-range"><span class="rk-presets">${GEX_RANGES.map(([k, l]) => `<button class="rk-preset${__gexRange === k ? ' active' : ''}" onclick="setGexRange('${k}', '${esc(t)}')">${l}</button>`).join('')}</span>
+    <select class="gx-exp" onchange="setGexRange(this.value ? 'e:' + this.value : 'd50', '${esc(t)}')"><option value="">指定到期日…</option>${exps.map(e => `<option value="${e}"${__gexRange === 'e:' + e ? ' selected' : ''}>${e}</option>`).join('')}</select>
+    <span class="rk-quiet gx-lab">${V && V.label ? esc(V.label) : ''}${__gexWide[t] === undefined && (__gexRange === 'all' || __gexRange.startsWith('e:')) ? ' · 读取更远的到期日…' : ''}</span></div>`;
+}
 async function fetchGex(t, { maxAge = 10 * 60000 } = {}) {
   if (!t || !loadSchwabCfg()) return null;
   if (__gex[t] && Date.now() - __gex[t].at < maxAge) return __gex[t];
@@ -15328,15 +15375,18 @@ function _gexChartSVG(G, mark) {
   </svg>`;
 }
 function gexInnerHTML(t, opts = {}) {
-  const G = __gex[t];
-  if (!G) return '<div class="rk-quiet">读取期权链…</div>';
-  if (G.err) return `<div class="rk-t-alert">${esc(G.err)}</div>`;
+  const B = __gex[t];
+  if (!B) return '<div class="rk-quiet">读取期权链…</div>';
+  if (B.err) return `<div class="rk-t-alert">${esc(B.err)}</div>`;
+  const G = _gexView(t);
+  if (!G || G.err || G.empty) return `${_gexRangeHTML(t)}<div class="rk-quiet">${esc((G && G.label) || '所选范围没有数据')}</div>`;
   const g = G.g, f2 = v => v == null ? '—' : (+v).toFixed(v >= 100 ? 0 : 2);
   const pos = g.total >= 0, pct = k => k == null ? '' : `${((k / G.S - 1) * 100 >= 0 ? '+' : '')}${((k / G.S - 1) * 100).toFixed(1)}%`;
   const cell = (label, val, sub, cls) => `<div class="tc-cell"><span>${label}</span><b class="${cls || ''}">${val}</b>${sub ? `<em>${sub}</em>` : ''}</div>`;
   const mark = opts.strike > 0 ? +opts.strike : null;
-  const vsWall = mark && g.putWall ? (mark < g.putWall ? `<span class="rk-t-safe">行权价 ${mark} 在 Put Wall ${g.putWall} 下方 ✓</span>` : `<span class="rk-t-alert">行权价 ${mark} 不在 Put Wall ${g.putWall} 下方</span>`) : '';
-  return `
+  const rw = B.g && B.g.putWall, ruleNote = __gexRange !== 'd50' ? ' (规则按 50 天内)' : '';
+  const vsWall = mark && rw ? (mark < rw ? `<span class="rk-t-safe">行权价 ${mark} 在 Put Wall ${rw} 下方 ✓${ruleNote}</span>` : `<span class="rk-t-alert">行权价 ${mark} 不在 Put Wall ${rw} 下方${ruleNote}</span>`) : '';
+  return `${_gexRangeHTML(t)}
     <div class="tc-grid">
       ${cell(`净 GEX ${_qBtn('gex', 'short')}`, _fmtBig(g.total), pos ? '正 Gamma · 波动被压制' : '负 Gamma · 波动被放大', pos ? 'rk-t-safe' : 'rk-t-alert')}
       ${cell('Put Wall', f2(g.putWall), pct(g.putWall) + ' · 支撑')}
@@ -16244,7 +16294,7 @@ function _stockChartSVG(t) {
   const p = __px[t]; if (!p || !p.bars || p.bars.length < 30) return '<div class="rk-quiet">读取日线…</div>';
   const all = p.bars, A = all.length, n = Math.max(20, Math.min(A, __stkZoom.n)), end = Math.min(A, __stkZoom.end ?? A), start = Math.max(0, end - n), bars = all.slice(start, end), N = bars.length, c = all.map(b => b.c);
   const W = _stkW(), L = 48, R = _stkR(W), T = 14, PH = W > 700 ? 420 : 300, B = 26, H = T + PH + B, cw = (W - L - R) / N, X = i => L + (i + 0.5) * cw;
-  const G0 = __gex[t] && !__gex[t].err ? __gex[t] : null, g = G0 && G0.g, px = all[A - 1].c;
+  const GV = _gexView(t), G0 = GV && !GV.err && !GV.empty ? GV : null, g = G0 && G0.g, px = all[A - 1].c;
   const w = (() => { try { const r = computeWheel(); return r && r.rows ? r.rows.find(x => x.T === t) : null; } catch (e) { return null; } })();
   const lines = [];
   if (g && g.callWall) lines.push([g.callWall, 'stk-cw', 'Call Wall']);
@@ -16349,7 +16399,7 @@ function renderStockPage() {
     <span class="stk-recent">${recent.map(r => `<button class="sc-chip${r === t ? ' ok' : ''}" onclick="showStock('${esc(r)}')">${esc(r)}</button>`).join('')}</span></div>`;
   if (!loadSchwabCfg()) { $app.innerHTML = head + `<div class="rk-page stock-page">${search}<div class="rk-notice">需要连接 Schwab.</div></div>`; return; }
   if (!t) { $app.innerHTML = head + `<div class="rk-page stock-page">${search}<div class="rk-quiet">输入一个代码开始. 持仓页和机会扫描里点标的名称也会进入这里.</div></div>`; return; }
-  const p = __px[t], x = p && p.bars ? techOf(p.bars, p.live) : null, G0 = __gex[t] && !__gex[t].err ? __gex[t] : null;
+  const p = __px[t], x = p && p.bars ? techOf(p.bars, p.live) : null, GV = _gexView(t), G0 = GV && !GV.err && !GV.empty ? GV : null;
   let F = null; try { const fc = JSON.parse(localStorage.getItem(FUND_KEY) || 'null'); F = fc && fc.data ? fc.data[t] : null; } catch (e) {}
   const f2 = v => v == null || !isFinite(v) ? '—' : v.toFixed(2), pc = (v, d = 1) => v == null || !isFinite(v) ? '—' : `${v >= 0 ? '+' : '−'}${Math.abs(v).toFixed(d)}%`;
   const fig = (label, val, sub, cls) => `<div class="rk-fig"><span class="rk-fig-val ${cls || ''}">${val}</span><span class="rk-fig-label">${label}</span>${sub ? `<span class="rk-fig-sub">${sub}</span>` : ''}</div>`;
@@ -16391,6 +16441,7 @@ function renderStockPage() {
   const chart = `
     <section class="rk-block stk-chart-block">
       <h3 class="rk-block-title">日 K · 期权关键价位</h3>
+      ${_gexRangeHTML(t)}
       ${_stkToolsHTML()}
       <div id="stk-chart">${_safe('日 K', () => _stockChartSVG(t), '')}</div>
       <div class="stk-lvhelp"><span class="sw-cw"></span>Call Wall · <span class="sw-pw"></span>Put Wall ${_qBtn('gex', 'short')} <span class="sw-flip"></span>Gamma Flip ${_qBtn('gflip', 'short')} <span class="sw-mp"></span>Max Pain ${_qBtn('maxpain', 'short')}</div>
@@ -16399,7 +16450,7 @@ function renderStockPage() {
     </section>`;
   const optBlock = `
     <section class="rk-block">
-      <h3 class="rk-block-title">期权结构 · GEX</h3>
+      <h3 class="rk-block-title">期权结构 · GEX <span class="rk-quiet gx-lab">${G0 && G0.label ? esc(G0.label) : ''}</span></h3>
       ${G0 && G0.g ? `<div class="rk-figs">
         ${fig(`净 GEX ${_qBtn('gex', 'short')}`, _fmtBig(G0.g.total), G0.g.total >= 0 ? '正 Gamma · 波动被压制' : '负 Gamma · 波动被放大', G0.g.total >= 0 ? 'rk-t-safe' : 'rk-t-alert')}
         ${fig('Put Wall', G0.g.putWall ?? '—', G0.g.putWall ? pc((G0.g.putWall / G0.S - 1) * 100) : '', 'rk-t-safe')}
@@ -16703,17 +16754,76 @@ function _moneynessHTML(R) {
       </table></div>
     </section>`;
 }
-function _greeksHTML(R, ...rest) { return _greekQualityHTML(R && R.c ? R.c.pos : []) + _greeksHTMLInner(R, ...rest); }
-// NAV elasticity to SPY: β-weighted dollar delta ÷ NAV, now and after −10% / −20% (gamma raises it for put sellers)
+function _greeksHTML(R, ...rest) { setTimeout(_fetchNavsQuiet, 0); return _greekQualityHTML(R && R.c ? R.c.pos : []) + _greeksHTMLInner(R, ...rest) + _safe('杠杆拆解', () => _levBlockHTML(R), ''); }
+// NAV elasticity to SPY. Always β-weighted with each ticker's own β (manual > calculated > 1.0), regardless of the
+// surface / stress β switch. Shocked states move each underlying by β × market move and re-price options with the model.
+function _levRows(c) {
+  return c.pos.map(x => {
+    const bi = _betaInfo(x.ticker), S0 = x.kind === 'stock' ? _stockPx(x) : x.und;
+    if (!(S0 > 0)) return { x, missing: true };
+    const m = x.kind === 'stock' ? null : _optModel(x);
+    // today: Schwab's Delta (same number the rest of the Greeks page shows); the model only fills a gap
+    const schwab = x.kind !== 'stock' && x.delta != null ? x.delta * 100 * (Number(x.qty) || 0) * (_isShortPos(x) ? -1 : 1) : null;
+    const sh = x.kind === 'stock' ? (x.side || 1) * (Number(x.qty) || 0) : schwab != null ? schwab : m ? _mEval(m, S0, 0, 0, 'delta') : null;
+    if (sh == null || !isFinite(sh)) return { x, missing: true };
+    return { x, b: bi.beta, src: bi.src, S0, m, sh, dd: sh * S0, bdd: sh * S0 * bi.beta, d0: m ? _mEval(m, S0, 0, 0, 'delta') : null };
+  });
+}
 function _portfolioLeverage(c) {
-  if (!c.nav || !c.pos.length) return null;
-  const dz = portfolioSurface(c.pos, 'delta'), pz = portfolioSurface(c.pos, 'pnl');
-  const at = v => { const i = dz.xs.findIndex(x => Math.abs(x - v) < 1e-9); const nav1 = c.nav + (i >= 0 ? pz.z[i][0] : 0); return i < 0 || nav1 <= 0 ? null : dz.z[i][0] / nav1; };
+  if (!c || !c.nav || !c.pos.length) return null;
+  const rows = _levRows(c), ok = rows.filter(r => !r.missing);
+  const at = mv => { let num = 0, pnl = 0;
+    ok.forEach(r => { const S1 = r.S0 * (1 + Math.max(-0.95, r.b * mv));
+      if (!r.m) { num += r.sh * S1 * r.b; pnl += r.sh * (S1 - r.S0); }
+      else { const lim = Math.abs(r.m.mult), sh1 = Math.max(-lim, Math.min(lim, r.sh + (_mEval(r.m, S1, 0, 0, 'delta') - r.d0)));   // Schwab's Delta + the model's change
+        num += sh1 * S1 * r.b; pnl += _mEval(r.m, S1, 0, 0, 'value') - _mEval(r.m, r.S0, 0, 0, 'value'); } });
+    const nav1 = c.nav + pnl; return nav1 > 0 ? num / nav1 : null; };
   const stockMV = c.pos.filter(x => x.kind === 'stock' && (x.side || 1) > 0).reduce((s, x) => s + (x.marketValue || 0), 0);
   const cspN = c.pos.filter(x => x.kind === 'short_put').reduce((s, x) => s + (x.exposure || 0), 0);
   const lpN = c.pos.filter(x => x.kind === 'leaps').reduce((s, x) => { const st = _leapsStats(x); return s + (st ? st.shares * st.m.S : 0); }, 0);
   const now = at(0);
-  return now == null ? null : { now, m10: at(-0.1), m20: at(-0.2), nom: (stockMV + cspN + lpN) / c.nav };
+  return now == null ? null : { now, m10: at(-0.1), m20: at(-0.2), nom: (stockMV + cspN + lpN) / c.nav, rows,
+    missing: rows.filter(r => r.missing).map(r => r.x), noBeta: [...new Set(ok.filter(r => r.src === 'none').map(r => r.x.ticker))] };
+}
+// what actually happened: daily NAV change (net of deposits / withdrawals) vs SPY's daily change
+function _realizedBeta() {
+  const s = ((loadNavs() || {}).data || []).filter(x => x && x[0] && x[1] > 0).sort((a, b) => a[0] < b[0] ? -1 : 1);
+  const spy = __px.SPY && __px.SPY.bars; if (s.length < 6 || !spy) return null;
+  const close = Object.fromEntries(spy.map(b => [b.d, b.c]));
+  let flows = []; try { const p = computePerf(); flows = (p && p.flows) || []; } catch (e) {}
+  const flowIn = (a, b) => flows.filter(f => { const d = new Date(f.ts).toISOString().slice(0, 10); return d > a && d <= b; }).reduce((t, f) => t + f.amt, 0);
+  const pairs = [];
+  for (let i = 1; i < s.length; i++) { const [d0, n0] = s[i - 1], [d1, n1] = s[i];
+    if (close[d0] && close[d1]) pairs.push([close[d1] / close[d0] - 1, (n1 - n0 - flowIn(d0, d1)) / n0]); }
+  if (pairs.length < 8) return { n: pairs.length, beta: null };
+  const mx = pairs.reduce((t, p) => t + p[0], 0) / pairs.length, my = pairs.reduce((t, p) => t + p[1], 0) / pairs.length;
+  const cov = pairs.reduce((t, p) => t + (p[0] - mx) * (p[1] - my), 0), vx = pairs.reduce((t, p) => t + (p[0] - mx) ** 2, 0), vy = pairs.reduce((t, p) => t + (p[1] - my) ** 2, 0);
+  return { n: pairs.length, beta: vx > 0 ? cov / vx : null, r2: vx > 0 && vy > 0 ? cov * cov / (vx * vy) : null, from: s[0][0] };
+}
+let __navFetchAt = 0;
+async function _fetchNavsQuiet() {
+  if (!loadSchwabCfg() || Date.now() - __navFetchAt < 30 * 60000) return; __navFetchAt = Date.now();
+  try { const r = await _wfetch('/navseries'), b = await r.json().catch(() => null); if (r.ok && b && Array.isArray(b.series)) localStorage.setItem(NAVS_KEY, JSON.stringify({ data: b.series, at: Date.now() })); } catch (e) {}
+  try { await fetchPrices(['SPY'], { maxAge: 6 * 3600e3 }); } catch (e) {}
+  if (state._view === 'greeks') { const el = document.getElementById('lev-block'); if (el) el.outerHTML = _safe('杠杆拆解', () => _levBlockHTML(computeRisk()), ''); }
+}
+function _levBlockHTML(R) {
+  const L = _portfolioLeverage(R.c); if (!L) return '';
+  const rb = _realizedBeta(), nav = R.c.nav, usd = v => _fmtSigned(Math.round(v));
+  const SRC = { manual: '手动', calc: '计算', none: '<span class="rk-t-alert">缺, 按 1.0</span>' };
+  const ok = L.rows.filter(r => !r.missing).sort((a, b) => Math.abs(b.bdd) - Math.abs(a.bdd)), tot = ok.reduce((s, r) => s + r.bdd, 0);
+  return `<details class="rk-block" id="lev-block"><summary class="rk-block-title">组合杠杆拆解 · 模型 ${L.now.toFixed(2)}x${rb && rb.beta != null ? ` · 实际 ${rb.beta.toFixed(2)}x` : ''} <span class="rk-quiet">点开</span></summary>
+    <div class="rk-figs">
+      <div class="rk-fig"><span class="rk-fig-val rk-t-acc">${L.now.toFixed(2)}x</span><span class="rk-fig-label">模型 (按 Delta × β)</span><span class="rk-fig-sub">β 加权美元 Delta ${usd(tot)} ÷ NAV ${_fmtUsd(nav)}</span></div>
+      <div class="rk-fig"><span class="rk-fig-val ${rb && rb.beta != null ? 'rk-t-watch' : 'rk-quiet'}">${rb && rb.beta != null ? rb.beta.toFixed(2) + 'x' : '—'}</span><span class="rk-fig-label">实际 (净值 vs SPY)</span>
+        <span class="rk-fig-sub">${rb && rb.beta != null ? `近 ${rb.n} 个交易日${rb.r2 != null ? ` · 拟合度 R² ${rb.r2.toFixed(2)}` : ''}` : rb ? `已有 ${rb.n} 天, 需 ≥ 8 天` : '需要 Worker 记录的每日净值'}</span></div>
+    </div>
+    <div class="rk-table-wrap"><table class="rk-table"><thead><tr><th>仓位</th><th>等值股数</th><th>股价</th><th>美元 Delta</th><th>β</th><th>β 来源</th><th>β 加权</th><th>占比</th></tr></thead><tbody>
+      ${ok.map(r => `<tr><td><b>${esc(_posLabel(r.x))}</b></td><td>${r.sh.toFixed(0)}</td><td>${r.S0.toFixed(2)}</td><td>${usd(r.dd)}</td><td>${r.b.toFixed(2)}</td><td>${SRC[r.src] || r.src}</td><td>${usd(r.bdd)}</td><td>${tot ? (r.bdd / tot * 100).toFixed(0) + '%' : '—'}</td></tr>`).join('')}
+      <tr class="rk-total"><td>合计</td><td></td><td></td><td>${usd(ok.reduce((s, r) => s + r.dd, 0))}</td><td></td><td></td><td>${usd(tot)}</td><td>${(tot / nav).toFixed(2)}x NAV</td></tr></tbody></table></div>
+    ${L.missing.length ? `<div class="rk-t-alert rk-note">未计入 (没有股价或 Delta): ${L.missing.map(x => esc(_posLabel(x))).join('、')}</div>` : ''}
+    <div class="rk-note">模型只算方向 (Delta). 大跌时 IV 上升、卖出的 put Delta 变大, 实际跌幅往往大于"杠杆 × 大盘跌幅"; 实际 β 用 Worker 每天记录的净值 (已扣入金出金) 对比 SPY 当天涨跌, 天数越多越准.</div>
+  </details>`;
 }
 function _greeksHTMLInner(R) {
   const c = R.c;
@@ -16754,7 +16864,7 @@ function _greeksHTMLInner(R) {
         ${noGreeks ? '' : fig(`美元 Delta ${_qBtn('usd_delta', 'short')}`, signed(usd), c.nav ? `${(Math.abs(usd) / c.nav * 100).toFixed(0)}% NAV` : '')}
         ${noGreeks ? '' : fig(`Theta/天 ${_qBtn('theta_day', 'short')}`, signed(thetaNet), `卖方 ${signed(sellers)} · 买方 ${signed(buyers)}`, thetaNet >= 0 ? 'rk-t-safe' : 'rk-t-alert')}
         ${noGreeks ? '' : (() => { const L = _portfolioLeverage(c); return L ? fig(`组合杠杆 ${_qBtn('port_lev', 'short')}`, `${L.now.toFixed(2)}x`,
-          `跌 10%: ${L.m10 != null ? L.m10.toFixed(2) + 'x' : '—'} · 跌 20%: ${L.m20 != null ? L.m20.toFixed(2) + 'x' : '—'}${L.nom != null ? ` · 名义 ${L.nom.toFixed(2)}x` : ''}`,
+          `跌 10%: ${L.m10 != null ? L.m10.toFixed(2) + 'x' : '—'} · 跌 20%: ${L.m20 != null ? L.m20.toFixed(2) + 'x' : '—'}${L.nom != null ? ` · 名义 ${L.nom.toFixed(2)}x` : ''}${L.noBeta.length ? ` · ${L.noBeta.join(' ')} 缺 β 按 1.0` : ''}`,
           (L.m20 || L.now) >= 1.5 ? 'rk-t-danger' : (L.m20 || L.now) >= 1 ? 'rk-t-alert' : 'rk-t-acc') : ''; })()}
         ${ivN ? fig('卖方 IV', (ivW / ivN).toFixed(1) + '%', '名义加权', 'rk-t-watch') : ''}
       </div>
