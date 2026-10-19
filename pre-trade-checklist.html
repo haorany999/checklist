@@ -3234,6 +3234,10 @@
   details#lev-block > summary { cursor: pointer; list-style: none; } details#lev-block > summary::-webkit-details-marker { display: none; }
   details#lev-block > summary::before { content: '▸ '; } details#lev-block[open] > summary::before { content: '▾ '; }
   @media (pointer: coarse) { .gx-exp { min-height: 34px; } }
+  .gl-scatter text.gl-axt { font-weight: 700; fill: var(--text-dim); }
+  .rk-trend-btn { cursor: pointer; border: 0; background: transparent; font: inherit; padding: 2px 4px; }
+  .rk-trend-btn:hover { text-decoration: underline; }
+  @media (pointer: coarse) { .rk-trend-btn { min-height: 30px; } }
 </style>
 </head>
 <body class="theme-slate">
@@ -5281,7 +5285,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.17-v40';
+const APP_BUILD = '2026.10.17-v41';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
@@ -11051,7 +11055,7 @@ function _cleanGreeks(x) {
   if (!bad.length) return x;
   bad.forEach(k => { x[k] = null; });
   const type = x.kind === 'short_put' || x.kind === 'long_put' ? 'put' : 'call', S = x.und, K = x.strike;
-  const dte = x.dte != null ? x.dte : x.expiry ? (Date.parse(x.expiry + 'T16:00:00') - Date.now()) / 864e5 : null, T = dte != null ? Math.max(0, dte) / 365 : null;
+  const dte = x.dte != null ? x.dte : x.expiry ? (_etClose(x.expiry) - Date.now()) / 864e5 : null, T = dte != null ? Math.max(0, dte) / 365 : null;
   const sig = x.iv != null ? x.iv / 100 : (x.mark > 0 && S > 0 && K > 0 && T > 0 ? impliedVol(x.mark, S, K, T, type) : null);
   const g = S > 0 && K > 0 && T > 0 && sig > 0 ? bsGreeks(S, K, T, sig, type) : null;
   if (g) { ['delta', 'gamma', 'theta', 'vega'].forEach(k => { if (x[k] == null) x[k] = g[k]; }); if (x.iv == null) x.iv = sig * 100; x.greekSrc = 'model'; }
@@ -11700,8 +11704,15 @@ function _sumBalances(raw) {
   return out;
 }
 function _isShortPos(x) { return x.kind === 'short_put' || x.kind === 'short_call'; }
+// 16:00 New York time on an expiry date, wherever this device is (DST-aware)
+function _etClose(date) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(date || '')); if (!m) return NaN;
+  const guess = Date.UTC(+m[1], +m[2] - 1, +m[3], 20, 0, 0);                    // 16:00 EDT = 20:00 UTC
+  try { const p = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', hour: 'numeric', hour12: false }).formatToParts(new Date(guess));
+    const h = (+p.find(x => x.type === 'hour').value) % 24; return guess + (16 - h) * 3600e3; } catch (e) { return guess; }
+}
 function _daysTo(expiry) {
-  const t = Date.parse(String(expiry) + 'T16:00:00');
+  const t = _etClose(String(expiry));
   return isFinite(t) ? Math.round((t - Date.now()) / 86400000) : null;
 }
 function _dteOf(x) { return x.dte != null ? x.dte : (x.expiry ? _daysTo(x.expiry) : null); }
@@ -12105,8 +12116,8 @@ function loadRiskHist() {
 function _recordRiskHistory(R) {
   if (!R.c.isSchwab || R.composite == null) return;
   const h = loadRiskHist(), d = _dayKey();
-  const v = {}; R.used.forEach(x => { v[x.def.id] = Math.round(x.score); });
-  const e = { d, s: Math.round(R.composite * 10) / 10, v };
+  const v = {}, raw = {}, w = {}; R.used.forEach(x => { v[x.def.id] = Math.round(x.score); w[x.def.id] = x.w; try { raw[x.def.id] = _fmtRiskVal(x); } catch (e) {} });
+  const e = { d, s: Math.round(R.composite * 10) / 10, v, raw, w };
   if (h.length && h[h.length - 1].d === d) h[h.length - 1] = e; else h.push(e);
   while (h.length > 400) h.shift();
   try { localStorage.setItem(RISK_HIST_KEY, JSON.stringify(h)); } catch (e2) {}
@@ -12124,6 +12135,42 @@ function _riskTrend(R) {
   const yesterday = _dayKey(new Date(Date.now() - 86400000)) === p.d;
   return { delta, label: yesterday ? '昨日' : `${m}/${d}`, txt: Math.abs(delta) < 0.5 ? '持平' : (delta > 0 ? `↑ ${delta.toFixed(0)}` : `↓ ${Math.abs(delta).toFixed(0)}`) };
 }
+// what moved the composite since the previous day: each item's change in the cubed weighted sum, scaled so they add up exactly
+function _riskDeltaRows(R) {
+  const p = _riskPrev(); if (!p || R.composite == null) return null;
+  const now = new Map(R.used.map(x => [x.def.id, x])), ids = [...new Set([...now.keys(), ...Object.keys(p.v || {})])];
+  const wOf = id => now.has(id) ? now.get(id).w : (p.w && p.w[id] != null ? p.w[id] : (R.vars.find(v => v.def.id === id) || {}).w || 0);
+  const Wt = R.used.reduce((s, x) => s + x.w, 0), prevIds = Object.keys(p.v || {}).filter(id => wOf(id) > 0), Wp = prevIds.reduce((s, id) => s + wOf(id), 0);
+  const rows = ids.map(id => {
+    const x = now.get(id), sNow = x ? x.score : null, sPrev = p.v && p.v[id] != null ? p.v[id] : null, w = wOf(id);
+    const d = (x && Wt ? w * sNow ** 3 / Wt : 0) - (sPrev != null && Wp ? w * sPrev ** 3 / Wp : 0);
+    const def = x ? x.def : (R.vars.find(v => v.def.id === id) || {}).def;
+    let rawNow = null; try { rawNow = x ? _fmtRiskVal(x) : null; } catch (e) {}
+    return { id, label: def ? def.label : id, sNow, sPrev, rawNow, rawPrev: p.raw ? p.raw[id] : null, d, status: !x ? 'gone' : sPrev == null ? 'new' : '' };
+  });
+  const total = R.composite - p.s, sumD = rows.reduce((s, r) => s + r.d, 0);
+  rows.forEach(r => { r.impact = Math.abs(sumD) > 1e-9 ? total * r.d / sumD : 0; });
+  rows.sort((a, b) => Math.abs(b.impact) - Math.abs(a.impact));
+  return { prev: p, total, rows, now: R.composite };
+}
+window.showRiskDelta = ev => {
+  if (ev) ev.stopPropagation();
+  const R = computeRisk(), D = _riskDeltaRows(R); if (!D) return;
+  const old = document.getElementById('rd-modal'); if (old) old.remove();
+  const tr = _riskTrend(R), sig = D.rows.filter(r => Math.abs(r.impact) >= 0.1 || (r.sNow != null && r.sPrev != null && Math.abs(r.sNow - r.sPrev) >= 1) || r.status), rest = D.rows.length - sig.length;
+  const imp = v => `<b class="${v > 0.05 ? 'rk-t-danger' : v < -0.05 ? 'rk-t-safe' : 'rk-quiet'}">${v > 0 ? '+' : v < 0 ? '−' : ''}${Math.abs(v).toFixed(1)}</b>`;
+  const sc = v => v == null ? '—' : Math.round(v);
+  const m = document.createElement('div'); m.id = 'rd-modal'; m.className = 'snap-confirm';
+  m.innerHTML = `<div class="snap-card wh-card"><div class="snap-head" style="display:flex;align-items:baseline;gap:10px"><b>风险分 ${Math.round(D.prev.s)} → ${Math.round(D.now)}</b>
+      <span class="rk-quiet">较${esc(tr ? tr.label : '上次')} ${tr ? esc(tr.txt) : ''}</span><button class="gl-x" style="margin-left:auto" onclick="document.getElementById('rd-modal').remove()" aria-label="关闭">×</button></div>
+    <div class="rk-table-wrap"><table class="rk-table"><thead><tr><th>指标</th><th>${esc(D.prev.d.slice(5))} → 今天</th><th>分数</th><th>对总分影响</th></tr></thead><tbody>
+      ${sig.map(r => `<tr><td><b>${esc(r.label)}</b>${r.status === 'new' ? ' <span class="rk-quiet">新计入</span>' : r.status === 'gone' ? ' <span class="rk-quiet">不再计入</span>' : ''}</td>
+        <td>${esc(r.rawPrev || '—')} → ${esc(r.rawNow || '—')}</td><td>${sc(r.sPrev)} → ${sc(r.sNow)}</td><td>${imp(r.impact)}</td></tr>`).join('')}
+      <tr class="rk-total"><td>合计</td><td></td><td></td><td>${imp(D.total)}</td></tr></tbody></table></div>
+    <div class="rk-note">分数 0–100, 越高越危险. 每项的影响按它在综合分 (加权立方平均) 里的变化分配, 加起来等于总变化. 红色 = 让风险上升, 绿色 = 让风险下降.${rest > 0 ? ` 另有 ${rest} 项几乎没变.` : ''}${D.rows.some(r => !r.rawPrev && r.sPrev != null) ? ' 早于今天的记录没有保存实际数值, 显示为 —.' : ''}</div></div>`;
+  m.addEventListener('click', e => { if (e.target === m) m.remove(); });
+  document.body.appendChild(m);
+};
 function _riskSparkHTML() {
   const h = loadRiskHist().slice(-60);
   if (h.length < 5) return '';                                   // a 2-day "trend" is just a flat line: wait for real history
@@ -13632,7 +13679,7 @@ function _thetaScatterSVG(pos) {
     return { x, m, p: g.pITM * 100, y: th * 365 / coll * 100, coll, th };
   }).filter(Boolean);
   if (pts.length < 1) return '';
-  const W = _chartW(), H = 230, L = 46, R = 14, T = 14, B = 32;
+  const W = _chartW(), H = 262, L = 46, R = 14, T = 30, B = 46;     // axis titles sit outside the plot
   const xmax = Math.max(50, ...pts.map(p => p.p)) * 1.05, ymax = Math.max(10, ...pts.map(p => p.y)) * 1.15;
   const X = v => L + v / xmax * (W - L - R), Y = v => T + (ymax - v) / ymax * (H - T - B);
   const cmax = Math.max(...pts.map(p => p.coll));
@@ -13640,9 +13687,9 @@ function _thetaScatterSVG(pos) {
   const gx = [0, 10, 20, 30, 40, 50, 60, 70, 80].filter(v => v <= xmax).filter((v, i, a) => W >= 480 || i % 2 === 0 || i === a.length - 1), gy = [0, ymax / 3, ymax * 2 / 3].map(v => Math.round(v));
   return `<svg class="rk-chart gl-scatter" viewBox="0 0 ${W} ${H}" role="img" aria-label="Theta 效率">
     ${gy.map(v => `<line x1="${L}" x2="${W - R}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}" class="rk-ch-grid${v === 0 ? ' zero' : ''}"/><text x="${L - 6}" y="${(Y(v) + 3).toFixed(1)}" text-anchor="end" class="gl-lab">${v}%</text>`).join('')}
-    ${gx.map(v => `<text x="${X(v).toFixed(1)}" y="${H - 12}" text-anchor="middle" class="gl-lab">${v}%</text>`).join('')}
-    <text x="${W - R}" y="${(Y(0) - 6).toFixed(1)}" text-anchor="end" class="gl-lab">价内概率 →</text>
-    <text x="${L + 4}" y="${T + 9}" class="gl-lab">↑ 年化 Theta / 保证金</text>
+    ${gx.map(v => `<text x="${X(v).toFixed(1)}" y="${H - 26}" text-anchor="middle" class="gl-lab">${v}%</text>`).join('')}
+    <text x="${W - R}" y="${H - 6}" text-anchor="end" class="gl-lab gl-axt">价内概率 →</text>
+    <text x="${L - 40}" y="12" class="gl-lab gl-axt">↑ 年化 Theta / 保证金</text>
     ${(() => { const placed = []; pts.slice().sort((a, b) => a.p - b.p).forEach(p => {
         const r = 5 + 13 * Math.sqrt(p.coll / cmax), w = p.x.ticker.length * 7 + 4, x = X(p.p);
         let y = Y(p.y) - r - 3;
@@ -14511,7 +14558,7 @@ function _levelEstHTML(id) {
   const useEntry = (state.lvlBase === 'entry' && Sf > 0) || (!Sq && Sf > 0), S0 = useEntry ? Sf : Sq;
   const baseSw = `<div class="lvl-base">起点 <button class="app-link${!useEntry ? ' on' : ''}" onclick="setLvlBase('live')"${Sq ? '' : ' disabled'}>实时价${Sq ? ' $' + Sq.toFixed(2) : ' (未读到)'}</button> / <button class="app-link${useEntry ? ' on' : ''}" onclick="setLvlBase('entry')"${Sf > 0 ? '' : ' disabled'}>我填的入场价${Sf > 0 ? ' $' + Sf : ' (未填)'}</button></div>`;
   if (!(K > 0) || !iv || !(S0 > 0) || !/^\d{4}-\d{2}-\d{2}$/.test(exp || '')) return '<div class="lvl-est rk-quiet">填好正股当前价、行权价、到期日并读到报价 (需要 IV) 后, 这里显示期权的预计盈亏.</div>';
-  const dte = Math.max(1, (Date.parse(exp + 'T16:00:00') - Date.now()) / 864e5);
+  const dte = Math.max(1, (_etClose(exp) - Date.now()) / 864e5);
   const val = (S, d, dv) => { const g = bsGreeks(S, K, Math.max(1e-4, (dte - d) / 365), Math.max(0.01, iv + dv / 100), 'call'); return g ? g.price : 0; };
   const V0 = val(S0, 0, 0);                                       // the LEAPS at the entry moment (same model, same IV)
   if (!(V0 > 0)) return '';
@@ -14879,7 +14926,7 @@ function _consume(q, qty, cash, ts, closed, item, method) {
   while (left > 0 && q.length) {
     const lot = q[0], k = Math.min(left, lot.qty);
     const openPart = lot.cash * k / lot.qty, closePart = cash * k / qty;
-    const dteOpen = item.expiry && lot.ts ? (Date.parse(item.expiry + 'T16:00:00') - lot.ts) / 86400000 : null;
+    const dteOpen = item.expiry && lot.ts ? (_etClose(item.expiry) - lot.ts) / 86400000 : null;
     const strategy = lot.multi ? 'Spread' : item.putCall === 'PUT' ? (lot.side === 'short' ? 'CSP' : 'Long put')
       : lot.side === 'short' ? 'Short call' : (dteOpen != null && dteOpen >= 270 ? 'LEAPS' : 'Long call');
     closed.push({ kind: 'option', ticker: item.ticker, strike: item.strike, putCall: item.putCall, expiry: item.expiry, side: lot.side, qty: k,
@@ -15290,7 +15337,7 @@ function maxPainOf(cs, expiry) {
   return best.K;
 }
 function _monthlyExpiry(cs) {                       // nearest 3rd-Friday expiry ≥ 2 days out, else the one with most OI
-  const exps = [...new Set(cs.map(o => o.expiry))].filter(e => (Date.parse(e + 'T16:00:00') - Date.now()) / 864e5 >= 2).sort();
+  const exps = [...new Set(cs.map(o => o.expiry))].filter(e => (_etClose(e) - Date.now()) / 864e5 >= 2).sort();
   const third = exps.find(e => { const d = new Date(e + 'T12:00:00Z'); return d.getUTCDay() === 5 && d.getUTCDate() >= 15 && d.getUTCDate() <= 21; });
   if (third) return third;
   const oi = {}; cs.forEach(o => { oi[o.expiry] = (oi[o.expiry] || 0) + (o.oi || 0); });
@@ -16578,7 +16625,7 @@ function riskCardHTML() {
           <span class="rk-card-title">综合风险 ${_qBtn('riskscore', 'short')}</span>
           <span class="rk-card-num${lvl ? ' rk-t-' + lvl.key : ''}">${s != null ? Math.round(s) : '—'}</span>
           <span class="rk-card-lvl${lvl ? ' rk-t-' + lvl.key : ''}">${lvl ? lvl.label : '数据不足'}</span>
-          ${tr ? `<span class="rk-card-trend ${tr.delta > 0.5 ? 'up' : tr.delta < -0.5 ? 'down' : ''}">较${tr.label} ${tr.txt}</span>` : ''}
+          ${tr ? `<button class="rk-card-trend rk-trend-btn ${tr.delta > 0.5 ? 'up' : tr.delta < -0.5 ? 'down' : ''}" onclick="showRiskDelta(event)" title="看是哪几项变化">较${tr.label} ${tr.txt} ▸</button>` : ''}
         </div>
         <div class="rk-card-drivers">${drivers.length
           ? drivers.map(v => `<span class="rk-chip rk-c-${v.level.key}">${esc(v.def.label)} ${esc(_fmtRiskVal(v))}</span>`).join('')
@@ -17009,7 +17056,7 @@ function renderRiskPage() {
         <div class="rk-hero-gauge">${riskGaugeSVG(s, 'composite', false)}</div>
         <div class="rk-hero-text">
           <h2 class="rk-hero-level${lvl ? ' rk-t-' + lvl.key : ''}">${lvl ? '综合风险 · ' + lvl.label : '综合风险 · 数据不足'} ${_qBtn('riskscore', 'short')}
-            ${tr ? `<span class="rk-card-trend ${tr.delta > 0.5 ? 'up' : tr.delta < -0.5 ? 'down' : ''}">较${tr.label} ${tr.txt}</span>` : ''}</h2>
+            ${tr ? `<button class="rk-card-trend rk-trend-btn ${tr.delta > 0.5 ? 'up' : tr.delta < -0.5 ? 'down' : ''}" onclick="showRiskDelta(event)" title="看是哪几项变化">较${tr.label} ${tr.txt} ▸</button>` : ''}</h2>
           ${R.danger && R.danger.length ? `<div class="rk-red-list">${R.danger.map(v => `<span class="rk-red-badge">${esc(v.def.label)} ${esc(_fmtRiskVal(v))}</span>`).join('')}</div>` : ''}
           ${(() => { const h = _riskHeadline(R); return h ? `<p class="rk-hero-line">${esc(h)}</p>` : ''; })()}
           ${R.c.isSchwab ? _riskSparkHTML() : ''}
