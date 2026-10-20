@@ -3120,7 +3120,7 @@
   .rk-sw-oth { background: #D9B562; }
   .tkx-sub { font-size: 11px; font-weight: 500; text-transform: none; letter-spacing: 0; }
   .tkx-head, .tkx-row { display: grid; grid-template-columns: 64px minmax(120px, 1fr) 92px 64px; gap: 10px; align-items: center; }
-  .tkx-head.x, .tkx-row.x { grid-template-columns: 64px minmax(120px, 1fr) 92px 64px 96px 90px 70px; }
+  .tkx-head.x, .tkx-row.x { grid-template-columns: 64px minmax(120px, 1fr) 92px 64px 90px 70px; }
   .tkx-head { font-size: 10.5px; color: var(--text-faint); letter-spacing: 0.04em; padding: 6px 0 4px; border-bottom: 1px solid var(--border); }
   .tkx-head span:nth-child(n+3) { text-align: right; }
   .tkx-row { padding: 7px 0; border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent); }
@@ -3289,6 +3289,10 @@
   body .exp-svg text.exp-val.rk-t-safe { fill: var(--pass) !important; } body .exp-svg text.exp-val.rk-t-watch { fill: #D9B44A !important; }
   body .exp-svg text.exp-val.rk-t-alert { fill: #E5793B !important; } body .exp-svg text.exp-val.rk-t-danger { fill: var(--fail) !important; }
   @media (max-width: 640px) { .gx-list { position: static; grid-template-columns: 1fr 1fr; max-width: 100%; box-shadow: none; margin-top: 6px; } .gx-multi { flex-basis: 100%; } }
+  /* v44 */
+  .rv-badge { background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent); }
+  .rv-badge.rv-none { background: var(--panel-2); color: var(--text-faint); } .rv-badge.rv-warn { background: color-mix(in srgb, #E5793B 18%, transparent); color: #E5793B; }
+  tr.rs-thin td { color: var(--text-faint) !important; }
 </style>
 </head>
 <body class="theme-slate">
@@ -5336,7 +5340,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.17-v43';
+const APP_BUILD = '2026.10.17-v44';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
@@ -9035,7 +9039,8 @@ function renderHistoryList() {
             <span class="history-tally">${e.pass}/${e.fail}/${e.pending}</span>
             ${e.hardFails && e.hardFails.length ? `<span class="history-hard">HARD</span>` : ''}
             ${outcomeLabel ? `<span class="history-outcome ${outcomeCls}">${esc(outcomeLabel)}</span>` : ''}
-            ${e._autoOutcome ? `<span class="history-auto" title="Schwab 平仓记录自动写入">自动 · ${_fmtSigned(e.realizedPnl)}</span>` : ''}
+            ${e._autoOutcome && e._autoOutcome.src !== 'review' ? `<span class="history-auto" title="Schwab 平仓记录自动写入">自动 · ${_fmtSigned(e.realizedPnl)}</span>` : ''}
+            ${_safe('复盘', () => _reviewBadgeHTML(e), '')}
           </div>
           ${e.notes ? `<div class="history-notes">${esc(e.notes)}</div>` : ''}
         </div>
@@ -12646,7 +12651,7 @@ function undoAutoOutcomes(ids) {
     if (i < 0 || !hist[i]._autoOutcome) return;
     const key = hist[i]._autoOutcome.lotKey;
     const { realizedPnl, _autoOutcome, ...rest } = hist[i];
-    hist[i] = { ...rest, outcome: 'open', _autoOutcomeDismissed: key, updatedAt: Date.now() };   // never re-applied
+    hist[i] = { ...rest, outcome: _autoOutcome && 'prev' in _autoOutcome ? _autoOutcome.prev : 'open', _autoOutcomeDismissed: key, updatedAt: Date.now() };   // back to how it was; never re-applied
   });
   safeSetItem(HISTORY_KEY, JSON.stringify(hist));
   if (typeof scheduleAutoPushToGist === 'function') scheduleAutoPushToGist();
@@ -13511,6 +13516,10 @@ const GREEK_HELP = {
     read: '1.0x = 和满仓 SPY 一样敏感; 0.7x = 大盘跌 1%, NAV 约跌 0.7%. 下跌时卖出的 put Delta 变大 (自动加杠杆), 而 LEAPS 和正股的美元 Delta 变小 (自动减杠杆), 两者会部分抵消; 所以同时给出跌 10% / 跌 20% 时的杠杆, 看净效果. 名义杠杆 = (正股市值 + CSP 名义 + LEAPS 正股等值) ÷ NAV: 假设 put 全被行权、LEAPS 全换成股票时持有多少股票.',
     short: '跌 20% 时明显高于当下 (例如 0.8x → 1.5x): 卖 put 的影响占主导, 下跌会自动加杠杆, 最该防; 基本持平: LEAPS / 正股抵消了卖 put 的 Gamma.',
     ex: '当下 0.85x · 跌 10%: 1.10x · 跌 20%: 1.42x · 名义 1.6x.' },
+  rule_stats: { t: '规则有效性', def: '把每条 checklist 记录和 Schwab 的实际成交自动配对, 看结束后的结果: 按判定 (全部通过 / 软规则未通过 / 强行交易 / 没做 checklist), 按单条规则 (通过 vs 未通过), 以及按开仓时的 DTE、ROC、VIX 分组.',
+    read: '期望值 = 平均每笔盈亏. 某条规则"未通过"那组的期望值明显更差, 说明这条规则在帮你避坑; 差不多, 说明它可能只是在增加摩擦. 样本少于 10 笔的组灰色显示, 只作参考.',
+    short: '配对规则: 同一标的、行权价、到期日、方向, 做完 checklist 后 5 个交易日内开仓. roll 出来的新仓位不算作"没做 checklist".',
+    ex: 'CSP 「布林中轨下」: 通过 18 笔期望值 +$62, 未通过 7 笔期望值 −$45 → 这条规则有用.' },
   attrib_other: { t: '盈亏归因 · 其他', def: '实际盈亏 − (Theta + Delta + Gamma + Vega) 能解释的部分. 也就是四个 Greeks 按前一日收盘数值估算之外, 剩下没被解释的部分.',
     read: '主要来源: 大幅波动时的高阶效应 (Gamma 和 Vega 本身也在变)、买卖价差和报价时点的变化、盘中 Greeks 变化、模型与真实价格的差异、以及当天的除息等. 单日出现较大的「其他」很正常.',
     short: '如果长期 (例如 30 天合计) 占实际盈亏的很大比例, 说明用 Greeks 估算的风险和实际偏差较大: 常见于临近到期、深度价内 / 价外、或流动性差的合约.',
@@ -14897,7 +14906,7 @@ async function fetchPerf(force) {
       const pack = d => JSON.stringify({ data: d, at: Date.now(), status: b1.status });
       try { localStorage.setItem(HIST_KEY, pack(b1.transactions)); }
       catch (e) { try { const cut = Date.parse(`${_thisYear() - 1}-01-01`); localStorage.setItem(HIST_KEY, pack(b1.transactions.filter(t => (t.ts || 0) >= cut))); } catch (er) {} }   // device storage full: keep 2 years, the checkpoint covers the rest
-      __perfErr = null; }
+      __perfErr = null; setTimeout(() => { applyAutoReview(); _pushAppSummary(); }, 0); }
     else __perfErr = r1.status === 404 ? '需 Worker v7' : (b1 && b1.message) || `HTTP ${r1.status}`;
   } catch (e) { __perfErr = '网络错误'; }
   finally { __perfBusy = false; }
@@ -15160,6 +15169,7 @@ function renderPerformancePage() {
             <td class="pf-opt">${s.avgW != null ? _fmtSigned(s.avgW) : '—'}</td><td class="pf-opt">${s.avgL != null ? _fmtSigned(s.avgL) : '—'}</td><td>${n0(s.pf)}</td><td class="${_thCls(s.exp)}">${s.exp != null ? _fmtSigned(s.exp) : '—'}</td>
             <td>${s.capture != null ? s.capture.toFixed(0) + '%' : '—'}</td><td class="pf-opt">${s.days != null ? s.days.toFixed(0) : '—'}</td></tr>`).join('') || '<tr><td colspan="10" class="rk-quiet">无平仓记录</td></tr>'}</tbody>
         </table></div></section>
+      ${_safe('规则有效性', _ruleStatsHTML, '')}
       ${_safe('持股成本', _wheelHTML)}
       ${p.assigns.length ? `<section class="rk-block"><h3 class="rk-block-title">被行权</h3>
         <div class="rk-table-wrap"><table class="rk-table">
@@ -15887,7 +15897,7 @@ function _tickerBlocksHTML(c) {
     <section class="rk-block tkx" id="tkx-${mode}">
       <h3 class="rk-block-title rk-title-row"><span>${title}</span><span class="rk-quiet tkx-sub">${note}</span></h3>
       <div class="rk-legend"><span><i class="rk-sw rk-sw-stock"></i>正股</span><span><i class="rk-sw rk-sw-leaps"></i>LEAPS</span><span><i class="rk-sw rk-sw-csp"></i>CSP 名义</span><span><i class="rk-sw rk-sw-oth"></i>其他期权</span><span class="rk-legend-note">竖线 = 20% / 30% NAV</span></div>
-      <div class="tkx-head${extra ? ' x' : ''}"><span>标的</span><span class="tkx-scale"><i style="left:${G(20)}">20%</i><i class="strong" style="left:${G(30)}">30%</i></span><span>金额</span><span>% NAV</span>${extra ? '<span>美元 Delta</span><span>浮盈</span><span>Short call</span>' : ''}</div>
+      <div class="tkx-head${extra ? ' x' : ''}"><span>标的</span><span class="tkx-scale"><i style="left:${G(20)}">20%</i><i class="strong" style="left:${G(30)}">30%</i></span><span>金额</span><span>% NAV</span>${extra ? '<span>浮盈</span><span>Short call</span>' : ''}</div>
       ${rows.map(r => { const lv = riskLevel(_scoreMax(r.pct, [20, 30, 40]));
         const tip = `正股 ${_fmtUsd(r.stk)} · LEAPS ${_fmtUsd(r.lp)} · CSP ${_fmtUsd(r.csp)}${r.oth ? ' · 其他 ' + _fmtUsd(r.oth) : ''}`;
         return `<div class="tkx-row${extra ? ' x' : ''}" title="${esc(tip)}">
@@ -15896,7 +15906,7 @@ function _tickerBlocksHTML(c) {
             <em class="tkx-guide" style="left:${G(20)}"></em><em class="tkx-guide strong" style="left:${G(30)}"></em></div>
           <span class="tkx-amt">${_fmtUsd(r.total)}</span>
           <span class="tkx-pct rk-t-${lv.key}">${r.pct.toFixed(1)}%</span>
-          ${extra ? `<span class="tkx-num">${_fmtSigned(r.dd)}</span><span class="tkx-num ${_thCls(r.pnl)}">${_fmtSigned(r.pnl)}</span><span class="tkx-num${r.sc ? '' : ' rk-quiet'}">${r.sc ? r.sc + ' 张' : '—'}</span>` : ''}
+          ${extra ? `<span class="tkx-num ${_thCls(r.pnl)}">${_fmtSigned(r.pnl)}</span><span class="tkx-num${r.sc ? '' : ' rk-quiet'}">${r.sc ? r.sc + ' 张' : '—'}</span>` : ''}
         </div>`; }).join('')}
       <div class="rk-note">${mode === 'cost' ? '正股 / LEAPS 按买入成本, CSP 按名义. 集中度评分用这个口径.' : '正股 / LEAPS 按当前市值, CSP 按名义, 随价格浮动.'} 点标的看个股.</div>
     </section>`;
@@ -16659,6 +16669,155 @@ function renderStockPage() {
   _fitChartText && _fitChartText();
   _stkBind();
   requestAnimationFrame(() => { const el = document.getElementById('stk-chart'); if (el && el.querySelector('svg') && Math.abs(el.querySelector('svg').viewBox.baseVal.width - el.clientWidth) > 2) _stkRedraw(); });
+}
+
+/* ═════════════ v44 · auto review: checklist ↔ Schwab fills; rule effectiveness; summary for the Worker ═════════════ */
+const RV_METHOD = { expired: '到期作废', assigned: '被行权', exercised: '被行权', closed: '买回 / 卖出', close: '买回 / 卖出', trade: '买回 / 卖出' };
+let __rvMemo = { key: null, v: null };
+function _rvUnits() {
+  const L = _openLots(); if (!L) return null;
+  const day = ts => new Date(ts).toISOString().slice(0, 10), units = {};
+  const add = (o, closed) => {
+    const id = `rv:${o.ticker}|${o.putCall}|${o.strike}|${o.expiry}|${o.side}|${day(o.openTs)}`;
+    const u = units[id] || (units[id] = { id, ticker: o.ticker, putCall: o.putCall, strike: o.strike, expiry: o.expiry, side: o.side, openTs: o.openTs, qty: 0, openQty: 0, pnl: 0, openCash: 0, closeTs: null, method: null });
+    u.qty += o.qty || 0; u.openCash += o.openCash || 0;
+    if (closed) { u.pnl += o.pnl || 0; if (!u.closeTs || o.closeTs > u.closeTs) { u.closeTs = o.closeTs; u.method = o.method; } } else u.openQty += o.qty || 0;
+  };
+  (L.closed || []).filter(l => l.kind === 'option').forEach(l => add(l, true));
+  Object.values(L.openOpt || {}).forEach(arr => arr.filter(o => o.qty > 0 && o.item).forEach(o => add({ ticker: o.item.ticker, putCall: o.item.putCall, strike: o.item.strike, expiry: o.item.expiry, side: o.side, qty: o.qty, openTs: o.ts, openCash: o.side === 'short' ? Math.abs(o.cash || 0) : -Math.abs(o.cash || 0) }, false)));
+  const list = Object.values(units);
+  list.forEach(u => { u.open = u.openQty > 0; u.days = Math.max(0, Math.round(((u.closeTs || Date.now()) - u.openTs) / 864e5)); u.capture = u.side === 'short' && u.openCash > 0 && !u.open ? u.pnl / u.openCash * 100 : null; });
+  // rolls: bought back and re-opened on the same ticker / side within a day
+  list.filter(u => !u.open && /close|trade/.test(u.method || '')).forEach(u => { const v = list.find(z => z !== u && z.ticker === u.ticker && z.putCall === u.putCall && z.side === u.side && Math.abs(z.openTs - u.closeTs) < 1.5 * 864e5);
+    if (v) { u.rollTo = v.id; v.rollFrom = u.id; } });
+  return list;
+}
+function computeAutoReview() {
+  const h = loadHist(), hist = getActiveHistory();
+  const key = (h ? h.at : 0) + '|' + hist.length + '|' + hist.reduce((s, e) => s + (e.updatedAt || 0), 0);
+  if (__rvMemo.key === key) return __rvMemo.v;
+  const units = _rvUnits(); if (!units) return null;
+  const used = new Set(), results = {};
+  hist.filter(e => _kindOfStrategy(e.strategy)).sort((a, b) => (a.timestampSort || 0) - (b.timestampSort || 0)).forEach(e => {
+    const kind = _kindOfStrategy(e.strategy), right = kind === 'short_put' ? 'PUT' : 'CALL', side = kind === 'leaps' ? 'long' : 'short';
+    const T = _normTicker(e.ticker), K = _snapStrike(e), E = e.fullState && /^\d{4}-\d{2}-\d{2}$/.test(e.fullState.tradeExpiry || '') ? e.fullState.tradeExpiry : null, ts = e.timestampSort || 0;
+    if (K == null || !T) { results[e.id] = { status: 'unknown' }; return; }
+    const c = units.filter(u => !used.has(u.id) && u.ticker === T && u.putCall === right && u.side === side && Math.abs(u.strike - K) < 0.005 && (!E || u.expiry === E)
+      && u.openTs >= ts - 864e5 && u.openTs <= ts + 7 * 864e5).sort((a, b) => a.openTs - b.openTs)[0];
+    if (c) { used.add(c.id); results[e.id] = { status: c.open ? 'open' : 'closed', u: c }; }
+    else results[e.id] = { status: Date.now() - ts > 7 * 864e5 ? 'none' : 'waiting' };
+  });
+  const firstTs = Math.min(...hist.filter(e => _kindOfStrategy(e.strategy)).map(e => e.timestampSort || Infinity));
+  const noCk = units.filter(u => !used.has(u.id) && u.openTs >= (isFinite(firstTs) ? firstTs - 864e5 : 0) && !u.rollFrom);
+  __rvMemo = { key, v: { results, units, noCk } };
+  return __rvMemo.v;
+}
+// write back what the record doesn't say yet (never over a choice you made); undo works like the existing reconcile
+function applyAutoReview({ silent = false } = {}) {
+  const R = computeAutoReview(); if (!R) return 0;
+  const hist = loadHistory(), now = Date.now(), done = [];
+  hist.forEach((e, i) => {
+    const r = R.results[e.id]; if (!r || !r.u) return;
+    const lotKey = r.u.id; if (e._autoOutcomeDismissed === lotKey) return;
+    const untouched = e.outcome == null || (e.outcome === 'open' && !(e._autoOutcome && e._autoOutcome.method !== 'open' && e._autoOutcome.src === 'review'));
+    if (!untouched) return;
+    if (r.status === 'open' && e.outcome == null) { hist[i] = { ...e, outcome: 'open', _autoOutcome: { src: 'review', method: 'open', lotKey, at: now, prev: null }, updatedAt: now }; done.push([hist[i], '已开仓']); }
+    else if (r.status === 'closed' && (e.outcome == null || e.outcome === 'open')) {
+      hist[i] = { ...e, outcome: r.u.pnl >= 0 ? 'win' : 'loss', realizedPnl: Math.round(r.u.pnl * 100) / 100,
+        _autoOutcome: { src: 'review', pnl: r.u.pnl, method: r.u.method, closedAt: r.u.closeTs, days: r.u.days, capture: r.u.capture, lotKey, at: now, prev: e._autoOutcome && 'prev' in e._autoOutcome ? e._autoOutcome.prev : (e.outcome ?? null) }, updatedAt: now };
+      done.push([hist[i], _fmtSigned(r.u.pnl)]); }
+  });
+  if (!done.length) return 0;
+  safeSetItem(HISTORY_KEY, JSON.stringify(hist));
+  if (typeof scheduleAutoPushToGist === 'function') scheduleAutoPushToGist();
+  if (!silent) showToast(`自动复盘: 更新 ${done.length} 条 checklist 记录`, 'success', done.map(([h, s]) => `${h.ticker} ${s}`).join(' · '),
+    { undo: true, duration: 10000, onUndo: () => { undoAutoOutcomes(done.map(([h]) => h.id)); showToast('已撤销', 'info'); } });
+  if (state._view === 'history') render();
+  return done.length;
+}
+function _reviewBadgeHTML(e) {
+  const R = computeAutoReview(), r = R && R.results[e.id];
+  if (e._autoOutcome && e._autoOutcome.src === 'review' && e._autoOutcome.method !== 'open') {
+    const a = e._autoOutcome; return `<span class="history-auto rv-badge" title="根据 Schwab 交易记录自动写入">自动 · ${_fmtSigned(a.pnl)} · ${RV_METHOD[a.method] || a.method || ''}${a.days != null ? ` · ${a.days} 天` : ''}</span>`;
+  }
+  if (!r) return '';
+  if (r.status === 'none' && e.outcome == null) return `<span class="history-auto rv-badge rv-none" title="做完 checklist 后 5 个交易日内没有找到对应成交">自动 · 未开仓</span>`;
+  if (r.status === 'open' && !e._autoOutcome && e.outcome == null) return `<span class="history-auto rv-badge">自动 · 持仓中</span>`;
+  if (r.status === 'closed' && (e.outcome === 'win' || e.outcome === 'loss') && !e._autoOutcome && (r.u.pnl >= 0) !== (e.outcome === 'win'))
+    return `<span class="history-auto rv-badge rv-warn" title="和你手动标的结果不一致">交易记录 ${_fmtSigned(r.u.pnl)} ≠ 手动标记</span>`;
+  if (r.u && r.u.rollTo) return `<span class="history-auto rv-badge">已 roll</span>`;
+  return '';
+}
+/* ---------- rule effectiveness (Performance) ---------- */
+let __rsStrat = 'all';
+window.setRsStrat = s => { __rsStrat = s; const el = document.getElementById('rs-block'); if (el) el.outerHTML = _safe('规则有效性', _ruleStatsHTML, ''); };
+function _stat(list) {
+  const n = list.length; if (!n) return { n: 0 };
+  const w = list.filter(x => x.pnl > 0).length, s = list.reduce((t, x) => t + x.pnl, 0);
+  return { n, wr: w / n * 100, exp: s / n, tot: s };
+}
+function _ruleStatsHTML() {
+  const R = computeAutoReview(); if (!R) return '';
+  const hist = getActiveHistory(), strat = e => (e.strategy || '').split(' ')[0];
+  const done = hist.filter(e => R.results[e.id] && R.results[e.id].status === 'closed' && (__rsStrat === 'all' || strat(e) === __rsStrat))
+    .map(e => ({ e, u: R.results[e.id].u, pnl: R.results[e.id].u.pnl }));
+  const kindOk = u => __rsStrat === 'all' || (__rsStrat === 'CSP' ? u.putCall === 'PUT' && u.side === 'short' : __rsStrat === 'LEAPS' ? u.side === 'long' && u.putCall === 'CALL' : u.putCall === 'CALL' && u.side === 'short');
+  const noCk = R.noCk.filter(u => !u.open && kindOk(u)).map(u => ({ u, pnl: u.pnl }));
+  const strats = ['all', ...new Set(hist.map(strat).filter(s => ['CSP', 'LEAPS', 'CC', 'PMCC'].includes(s)))];
+  const seg = `<span class="rk-presets">${strats.map(s => `<button class="rk-preset${__rsStrat === s ? ' active' : ''}" onclick="setRsStrat('${s}')">${s === 'all' ? '全部' : s}</button>`).join('')}</span>`;
+  const row = (label, st, ref) => { const thin = st.n < 10;
+    return `<tr class="${thin ? 'rs-thin' : ''}"><td>${label}</td><td>${st.n}</td><td>${st.n ? st.wr.toFixed(0) + '%' : '—'}</td><td class="${st.n ? _thCls(st.exp) : ''}">${st.n ? _fmtSigned(st.exp) : '—'}</td><td class="${st.n ? _thCls(st.tot) : ''}">${st.n ? _fmtSigned(st.tot) : '—'}</td>${ref !== undefined ? `<td>${ref}</td>` : ''}</tr>`; };
+  const grp = { all: [], soft: [], forced: [] };
+  done.forEach(d => { const hf = (d.e.hardFails || []).length, f = (d.e.failed || []).length; (hf ? grp.forced : f ? grp.soft : grp.all).push(d); });
+  // per rule: the titles that failed somewhere, passed vs failed
+  const titles = [...new Set(done.flatMap(d => d.e.failed || []))];
+  const per = titles.map(t => { const fl = done.filter(d => (d.e.failed || []).includes(t)), ss = new Set(fl.map(d => strat(d.e)));
+    const ps = done.filter(d => ss.has(strat(d.e)) && !(d.e.failed || []).includes(t) && !(d.e.pendingItems || []).includes(t));
+    const a = _stat(ps), b = _stat(fl); return { t, a, b, diff: a.n && b.n ? a.exp - b.exp : 0 }; }).sort((x, y) => Math.abs(y.diff) - Math.abs(x.diff)).slice(0, 12);
+  // buckets from the fills themselves
+  const vix = __px['$VIX'] && __px['$VIX'].bars ? Object.fromEntries(__px['$VIX'].bars.map(b => [b.d, b.c])) : null;
+  const dteOf = u => Math.round((Date.parse(u.expiry + 'T16:00:00') - u.openTs) / 864e5), all = done.map(d => d.u);
+  const bucket = (name, f, cuts, fmt) => { const rows = cuts.map(([lo, hi, lab]) => [lab, _stat(done.filter(d => { const v = f(d.u); return v != null && v >= lo && v < hi; }))]).filter(r => r[1].n);
+    return rows.length ? `<div class="rk-sub-title">${name}</div><div class="rk-table-wrap"><table class="rk-table"><thead><tr><th>${fmt}</th><th>笔数</th><th>胜率</th><th>期望值 / 笔</th><th>合计</th></tr></thead><tbody>${rows.map(([l, s]) => row(l, s)).join('')}</tbody></table></div>` : ''; };
+  const roc = u => u.side === 'short' && u.putCall === 'PUT' && u.strike > 0 && u.qty > 0 && dteOf(u) > 0 ? u.openCash / (u.strike * 100 * u.qty) * 30 / dteOf(u) * 100 : null;
+  const vixAt = u => { if (!vix) return null; const d = new Date(u.openTs).toISOString().slice(0, 10); let k = d; for (let i = 0; i < 5 && vix[k] == null; i++) k = _isoAdd(k, -1); return vix[k] ?? null; };
+  const total = done.length + noCk.length;
+  return `
+    <section class="rk-block" id="rs-block">
+      <h3 class="rk-block-title rk-title-row"><span>规则有效性 ${_qBtn('rule_stats', 'short')}</span>${seg}</h3>
+      ${total ? '' : '<div class="rk-quiet">还没有已结束、且能和 checklist 配对的交易. 每个策略积累 20–30 笔之后开始有参考价值.</div>'}
+      ${total ? `<div class="rk-table-wrap"><table class="rk-table"><thead><tr><th>按判定</th><th>笔数</th><th>胜率</th><th>期望值 / 笔</th><th>合计</th></tr></thead><tbody>
+        ${row('全部通过', _stat(grp.all))}${row('有软规则未通过', _stat(grp.soft))}${row('硬规则未通过 (强行交易)', _stat(grp.forced))}${row('没做 checklist', _stat(noCk))}</tbody></table></div>` : ''}
+      ${per.length ? `<div class="rk-sub-title">按单条规则 · 通过 vs 未通过</div><div class="rk-table-wrap"><table class="rk-table"><thead><tr><th>规则</th><th>通过: 笔数 · 期望值</th><th>未通过: 笔数 · 期望值</th><th>差</th></tr></thead><tbody>
+        ${per.map(p => `<tr class="${p.a.n < 10 || p.b.n < 10 ? 'rs-thin' : ''}"><td>${esc(p.t)}</td><td>${p.a.n} · ${p.a.n ? _fmtSigned(p.a.exp) : '—'}</td><td>${p.b.n} · ${p.b.n ? _fmtSigned(p.b.exp) : '—'}</td><td class="${_thCls(p.diff)}">${p.a.n && p.b.n ? _fmtSigned(p.diff) : '—'}</td></tr>`).join('')}</tbody></table></div>` : ''}
+      ${done.length ? bucket('按开仓时的 DTE', dteOf, [[0, 21, '< 21 天'], [21, 36, '21–35 天'], [36, 51, '36–50 天'], [51, 400, '51–399 天'], [400, 9999, '≥ 400 天']], 'DTE') : ''}
+      ${done.some(d => roc(d.u) != null) ? bucket('按 30 天 ROC (CSP)', roc, [[0, 1.5, '< 1.5%'], [1.5, 2.5, '1.5–2.5%'], [2.5, 4, '2.5–4%'], [4, 999, '≥ 4%']], 'ROC') : ''}
+      ${vix && done.length ? bucket('按开仓时的 VIX', vixAt, [[0, 15, '< 15'], [15, 20, '15–20'], [20, 25, '20–25'], [25, 999, '≥ 25']], 'VIX') : ''}
+      <div class="rk-note">只统计已结束、且和 checklist 自动配对成功的交易 (未做 checklist 的单独一组). 灰色 = 样本少于 10 笔, 只作参考, 不下结论.</div>
+    </section>`;
+}
+/* ---------- daily summary for the Worker's emails ---------- */
+let __sumPushAt = 0;
+async function _pushAppSummary() {
+  if (!loadSchwabCfg() || getPortfolio().source !== 'schwab' || Date.now() - __sumPushAt < 30 * 60000) return;
+  __sumPushAt = Date.now();
+  try {
+    const R = computeRisk(), c = R.c, D = _riskDeltaRows(R), L = _portfolioLeverage(c), sc = loadScanAll(), rv = computeAutoReview();
+    const mon = (() => { const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return d.getTime(); })();
+    const p = (() => { try { return computePerf(); } catch (e) { return null; } })();
+    const weekLots = p && p.all ? p.all.filter(l => (l.closeTs || 0) >= mon) : [];
+    const hist = getActiveHistory().filter(e => (e.timestampSort || 0) >= mon && _kindOfStrategy(e.strategy));
+    const body = { date: _todayISO(), at: Date.now(),
+      risk: R.composite != null ? { score: Math.round(R.composite), delta: D ? Math.round(D.total * 10) / 10 : null, top: D ? D.rows.filter(r => Math.abs(r.impact) >= 0.5).slice(0, 3).map(r => [r.label, Math.round(r.impact * 10) / 10]) : [] } : null,
+      lev: L ? { now: +L.now.toFixed(2), m10: L.m10 != null ? +L.m10.toFixed(2) : null, m20: L.m20 != null ? +L.m20.toFixed(2) : null } : null,
+      mgmt: _mgmtItems(c).slice(0, 10).map(it => ({ tag: it.tag, pos: _posLabel(it.x), act: it.act })),
+      opps: { pmcc: (sc.pmcc && sc.pmcc.rows || []).filter(r => r.ready).map(r => r.label), cc: (sc.cc && sc.cc.rows || []).filter(r => r.ready).map(r => r.t) },
+      week: { realized: Math.round(weekLots.reduce((s, l) => s + (l.pnl || 0), 0)),
+        results: (rv ? rv.units.filter(u => !u.open && (u.closeTs || 0) >= mon) : []).map(u => ({ label: `${u.ticker} ${u.strike}${u.putCall === 'PUT' ? 'P' : 'C'} ${u.expiry}`, method: RV_METHOD[u.method] || u.method, pnl: Math.round(u.pnl) })),
+        checklists: hist.length, forced: hist.filter(e => (e.hardFails || []).length && rv && rv.results[e.id] && ['open', 'closed'].includes(rv.results[e.id].status)).length,
+        noChecklist: rv ? rv.noCk.filter(u => u.openTs >= mon).length : 0 } };
+    await _wfetch('/app/summary', { method: 'POST', body: JSON.stringify(body), headers: { 'Content-Type': 'application/json' } });
+  } catch (e) {}
 }
 
 /* ---------- fault isolation: one broken block never takes the page down ---------- */
