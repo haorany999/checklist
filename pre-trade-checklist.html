@@ -3293,6 +3293,16 @@
   .rv-badge { background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent); }
   .rv-badge.rv-none { background: var(--panel-2); color: var(--text-faint); } .rv-badge.rv-warn { background: color-mix(in srgb, #E5793B 18%, transparent); color: #E5793B; }
   tr.rs-thin td { color: var(--text-faint) !important; }
+  details.pf-rs > summary { cursor: pointer; list-style: none; } details.pf-rs > summary::-webkit-details-marker { display: none; }
+  details.pf-rs > summary::before { content: '▸ '; } details.pf-rs[open] > summary::before { content: '▾ '; }
+  .rs-bar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 4px 0 8px; }
+  /* v46 · rotating quote */
+  .qt { cursor: pointer; margin: 2px 0 12px; padding: 4px 0 2px 12px; border-left: 2px solid var(--accent); transition: opacity .25s; max-width: 760px; }
+  .qt.fade { opacity: 0; }
+  .qt-en { font: italic 500 15px/1.4 Georgia, 'Times New Roman', serif; color: var(--text); }
+  .qt-zh { font-size: 13px; color: var(--text-dim); margin-top: 2px; }
+  .qt-who { font-size: 11.5px; color: var(--text-faint); margin-top: 2px; }
+  @media (max-width: 640px) { .qt-en { font-size: 14px; } }
 </style>
 </head>
 <body class="theme-slate">
@@ -5340,7 +5350,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.17-v44';
+const APP_BUILD = '2026.10.17-v46';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
@@ -6445,8 +6455,7 @@ function renderPicker() {
       </div>
     </div>
     <div class="picker pd">
-      <div class="picker-title">选择要检查的策略</div>
-      <div class="picker-sub">Trading in the Zone</div>
+      ${_quoteHTML()}
       ${syncStatusMiniHTML()}
       <div class="pd-kpis">
         ${_safe('综合风险', riskCardHTML)}
@@ -11124,6 +11133,36 @@ function _greekQualityHTML(pos) {
   if (!f.length) return '';
   return `<div class="rk-notice gq-note">${f.map(x => `<b>${esc(_posLabel(x))}</b>`).join('、')}: Schwab 返回了无效的 Greeks (例如 −999 占位值), ${f.every(x => x.greekSrc === 'model') ? '已用期权模型估算' : f.some(x => x.greekSrc === 'model') ? '能估算的已用期权模型估算, 其余暂不计入 Greeks 合计' : '暂不计入 Greeks 合计'}. 通常是盘后或报价暂停, 刷新后会恢复.</div>`;
 }
+// home: a rotating line about discipline (sources kept to what they actually said)
+const QUOTES = [
+  ['Discipline is the bridge between goals and accomplishment.', '纪律是目标和成就之间的桥梁.', 'Jim Rohn'],
+  ['We must all suffer one of two things: the pain of discipline or the pain of regret.', '人总要承受其一: 自律的痛苦, 或后悔的痛苦.', 'Jim Rohn'],
+  ['Discipline equals freedom.', '纪律即自由.', 'Jocko Willink'],
+  ['We are what we repeatedly do. Excellence, then, is not an act, but a habit.', '我们由反复做的事塑造. 卓越不是一次行为, 而是一种习惯.', 'Will Durant (概括亚里士多德)'],
+  ['Rule No. 1: Never lose money. Rule No. 2: Never forget rule No. 1.', '第一条: 永远不要亏钱. 第二条: 永远不要忘记第一条.', 'Warren Buffett'],
+  ['Risk comes from not knowing what you\u2019re doing.', '风险来自你不知道自己在做什么.', 'Warren Buffett'],
+  ['The stock market is a device for transferring money from the impatient to the patient.', '股市是把钱从没耐心的人手里转到有耐心的人手里的工具.', 'Warren Buffett'],
+  ['The consistency you seek is in your mind, not in the markets.', '你追求的稳定在你的心里, 不在市场里.', 'Mark Douglas'],
+  ['The goal of a successful trader is to make the best trades. Money is secondary.', '成功交易者的目标是做出最好的交易, 钱是其次.', 'Alexander Elder'],
+  ['The four most dangerous words in investing are: \u2018This time it\u2019s different.\u2019', '投资中最危险的一句话: "这次不一样."', 'John Templeton'],
+  ['Know what you own, and know why you own it.', '知道你持有什么, 也知道你为什么持有.', 'Peter Lynch'],
+  ['Losers average losers.', '输家才会在亏损的仓位上加仓.', 'Paul Tudor Jones'],
+  ['Do more of what works and less of what doesn\u2019t.', '多做有效的事, 少做无效的事.', 'Steve Clark'],
+  ['In investing, what is comfortable is rarely profitable.', '投资里, 让你舒服的事很少赚钱.', 'Robert Arnott'],
+  ['Plan your trade and trade your plan.', '计划你的交易, 交易你的计划.', '交易格言'] ];
+let __qIdx = null, __qTimer = null;
+function _quoteHTML() {
+  if (__qIdx == null) { let last = -1; try { last = +localStorage.getItem('pretrade_quote_last'); } catch (e) {}
+    do { __qIdx = Math.floor(Math.random() * QUOTES.length); } while (QUOTES.length > 1 && __qIdx === last);
+    try { localStorage.setItem('pretrade_quote_last', String(__qIdx)); } catch (e) {} }
+  const [en, zh, who] = QUOTES[__qIdx];
+  setTimeout(_quoteTick, 0);
+  return `<div class="qt" id="qt" role="button" tabindex="0" title="点一下换一句" onclick="nextQuote()"><div class="qt-en">\u201C${esc(en)}\u201D</div><div class="qt-zh">${esc(zh)}</div><div class="qt-who">\u2014 ${esc(who)}</div></div>`;
+}
+window.nextQuote = () => { const el = document.getElementById('qt'); if (!el) return; __qIdx = (__qIdx + 1) % QUOTES.length;
+  el.classList.add('fade'); setTimeout(() => { const n = document.getElementById('qt'); if (!n) return; const [en, zh, who] = QUOTES[__qIdx];
+    n.querySelector('.qt-en').textContent = `\u201C${en}\u201D`; n.querySelector('.qt-zh').textContent = zh; n.querySelector('.qt-who').textContent = `\u2014 ${who}`; n.classList.remove('fade'); }, 250); };
+function _quoteTick() { clearInterval(__qTimer); __qTimer = setInterval(() => { if (!document.getElementById('qt')) { clearInterval(__qTimer); return; } if (!document.hidden) nextQuote(); }, 15000); }
 // The single seam: Schwab when fresh, otherwise manual inputs + local history.
 function getPortfolio() {
   const sc = _schwabUsable();
@@ -15169,7 +15208,6 @@ function renderPerformancePage() {
             <td class="pf-opt">${s.avgW != null ? _fmtSigned(s.avgW) : '—'}</td><td class="pf-opt">${s.avgL != null ? _fmtSigned(s.avgL) : '—'}</td><td>${n0(s.pf)}</td><td class="${_thCls(s.exp)}">${s.exp != null ? _fmtSigned(s.exp) : '—'}</td>
             <td>${s.capture != null ? s.capture.toFixed(0) + '%' : '—'}</td><td class="pf-opt">${s.days != null ? s.days.toFixed(0) : '—'}</td></tr>`).join('') || '<tr><td colspan="10" class="rk-quiet">无平仓记录</td></tr>'}</tbody>
         </table></div></section>
-      ${_safe('规则有效性', _ruleStatsHTML, '')}
       ${_safe('持股成本', _wheelHTML)}
       ${p.assigns.length ? `<section class="rk-block"><h3 class="rk-block-title">被行权</h3>
         <div class="rk-table-wrap"><table class="rk-table">
@@ -15190,6 +15228,7 @@ function renderPerformancePage() {
           <thead><tr><th>标的</th><th>笔数</th><th>胜率</th><th>已实现</th><th>期望值 ${_qBtn('expect', 'short')}</th></tr></thead>
           <tbody>${tick.map(({ k, s }) => `<tr><td>${esc(k)}</td><td>${s.n}</td><td>${s.wr != null ? s.wr.toFixed(0) + '%' : '—'}</td><td class="${_thCls(s.pnl)}">${_fmtSigned(s.pnl)}</td><td class="${_thCls(s.exp)}">${s.exp != null ? _fmtSigned(s.exp) : '—'}</td></tr>`).join('') || '<tr><td colspan="5" class="rk-quiet">无</td></tr>'}</tbody>
         </table></div></details>
+      ${_safe('规则有效性', _ruleStatsHTML, '')}
     </div>`;
 }
 
@@ -16749,7 +16788,7 @@ function _reviewBadgeHTML(e) {
   return '';
 }
 /* ---------- rule effectiveness (Performance) ---------- */
-let __rsStrat = 'all';
+let __rsStrat = 'all', __rsOpen = false;
 window.setRsStrat = s => { __rsStrat = s; const el = document.getElementById('rs-block'); if (el) el.outerHTML = _safe('规则有效性', _ruleStatsHTML, ''); };
 function _stat(list) {
   const n = list.length; if (!n) return { n: 0 };
@@ -16783,8 +16822,9 @@ function _ruleStatsHTML() {
   const vixAt = u => { if (!vix) return null; const d = new Date(u.openTs).toISOString().slice(0, 10); let k = d; for (let i = 0; i < 5 && vix[k] == null; i++) k = _isoAdd(k, -1); return vix[k] ?? null; };
   const total = done.length + noCk.length;
   return `
-    <section class="rk-block" id="rs-block">
-      <h3 class="rk-block-title rk-title-row"><span>规则有效性 ${_qBtn('rule_stats', 'short')}</span>${seg}</h3>
+    <details class="rk-block pf-rs" id="rs-block"${__rsOpen ? ' open' : ''} ontoggle="__rsOpen = this.open">
+      <summary class="rk-block-title">规则有效性 <span class="rk-quiet">${done.length + noCk.length} 笔已结束 · 点开</span></summary>
+      <div class="rs-bar">${seg}${_qBtn('rule_stats', 'short')}</div>
       ${total ? '' : '<div class="rk-quiet">还没有已结束、且能和 checklist 配对的交易. 每个策略积累 20–30 笔之后开始有参考价值.</div>'}
       ${total ? `<div class="rk-table-wrap"><table class="rk-table"><thead><tr><th>按判定</th><th>笔数</th><th>胜率</th><th>期望值 / 笔</th><th>合计</th></tr></thead><tbody>
         ${row('全部通过', _stat(grp.all))}${row('有软规则未通过', _stat(grp.soft))}${row('硬规则未通过 (强行交易)', _stat(grp.forced))}${row('没做 checklist', _stat(noCk))}</tbody></table></div>` : ''}
@@ -16794,7 +16834,7 @@ function _ruleStatsHTML() {
       ${done.some(d => roc(d.u) != null) ? bucket('按 30 天 ROC (CSP)', roc, [[0, 1.5, '< 1.5%'], [1.5, 2.5, '1.5–2.5%'], [2.5, 4, '2.5–4%'], [4, 999, '≥ 4%']], 'ROC') : ''}
       ${vix && done.length ? bucket('按开仓时的 VIX', vixAt, [[0, 15, '< 15'], [15, 20, '15–20'], [20, 25, '20–25'], [25, 999, '≥ 25']], 'VIX') : ''}
       <div class="rk-note">只统计已结束、且和 checklist 自动配对成功的交易 (未做 checklist 的单独一组). 灰色 = 样本少于 10 笔, 只作参考, 不下结论.</div>
-    </section>`;
+    </details>`;
 }
 /* ---------- daily summary for the Worker's emails ---------- */
 let __sumPushAt = 0;
