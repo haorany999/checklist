@@ -3303,6 +3303,25 @@
   .qt-zh { font-size: 13px; color: var(--text-dim); margin-top: 2px; }
   .qt-who { font-size: 11.5px; color: var(--text-faint); margin-top: 2px; }
   @media (max-width: 640px) { .qt-en { font-size: 14px; } }
+  /* v47 · discipline card */
+  .dc-card { cursor: pointer; } .dc-card:hover { border-color: var(--border-hi); }
+  .dc-row { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  .dc-title { font: 700 12px var(--sans); letter-spacing: .06em; text-transform: uppercase; color: var(--text-dim); }
+  .dc-score { font: 700 28px var(--mono); } .dc-streak { font-size: 12.5px; color: var(--text); } .dc-more { margin-left: auto; font-size: 12px; }
+  .dc-parts { display: flex; gap: 6px 18px; flex-wrap: wrap; font-size: 12.5px; color: var(--text-dim); margin-top: 4px; } .dc-parts b { color: var(--text); font-family: var(--mono); }
+  .dc-sec { margin: 12px 0; font-size: 13px; } .dc-list { margin: 4px 0 0 18px; padding: 0; font-size: 12.5px; color: var(--text-dim); } .dc-list li { margin: 2px 0; }
+  /* v47 · goal projection */
+  details.pf-goal > summary { cursor: pointer; list-style: none; } details.pf-goal > summary::-webkit-details-marker { display: none; }
+  details.pf-goal > summary::before { content: '▸ '; } details.pf-goal[open] > summary::before { content: '▾ '; }
+  .gl-in, .gl-dep, .gl-plan { font-size: 13px; margin: 6px 0; line-height: 1.6; } .gl-in b, .gl-plan b { font-family: var(--mono); }
+  .gl-num { width: 84px; } .gl-num, .gl-date { font: 13px var(--mono); padding: 3px 6px; background: var(--panel); color: var(--text); border: 1px solid var(--border); border-radius: 2px; }
+  .gl-tg { margin-left: 12px; white-space: nowrap; }
+  .gl-t td, .gl-grid td { vertical-align: top; } .gl-cmp { font-size: 11px; } .gl-grid td { font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+  .gl-grid tr.gl-hist td { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+  .gl-sl { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 6px 18px; font-size: 12.5px; } .gl-sl label { display: flex; flex-direction: column; gap: 2px; }
+  .gl-out { font-size: 13px; margin: 8px 0; } .gl-out b { font-family: var(--mono); } .gl-goal { margin-left: 12px; white-space: nowrap; }
+  .gl-bigs { display: flex; flex-direction: column; gap: 4px; font-size: 12.5px; } .gl-bigs b { font-family: var(--mono); }
+  .gl-act { display: flex; gap: 10px; align-items: center; margin: 10px 0 4px; flex-wrap: wrap; }
 </style>
 </head>
 <body class="theme-slate">
@@ -5350,7 +5369,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.17-v46';
+const APP_BUILD = '2026.10.17-v47';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
@@ -13555,6 +13574,10 @@ const GREEK_HELP = {
     read: '1.0x = 和满仓 SPY 一样敏感; 0.7x = 大盘跌 1%, NAV 约跌 0.7%. 下跌时卖出的 put Delta 变大 (自动加杠杆), 而 LEAPS 和正股的美元 Delta 变小 (自动减杠杆), 两者会部分抵消; 所以同时给出跌 10% / 跌 20% 时的杠杆, 看净效果. 名义杠杆 = (正股市值 + CSP 名义 + LEAPS 正股等值) ÷ NAV: 假设 put 全被行权、LEAPS 全换成股票时持有多少股票.',
     short: '跌 20% 时明显高于当下 (例如 0.8x → 1.5x): 卖 put 的影响占主导, 下跌会自动加杠杆, 最该防; 基本持平: LEAPS / 正股抵消了卖 put 的 Gamma.',
     ex: '当下 0.85x · 跌 10%: 1.10x · 跌 20%: 1.42x · 名义 1.6x.' },
+  discipline: { t: '纪律分', def: '最近 30 笔新开仓的执行情况, 0–100: checklist 覆盖率 (40%) + 遵守硬规则 (30%, 1 − 强行交易比例) + 管理纪律 (30%, 卖出的期权赚到 50% 或进入 21 天后 3 个交易日内处理).',
+    read: '85 以上 = 稳定按规则执行; 70–85 偶有例外; 低于 70 = 规则在被绕开. 管理纪律用 Worker 每天的收盘快照判断, 数据不够时暂不计分, 其余两项按比例计算. 不计入综合风险分.',
+    short: '它衡量的是你, 不是市场: 风险分高可能是市场原因, 纪律分低一定是执行原因.',
+    ex: '30 笔里 27 笔做了 checklist (90%), 其中 1 笔强行交易 (96%), 6 次触发 50% / 21 天有 5 次及时处理 (83%) → 0.4×90 + 0.3×96 + 0.3×83 ≈ 90.' },
   rule_stats: { t: '规则有效性', def: '把每条 checklist 记录和 Schwab 的实际成交自动配对, 看结束后的结果: 按判定 (全部通过 / 软规则未通过 / 强行交易 / 没做 checklist), 按单条规则 (通过 vs 未通过), 以及按开仓时的 DTE、ROC、VIX 分组.',
     read: '期望值 = 平均每笔盈亏. 某条规则"未通过"那组的期望值明显更差, 说明这条规则在帮你避坑; 差不多, 说明它可能只是在增加摩擦. 样本少于 10 笔的组灰色显示, 只作参考.',
     short: '配对规则: 同一标的、行权价、到期日、方向, 做完 checklist 后 5 个交易日内开仓. roll 出来的新仓位不算作"没做 checklist".',
@@ -15228,6 +15251,7 @@ function renderPerformancePage() {
           <thead><tr><th>标的</th><th>笔数</th><th>胜率</th><th>已实现</th><th>期望值 ${_qBtn('expect', 'short')}</th></tr></thead>
           <tbody>${tick.map(({ k, s }) => `<tr><td>${esc(k)}</td><td>${s.n}</td><td>${s.wr != null ? s.wr.toFixed(0) + '%' : '—'}</td><td class="${_thCls(s.pnl)}">${_fmtSigned(s.pnl)}</td><td class="${_thCls(s.exp)}">${s.exp != null ? _fmtSigned(s.exp) : '—'}</td></tr>`).join('') || '<tr><td colspan="5" class="rk-quiet">无</td></tr>'}</tbody>
         </table></div></details>
+      ${_safe('目标推演', _goalHTML, '')}
       ${_safe('规则有效性', _ruleStatsHTML, '')}
     </div>`;
 }
@@ -16855,9 +16879,194 @@ async function _pushAppSummary() {
       week: { realized: Math.round(weekLots.reduce((s, l) => s + (l.pnl || 0), 0)),
         results: (rv ? rv.units.filter(u => !u.open && (u.closeTs || 0) >= mon) : []).map(u => ({ label: `${u.ticker} ${u.strike}${u.putCall === 'PUT' ? 'P' : 'C'} ${u.expiry}`, method: RV_METHOD[u.method] || u.method, pnl: Math.round(u.pnl) })),
         checklists: hist.length, forced: hist.filter(e => (e.hardFails || []).length && rv && rv.results[e.id] && ['open', 'closed'].includes(rv.results[e.id].status)).length,
-        noChecklist: rv ? rv.noCk.filter(u => u.openTs >= mon).length : 0 } };
+        noChecklist: rv ? rv.noCk.filter(u => u.openTs >= mon).length : 0 },
+      goal: (() => { try { const H = _goalHistory(); if (!H || !H.months || H.months < 3) return null; const nx = GOALS.find(g => g > H.nav); if (!nx) return null;
+        const r = _goalRun(_goalScen(H, 'mid', _goalCfg().depOn), false).out[GOALS.indexOf(nx)]; return { next: nx, gap: Math.round(nx - H.nav), months: r }; } catch (e) { return null; } })() };
     await _wfetch('/app/summary', { method: 'POST', body: JSON.stringify(body), headers: { 'Content-Type': 'application/json' } });
   } catch (e) {}
+}
+
+/* ═════════════ v47 · discipline score (risk page) ═════════════ */
+const _tsDay = ts => new Date(ts).toISOString().slice(0, 10);
+function _tradingDaysBetween(a, b) { let n = 0; for (let d = _isoAdd(a, 1); d <= b; d = _isoAdd(d, 1)) { const w = new Date(d + 'T12:00:00').getDay(); if (w && w !== 6 && !US_HOLIDAYS.has(d)) n++; } return n; }
+// 50% / 21-day rule: from the first daily snapshot that hit either, was it handled within 3 trading days?
+function _mgmtDiscipline(units) {
+  const S = loadSnaps(), snaps = S ? S.data.slice().sort((a, b) => a.d < b.d ? -1 : 1) : [];
+  if (!snaps.length) return { n: 0, score: null, rows: [], noData: true };
+  const today = _todayISO(), first = snaps[0].d, rows = [];
+  units.filter(u => u.side === 'short' && u.qty > 0).forEach(u => {
+    const per = Math.abs(u.openCash) / (u.qty * 100); if (!(per > 0)) return;
+    const openD = _tsDay(u.openTs), closeD = u.open ? null : _tsDay(u.closeTs), kind = u.putCall === 'PUT' ? 'short_put' : 'short_call';
+    if (closeD && closeD < first) return;
+    let trig = null;
+    for (const s of snaps) {
+      if (s.d < openD) continue; if (closeD && s.d > closeD) break;
+      const p = (s.pos || []).find(p => p.t === u.ticker && p.k === kind && Math.abs((p.K || 0) - u.strike) < 0.005 && p.e === u.expiry); if (!p) continue;
+      const dte = (Date.parse(u.expiry + 'T16:00:00') - Date.parse(s.d + 'T16:00:00')) / 864e5;
+      if (p.m != null && p.m <= per * 0.5) { trig = { d: s.d, why: '赚到 50%' }; break; }
+      if (dte <= 21) { trig = { d: s.d, why: '进入 21 天' }; break; }
+    }
+    if (!trig) return;
+    const lag = _tradingDaysBetween(trig.d, closeD || today);
+    if (!closeD && lag <= 3) return;                                         // still inside the 3-day window
+    rows.push({ u, trig, lag, ok: !!closeD && lag <= 3, open: !closeD });
+  });
+  return { n: rows.length, score: rows.length ? rows.filter(r => r.ok).length / rows.length : null, rows, noData: !rows.length };
+}
+function _disciplineData() {
+  const R = computeAutoReview(); if (!R) return null;
+  const hist = getActiveHistory(), byU = {};
+  Object.entries(R.results).forEach(([id, r]) => { if (r.u) byU[r.u.id] = hist.find(e => e.id === id); });
+  const ckTs = hist.filter(e => _kindOfStrategy(e.strategy)).map(e => e.timestampSort || 0);
+  if (!ckTs.length) return null;
+  const from = Math.min(...ckTs) - 864e5;
+  const opens = R.units.filter(u => !u.rollFrom && u.openTs >= from).sort((a, b) => b.openTs - a.openTs);
+  const calc = list => { const L = list.slice(0, 30); if (!L.length) return null;
+    const ck = L.filter(u => byU[u.id]), forced = ck.filter(u => (byU[u.id].hardFails || []).length), mg = _mgmtDiscipline(L);
+    const parts = [['cov', ck.length / L.length, 0.4], ['hard', ck.length ? 1 - forced.length / ck.length : null, 0.3], ['mg', mg.score, 0.3]];
+    const use = parts.filter(p => p[1] != null), W = use.reduce((s, p) => s + p[2], 0);
+    return { score: W ? use.reduce((s, p) => s + p[1] * p[2], 0) / W * 100 : null, cov: ck.length / L.length, hard: parts[1][1], mg, n: L.length, ck, forced, noCk: L.filter(u => !byU[u.id]), byU };
+  };
+  let streak = 0; for (const u of opens) { if (byU[u.id]) streak++; else break; }
+  return { now: calc(opens), prev: calc(opens.filter(u => u.openTs < Date.now() - 30 * 864e5)), streak };
+}
+const _uLabel = u => `${u.ticker} ${u.strike}${u.putCall === 'PUT' ? 'P' : 'C'} ${u.expiry.slice(5)}`;
+function _disciplineCardHTML() {
+  const D = _disciplineData(); if (!D || !D.now) return '';
+  const N = D.now, s = N.score, lv = s == null ? '' : s >= 85 ? 'safe' : s >= 70 ? 'watch' : s >= 50 ? 'alert' : 'danger';
+  const dlt = D.prev && D.prev.score != null && s != null ? s - D.prev.score : null, pc = v => v == null ? '—' : (v * 100).toFixed(0) + '%';
+  return `<section class="rk-block dc-card" id="dc-card" role="button" tabindex="0" onclick="showDiscipline()">
+    <div class="dc-row"><span class="dc-title">纪律分 ${_qBtn('discipline', 'short')}</span><b class="dc-score rk-t-${lv}">${s != null ? Math.round(s) : '—'}</b>
+      ${dlt != null ? `<span class="rk-quiet">较上月 ${dlt >= 0 ? '+' : '−'}${Math.abs(dlt).toFixed(0)}</span>` : ''}<span class="dc-streak">连续 ${D.streak} 笔做了 checklist</span><span class="rk-quiet dc-more">明细 ▸</span></div>
+    <div class="dc-parts"><span>checklist 覆盖 <b>${pc(N.cov)}</b></span><span>遵守硬规则 <b>${pc(N.hard)}</b></span><span>管理纪律 <b>${N.mg.score != null ? pc(N.mg.score) : '数据积累中'}</b></span><span class="rk-quiet">最近 ${N.n} 笔新开仓</span></div>
+  </section>`;
+}
+window.showDiscipline = () => {
+  const D = _disciplineData(); if (!D || !D.now) return; const N = D.now;
+  const old = document.getElementById('dc-modal'); if (old) old.remove();
+  const li = (arr, f) => arr.length ? `<ul class="dc-list">${arr.map(f).join('')}</ul>` : '<div class="rk-quiet">无</div>';
+  const m = document.createElement('div'); m.id = 'dc-modal'; m.className = 'snap-confirm';
+  m.innerHTML = `<div class="snap-card wh-card"><div class="snap-head" style="display:flex;align-items:baseline;gap:10px"><b>纪律分 ${N.score != null ? Math.round(N.score) : '—'}</b><span class="rk-quiet">最近 ${N.n} 笔新开仓 · 连续 ${D.streak} 笔做了 checklist</span>
+      <button class="gl-x" style="margin-left:auto" onclick="document.getElementById('dc-modal').remove()" aria-label="关闭">×</button></div>
+    <div class="dc-sec"><b>checklist 覆盖 ${(N.cov * 100).toFixed(0)}%</b> <span class="rk-quiet">权重 40% · ${N.ck.length} / ${N.n} 笔有对应的 checklist</span>
+      <div class="rk-quiet">没做 checklist 的:</div>${li(N.noCk, u => `<li>${esc(_uLabel(u))} · ${_tsDay(u.openTs).slice(5)} 开仓</li>`)}</div>
+    <div class="dc-sec"><b>遵守硬规则 ${N.hard != null ? (N.hard * 100).toFixed(0) + '%' : '—'}</b> <span class="rk-quiet">权重 30% · 有 checklist 的 ${N.ck.length} 笔里, 强行交易 ${N.forced.length} 笔</span>
+      ${li(N.forced, u => `<li>${esc(_uLabel(u))} · 未通过: ${esc((N.byU[u.id].hardFails || []).join('、'))}</li>`)}</div>
+    <div class="dc-sec"><b>管理纪律 ${N.mg.score != null ? (N.mg.score * 100).toFixed(0) + '%' : '数据积累中'}</b> <span class="rk-quiet">权重 30% · 卖出的期权赚到 50% 或进入 21 天后, 3 个交易日内处理</span>
+      ${N.mg.noData ? '<div class="rk-quiet">每日快照里还没有触发过这两条的仓位, 暂不计分 (其余两项按比例计算).</div>'
+        : li(N.mg.rows.filter(r => !r.ok), r => `<li>${esc(_uLabel(r.u))} · ${r.trig.d.slice(5)} ${r.trig.why}, ${r.open ? `至今 ${r.lag} 个交易日未处理` : `${r.lag} 个交易日后才处理`}</li>`)}</div>
+    <div class="rk-note">只看新开仓 (roll 出来的不算), 从你第一次做 checklist 起计. 85 以上绿色, 70–85 黄色, 50–70 橙色, 50 以下红色. 不计入综合风险分.</div></div>`;
+  m.addEventListener('click', e => { if (e.target === m) m.remove(); });
+  document.body.appendChild(m);
+};
+
+/* ═════════════ v47 · goal projection (Performance) ═════════════ */
+const GOAL_KEY = 'pretrade_goal', GOALS = [200000, 500000, 1000000];
+let __goalOpen = false, __goalSl = null;
+function _goalCfg() { let c = {}; try { c = JSON.parse(localStorage.getItem(GOAL_KEY) || '{}') || {}; } catch (e) {} return { dep: 1000, depEnd: '2027-12-31', depOn: true, excl: [], plan: null, ...c }; }
+function _goalSave(p) { try { localStorage.setItem(GOAL_KEY, JSON.stringify({ ..._goalCfg(), ...p })); } catch (e) {} }
+const _bigId = l => `${l.ticker}|${l.strike}|${l.expiry}|${l.closeTs}`;
+// month by month from the fills: NAV rebuilt backwards from today's NAV (realized P&L and deposits only)
+function _goalHistory() {
+  let p = null; try { p = computePerf(); } catch (e) {} const nav = getPortfolio().nav;
+  if (!p || !p.all || !p.all.length || !nav) return null;
+  const mk = ts => _tsDay(ts).slice(0, 7), cur = _todayISO().slice(0, 7), cfg = _goalCfg(), M = {};
+  const get = k => M[k] || (M[k] = { k, seller: 0, leaps: 0, lot: [], flow: 0 });
+  p.all.forEach(l => { const g = get(mk(l.closeTs || l.openTs));
+    if (l.kind === 'stock' || (l.kind === 'option' && l.side === 'short')) g.seller += l.pnl || 0;
+    else if (l.kind === 'option' && l.side === 'long' && l.putCall === 'CALL') { g.leaps += l.pnl || 0; g.lot.push(l); } });
+  (p.flows || []).forEach(f => { get(mk(f.ts)).flow += f.amt || 0; });
+  const keys = Object.keys(M).sort(); let end = nav;
+  for (let i = keys.length - 1; i >= 0; i--) { const g = M[keys[i]]; g.navEnd = end; g.navStart = end - g.seller - g.leaps - g.flow; end = g.navStart; }
+  const done = keys.filter(k => k < cur).map(k => M[k]).filter(g => g.navStart > 0);
+  if (!done.length) return { months: 0 };
+  const bigs = [];
+  done.forEach(g => { g.bigPnl = 0; g.lot.forEach(l => { const pct = l.pnl / g.navStart; if (pct >= 0.05) { const b = { l, pct, id: _bigId(l), m: g.k, on: !cfg.excl.includes(_bigId(l)) }; bigs.push(b); g.bigPnl += l.pnl; } }); });   // a deselected big win is an outlier: gone, not folded into 其他 LEAPS
+  const ys = done.map(g => g.seller / g.navStart), lo = done.map(g => (g.leaps - g.bigPnl) / g.navStart);
+  const mean = a => a.reduce((s, x) => s + x, 0) / a.length, sd = a => { const m = mean(a); return Math.sqrt(a.reduce((s, x) => s + (x - m) ** 2, 0) / Math.max(1, a.length - 1)); };
+  const on = bigs.filter(b => b.on);
+  return { months: done.length, from: done[0].k, mu: mean(ys), sd: sd(ys), maxY: Math.max(...ys), lo: mean(lo), bigs, freq: on.length / (done.length / 12), size: on.length ? mean(on.map(b => b.pct)) : 0.15, nav };
+}
+// deterministic: expected monthly growth; random: seller ~ normal, big wins and tail months as coin flips
+function _goalRun(o, rnd) {
+  const out = GOALS.map(() => null), today = new Date(), path = [];
+  let v = o.start;
+  for (let t = 1; t <= 360 && out[2] == null; t++) {
+    const d = new Date(today.getFullYear(), today.getMonth() + t, 1), depOk = o.depOn && d.toISOString().slice(0, 10) <= o.depEnd;
+    let r;
+    if (!rnd) r = o.mu + o.lo + (o.freq / 12) * o.size - (o.tail ? 0.15 / 24 : 0);
+    else { const z = Math.sqrt(-2 * Math.log(Math.random() || 1e-9)) * Math.cos(2 * Math.PI * Math.random());
+      r = o.mu + o.sd * z + o.lo + (Math.random() < o.freq / 12 ? o.size : 0) - (o.tail && Math.random() < 1 / 24 ? 0.15 : 0); }
+    v = v * (1 + r) + (depOk ? o.dep : 0); if (!rnd) path.push(Math.round(v));
+    GOALS.forEach((g, i) => { if (out[i] == null && v >= g) out[i] = t; });
+    if (v <= 0) break;
+  }
+  return rnd ? out : { out, path };
+}
+function _mc(o, n = 1500) { const runs = Array.from({ length: n }, () => _goalRun(o, true));
+  return GOALS.map((g, i) => { const xs = runs.map(r => r[i] == null ? Infinity : r[i]).sort((a, b) => a - b), q = p => xs[Math.floor(p * (n - 1))];
+    const by = d => { const m = (new Date(d).getFullYear() - new Date().getFullYear()) * 12 + new Date(d).getMonth() - new Date().getMonth(); return xs.filter(x => x <= m).length / n; };
+    return { p10: q(0.1), p50: q(0.5), p90: q(0.9), by27: by('2027-12-31'), by30: by('2030-12-31') }; }); }
+const _mFmt = m => m == null || !isFinite(m) ? '30 年内到不了' : m < 12 ? `${m} 个月` : `${(m / 12).toFixed(1)} 年`;
+const _mDate = m => { if (m == null || !isFinite(m)) return ''; const d = new Date(); d.setMonth(d.getMonth() + m); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; };
+window.goalSet = (k, v) => { _goalSave({ [k]: v }); _goalRedraw(); };
+window.goalBig = (id, on) => { const c = _goalCfg(), ex = new Set(c.excl); if (on) ex.delete(id); else ex.add(id); _goalSave({ excl: [...ex] }); _goalRedraw(); };
+window.goalSlider = () => { __goalSl = ['gs-mu', 'gs-fq', 'gs-sz', 'gs-dep'].map(id => +document.getElementById(id).value); const el = document.getElementById('gs-out'); if (el) el.innerHTML = _goalSliderOut(); };
+window.goalSavePlan = () => { const H = _goalHistory(), o = _goalScen(H, 'mid', _goalCfg().depOn), r = _goalRun(o, false);
+  _goalSave({ plan: { at: Date.now(), nav: H.nav, path: r.path.slice(0, 120), params: { mu: o.mu, freq: o.freq } } }); showToast('已保存为计划, 之后每月对照实际', 'success'); _goalRedraw(); };
+function _goalRedraw() { const el = document.getElementById('goal-block'); if (el) { el.outerHTML = _safe('目标推演', _goalHTML, ''); } }
+function _goalScen(H, which, depOn) { const c = _goalCfg();
+  return { start: H.nav, mu: H.mu, sd: H.sd, lo: H.lo, size: H.size, dep: c.dep, depEnd: c.depEnd, depOn,
+    freq: which === 'opt' ? H.freq : which === 'mid' ? H.freq * 0.5 : 0, tail: which === 'low' }; }
+function _goalSliderOut() {
+  const H = _goalHistory(), [mu, fq, sz, dep] = __goalSl || [H.mu * 100, H.freq * 0.5, H.size * 100, _goalCfg().dep];
+  const o = { start: H.nav, mu: mu / 100, sd: H.sd, lo: H.lo, freq: fq, size: sz / 100, dep, depEnd: _goalCfg().depEnd, depOn: dep > 0, tail: false };
+  const r = _goalRun(o, false).out;
+  return `收租 <b>${mu.toFixed(1)}%</b>/月 · 大赚 <b>${fq.toFixed(1)}</b> 次/年 × <b>${sz.toFixed(0)}%</b> · 入金 <b>$${dep}</b>/月 → ${GOALS.map((g, i) => `<span class="gl-goal">${g / 1000}k: <b>${_mFmt(r[i])}</b></span>`).join('')}${mu / 100 > H.maxY * 1.5 ? `<div class="rk-t-alert">收租 ${mu.toFixed(1)}% 超过你历史最好月份 (${(H.maxY * 100).toFixed(1)}%) 的 1.5 倍</div>` : ''}`;
+}
+function _goalHTML() {
+  const H = _goalHistory(); if (!H) return '';
+  const c = _goalCfg(), head = `<summary class="rk-block-title">目标推演 <span class="rk-quiet">20 万 / 50 万 / 100 万 · 点开</span></summary>`;
+  if (!H.months || H.months < 3) return `<details class="rk-block pf-goal" id="goal-block"${__goalOpen ? ' open' : ''} ontoggle="__goalOpen = this.open">${head}<div class="rk-quiet">完整的历史月份少于 3 个, 还无法估算节奏.</div></details>`;
+  const pct = v => (v * 100).toFixed(2) + '%';
+  const scen = [['opt', '乐观', '大赚按历史频率'], ['mid', '中位', '大赚频率打对折'], ['low', '保守', '不算大赚 · 约每两年一次 −15% 月']];
+  const res = {}; scen.forEach(([k]) => { res[k] = [true, false].map(on => _goalRun(_goalScen(H, k, on), false).out); });
+  const mc = _mc(_goalScen(H, 'mid', c.depOn));
+  const cell = (m, base) => `<b>${_mFmt(m)}</b><span class="rk-quiet"> ${_mDate(m)}</span>${base != null && m != null && base !== m ? `<div class="rk-quiet gl-cmp">${m < base ? '提前' : '推迟'} ${Math.abs(base - m)} 个月</div>` : ''}`;
+  // combination grid: seller yield × big wins per year
+  const ys = [...new Set([0.01, 0.015, 0.02, 0.025, Math.round(H.mu * 1000) / 1000])].sort((a, b) => a - b), ws = [0, 1, 2, 3];
+  const grid = ys.map(y => `<tr${Math.abs(y - Math.round(H.mu * 1000) / 1000) < 1e-9 ? ' class="gl-hist"' : ''}><td><b>${(y * 100).toFixed(1)}%</b>${Math.abs(y - Math.round(H.mu * 1000) / 1000) < 1e-9 ? ' <span class="rk-quiet">你的历史</span>' : ''}</td>
+    ${ws.map(w => { const r = _goalRun({ ..._goalScen(H, 'mid', c.depOn), mu: y, freq: w }, false).out; return `<td>${r.map(_mFmt).join(' / ')}</td>`; }).join('')}</tr>`).join('');
+  // plan vs actual
+  let pv = '';
+  if (c.plan && c.plan.path && c.plan.path.length) { const mo = Math.floor((Date.now() - c.plan.at) / (30.44 * 864e5));
+    const exp = mo <= 0 ? c.plan.nav : c.plan.path[Math.min(mo, c.plan.path.length) - 1], idx = c.plan.path.findIndex(v => v >= H.nav), ahead = idx < 0 ? null : (idx + 1) - mo;
+    pv = `<div class="gl-plan">计划 (${_tsDay(c.plan.at)} 保存): 现在应在 <b>${_fmtUsd(exp)}</b>, 实际 <b>${_fmtUsd(H.nav)}</b> · ${mo <= 0 ? '本月刚保存' : ahead == null ? '远超计划' : ahead > 0 ? `<span class="rk-t-safe">领先约 ${ahead} 个月</span>` : ahead < 0 ? `<span class="rk-t-alert">落后约 ${-ahead} 个月 · 先看纪律分和规则执行, 不要靠加大仓位追进度</span>` : '与计划一致'}</div>`; }
+  __goalSl = __goalSl || [+(H.mu * 100).toFixed(1), +(H.freq * 0.5).toFixed(1), +(H.size * 100).toFixed(0), c.dep];
+  return `<details class="rk-block pf-goal" id="goal-block"${__goalOpen ? ' open' : ''} ontoggle="__goalOpen = this.open">${head}
+    <div class="gl-in">起点 NAV <b>${_fmtUsd(H.nav)}</b> · 历史 ${H.from} 起 ${H.months} 个月: 卖方净收租 <b>${pct(H.mu)}</b>/月 (波动 ${pct(H.sd)}) · 其他 LEAPS <b>${pct(H.lo)}</b>/月 · 大赚 <b>${H.freq.toFixed(1)}</b> 次/年, 平均 <b>+${(H.size * 100).toFixed(0)}%</b> NAV</div>
+    <div class="gl-dep">入金 <input type="number" class="gl-num" value="${c.dep}" min="0" step="100" onchange="goalSet('dep', +this.value || 0)"> / 月, 到 <input type="date" class="gl-date" value="${c.depEnd}" onchange="goalSet('depEnd', this.value)"> 为止
+      <label class="gl-tg"><input type="checkbox"${c.depOn ? ' checked' : ''} onchange="goalSet('depOn', this.checked)"> 计入入金</label></div>
+    ${pv}
+    <div class="rk-table-wrap"><table class="rk-table gl-t"><thead><tr><th>情形</th>${GOALS.map(g => `<th>到 ${g / 10000} 万</th>`).join('')}</tr></thead><tbody>
+      ${scen.map(([k, l, d]) => { const r = res[k][c.depOn ? 0 : 1], o = res[k][c.depOn ? 1 : 0]; return `<tr><td><b>${l}</b><div class="rk-quiet">${d}</div></td>${r.map((m, i) => `<td>${cell(m, o[i])}</td>`).join('')}</tr>`; }).join('')}
+      <tr class="gl-mc"><td><b>中位 · 模拟</b><div class="rk-quiet">1,500 次随机路径</div></td>${mc.map(x => `<td>80% 落在 ${_mFmt(x.p10)} – ${_mFmt(x.p90)}<div class="rk-quiet">2027 年底前 ${(x.by27 * 100).toFixed(0)}% · 2030 年底前 ${(x.by30 * 100).toFixed(0)}%</div></td>`).join('')}</tr>
+    </tbody></table></div>
+    <div class="rk-note">"提前 / 推迟 N 个月" = 和${c.depOn ? '不计入金' : '计入入金'}相比.</div>
+    <div class="rk-sub-title">组合 · 每月收租 × 每年大赚次数 → 到 20 万 / 50 万 / 100 万</div>
+    <div class="rk-table-wrap"><table class="rk-table gl-grid"><thead><tr><th>收租 / 月</th>${ws.map(w => `<th>大赚 ${w} 次/年</th>`).join('')}</tr></thead><tbody>${grid}</tbody></table></div>
+    <div class="rk-sub-title">自己调</div>
+    <div class="gl-sl">
+      <label>收租 %/月 <input id="gs-mu" type="range" min="0" max="5" step="0.1" value="${__goalSl[0]}" oninput="goalSlider()"></label>
+      <label>大赚 次/年 <input id="gs-fq" type="range" min="0" max="6" step="0.5" value="${__goalSl[1]}" oninput="goalSlider()"></label>
+      <label>大赚幅度 % NAV <input id="gs-sz" type="range" min="5" max="60" step="1" value="${__goalSl[2]}" oninput="goalSlider()"></label>
+      <label>入金 $/月 <input id="gs-dep" type="range" min="0" max="5000" step="250" value="${__goalSl[3]}" oninput="goalSlider()"></label></div>
+    <div id="gs-out" class="gl-out">${_goalSliderOut()}</div>
+    <div class="rk-sub-title">算作"大赚"的 LEAPS (≥ 5% NAV) · 取消勾选可剔除</div>
+    ${H.bigs.length ? `<div class="gl-bigs">${H.bigs.map(b => `<label><input type="checkbox"${b.on ? ' checked' : ''} onchange="goalBig('${esc(b.id)}', this.checked)"> ${esc(b.l.ticker)} ${b.l.strike}C · ${b.m} 平仓 · ${_fmtSigned(b.l.pnl)} (<b>+${(b.pct * 100).toFixed(0)}%</b> NAV)</label>`).join('')}</div>` : '<div class="rk-quiet">历史里还没有赚超过 5% NAV 的 LEAPS; 组合表和滑块里的大赚幅度默认按 15% 计.</div>'}
+    <div class="gl-act"><button class="btn ghost" onclick="goalSavePlan()">${c.plan ? '重新保存为计划' : '保存为计划'}</button><span class="rk-quiet">保存中位情形作为计划线, 之后每月对照实际</span></div>
+    <div class="rk-note">规划工具, 不是预测: 历史只有 ${H.months} 个月, 样本小. 收租按 NAV 百分比复利 (仓位随规模同比放大, 仍受你的仓位规则约束). 净值由已实现盈亏和入金倒推, 未计未实现盈亏; 未考虑税. 落后于计划时该检查的是纪律和执行, 而不是加大仓位.</div>
+  </details>`;
 }
 
 /* ---------- fault isolation: one broken block never takes the page down ---------- */
@@ -17478,6 +17687,7 @@ function renderRiskPage() {
             <span>${R.used.length} 项 · 覆盖 ${Math.round(R.coverage * 100)}%</span></div>
         </div>
       </section>
+      ${R.c.isSchwab ? _safe('纪律分', _disciplineCardHTML, '') : ''}
       ${_safe('构成', () => _riskDecompHTML(R))}
       ${_safe('待处理仓位', () => _mgmtHTML(R))}
       ${R.c.isSchwab ? `<section class="rk-block"><h3 class="rk-block-title rk-title-row"><span>波动率环境</span><button class="btn ghost small" onclick="fetchVol(true)">刷新</button></h3><div data-vol-slot="full">${_safe('波动率环境', volInnerHTML)}</div></section>` : ''}
