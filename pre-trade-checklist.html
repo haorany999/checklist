@@ -3243,6 +3243,52 @@
   .pc-prog em { position: absolute; top: -3px; bottom: -3px; width: 2px; margin-left: -1px; background: var(--text); opacity: 0.85; }
   .pc-ahead { font-size: 10.5px; margin-left: 2px; }
   .pc-cell { white-space: nowrap; }
+  /* v43 · refresh bar */
+  #rf-bar { position: fixed; top: 0; left: 0; right: 0; z-index: 1500; height: 3px; background: color-mix(in srgb, var(--accent) 20%, transparent); overflow: visible; pointer-events: none; }
+  #rf-bar i { position: absolute; top: 0; bottom: 0; width: 35%; background: var(--accent); animation: rfslide 1.1s ease-in-out infinite; }
+  #rf-bar span { position: absolute; top: 6px; right: 12px; font-size: 11.5px; color: var(--text); background: var(--panel); border: 1px solid var(--border); padding: 3px 8px; border-radius: 2px; }
+  #rf-bar.done i { width: 100%; left: 0; animation: none; } #rf-bar.done span { display: none; }
+  @keyframes rfslide { 0% { left: -35%; } 100% { left: 100%; } }
+  /* v43 · ticker P&L list */
+  details.tkp { border-bottom: 1px solid var(--border); padding: 4px 0; scroll-margin-top: 70px; }
+  details.tkp > summary { display: flex; align-items: baseline; gap: 12px; cursor: pointer; list-style: none; padding: 6px 0; }
+  details.tkp > summary::-webkit-details-marker { display: none; } details.tkp > summary::before { content: '▸'; color: var(--text-faint); } details.tkp[open] > summary::before { content: '▾'; }
+  details.tkp > summary b { margin-left: auto; font-family: var(--mono); }
+  details.tkp.flash { animation: tkflash 1.6s ease-out; } @keyframes tkflash { 0% { background: color-mix(in srgb, var(--accent) 22%, transparent); } 100% { background: transparent; } }
+  /* v43 · GEX multi-select and fullscreen */
+  .gx-multi { position: relative; font-size: 12px; } .gx-multi > summary { cursor: pointer; padding: 5px 8px; border: 1px solid var(--border); border-radius: 2px; list-style: none; }
+  .gx-multi > summary::-webkit-details-marker { display: none; }
+  .gx-multi[open] { z-index: 30; } .gx-list { position: absolute; z-index: 30; margin-top: 4px; background: var(--panel); border: 1px solid var(--border-hi); padding: 8px 10px; display: grid; grid-template-columns: repeat(2, minmax(110px, 1fr)); gap: 4px 12px; max-height: 260px; overflow: auto; box-shadow: 0 8px 24px rgba(0,0,0,.35); }
+  .gx-list label { font: 12px var(--mono); display: flex; gap: 6px; align-items: center; cursor: pointer; }
+  .gx-multi .app-link { margin: 6px 8px 0 0; font-size: 12px; }
+  .gx-chart-wrap { position: relative; } .gx-fs-btn { position: absolute; right: 0; top: -2px; z-index: 2; }
+  .fs-overlay { position: fixed; inset: 0; z-index: 1400; background: var(--bg); padding: 12px 20px; overflow: auto; }
+  .fs-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 8px; font-size: 14px; }
+  body.fs-lock { overflow: hidden; }
+  .stk-chart-block.stk-fs { position: fixed; inset: 0; z-index: 1400; margin: 0; overflow: auto; border-radius: 0; padding: 12px 20px; background: var(--bg); }
+  /* v43 · expiry chart */
+  .exp-ctl { display: flex; gap: 8px; flex-wrap: wrap; text-transform: none; letter-spacing: 0; }
+  .exp-top { font-size: 13px; margin: 2px 0 8px; } .exp-top b { font-family: var(--mono); }
+  .exp-svg .exp-guide { stroke: var(--text-faint); stroke-dasharray: 4 4; } .exp-svg .exp-seg { stroke: var(--panel); stroke-width: 0.6; }
+  .exp-svg .exp-cum { stroke: var(--text); stroke-width: 1.4; stroke-dasharray: 3 3; opacity: 0.8; } .exp-sw-cum { background: var(--text) !important; height: 2px !important; }
+  body .exp-svg text.exp-cum-t { fill: var(--text-dim) !important; } body .exp-svg text.exp-val { font-weight: 700 !important; }
+  body .exp-svg text.exp-day { fill: var(--accent) !important; font-weight: 700 !important; } body .exp-svg text.exp-has { fill: var(--text) !important; font-weight: 700 !important; }
+  .exp-svg .exp-hit { fill: transparent; cursor: pointer; } .exp-svg .exp-hit:hover { fill: color-mix(in srgb, var(--text) 6%, transparent); }
+  .ec-wrap { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+  .ec-title { font: 700 12.5px var(--sans); margin-bottom: 4px; }
+  .ec-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+  .ec-wd { font-size: 10.5px; color: var(--text-faint); text-align: center; padding: 2px 0; }
+  .ec-cell { min-height: 46px; padding: 2px 3px; background: var(--panel-2); border-radius: 2px; display: flex; flex-direction: column; gap: 1px; font-size: 10.5px; overflow: hidden; }
+  .ec-cell.blank { background: transparent; } .ec-cell.wkend { opacity: 0.45; } .ec-cell.past { opacity: 0.35; }
+  .ec-cell.today { box-shadow: inset 0 0 0 1px var(--accent); }
+  .ec-cell.has { cursor: pointer; } .ec-cell.has.lv-safe { background: color-mix(in srgb, var(--pass) 18%, var(--panel-2)); } .ec-cell.has.lv-watch { background: color-mix(in srgb, #D9B44A 26%, var(--panel-2)); }
+  .ec-cell.has.lv-alert { background: color-mix(in srgb, #E5793B 30%, var(--panel-2)); } .ec-cell.has.lv-danger { background: color-mix(in srgb, var(--fail) 34%, var(--panel-2)); }
+  .ec-d { font: 600 10.5px var(--mono); color: var(--text-dim); display: flex; gap: 3px; align-items: baseline; } .ec-d em { font-style: normal; font-size: 9px; color: var(--accent); } .ec-d em.hol { color: var(--fail); }
+  .ec-chip { display: inline-block; font: 700 10px var(--mono); padding: 0 3px; border-radius: 2px; color: #fff; background: var(--c); width: fit-content; }
+  .ec-amt { font: 700 10px var(--mono); color: var(--text); margin-top: auto; }
+  body .exp-svg text.exp-val.rk-t-safe { fill: var(--pass) !important; } body .exp-svg text.exp-val.rk-t-watch { fill: #D9B44A !important; }
+  body .exp-svg text.exp-val.rk-t-alert { fill: #E5793B !important; } body .exp-svg text.exp-val.rk-t-danger { fill: var(--fail) !important; }
+  @media (max-width: 640px) { .gx-list { position: static; grid-template-columns: 1fr 1fr; max-width: 100%; box-shadow: none; margin-top: 6px; } .gx-multi { flex-basis: 100%; } }
 </style>
 </head>
 <body class="theme-slate">
@@ -5290,7 +5336,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.17-v42';
+const APP_BUILD = '2026.10.17-v43';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
@@ -11099,13 +11145,15 @@ function getPortfolio() {
   };
 }
 
-async function refreshSchwab({ force = false } = {}) {
+async function refreshSchwab(opt = {}) {
+  const force = opt === true || !!(opt && opt.force), manual = opt === true || !!(opt && opt.manual);   // the 刷新 Schwab buttons pass true
   const cfg = loadSchwabCfg();
   if (!cfg) return;
   if (!force && __schwabStatus.state !== 'error' && _schwabAgeMin(loadSchwabCache()) < SCHWAB_AUTO_REFRESH_MIN) return;
   if (__schwabInflight) return __schwabInflight;
   __schwabStatus = { state: 'loading' };
   _afterSchwabChange(false);
+  if (manual) _refreshUI('start');
   __schwabInflight = (async () => {
     const ctrl = typeof AbortController === 'function' ? new AbortController() : null;
     const timer = ctrl ? setTimeout(() => ctrl.abort(), 12000) : null;
@@ -11139,8 +11187,24 @@ async function refreshSchwab({ force = false } = {}) {
     }
     _afterSchwabChange(dataChanged);
     if (dataChanged) { _reconcileSoon(); fetchBetas(); fetchPerf(); }
+    if (manual) _refreshUI(dataChanged ? 'ok' : 'fail');
   })();
   return __schwabInflight;
+}
+function _refreshUI(stage) {
+  let bar = document.getElementById('rf-bar');
+  const btns = Array.from(document.querySelectorAll('button')).filter(b => /refreshSchwab\(/.test(b.getAttribute('onclick') || ''));
+  if (stage === 'start') {
+    if (!bar) { bar = document.createElement('div'); bar.id = 'rf-bar'; document.body.appendChild(bar); }
+    bar.innerHTML = '<i></i><span>正在从 Schwab 读取持仓和报价…</span>'; bar.className = 'on';
+    btns.forEach(b => { b.dataset.label = b.dataset.label || b.textContent; b.textContent = '刷新中…'; b.disabled = true; });
+    return;
+  }
+  btns.forEach(b => { if (b.dataset.label) b.textContent = b.dataset.label; b.disabled = false; });
+  document.querySelectorAll('button[disabled]').forEach(b => { if (/refreshSchwab\(/.test(b.getAttribute('onclick') || '')) { b.disabled = false; if (b.textContent === '刷新中…') b.textContent = b.dataset.label || '刷新 Schwab'; } });
+  if (bar) { bar.className = 'done'; setTimeout(() => bar && bar.remove(), 600); }
+  if (stage === 'ok') { const n = getPortfolio().positions.length, t = new Date(); showToast(`Schwab 已更新 · ${n} 个仓位 · ${String(t.getHours()).padStart(2, '0')}:${String(t.getMinutes()).padStart(2, '0')}`, 'success'); }
+  else { const s = __schwabStatus || {}; showToast('刷新失败', 'error', s.state === 'reauth' ? 'Schwab 授权已过期, 请在设置里重新连接' : s.state === 'unauthorized' ? 'Worker 口令不对, 请检查设置' : (s.message || '网络错误')); }
 }
 // Repaint what depends on the data without stealing focus from an input
 function _afterSchwabChange(dataChanged) {
@@ -13447,6 +13511,10 @@ const GREEK_HELP = {
     read: '1.0x = 和满仓 SPY 一样敏感; 0.7x = 大盘跌 1%, NAV 约跌 0.7%. 下跌时卖出的 put Delta 变大 (自动加杠杆), 而 LEAPS 和正股的美元 Delta 变小 (自动减杠杆), 两者会部分抵消; 所以同时给出跌 10% / 跌 20% 时的杠杆, 看净效果. 名义杠杆 = (正股市值 + CSP 名义 + LEAPS 正股等值) ÷ NAV: 假设 put 全被行权、LEAPS 全换成股票时持有多少股票.',
     short: '跌 20% 时明显高于当下 (例如 0.8x → 1.5x): 卖 put 的影响占主导, 下跌会自动加杠杆, 最该防; 基本持平: LEAPS / 正股抵消了卖 put 的 Gamma.',
     ex: '当下 0.85x · 跌 10%: 1.10x · 跌 20%: 1.42x · 名义 1.6x.' },
+  attrib_other: { t: '盈亏归因 · 其他', def: '实际盈亏 − (Theta + Delta + Gamma + Vega) 能解释的部分. 也就是四个 Greeks 按前一日收盘数值估算之外, 剩下没被解释的部分.',
+    read: '主要来源: 大幅波动时的高阶效应 (Gamma 和 Vega 本身也在变)、买卖价差和报价时点的变化、盘中 Greeks 变化、模型与真实价格的差异、以及当天的除息等. 单日出现较大的「其他」很正常.',
+    short: '如果长期 (例如 30 天合计) 占实际盈亏的很大比例, 说明用 Greeks 估算的风险和实际偏差较大: 常见于临近到期、深度价内 / 价外、或流动性差的合约.',
+    ex: '某天实际 +$500, Theta +$300、Delta +$120、Gamma −$40、Vega +$60 = +$440 → 其他 +$60.' },
   theta_cal: { t: 'Theta 日历', def: '从今天起, 股价和 IV 都不变时, 每天时间价值的变化. 卖方合计 = 你卖出的期权现在剩下的时间价值, 会在到期前衰减掉的部分.',
     read: '它不是"总共收了多少权利金": 开仓权利金是历史数字, 这里按每张合约此刻的价格计算. 若股价已靠近行权价或 IV 上升, 剩余时间价值可能比当初收到的权利金还多 (这时仓位是浮亏的).',
     short: '卖方合计越大, 说明从现在起时间还能为你赚的越多; 但也常常意味着仓位离行权价更近、风险更高.',
@@ -15366,11 +15434,12 @@ async function fetchGexWide(t) {
 // the GEX the user is looking at (range picker); checklist rules keep using __gex[t] (50 days)
 function _gexView(t) {
   const base = __gex[t]; if (!base || base.err || !base.cs) return base;
-  const wide = __gexRange === 'all' || __gexRange.startsWith('e:') ? __gexWide[t] : null;
+  const wide = __gexRange === 'all' || __gexRange.startsWith('e:') || __gexRange.startsWith('m:') ? __gexWide[t] : null;
   const src = wide && !wide.err && wide.cs ? wide : base;
   let cs = src.cs; const exps = [...new Set(cs.map(o => o.expiry))].sort();
   let label;
   if (__gexRange.startsWith('e:')) { const e = __gexRange.slice(2); cs = cs.filter(o => o.expiry === e); label = `${_md(e)} 到期`; }
+  else if (__gexRange.startsWith('m:')) { const set = new Set(__gexRange.slice(2).split(',')); cs = cs.filter(o => set.has(o.expiry)); label = `已选 ${[...set].sort().map(_md).join('、')}`; }
   else if (__gexRange === 'near') { cs = cs.filter(o => o.expiry === exps[0]); label = `最近到期 ${exps[0] ? _md(exps[0]) : ''}`; }
   else { const mx = { w1: 7, d30: 30, d50: 50, all: 180 }[__gexRange] || 50; cs = cs.filter(o => o.dte <= mx); label = `${mx} 天内到期`; }
   if (!cs.length) return { ...base, label: `${label} · 没有合约`, empty: true };
@@ -15380,12 +15449,31 @@ function _gexView(t) {
 window.setGexRange = (v, t) => {
   __gexRange = v; try { localStorage.setItem('pretrade_gex_range', v); } catch (e) {}
   const redraw = () => { const y = window.scrollY; render(); window.scrollTo(0, y); };
-  if ((v === 'all' || v.startsWith('e:')) && t && !(__gexWide[t] && __gexWide[t].cs)) { redraw(); fetchGexWide(t).then(redraw); } else redraw();
+  if ((v === 'all' || v.startsWith('e:') || v.startsWith('m:')) && t && !(__gexWide[t] && __gexWide[t].cs)) { redraw(); fetchGexWide(t).then(redraw); } else redraw();
+};
+let __gxMultiOpen = false;
+window.gxToggleExp = (t, e, on) => {
+  const sel = __gexRange.startsWith('m:') ? new Set(__gexRange.slice(2).split(',')) : __gexRange.startsWith('e:') ? new Set([__gexRange.slice(2)]) : new Set();
+  if (on) sel.add(e); else sel.delete(e);
+  __gxMultiOpen = true; setGexRange(sel.size ? 'm:' + [...sel].sort().join(',') : 'd50', t);
+};
+window.showGexFs = (t, mark) => {
+  const G = _gexView(t); if (!G || !G.g) return;
+  const old = document.getElementById('gx-fs'); if (old) old.remove();
+  const W = Math.max(320, (window.innerWidth || 800) - 40), PH = Math.max(200, (window.innerHeight || 700) - 200);
+  const m = document.createElement('div'); m.id = 'gx-fs'; m.className = 'fs-overlay';
+  m.innerHTML = `<div class="fs-head"><b>${esc(t)} · 期权结构</b><span class="rk-quiet">${esc(G.label || '')}</span><button class="gl-x" style="margin-left:auto" onclick="document.getElementById('gx-fs').remove()" aria-label="关闭">×</button></div>
+    <div class="fs-body">${_gexChartSVG(G, mark || null, { W, PH })}</div>`;
+  document.body.appendChild(m); _fitChartText && _fitChartText();
 };
 function _gexRangeHTML(t) {
   const V = _gexView(t), exps = V && V.exps ? V.exps : [];
   return `<div class="gx-range"><span class="rk-presets">${GEX_RANGES.map(([k, l]) => `<button class="rk-preset${__gexRange === k ? ' active' : ''}" onclick="setGexRange('${k}', '${esc(t)}')">${l}</button>`).join('')}</span>
-    <select class="gx-exp" onchange="setGexRange(this.value ? 'e:' + this.value : 'd50', '${esc(t)}')"><option value="">指定到期日…</option>${exps.map(e => `<option value="${e}"${__gexRange === 'e:' + e ? ' selected' : ''}>${e}</option>`).join('')}</select>
+    ${(() => { const sel = __gexRange.startsWith('m:') ? new Set(__gexRange.slice(2).split(',')) : __gexRange.startsWith('e:') ? new Set([__gexRange.slice(2)]) : new Set();
+      return `<details class="gx-multi"${__gxMultiOpen ? ' open' : ''} ontoggle="__gxMultiOpen = this.open"><summary>到期日多选${sel.size ? ` · 已选 ${sel.size}` : ''}</summary>
+        <div class="gx-list">${exps.map(e => `<label><input type="checkbox"${sel.has(e) ? ' checked' : ''} onchange="gxToggleExp('${esc(t)}', '${e}', this.checked)"> ${e}</label>`).join('')}</div>
+        ${__gexWide[t] && __gexWide[t].cs ? '' : `<button class="app-link" onclick="fetchGexWide('${esc(t)}').then(() => { const y = window.scrollY; render(); window.scrollTo(0, y); })">加载 180 天内全部到期日</button>`}
+        ${sel.size ? `<button class="app-link" onclick="setGexRange('d50', '${esc(t)}')">清除</button>` : ''}</details>`; })()}
     <span class="rk-quiet gx-lab">${V && V.label ? esc(V.label) : ''}${__gexWide[t] === undefined && (__gexRange === 'all' || __gexRange.startsWith('e:')) ? ' · 读取更远的到期日…' : ''}</span></div>`;
 }
 async function fetchGex(t, { maxAge = 10 * 60000 } = {}) {
@@ -15404,18 +15492,18 @@ async function fetchGex(t, { maxAge = 10 * 60000 } = {}) {
   } catch (e) { __gex[t] = { at: Date.now(), err: '网络错误' }; }
   return __gex[t];
 }
-function _gexChartSVG(G, mark) {
+function _gexChartSVG(G, mark, opt = {}) {
   const S = G.S, rows = G.g.rows.filter(r => r.K >= S * 0.85 && r.K <= S * 1.15);
   if (rows.length < 3) return '';
   const k0 = rows[0].K, k1 = rows[rows.length - 1].K, f = v => v == null ? '' : (v >= 100 ? Math.round(v) : +v.toFixed(1));
   // vertical markers: walls dashed, labels stacked in rows so they never overlap
   const marks = [[G.g.putWall, 'gex-pw', `Put Wall ${f(G.g.putWall)}`], [G.g.callWall, 'gex-cw', `Call Wall ${f(G.g.callWall)}`], [S, 'gex-spot', `现价 ${f(S)}`],
     [G.g.flip, 'gex-flip', `Flip ${f(G.g.flip)}`], [G.maxPain, 'gex-mp', `Max Pain ${f(G.maxPain)}`], [mark || null, 'gex-mark', `你的 ${f(mark)}`]].filter(m => m[0] != null && m[0] >= k0 && m[0] <= k1);
-  const W = _chartW(), L = 8, R = 8, B = 22, cwPx = 6.4;
+  const W = opt.W || _chartW(), L = 8, R = 8, B = 22, cwPx = 6.4;
   const X = k => L + (k - k0) / (k1 - k0 || 1) * (W - L - R);
   const lanes = []; marks.sort((a, b) => a[0] - b[0]).forEach(m => { const w = m[2].length * cwPx + 8, x = Math.min(W - R - w / 2, Math.max(L + w / 2, X(m[0])));
     let lane = lanes.findIndex(end => end + 4 < x - w / 2); if (lane < 0) { lanes.push(0); lane = lanes.length - 1; } lanes[lane] = x + w / 2; m.push(lane, x); });
-  const T = 10 + lanes.length * 15, H = T + 150 + B, mx = Math.max(...rows.map(r => Math.abs(r.net))) || 1;
+  const T = 10 + lanes.length * 15, H = T + (opt.PH || 150) + B, mx = Math.max(...rows.map(r => Math.abs(r.net))) || 1;
   const Y0 = T + (H - T - B) / 2, Y = v => Y0 - v / mx * (H - T - B) / 2, bw = Math.max(2, (W - L - R) / rows.length * 0.7);
   const vlines = marks.map(([k, cls, label, lane, lx]) => `<line x1="${X(k).toFixed(1)}" x2="${X(k).toFixed(1)}" y1="${(10 + lane * 15 + 4).toFixed(1)}" y2="${H - B}" class="${cls}"/>`
     + `<text x="${lx.toFixed(1)}" y="${(10 + lane * 15).toFixed(1)}" text-anchor="middle" class="gex-lab ${cls}-t">${esc(label)}</text>`).join('');
@@ -15446,7 +15534,7 @@ function gexInnerHTML(t, opts = {}) {
       ${cell(`Gamma Flip ${_qBtn('gflip', 'short')}`, f2(g.flip), g.flip ? (G.S >= g.flip ? '现价在上方' : '现价在下方') : '区间内无')}
       ${cell(`Max Pain ${_qBtn('maxpain', 'short')}`, f2(G.maxPain), G.mx ? _md(G.mx) + ' 到期' : '')}
     </div>
-    ${_gexChartSVG(G, mark)}
+    <div class="gx-chart-wrap"><button class="rk-preset gx-fs-btn" onclick="showGexFs('${esc(t)}', ${mark || 0})">全屏</button>${_gexChartSVG(G, mark)}</div>
     ${vsWall ? `<div class="gex-verdict">${vsWall}</div>` : ''}
     <div class="cq-note">按 OI × Gamma 估算, 50 天内到期合约 · ${G.hasGamma ? 'Gamma 取自 Schwab' : 'Gamma 按 Black-Scholes 估算'} · ${_ago(G.at)}.</div>`;
 }
@@ -15659,7 +15747,7 @@ function _attribInnerHTML() {
   return `
     <div class="rk-presets at-seg">${[7, 30, 90].map(d => `<button class="rk-preset${__attrDays === d ? ' active' : ''}" onclick="setAttrDays(${d})">${d} 天</button>`).join('')}<span class="rk-quiet">${days.length} 个交易日</span></div>
     <div class="at-lead">近 ${days.length} 个交易日实际 <b class="${_thCls(tot.actual)}">${_fmtSigned(tot.actual)}</b>, 主要来自<b>${lead}</b> (${_fmtSigned(tot[main])}).</div>
-    <div class="rk-figs at-figs">${fig('actual', '实际')}${fig('theta', 'Theta')}${fig('delta', 'Delta')}${fig('gamma', 'Gamma')}${fig('vega', 'Vega')}${fig('other', '其他')}</div>
+    <div class="rk-figs at-figs">${fig('actual', '实际')}${fig('theta', 'Theta')}${fig('delta', 'Delta')}${fig('gamma', 'Gamma')}${fig('vega', 'Vega')}${fig('other', `其他 ${_qBtn('attrib_other', 'short')}`)}</div>
     ${chart}
     <div class="rk-legend">${ATTR_KEYS.map(k => `<span><i class="rk-sw at-sw-${k}"></i>${ATTR_LABEL[k]}</span>`).join('')}<span><i class="rk-sw at-sw-actual"></i>实际</span></div>
     <div class="rk-table-wrap"><table class="rk-table">
@@ -15695,7 +15783,27 @@ function _heldSince(x) {
 window.showPositions = () => { closeOptionLab(); state._view = 'positions'; render(); window.scrollTo(0, 0); if (!loadHist()) fetchPerf(); };
 function _pct(v, d = 1) { return v == null || !isFinite(v) ? '—' : `${v >= 0 ? '' : '−'}${Math.abs(v).toFixed(d)}%`; }
 function _days(v) { return v == null ? '—' : `${v}`; }
-let __pnlMode = 'sleeve';
+let __pnlMode = 'sleeve', __pnlOthers = [];
+window.pnlJump = key => {
+  if (!key.startsWith('tk')) { const el = document.getElementById('sec-' + key); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
+  const ts = key === 'tk-other' ? __pnlOthers : [key.slice(3)], els = ts.map(t => document.getElementById('tkp-' + t)).filter(Boolean);
+  if (!els.length) return;
+  els.forEach(d => { d.open = true; d.classList.remove('flash'); void d.offsetWidth; d.classList.add('flash'); });
+  els[0].scrollIntoView({ behavior: 'smooth', block: 'start' });
+};
+function _tkPnlHTML(c) {
+  const by = {}; c.pos.forEach(x => { (by[x.ticker] = by[x.ticker] || []).push(x); });
+  const rows = Object.entries(by).map(([t, P]) => ({ t, P, pnl: P.reduce((s, x) => s + (_posPnl(x) || 0), 0) })).sort((a, b) => Math.abs(b.pnl) - Math.abs(a.pnl));
+  if (!rows.length) return '';
+  const KIND = { stock: '正股', short_put: 'CSP', short_call: 'Short call', leaps: 'LEAPS', long_call: 'Long call', long_put: 'Long put' };
+  return `<section class="rk-block" id="tk-pnl"><h3 class="rk-block-title">标的 · 浮动盈亏</h3>
+    ${rows.map(r => `<details class="tkp" id="tkp-${esc(r.t)}"><summary><button class="tkx-t" onclick="event.preventDefault(); showStock('${esc(r.t)}')">${esc(r.t)}</button><span class="rk-quiet">${r.P.length} 个仓位</span><b class="${_thCls(r.pnl)}">${_fmtSigned(r.pnl)}</b></summary>
+      <div class="rk-table-wrap"><table class="rk-table"><thead><tr><th>仓位</th><th>类型</th><th>成本 / 权利金</th><th>市值</th><th>浮盈</th><th>浮盈 %</th></tr></thead><tbody>
+      ${r.P.map(x => { const short = _isShortPos(x), q = Number(x.qty) || 0, basis = short ? (x.avg || 0) * 100 * q : (x.cost || 0), pl = _posPnl(x) || 0;
+        return `<tr${x.kind !== 'stock' ? ` class="gl-row" role="button" onclick="openOptionLab(${c.pos.indexOf(x)})"` : ''}><td><b>${esc(_posLabel(x))}</b></td><td>${KIND[x.kind] || x.kind}</td><td>${_fmtUsd(basis)}</td><td>${_fmtUsd(Math.abs(x.marketValue || 0))}</td>
+          <td class="${_thCls(pl)}">${_fmtSigned(pl)}</td><td class="${_thCls(pl)}">${basis ? _pct(pl / basis * 100) : '—'}</td></tr>`; }).join('')}</tbody></table></div></details>`).join('')}
+    <div class="rk-note">按浮盈影响大小排序. 卖方仓位: 成本列是开仓收到的权利金.</div></section>`;
+}
 window.setPnlMode = m => { __pnlMode = m; const el = document.getElementById('pnl-block'); if (el) { el.outerHTML = _pnlBlockHTML(); _fitChartText(); } };
 const PNL_SLEEVES = [['stock', '正股', x => x.kind === 'stock'], ['leaps', 'LEAPS', x => x.kind === 'leaps'], ['csp', 'CSP', x => x.kind === 'short_put'],
   ['sc', 'Short call', x => x.kind === 'short_call'], ['oth', '其他期权', x => x.kind === 'long_call' || x.kind === 'long_put']];
@@ -15793,7 +15901,7 @@ function _tickerBlocksHTML(c) {
       <div class="rk-note">${mode === 'cost' ? '正股 / LEAPS 按买入成本, CSP 按名义. 集中度评分用这个口径.' : '正股 / LEAPS 按当前市值, CSP 按名义, 随价格浮动.'} 点标的看个股.</div>
     </section>`;
   };
-  return block('cost', '单一标的敞口 · 投入', '成本 + CSP 名义') + block('mv', '按标的 · 市值', '市值 + CSP 名义');
+  return block('cost', '标的 · 投入', '成本 + CSP 名义') + block('mv', '标的 · 市值', '市值 + CSP 名义');
 }
 function _pnlWaterfallSVG(items, total) {
   const W = _chartW(), H = 210, L = 8, R = 8, T = 22, B = 34, n = items.length + 1, bw = Math.min(64, (W - L - R) / n * 0.62), X = i => L + (i + 0.5) * (W - L - R) / n;
@@ -15801,7 +15909,7 @@ function _pnlWaterfallSVG(items, total) {
   const lo = Math.min(0, ...segs.map(s => Math.min(s.a, s.b)), total), hi = Math.max(0, ...segs.map(s => Math.max(s.a, s.b)), total), span = hi - lo || 1;
   const Y = v => T + (hi - v) / span * (H - T - B);
   const bars = segs.map((s, i) => { const y1 = Y(Math.max(s.a, s.b)), h = Math.max(1, Math.abs(Y(s.a) - Y(s.b))), up = s.v >= 0;
-    return `<g class="wf-bar" ${s.key ? `role="button" tabindex="0" onclick="(document.getElementById('sec-${s.key}') || {}).scrollIntoView && document.getElementById('sec-${s.key}').scrollIntoView({ behavior: 'smooth', block: 'start' })"` : ''}>
+    return `<g class="wf-bar" ${s.key ? `role="button" tabindex="0" onclick="pnlJump('${esc(s.key)}')"` : ''}>
       <rect x="${(X(i) - bw / 2).toFixed(1)}" y="${y1.toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" class="${up ? 'wf-pos' : 'wf-neg'}"><title>${esc(s.label)} ${_fmtSigned(s.v)}</title></rect>
       ${i < segs.length - 1 ? `<line x1="${(X(i) + bw / 2).toFixed(1)}" x2="${(X(i + 1) - bw / 2).toFixed(1)}" y1="${Y(s.b).toFixed(1)}" y2="${Y(s.b).toFixed(1)}" class="wf-link"/>` : ''}
       <text x="${X(i).toFixed(1)}" y="${(up ? y1 - 6 : y1 + h + 13).toFixed(1)}" text-anchor="middle" class="rk-ch-lab wf-val ${up ? 'rk-t-safe' : 'rk-t-alert'}">${esc(_fmtSigned(s.v))}</text>
@@ -15820,20 +15928,21 @@ function _pnlBlockHTML() {
   if (__pnlMode === 'ticker') {
     const by = {}; pos.forEach(x => { by[x.ticker] = (by[x.ticker] || 0) + pnl(x); });
     const all = Object.entries(by).sort((a, b) => Math.abs(b[1]) - Math.abs(a[1])), top = all.slice(0, 7), rest = all.slice(7).reduce((s, x) => s + x[1], 0);
-    items = top.map(([t, v]) => ({ label: t, v })).concat(Math.abs(rest) > 0.5 ? [{ label: '其他', v: rest }] : []);
+    __pnlOthers = all.slice(7).map(([t]) => t);
+    items = top.map(([t, v]) => ({ label: t, v, key: 'tk:' + t })).concat(Math.abs(rest) > 0.5 ? [{ label: '其他', v: rest, key: 'tk-other' }] : []);
   } else items = PNL_SLEEVES.map(([k, l, f]) => ({ key: k, label: l, v: pos.filter(f).reduce((s, x) => s + pnl(x), 0), n: pos.filter(f).length })).filter(s => s.n);
   const worst = lose.slice().sort((a, b) => pnl(a) - pnl(b))[0], best = win.slice().sort((a, b) => pnl(b) - pnl(a))[0];
   const fig = (label, val, sub, cls) => `<div class="rk-fig"><span class="rk-fig-val ${cls}">${val}</span><span class="rk-fig-label">${label}</span>${sub ? `<span class="rk-fig-sub">${sub}</span>` : ''}</div>`;
   return `
     <section class="rk-block" id="pnl-block">
-      <h3 class="rk-block-title rk-title-row"><span>浮动盈亏</span><span class="rk-presets"><button class="rk-preset${__pnlMode === 'sleeve' ? ' active' : ''}" onclick="setPnlMode('sleeve')">按板块</button><button class="rk-preset${__pnlMode === 'ticker' ? ' active' : ''}" onclick="setPnlMode('ticker')">按标的</button></span></h3>
+      <h3 class="rk-block-title rk-title-row"><span>浮动盈亏</span><span class="rk-presets"><button class="rk-preset${__pnlMode === 'sleeve' ? ' active' : ''}" onclick="setPnlMode('sleeve')">按策略</button><button class="rk-preset${__pnlMode === 'ticker' ? ' active' : ''}" onclick="setPnlMode('ticker')">按标的</button></span></h3>
       <div class="rk-figs">
         ${fig('浮动盈亏', _fmtSigned(total), `${nav ? (total / nav * 100).toFixed(1) + '% NAV' : ''}${cost ? ` · 成本的 ${(total / cost * 100).toFixed(1)}%` : ''}`, total >= 0 ? 'rk-t-safe' : 'rk-t-danger')}
         ${fig('盈利的仓位', _fmtSigned(win.reduce((s, x) => s + pnl(x), 0)), `${win.length} 个${best ? ` · 最多 ${esc(_posLabel(best).split(' ').slice(0, 2).join(' '))} ${_fmtSigned(pnl(best))}` : ''}`, 'rk-t-safe')}
         ${fig('亏损的仓位', _fmtSigned(lose.reduce((s, x) => s + pnl(x), 0)), `${lose.length} 个${worst ? ` · 最多 ${esc(_posLabel(worst).split(' ').slice(0, 2).join(' '))} ${_fmtSigned(pnl(worst))}` : ''}`, 'rk-t-alert')}
       </div>
       ${items.length ? _pnlWaterfallSVG(items, total) : ''}
-      <div class="rk-note">${__pnlMode === 'sleeve' ? '点柱子跳到该板块明细.' : '影响最大的 7 个标的, 其余合并为「其他」.'} 卖方浮盈 = 开仓权利金 − 当前价值.</div>
+      <div class="rk-note">${__pnlMode === 'sleeve' ? '点柱子跳到该策略的明细.' : '影响最大的 7 个标的, 其余合并为「其他」. 点柱子跳到下面该标的的仓位.'} 卖方浮盈 = 开仓权利金 − 当前价值.</div>
     </section>`;
 }
 function _progBarHTML(prog, timePct, label) {
@@ -15993,7 +16102,7 @@ function renderPositionsPage() {
           <td class="${_thCls(_posPnl(x))}">${sgn(_posPnl(x))}</td><td>${_days(_dteOf(x))}</td><td>${h ? h.days + ' 天' : '—'}</td><td>${sgn(_dollarDelta(x))}</td>`); }).join('')}</tbody>
       </table></div>
     </section>` : '';
-  $app.innerHTML = head + `<div class="rk-page pos-page">${_safe('浮动盈亏', _pnlBlockHTML)}${_safe('还能买 LEAPS', _roomBlockHTML, '')}${_safe('组合构成', () => comp)}${_safe('按标的', () => _tickerBlocksHTML(c))}${_safe('CSP', () => cspHTML)}${_safe('Short call', () => scHTML)}${_safe('LEAPS', () => lpHTML)}${_safe('正股', () => stHTML)}${_safe('其他期权', () => othHTML)}
+  $app.innerHTML = head + `<div class="rk-page pos-page">${_safe('浮动盈亏', _pnlBlockHTML)}${_safe('标的 · 浮动盈亏', () => _tkPnlHTML(c), '')}${_safe('还能买 LEAPS', _roomBlockHTML, '')}${_safe('组合构成', () => comp)}${_safe('按标的', () => _tickerBlocksHTML(c))}${_safe('CSP', () => cspHTML)}${_safe('Short call', () => scHTML)}${_safe('LEAPS', () => lpHTML)}${_safe('正股', () => stHTML)}${_safe('其他期权', () => othHTML)}
     ${loadHist() ? '' : '<div class="rk-note">持有天数需要交易记录, 正在读取…</div>'}</div>`;
 }
 
@@ -16141,7 +16250,7 @@ async function _scanPMCC(cfg, prog) {
       { k: 'LEAPS 浮盈 ≥ 15%', ok: prof != null && prof >= 15, v: prof != null ? _pct(prof, 0) : '—' },
       { k: `距止盈 (+${tg}%) ≥ 10%`, ok: prof != null && tg - prof >= 10, v: prof != null ? _pct(tg - prof, 0) : '—' },
       { k: 'KDJ J > 78', ok: !!t && t.J > 78, v: t ? t.J.toFixed(0) : '—' },
-      { k: '布林中轨与上轨中点之上', ok: !!t && t.px > (t.mid + t.up) / 2, v: t && t.pctB != null ? '%B ' + (t.pctB * 100).toFixed(0) + '%' : '—' } ];
+      { k: '布林 %B > 75%', ok: !!t && t.px > (t.mid + t.up) / 2, v: t && t.pctB != null ? (t.pctB * 100).toFixed(0) + '%' : '—' } ];
     const ready = checks.every(ch => ch.ok);
     let cands = [], wall = null;
     if (ready) {
@@ -16166,9 +16275,9 @@ async function _scanCC(cfg, prog) {
     const w = wheel && wheel.rows ? wheel.rows.find(r => r.T === x.ticker) : null, cost = w && w.adj ? w.adj : x.avg;
     const t = __px[x.ticker] && techOf(__px[x.ticker].bars, __px[x.ticker].live);
     const checks = [
-      { k: '有未覆盖的 100 股', ok: free >= 1, v: `${free} / ${lots} 张` },
+      { k: '未覆盖的 100 股', ok: free >= 1, v: `${free} / ${lots} 张` },
       { k: `KDJ J > ${kmin}`, ok: !!t && t.J > kmin, v: t ? t.J.toFixed(0) : '—' },
-      { k: '布林中轨之上', ok: !!t && t.px > t.mid, v: t && t.pctB != null ? '%B ' + (t.pctB * 100).toFixed(0) + '%' : '—' } ];
+      { k: '布林 %B > 50%', ok: !!t && t.px > t.mid, v: t && t.pctB != null ? (t.pctB * 100).toFixed(0) + '%' : '—' } ];
     const ready = checks.every(ch => ch.ok);
     let cands = [], wall = null;
     if (ready) {
@@ -16254,7 +16363,7 @@ function renderScanPage() {
   if (tab === 'cc') { cfgHTML = `<div class="sc-cfg-row"><span class="sc-lab">模式</span>${seg('ccMode', Object.entries(CC_MODES).map(([k, v]) => [k, v[0]]), cfg.ccMode)}</div>`;
     const m = CC_MODES[cfg.ccMode]; note = `条件: 有未覆盖的 100 股 · J > ${m[3]} · 布林中轨上. 候选 call: DTE 7–45 · Δ ${m[1]}–${m[2]} · 高于调整后成本及 Call Wall.`; }
   const funnel = r && r.funnel ? `<div class="sc-funnel">股票池 ${r.funnel[0]} → 条件 ${r.funnel[1]} → 粗筛 ${r.funnel[2]} → 技术面 ${r.funnel[3]} → <b>符合 ${r.funnel[4]}</b>${r.hasCap === false ? ' · <span class="rk-t-alert">市值数据缺失, 未按市值过滤</span>' : ''}${r.src === 'fallback_sp100' ? ' · <span class="rk-quiet">S&P 500 名单读取失败, 用 S&P 100</span>' : ''}</div>` : '';
-  const chip = (ok, l) => ok == null ? `<span class="sc-chip">${l} ?</span>` : `<span class="sc-chip ${ok ? 'ok' : 'no'}">${l} ${ok ? '✓' : '✗'}</span>`;
+  const chip = (ok, l) => ok == null ? `<span class="sc-chip">${l}</span>` : `<span class="sc-chip ${ok ? 'ok' : 'no'}">${l}</span>`;
   const meta = x => `${x.name ? `<span class="rk-quiet">${esc(x.name)}</span>` : ''}${x.mcap ? ` <span class="rk-quiet">· $${(x.mcap / 1e9).toFixed(0)}B</span>` : ''}${x.ndx ? ' <span class="sc-chip">QQQ</span>' : ''}`;
   let body = '';
   if (__scanBusy === tab) body = `<div class="rk-quiet" id="scan-prog">${esc(__scanProg2)}</div>`;
@@ -16272,12 +16381,12 @@ function renderScanPage() {
       <button class="btn small" onclick="openScanChecklist('${esc(x.t)}', ${b.K}, '${esc(b.exp)}', 'leaps')">开 checklist</button></div>
       <div class="sc-figs"><span><em>时间价值/年 ${_qBtn('carry', 'long')}</em><b class="rk-t-watch">${b.carry.toFixed(1)}%</b></span><span><em>Δ</em><b>${b.d}</b></span><span><em>DTE</em><b>${b.dte}</b></span><span><em>价格</em><b>${b.mid.toFixed(2)}</b></span>
         <span><em>λ ${_qBtn('lambda', 'long')}</em><b>${b.lam.toFixed(1)}</b></span><span><em>每张</em><b>${_fmtUsd(b.mid * 100)}</b></span></div>
-      <div class="sc-chips"><span class="sc-chip ok">近 3 日 J 最低 ${x.J.toFixed(0)} ✓</span><span class="sc-chip ok">收盘未创新低 ✓</span><span class="sc-chip">RSI ${x.rsi.toFixed(0)}</span>${x.d200 != null ? `<span class="sc-chip ${Math.abs(x.d200) <= 5 ? 'ok' : ''}">距 200MA ${x.d200 >= 0 ? '+' : ''}${x.d200.toFixed(1)}%</span>` : ''}${x.d250 != null ? `<span class="sc-chip ${Math.abs(x.d250) <= 5 ? 'ok' : ''}">距 250MA ${x.d250 >= 0 ? '+' : ''}${x.d250.toFixed(1)}%</span>` : ''}<span class="sc-chip">52 周位置 ${(x.pos52 * 100).toFixed(0)}%</span>${b.spread != null && b.spread > 15 ? `<span class="sc-chip no">价差 ${b.spread.toFixed(0)}%</span>` : ''}</div>
+      <div class="sc-chips"><span class="sc-chip ok">近 3 日 J 最低 ${x.J.toFixed(0)} (≤ 15)</span><span class="sc-chip ok">收盘未创新低</span><span class="sc-chip">RSI ${x.rsi.toFixed(0)}</span>${x.d200 != null ? `<span class="sc-chip ${Math.abs(x.d200) <= 5 ? 'ok' : ''}">距 200MA ${x.d200 >= 0 ? '+' : ''}${x.d200.toFixed(1)}%</span>` : ''}${x.d250 != null ? `<span class="sc-chip ${Math.abs(x.d250) <= 5 ? 'ok' : ''}">距 250MA ${x.d250 >= 0 ? '+' : ''}${x.d250.toFixed(1)}%</span>` : ''}<span class="sc-chip">52 周位置 ${(x.pos52 * 100).toFixed(0)}%</span>${b.spread != null && b.spread > 15 ? `<span class="sc-chip no">价差 ${b.spread.toFixed(0)}%</span>` : ''}</div>
       ${x.alts.length ? `<div class="sc-alts">其他: ${x.alts.map(o => `<button class="app-link" onclick="openScanChecklist('${esc(x.t)}', ${o.K}, '${esc(o.exp)}', 'leaps')">${o.K}C ${esc(_md(o.exp))}</button> <span class="rk-quiet">Δ${o.d} · ${o.carry.toFixed(1)}%/年</span>`).join(' · ')}</div>` : ''}</div>`; }).join('') : '<div class="rk-quiet">目前没有 KDJ J ≤ 15 且有合适合约的标的.</div>';
   else body = r.rows.length ? r.rows.map(x => `
     <div class="sc-row${x.ready ? ' sc-ready' : ''}"><div class="sc-top"><b class="sc-t">${esc(tab === 'pmcc' ? x.label : x.t)}</b>${tab === 'cc' ? `<span class="rk-quiet">${x.shares} 股 · 调整后成本 ${x.cost != null ? x.cost.toFixed(2) : '—'}</span>` : `<span class="rk-quiet">安全线 ${x.floor.toFixed(2)} (行权价 + 成本)</span>`}
       <span class="sc-state ${x.ready ? 'ok' : ''}">${x.ready ? '可以做 ' + (tab === 'pmcc' ? 'PMCC' : 'CC') : '等待'}</span></div>
-      <div class="sc-chips">${x.checks.map(ch => `<span class="sc-chip ${ch.ok ? 'ok' : 'no'}">${esc(ch.k)} · ${esc(ch.v)} ${ch.ok ? '✓' : '✗'}</span>`).join('')}${x.wall ? `<span class="sc-chip">Call Wall ${x.wall}</span>` : ''}</div>
+      <div class="sc-chips">${x.checks.map(ch => `<span class="sc-chip ${ch.ok ? 'ok' : 'no'}">${esc(ch.k)} · 现在 ${esc(ch.v)}</span>`).join('')}${x.wall ? `<span class="sc-chip">Call Wall ${x.wall}</span>` : ''}</div>
       ${x.ready ? (x.cands.length ? `<div class="rk-table-wrap"><table class="rk-table"><thead><tr><th>合约</th><th>Δ</th><th>DTE</th><th>权利金</th><th>年化</th><th></th></tr></thead><tbody>${x.cands.map(o => `<tr><td><b>${o.K}C ${esc(_md(o.exp))}</b></td><td>${o.d}</td><td>${o.dte}</td><td>${o.mid.toFixed(2)}</td><td>${o.ann.toFixed(0)}%</td>
         <td><button class="btn small" onclick="openScanChecklist('${esc(x.t)}', ${o.K}, '${esc(o.exp)}', '${tab}')">开 checklist</button></td></tr>`).join('')}</tbody></table></div>` : '<div class="rk-quiet">条件满足, 但没有同时满足 Δ / 行权价 / Call Wall 的合约.</div>') : ''}
     </div>`).join('') : `<div class="rk-quiet">${tab === 'pmcc' ? '当前没有持有 LEAPS.' : '当前没有 ≥ 100 股的正股.'}</div>`;
@@ -16331,7 +16440,9 @@ function _stkW() {
 function _stkR(W) { return W > 600 ? 214 : 40; }
 window.addEventListener('resize', () => { clearTimeout(_stkW._t); _stkW._t = setTimeout(() => { if (state._view === 'stock') _stkRedraw(); }, 200); });
 function _sma1(a, k, i) { return i + 1 >= k ? a.slice(i + 1 - k, i + 1).reduce((s, v) => s + v, 0) / k : null; }
-let __stkZoom = { n: 126, end: null }, __stkMA = new Set(), __stkDrag = null, __stkPinch = null;
+let __stkZoom = { n: 126, end: null }, __stkMA = new Set(), __stkDrag = null, __stkPinch = null, __stkFs = false;
+window.toggleStkFs = () => { __stkFs = !__stkFs; const b = document.querySelector('.stk-chart-block'); if (b) b.classList.toggle('stk-fs', __stkFs); document.body.classList.toggle('fs-lock', __stkFs); _stkRedraw(); };
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { if (__stkFs) toggleStkFs(); const g = document.getElementById('gx-fs'); if (g) g.remove(); } });
 let __stkLock = localStorage.getItem('pretrade_stk_lock') !== '0';   // lock = zoom around the current price (latest bar stays at the right edge)
 const STK_MAS = [[5, '#7FA7E8'], [10, '#B48CEB'], [20, '#D9B562'], [50, '#4FC1B5'], [200, '#E9825F']];
 window.setStockRange = n => { __stkZoom = { n, end: null }; _stkRedraw(); };
@@ -16346,12 +16457,13 @@ function _stkToolsHTML() {
   return `<div class="stk-tools" id="stk-tools"><span class="rk-presets">${[[63, '3 个月'], [126, '6 个月'], [252, '1 年']].map(([k, lb]) => `<button class="rk-preset${__stkZoom.n === k && __stkZoom.end == null ? ' active' : ''}" onclick="setStockRange(${k})">${lb}</button>`).join('')}</span>
     <span class="rk-presets"><button class="rk-preset" onclick="stkZoom(0.7)" aria-label="放大">＋</button><button class="rk-preset" onclick="stkZoom(1.4)" aria-label="缩小">−</button></span>
     <span class="rk-presets"><button class="rk-preset" onclick="stkToNow()" title="跳回最新的 K 线">回到现价</button><button class="rk-preset stk-lock${__stkLock ? ' active' : ''}" onclick="toggleStkLock()" title="打开: 缩放以现价为基准, 最新 K 线固定在右侧, 拖动不平移">${__stkLock ? '已锁定现价' : '锁定现价'}</button></span>
+    <button class="rk-preset stk-fs-btn" onclick="toggleStkFs()">${__stkFs ? '退出全屏' : '全屏'}</button>
     <span class="stk-ma">${STK_MAS.map(([k, col]) => `<button class="stk-ma-btn${__stkMA.has(k) ? ' on' : ''}" style="--c:${col}" onclick="toggleStkMA(${k})">MA${k}</button>`).join('')}</span></div>`;
 }
 function _stockChartSVG(t) {
   const p = __px[t]; if (!p || !p.bars || p.bars.length < 30) return '<div class="rk-quiet">读取日线…</div>';
   const all = p.bars, A = all.length, n = Math.max(20, Math.min(A, __stkZoom.n)), end = Math.min(A, __stkZoom.end ?? A), start = Math.max(0, end - n), bars = all.slice(start, end), N = bars.length, c = all.map(b => b.c);
-  const W = _stkW(), L = 48, R = _stkR(W), T = 14, PH = W > 700 ? 420 : 300, B = 26, H = T + PH + B, cw = (W - L - R) / N, X = i => L + (i + 0.5) * cw;
+  const W = _stkW(), L = 48, R = _stkR(W), T = 14, PH = __stkFs ? Math.max(260, (window.innerHeight || 800) - 360) : W > 700 ? 420 : 300, B = 26, H = T + PH + B, cw = (W - L - R) / N, X = i => L + (i + 0.5) * cw;
   const GV = _gexView(t), G0 = GV && !GV.err && !GV.empty ? GV : null, g = G0 && G0.g, px = all[A - 1].c;
   const w = (() => { try { const r = computeWheel(); return r && r.rows ? r.rows.find(x => x.T === t) : null; } catch (e) { return null; } })();
   const lines = [];
@@ -16516,7 +16628,7 @@ function renderStockPage() {
         ${fig(`Gamma Flip ${_qBtn('gflip', 'short')}`, G0.g.flip ? f2(G0.g.flip) : '—', G0.g.flip ? (G0.S > G0.g.flip ? '现价在上方' : '现价在下方') : '')}
         ${fig(`Max Pain ${_qBtn('maxpain', 'short')}`, G0.maxPain ?? '—', G0.mx ? esc(_md(G0.mx)) + ' 到期' : '')}
         ${fig('Put / Call 未平仓', opt && opt.pcr ? opt.pcr.toFixed(2) : '—', opt && opt.pcr ? (opt.pcr > 1.2 ? '偏防守' : opt.pcr < 0.7 ? '偏看涨' : '中性') : '')}
-      </div>${_safe('GEX 图', () => _gexChartSVG(G0), '')}` : `<div class="rk-quiet">${__gex[t] && __gex[t].err ? esc(__gex[t].err) : '读取期权链…'}</div>`}
+      </div><div class="gx-chart-wrap"><button class="rk-preset gx-fs-btn" onclick="showGexFs('${esc(t)}')">全屏</button>${_safe('GEX 图', () => _gexChartSVG(G0), '')}</div>` : `<div class="rk-quiet">${__gex[t] && __gex[t].err ? esc(__gex[t].err) : '读取期权链…'}</div>`}
     </section>`;
   const rsBlock = `
     <section class="rk-block">
@@ -16750,39 +16862,131 @@ function _tickerChartHTML(R) {
       </div>
     </section>`;
 }
-function _expiryChartHTML(R) {
-  const nav = R.c.nav;
-  const csps = R.c.pos.filter(x => x.kind === 'short_put' && x.expiry);
-  if (!nav || !csps.length) return '';
-  const byWeek = {}; _expiryWeeks(csps).forEach(w => { byWeek[w.key] = w; });
-  const keys = Object.keys(byWeek).sort();
-  const start = new Date(_weekKey(_dayKey()) + 'T12:00:00'), last = new Date(keys[keys.length - 1] + 'T12:00:00');
-  const weeks = [];
-  for (let d = new Date(start); d <= last && weeks.length < 16; d.setDate(d.getDate() + 7)) {
-    const k = d.toISOString().slice(0, 10), fri = new Date(d); fri.setDate(fri.getDate() + 4);
-    weeks.push(byWeek[k] ? { ...byWeek[k], fri } : { key: k, total: 0, count: 0, items: [], fri });
+/* ═════════════ v43 · option expiries: bars (auto range, stacked by ticker, cumulative release) / calendar ═════════════ */
+const EXP_VIEW_KEY = 'pretrade_exp_view', EXP_RANGE_KEY = 'pretrade_exp_range';
+let __expView = localStorage.getItem(EXP_VIEW_KEY) || 'bars', __expRange = localStorage.getItem(EXP_RANGE_KEY) || 'auto';
+const US_HOLIDAYS = new Set(['2025-11-27', '2025-12-25', '2026-01-01', '2026-01-19', '2026-02-16', '2026-04-03', '2026-05-25', '2026-06-19', '2026-07-03', '2026-09-07', '2026-11-26', '2026-12-25',
+  '2027-01-01', '2027-01-18', '2027-02-15', '2027-03-26', '2027-05-31', '2027-06-18', '2027-07-05', '2027-09-06', '2027-11-25', '2027-12-24']);
+const EXP_STRAT = { csp: ['CSP', 'var(--sl-csp)'], cc: ['CC', '#E5793B'], pmcc: ['PMCC', 'var(--sl-leaps)'] };
+const TK_PALETTE = ['#4C8DFF', '#26A69A', '#E5793B', '#B98AF5', '#D9B562', '#EF5350', '#5FC3E4', '#9CCC65', '#F06292', '#8D9BAE'];
+window.setExpView = v => { __expView = v; try { localStorage.setItem(EXP_VIEW_KEY, v); } catch (e) {} _expRedraw(); };
+window.setExpRange = v => { __expRange = v; try { localStorage.setItem(EXP_RANGE_KEY, v); } catch (e) {} _expRedraw(); };
+function _expRedraw() { const el = document.getElementById('exp-block'); if (el) { el.outerHTML = _safe('期权到期', () => _expiryChartHTML(computeRisk()), ''); _fitChartText && _fitChartText(); } }
+function _isoAdd(iso, n) { const d = new Date(iso + 'T12:00:00'); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); }
+function _monOf(iso) { const d = new Date(iso + 'T12:00:00'), wd = (d.getDay() + 6) % 7; d.setDate(d.getDate() - wd); return d.toISOString().slice(0, 10); }
+function _thirdFri(y, m) { const d = new Date(y, m, 1, 12); const off = (5 - d.getDay() + 7) % 7; return new Date(y, m, 1 + off + 14, 12).toISOString().slice(0, 10); }
+function _expItems(c) {
+  const pos = c.pos, nav = c.nav || 0;
+  return pos.filter(x => (x.kind === 'short_put' || x.kind === 'short_call') && x.expiry).map(x => {
+    let strat = 'csp';
+    if (x.kind === 'short_call') { const sh = pos.filter(s => s.kind === 'stock' && s.ticker === x.ticker).reduce((s, y) => s + (Number(y.qty) || 0), 0);
+      strat = sh >= 100 ? 'cc' : pos.some(l => l.kind === 'leaps' && l.ticker === x.ticker) ? 'pmcc' : 'cc'; }
+    const n = x.kind === 'short_put' ? (x.exposure || x.strike * 100 * (Number(x.qty) || 0)) : x.strike * 100 * (Number(x.qty) || 0);
+    return { x, strat, t: x.ticker, d: x.expiry, n, pct: nav ? n / nav * 100 : 0 };
+  }).sort((a, b) => a.d < b.d ? -1 : a.d > b.d ? 1 : 0);
+}
+function _expBuckets(items) {
+  const today = _todayISO(), last = items.length ? items[items.length - 1].d : today;
+  const span = Math.max(1, Math.round((Date.parse(last) - Date.parse(today)) / 864e5));
+  let gran, horizon;
+  if (__expRange === '30') { gran = 'day'; horizon = 30; } else if (__expRange === '90') { gran = 'week'; horizon = 91; } else if (__expRange === '180') { gran = 'week'; horizon = 182; }
+  else if (span <= 30) { gran = 'day'; horizon = Math.max(14, span + 2); } else { gran = 'week'; horizon = Math.min(182, span + 7); }
+  const end = _isoAdd(today, horizon), buckets = [];
+  if (gran === 'day') { for (let d = today; d <= end; d = _isoAdd(d, 1)) { const wd = new Date(d + 'T12:00:00').getDay(); if (wd === 0 || wd === 6 || US_HOLIDAYS.has(d)) continue; buckets.push({ key: d, from: d, to: d, label: `${+d.slice(5, 7)}/${+d.slice(8)}` }); } }
+  else { for (let m = _monOf(today); m <= end; m = _isoAdd(m, 7)) { const fri = _isoAdd(m, 4); buckets.push({ key: m, from: m, to: _isoAdd(m, 6), label: `${+fri.slice(5, 7)}/${+fri.slice(8)}` }); } }
+  buckets.forEach(b => { b.items = items.filter(it => it.d >= b.from && it.d <= b.to); });
+  const later = items.filter(it => it.d > (buckets.length ? buckets[buckets.length - 1].to : end));
+  if (later.length) buckets.push({ key: 'later', label: '之后', items: later });
+  return { gran, buckets, span };
+}
+function _expBarsSVG(c, items) {
+  const nav = c.nav || 1, { gran, buckets } = _expBuckets(items), n = buckets.length; if (!n) return '';
+  const tks = [...new Set(items.map(i => i.t))].sort((a, b) => items.filter(i => i.t === b).reduce((s, i) => s + i.n, 0) - items.filter(i => i.t === a).reduce((s, i) => s + i.n, 0));
+  const col = t => TK_PALETTE[tks.indexOf(t) % TK_PALETTE.length];
+  const W = _chartW(), L = 34, R = 46, T = 30, H = 230, B = 34, PH = H - T - B, cw = (W - L - R) / n, X = i => L + (i + 0.5) * cw, bw = Math.max(3, Math.min(30, cw * 0.66));
+  const tot = b => b.items.reduce((s, i) => s + i.pct, 0), maxPct = Math.max(20, ...buckets.map(tot)) * 1.15, Y = v => T + PH - v / maxPct * PH;
+  const cspTot = items.filter(i => i.strat === 'csp').reduce((s, i) => s + i.pct, 0) || 1;
+  let s = `<line x1="${L}" x2="${W - R}" y1="${Y(15).toFixed(1)}" y2="${Y(15).toFixed(1)}" class="exp-guide"/><text x="${L - 4}" y="${(Y(15) + 3).toFixed(1)}" text-anchor="end" class="rk-ch-lab">15%</text>`;
+  let cum = 0; const cpts = [];
+  const step = Math.max(1, Math.ceil(n / (W > 600 ? 14 : 7)));
+  buckets.forEach((b, i) => {
+    let y = T + PH; const pct = tot(b);
+    tks.forEach(t => { const v = b.items.filter(it => it.t === t).reduce((q, it) => q + it.pct, 0); if (!v) return; const h = v / maxPct * PH; y -= h;
+      s += `<rect x="${(X(i) - bw / 2).toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(0.6, h).toFixed(1)}" fill="${col(t)}" class="exp-seg"><title>${t} · ${b.items.filter(it => it.t === t).map(it => `${EXP_STRAT[it.strat][0]} ${it.x.strike} ${it.d}`).join(', ')} · ${v.toFixed(1)}% NAV</title></rect>`; });
+    if (pct) { const lv = riskLevel(_scoreMax(pct, [15, 25, 35]));
+      s += `<text x="${X(i).toFixed(1)}" y="${(Y(pct) - 5).toFixed(1)}" text-anchor="middle" class="rk-ch-lab exp-val rk-t-${lv.key}">${pct.toFixed(0)}%</text>`;
+      if (gran === 'week' && b.key !== 'later') { const byDay = {}; b.items.forEach(it => { byDay[it.d] = (byDay[it.d] || 0) + it.pct; }); const top = Object.entries(byDay).sort((a, z) => z[1] - a[1])[0];
+        if (top && top[1] >= 15) s += `<text x="${X(i).toFixed(1)}" y="${(Y(pct) - 17).toFixed(1)}" text-anchor="middle" class="rk-ch-lab exp-day">${+top[0].slice(5, 7)}/${+top[0].slice(8)}</text>`; }
+      s += `<rect x="${(X(i) - cw / 2).toFixed(1)}" y="${T}" width="${cw.toFixed(1)}" height="${PH}" class="exp-hit" onclick="showExpDetail('${b.key}')"><title>点开看明细</title></rect>`; }
+    if (i % step === 0 || i === n - 1 || pct) s += `<text x="${X(i).toFixed(1)}" y="${H - B + 14}" text-anchor="middle" class="rk-ch-lab${pct ? ' exp-has' : ''}">${b.label}</text>`;
+    cum += b.items.filter(it => it.strat === 'csp').reduce((q, it) => q + it.pct, 0);
+    cpts.push([X(i), T + PH - cum / cspTot * PH]);
+  });
+  if (items.some(i => i.strat === 'csp')) {
+    s += `<polyline points="${cpts.map(p => `${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' ')}" fill="none" class="exp-cum"/>`;
+    s += `<text x="${W - R + 4}" y="${(T + 4).toFixed(1)}" class="rk-ch-lab exp-cum-t">${cspTot.toFixed(0)}%</text><text x="${W - R + 4}" y="${(T + 16).toFixed(1)}" class="rk-ch-lab exp-cum-t">累计</text>`;
   }
-  const later = keys.filter(k => k > (weeks.length ? weeks[weeks.length - 1].key : '')).map(k => byWeek[k]);
-  if (later.length) weeks.push({ key: 'later', total: later.reduce((s, w) => s + w.total, 0), count: later.reduce((s, w) => s + w.count, 0), items: later.flatMap(w => w.items), laterLabel: '之后' });
-  const maxPct = Math.max(25, ...weeks.map(w => w.total / nav * 100)) * 1.1;
+  const legend = tks.map(t => `<span><i class="rk-sw" style="background:${col(t)}"></i>${esc(t)}</span>`).join('');
+  return `<svg class="rk-chart exp-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="期权到期">${s}</svg>
+    <div class="rk-legend">${legend}<span><i class="rk-sw exp-sw-cum"></i>CSP 累计释放 (右侧刻度)</span></div>
+    <div class="rk-note">${gran === 'day' ? '按交易日' : '按周 (标签为周五)'} · 柱子按标的堆叠, 高度 = 到期名义 % NAV · 虚线 15% · ${gran === 'week' ? '单日超过 15% 时在柱子上标出那一天 · ' : ''}点柱子看明细.</div>`;
+}
+function _expCalHTML(c, items) {
+  const today = _todayISO(), last = items.length ? items[items.length - 1].d : today;
+  const t0 = new Date(today + 'T12:00:00'), t1 = new Date(last + 'T12:00:00');
+  const auto = Math.min(6, Math.max(1, (t1.getFullYear() - t0.getFullYear()) * 12 + t1.getMonth() - t0.getMonth() + 1));
+  const months = __expRange === '30' ? Math.min(2, auto === 1 ? 1 : 2) : __expRange === '90' ? 3 : __expRange === '180' ? 6 : auto;
+  const byDay = {}; items.forEach(it => { (byDay[it.d] = byDay[it.d] || []).push(it); });
+  let html = '';
+  for (let k = 0; k < months; k++) {
+    const y = new Date(t0.getFullYear(), t0.getMonth() + k, 1).getFullYear(), m = new Date(t0.getFullYear(), t0.getMonth() + k, 1).getMonth();
+    const first = new Date(y, m, 1, 12), lead = (first.getDay() + 6) % 7, days = new Date(y, m + 1, 0).getDate(), tf = _thirdFri(y, m);
+    let cells = ''; for (let i = 0; i < lead; i++) cells += '<div class="ec-cell blank"></div>';
+    for (let d = 1; d <= days; d++) {
+      const iso = `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`, wd = new Date(iso + 'T12:00:00').getDay(), its = byDay[iso] || [];
+      const pct = its.reduce((s, i) => s + i.pct, 0), lv = pct ? riskLevel(_scoreMax(pct, [15, 25, 35])).key : '';
+      const grp = {}; its.forEach(i => { const g = i.t + '|' + i.strat; grp[g] = (grp[g] || 0) + i.n; });
+      cells += `<div class="ec-cell${wd === 0 || wd === 6 ? ' wkend' : ''}${iso < today ? ' past' : ''}${iso === today ? ' today' : ''}${its.length ? ' has lv-' + lv : ''}"${its.length ? ` role="button" tabindex="0" onclick="showExpDetail('d:${iso}')"` : ''}>
+        <span class="ec-d">${d}${iso === tf ? '<em>月度</em>' : ''}${US_HOLIDAYS.has(iso) ? '<em class="hol">休市</em>' : ''}</span>
+        ${Object.entries(grp).map(([g, v]) => { const [t, st] = g.split('|'); return `<span class="ec-chip" style="--c:${EXP_STRAT[st][1]}">${esc(t)}</span>`; }).join('')}
+        ${pct ? `<span class="ec-amt">${pct.toFixed(0)}%</span>` : ''}</div>`;
+    }
+    html += `<div class="ec-month"><div class="ec-title">${y} 年 ${m + 1} 月</div><div class="ec-grid">${['一', '二', '三', '四', '五', '六', '日'].map(w => `<div class="ec-wd">${w}</div>`).join('')}${cells}</div></div>`;
+  }
+  const beyond = items.filter(i => { const d = new Date(i.d + 'T12:00:00'); return (d.getFullYear() - t0.getFullYear()) * 12 + d.getMonth() - t0.getMonth() >= months; });
+  return `<div class="ec-wrap">${html}</div>${beyond.length ? `<div class="rk-note">更远的到期: ${beyond.map(i => `${esc(i.t)} ${i.x.strike} ${esc(i.d)}`).join(' · ')}</div>` : ''}
+    <div class="rk-legend">${Object.entries(EXP_STRAT).filter(([k]) => items.some(i => i.strat === k)).map(([k, [l, cl]]) => `<span><i class="rk-sw" style="background:${cl}"></i>${l}</span>`).join('')}<span class="rk-legend-note">格子颜色深浅 = 当天到期名义 % NAV · 点有到期的日子看明细</span></div>`;
+}
+window.showExpDetail = key => {
+  const R = computeRisk(), c = R.c, items = _expItems(c);
+  let list, title;
+  if (key.startsWith('d:')) { const d = key.slice(2); list = items.filter(i => i.d === d); title = `${d} 到期`; }
+  else { const { buckets } = _expBuckets(items), b = buckets.find(z => z.key === key); list = b ? b.items : []; title = b ? (b.key === 'later' ? '之后到期' : b.from === b.to ? `${b.from} 到期` : `${b.from} ~ ${b.to} 到期`) : ''; }
+  if (!list.length) return;
+  const old = document.getElementById('exp-modal'); if (old) old.remove();
+  const tot = list.reduce((s, i) => s + i.n, 0);
+  const m = document.createElement('div'); m.id = 'exp-modal'; m.className = 'snap-confirm';
+  m.innerHTML = `<div class="snap-card wh-card"><div class="snap-head" style="display:flex;align-items:baseline;gap:10px"><b>${esc(title)}</b><span class="rk-quiet">${list.length} 笔 · 名义 ${_fmtUsd(tot)} · ${(tot / (c.nav || 1) * 100).toFixed(1)}% NAV</span>
+      <button class="gl-x" style="margin-left:auto" onclick="document.getElementById('exp-modal').remove()" aria-label="关闭">×</button></div>
+    <div class="rk-table-wrap"><table class="rk-table"><thead><tr><th>合约</th><th>策略</th><th>名义</th><th>% NAV</th><th>距行权价</th><th>DTE</th><th>已赚</th><th>浮盈</th></tr></thead><tbody>
+      ${list.map(i => { const cap = _captured(i.x), dist = _distPct(i.x), pl = _posPnl(i.x) || 0;
+        return `<tr class="gl-row" role="button" onclick="document.getElementById('exp-modal').remove(); openOptionLab(${c.pos.indexOf(i.x)})"><td><b>${esc(_posLabel(i.x))}</b></td><td><span class="ec-chip" style="--c:${EXP_STRAT[i.strat][1]}">${EXP_STRAT[i.strat][0]}</span></td>
+          <td>${_fmtUsd(i.n)}</td><td>${i.pct.toFixed(1)}%</td><td class="${dist != null && dist < 3 ? 'rk-t-danger' : dist != null && dist < 8 ? 'rk-t-alert' : ''}">${_pct(dist)}</td><td>${_dteOf(i.x) ?? '—'}</td><td>${cap != null ? cap.toFixed(0) + '%' : '—'}</td><td class="${_thCls(pl)}">${_fmtSigned(pl)}</td></tr>`; }).join('')}</tbody></table></div>
+    <div class="rk-note">点一行打开合约面板.</div></div>`;
+  m.addEventListener('click', e => { if (e.target === m) m.remove(); });
+  document.body.appendChild(m);
+};
+function _expiryChartHTML(R) {
+  const c = R.c, items = _expItems(c);
+  if (!c.nav || !items.length) return '';
+  const byDay = {}; items.forEach(i => { byDay[i.d] = (byDay[i.d] || 0) + i.n; });
+  const top = Object.entries(byDay).sort((a, b) => b[1] - a[1])[0], topPct = top[1] / c.nav * 100, lv = riskLevel(_scoreMax(topPct, [15, 25, 35]));
+  const seg = (k, opts) => `<span class="rk-presets">${opts.map(([v, l]) => `<button class="rk-preset${(k === 'v' ? __expView : __expRange) === v ? ' active' : ''}" onclick="${k === 'v' ? 'setExpView' : 'setExpRange'}('${v}')">${l}</button>`).join('')}</span>`;
   return `
-    <section class="rk-block">
-      <h3 class="rk-block-title">CSP 到期</h3>
-      <div class="rk-cols">
-        ${weeks.map(w => {
-          const pct = w.total / nav * 100, lv = riskLevel(_scoreMax(pct, [15, 25, 35]));
-          const label = w.laterLabel || `${w.fri.getMonth() + 1}/${w.fri.getDate()}`;
-          return `
-            <div class="rk-col${w.count ? '' : ' empty'}" title="${esc(w.items.map(x => `${x.ticker} ${x.strike}P × ${x.qty} · ${x.expiry}`).join('\n') || '无')}">
-              <span class="rk-col-val ${w.count ? 'rk-t-' + lv.key : ''}">${w.count ? pct.toFixed(0) + '%' : ''}</span>
-              <div class="rk-col-track"><i class="rk-col-fill rk-f-${lv.key}" style="height:${(pct / maxPct * 100).toFixed(1)}%"></i>
-                <em class="rk-col-guide" style="bottom:${(15 / maxPct * 100).toFixed(1)}%"></em></div>
-              <span class="rk-col-label">${label}</span>
-              <span class="rk-col-n">${w.count ? w.count + ' 笔' : ''}</span>
-            </div>`;
-        }).join('')}
-      </div>
-      <div class="rk-note">虚线 15%.</div>
+    <section class="rk-block" id="exp-block">
+      <h3 class="rk-block-title rk-title-row"><span>期权到期</span><span class="exp-ctl">${seg('v', [['bars', '柱状'], ['cal', '日历']])}${seg('r', [['auto', '自动'], ['30', '30 天'], ['90', '3 个月'], ['180', '6 个月']])}</span></h3>
+      <div class="exp-top">单日最大到期 <b class="rk-t-${lv.key}">${+top[0].slice(5, 7)}/${+top[0].slice(8)}</b> · ${_fmtUsd(top[1])} · <b class="rk-t-${lv.key}">${topPct.toFixed(0)}% NAV</b> <span class="rk-quiet">· 共 ${items.length} 笔 (CSP ${items.filter(i => i.strat === 'csp').length} · CC ${items.filter(i => i.strat === 'cc').length} · PMCC ${items.filter(i => i.strat === 'pmcc').length})</span></div>
+      ${__expView === 'cal' ? _expCalHTML(c, items) : _expBarsSVG(c, items)}
     </section>`;
 }
 
