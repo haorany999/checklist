@@ -3325,6 +3325,38 @@
   .at-chart .at-tick { stroke: var(--text-faint); stroke-width: 1; }
   .pnl-figs { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   @media (max-width: 640px) { .pnl-figs { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  /* v51 · goal projection */
+  .gp-sum { text-transform: none; letter-spacing: 0; font-weight: 500; }
+  .gp-bar { display: flex; gap: 10px 14px; align-items: center; flex-wrap: wrap; margin: 6px 0 10px; font-size: 12.5px; }
+  .gp-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-bottom: 10px; }
+  .gp-card { border: 1px solid var(--border); border-radius: 3px; padding: 10px 12px; background: var(--panel-2); }
+  .gp-card.next { border-color: var(--accent); box-shadow: inset 3px 0 0 var(--accent); }
+  .gp-g { font: 700 13px var(--sans); color: var(--text-dim); margin-bottom: 4px; }
+  .gp-med-d { font-size: 13px; } .gp-med-d b { font: 700 22px var(--mono); color: var(--text); }
+  .gp-rng { font-size: 12px; margin: 2px 0 6px; } .gp-prob { font-size: 12.5px; } .gp-prob b { font: 700 15px var(--mono); } .gp-dt { width: 132px; font-size: 12px; }
+  .gp-fan .gp-grid { stroke: var(--border); opacity: .6; } .gp-fan .gp-b80 { fill: color-mix(in srgb, var(--accent) 12%, transparent); } .gp-fan .gp-b50 { fill: color-mix(in srgb, var(--accent) 24%, transparent); }
+  .gp-fan .gp-med { fill: none; stroke: var(--accent); stroke-width: 2; } .gp-fan .gp-act { fill: none; stroke: var(--text); stroke-width: 2; }
+  .gp-fan .gp-plan { fill: none; stroke: #D9B562; stroke-width: 1.6; stroke-dasharray: 5 4; } .gp-fan .gp-now { stroke: var(--text-faint); stroke-dasharray: 2 3; }
+  .gp-fan .gp-goal { stroke: var(--text-dim); stroke-dasharray: 6 4; opacity: .8; } body .gp-fan text.gp-goal-t { fill: var(--text) !important; font-weight: 700 !important; }
+  .gp-sw-med { background: var(--accent) !important; height: 3px !important; } .gp-sw-b50 { background: color-mix(in srgb, var(--accent) 35%, transparent) !important; } .gp-sw-b80 { background: color-mix(in srgb, var(--accent) 15%, transparent) !important; }
+  .gp-sw-act { background: var(--text) !important; height: 3px !important; } .gp-sw-plan { background: #D9B562 !important; height: 2px !important; }
+  .gp-plan-t { font-size: 13px; margin: 6px 0; } .gp-plan-t b { font-family: var(--mono); }
+  .gp-asm { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px 16px; font-size: 12.5px; line-height: 2; }
+  .gp-asm > div { border-left: 2px solid var(--border); padding-left: 10px; } .gp-in { width: 64px; } .gp-h { margin-left: 6px; font-size: 11.5px; }
+  .gp-inv { font-size: 13px; line-height: 2; } .gp-inv b { font: 700 15px var(--mono); } .gp-sel { width: auto; }
+  .tn { display: flex; flex-direction: column; gap: 6px; margin: 4px 0; }
+  .tn-row { display: grid; grid-template-columns: 96px minmax(120px, 1fr) minmax(220px, auto); gap: 10px; align-items: center; font-size: 12.5px; }
+  .tn-bar { position: relative; height: 16px; background: var(--panel-2); border-radius: 2px; }
+  .tn-bar em { position: absolute; left: 50%; top: -3px; bottom: -3px; width: 1px; background: var(--text-dim); }
+  .tn-bar .tn-l { position: absolute; right: 50%; top: 2px; bottom: 2px; background: var(--pass); border-radius: 2px 0 0 2px; }
+  .tn-bar .tn-r { position: absolute; left: 50%; top: 2px; bottom: 2px; background: var(--fail); border-radius: 0 2px 2px 0; }
+  .tn-v { font-family: var(--mono); font-size: 11.5px; color: var(--text-dim); }
+  .gp-meth > summary { cursor: pointer; font-size: 12.5px; color: var(--text-dim); margin-top: 10px; }
+  @media (max-width: 900px) { .gp-asm { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 640px) { .gp-cards { grid-template-columns: 1fr; } .gp-asm { grid-template-columns: 1fr; } .tn-row { grid-template-columns: 80px minmax(80px, 1fr); } .tn-v { grid-column: 1 / -1; } }
+  .tn-row { grid-template-columns: 96px minmax(120px, 1fr) 300px; }
+  .gp-warn { font-size: 12.5px; padding: 7px 10px; margin: 0 0 10px; border-left: 2px solid #E5793B; background: color-mix(in srgb, #E5793B 10%, transparent); }
+  @media (max-width: 640px) { .tn-row { grid-template-columns: 80px minmax(80px, 1fr); } }
 </style>
 </head>
 <body class="theme-slate">
@@ -5372,7 +5404,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.17-v49';
+const APP_BUILD = '2026.10.17-v51';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
@@ -11114,8 +11146,8 @@ function _schwabPositions(data) {
       else if (p.kind === 'stock') exposure = rawQty > 0 ? (cost || 0) : 0;
       return _cleanGreeks({ kind: p.kind, ticker: _normTicker(p.ticker) || '?', strike, qty, expiry: p.expiry || null,
         exposure, cost, marketValue: _num(p.marketValue), unparsed: p.kind === 'short_put' && strike == null,
-        side: rawQty < 0 ? -1 : 1, price: _num(p.price), delta: _num(p.delta), theta: _num(p.theta),
-        iv: _num(p.iv), und: _num(p.underlyingPrice), dte: _num(p.dte), gamma: _num(p.gamma),
+        side: rawQty < 0 ? -1 : 1, price: _pos(p.price), delta: _num(p.delta), theta: _num(p.theta),
+        iv: _num(p.iv), und: _pos(p.underlyingPrice), dte: _num(p.dte), gamma: _num(p.gamma),
         vega: _num(p.vega), mark: _num(p.mark), symbol: p.symbol || null,
         // per-share entry price; fall back to total cost ÷ shares when averagePrice is missing
         avg: _num(p.averagePrice) ?? (cost > 0 && qty > 0 ? cost / (qty * (p.kind === 'stock' ? 1 : 100)) : null) });
@@ -12471,14 +12503,17 @@ function _posLabel(x) {
   const r = x.kind === 'short_put' || x.kind === 'long_put' ? 'P' : 'C';
   return `${x.ticker} ${x.strike ?? '?'}${r}${x.expiry ? ' ' + _md(x.expiry) : ''} × ${x.qty}`;
 }
+function _pos(v) { const n = _num(v); return n != null && n > 0 ? n : null; }
 function _captured(x) {           // share of the credit already earned on a short option
   if (!_isShortPos(x) || !(x.avg > 0)) return null;
   const qty = Number(x.qty) || 0;
-  const mark = x.mark != null ? x.mark : (x.marketValue != null && qty ? Math.abs(x.marketValue) / (100 * qty) : null);
+  let mark = x.mark != null ? x.mark : (x.marketValue != null && qty ? Math.abs(x.marketValue) / (100 * qty) : null);
+  // a price of 0 with days left is a missing quote, not a worthless option (it would read as 100% earned)
+  if (mark != null && (mark < 0 || (mark === 0 && (_dteOf(x) ?? 99) > 1))) mark = null;
   return mark == null ? null : (x.avg - mark) / x.avg * 100;
 }
 function _distPct(x) {            // how far the underlying must move to reach the strike (negative = ITM)
-  if (x.und == null || x.strike == null) return null;
+  if (!(x.und > 0) || x.strike == null) return null;
   if (x.kind === 'short_put' || x.kind === 'long_put') return (x.und - x.strike) / x.und * 100;
   return (x.strike - x.und) / x.und * 100;
 }
@@ -16898,7 +16933,7 @@ async function _pushAppSummary() {
         checklists: hist.length, forced: hist.filter(e => (e.hardFails || []).length && rv && rv.results[e.id] && ['open', 'closed'].includes(rv.results[e.id].status)).length,
         noChecklist: rv ? rv.noCk.filter(u => u.openTs >= mon).length : 0 },
       goal: (() => { try { const H = _goalHistory(); if (!H || !H.months || H.months < 3) return null; const nx = GOALS.find(g => g > H.nav); if (!nx) return null;
-        const r = _goalRun(_goalScen(H, 'mid', _goalCfg().depOn), false).out[GOALS.indexOf(nx)]; return { next: nx, gap: Math.round(nx - H.nav), months: r }; } catch (e) { return null; } })() };
+        const c = _goalCfg(), mc = _gpMC(_gpParams(H, _gpAssume(H, c), c.scen)), m = mc.goals[GOALS.indexOf(nx)].p50; return { next: nx, gap: Math.round(nx - H.nav), months: isFinite(m) ? m : null }; } catch (e) { return null; } })() };
     await _wfetch('/app/summary', { method: 'POST', body: JSON.stringify(body), headers: { 'Content-Type': 'application/json' } });
   } catch (e) {}
 }
@@ -16977,113 +17012,164 @@ window.showDiscipline = () => {
   document.body.appendChild(m);
 };
 
-/* ═════════════ v47 · goal projection (Performance) ═════════════ */
-const GOAL_KEY = 'pretrade_goal', GOALS = [200000, 500000, 1000000];
-let __goalOpen = false, __goalSl = null;
-function _goalCfg() { let c = {}; try { c = JSON.parse(localStorage.getItem(GOAL_KEY) || '{}') || {}; } catch (e) {} return { dep: 1000, depEnd: '2027-12-31', depOn: true, excl: [], plan: null, ...c }; }
+/* ═════════════ v51 · goal projection (Performance): return + volatility by sleeve, Monte Carlo fan, sensitivity ═════════════ */
+const GOAL_KEY = 'pretrade_goal', GOALS = [200000, 500000, 1000000], CASH_YLD = 0.04;
+const GP_SCEN = { low: { l: '保守', mu: 0.5, sd: 1.5, crash: true, d: '历史收益 × 50% · 波动 × 1.5 · 约每两年一次 −15% 的月份' },
+  base: { l: '基准', mu: 0.75, sd: 1, crash: false, d: '历史收益 × 75% · 波动不变' }, high: { l: '乐观', mu: 1, sd: 1, crash: false, d: '按历史收益和波动' } };
+let __goalOpen = false, __gpMemo = { k: null, v: null };
+function _goalCfg() { let c = {}; try { c = JSON.parse(localStorage.getItem(GOAL_KEY) || '{}') || {}; } catch (e) {}
+  return { dep: 1000, depEnd: '2027-12-31', depOn: true, scen: 'base', ovr: {}, plan: null, inv: { g: 200000, d: '2027-12-31' },
+    ...c, dates: { 200000: '2027-12-31', 500000: '2030-12-31', 1000000: '2035-12-31', ...(c.dates || {}) } }; }
 function _goalSave(p) { try { localStorage.setItem(GOAL_KEY, JSON.stringify({ ..._goalCfg(), ...p })); } catch (e) {} }
-const _bigId = l => `${l.ticker}|${l.strike}|${l.expiry}|${l.closeTs}`;
-// month by month from the fills: NAV rebuilt backwards from today's NAV (realized P&L and deposits only)
+const _mIdx = iso => { const d = new Date(iso + 'T12:00:00'), n = new Date(); return (d.getFullYear() - n.getFullYear()) * 12 + d.getMonth() - n.getMonth(); };
+const _mAt = t => { const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() + t); return d; };
+const _mLab = t => { if (t == null || !isFinite(t)) return '—'; const d = _mAt(t); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; };
+// history by month: realized P&L of each sleeve ÷ NAV at the start of the month; NAV from the Worker's records where they exist
 function _goalHistory() {
   let p = null; try { p = computePerf(); } catch (e) {} const nav = getPortfolio().nav;
   if (!p || !p.all || !p.all.length || !nav) return null;
-  const mk = ts => _tsDay(ts).slice(0, 7), cur = _todayISO().slice(0, 7), cfg = _goalCfg(), M = {};
-  const get = k => M[k] || (M[k] = { k, seller: 0, leaps: 0, lot: [], flow: 0 });
+  const mk = ts => _tsDay(ts).slice(0, 7), cur = _todayISO().slice(0, 7), M = {};
+  const get = k => M[k] || (M[k] = { k, seller: 0, leaps: 0, flow: 0 });
   p.all.forEach(l => { const g = get(mk(l.closeTs || l.openTs));
     if (l.kind === 'stock' || (l.kind === 'option' && l.side === 'short')) g.seller += l.pnl || 0;
-    else if (l.kind === 'option' && l.side === 'long' && l.putCall === 'CALL') { g.leaps += l.pnl || 0; g.lot.push(l); } });
+    else if (l.kind === 'option' && l.side === 'long') g.leaps += l.pnl || 0; });
   (p.flows || []).forEach(f => { get(mk(f.ts)).flow += f.amt || 0; });
+  const real = {}; ((loadNavs() || {}).data || []).forEach(([d, v]) => { if (v > 0) real[d.slice(0, 7)] = v; });   // month → last recorded NAV
   const keys = Object.keys(M).sort(); let end = nav;
-  for (let i = keys.length - 1; i >= 0; i--) { const g = M[keys[i]]; g.navEnd = end; g.navStart = end - g.seller - g.leaps - g.flow; end = g.navStart; }
+  for (let i = keys.length - 1; i >= 0; i--) { const g = M[keys[i]]; if (keys[i] < cur && real[keys[i]]) { end = real[keys[i]]; g.real = true; }
+    g.navEnd = end; g.navStart = end - g.seller - g.leaps - g.flow; end = g.navStart; }
   const done = keys.filter(k => k < cur).map(k => M[k]).filter(g => g.navStart > 0);
-  if (!done.length) return { months: 0 };
-  const bigs = [];
-  done.forEach(g => { g.bigPnl = 0; g.lot.forEach(l => { const pct = l.pnl / g.navStart; if (pct >= 0.05) { const b = { l, pct, id: _bigId(l), m: g.k, on: !cfg.excl.includes(_bigId(l)) }; bigs.push(b); g.bigPnl += l.pnl; } }); });   // a deselected big win is an outlier: gone, not folded into 其他 LEAPS
-  const ys = done.map(g => g.seller / g.navStart), lo = done.map(g => (g.leaps - g.bigPnl) / g.navStart);
-  const mean = a => a.reduce((s, x) => s + x, 0) / a.length, sd = a => { const m = mean(a); return Math.sqrt(a.reduce((s, x) => s + (x - m) ** 2, 0) / Math.max(1, a.length - 1)); };
-  const on = bigs.filter(b => b.on);
-  return { months: done.length, from: done[0].k, mu: mean(ys), sd: sd(ys), maxY: Math.max(...ys), lo: mean(lo), bigs, freq: on.length / (done.length / 12), size: on.length ? mean(on.map(b => b.pct)) : 0.15, nav };
+  if (!done.length) return { months: 0, nav };
+  const ys = done.map(g => g.seller / g.navStart), ls = done.map(g => g.leaps / g.navStart);
+  const mean = a => a.reduce((s, x) => s + x, 0) / a.length, sd = a => a.length < 2 ? 0 : Math.sqrt(a.reduce((s, x) => s + (x - mean(a)) ** 2, 0) / (a.length - 1));
+  const pos = getPortfolio().positions || [];
+  let aS = (pos.filter(x => x.kind === 'short_put').reduce((s, x) => s + (x.exposure || 0), 0) + pos.filter(x => x.kind === 'stock' && (x.side || 1) > 0).reduce((s, x) => s + (x.marketValue || 0), 0)) / nav;
+  let aL = pos.filter(x => x.kind === 'leaps' || x.kind === 'long_call').reduce((s, x) => s + Math.abs(x.marketValue || 0), 0) / nav;
+  if (aS + aL > 1) { const k = 1 / (aS + aL); aS *= k; aL *= k; }                    // overlap / margin: scale both, never let one push the other out
+  return { months: done.length, from: done[0].k, rows: done, real: done.filter(g => g.real).length, nav,
+    muS: mean(ys) * 12, sdS: sd(ys) * Math.sqrt(12), muL: mean(ls) * 12, sdL: sd(ls) * Math.sqrt(12), alloc: { s: aS, l: aL, c: Math.max(0, 1 - aS - aL) } };
 }
-// deterministic: expected monthly growth; random: seller ~ normal, big wins and tail months as coin flips
-function _goalRun(o, rnd) {
-  const out = GOALS.map(() => null), today = new Date(), path = [];
-  let v = o.start;
-  for (let t = 1; t <= 360 && out[2] == null; t++) {
-    const d = new Date(today.getFullYear(), today.getMonth() + t, 1), depOk = o.depOn && d.toISOString().slice(0, 10) <= o.depEnd;
-    let r;
-    if (!rnd) r = o.mu + o.lo + (o.freq / 12) * o.size - (o.tail ? 0.15 / 24 : 0);
-    else { const z = Math.sqrt(-2 * Math.log(Math.random() || 1e-9)) * Math.cos(2 * Math.PI * Math.random());
-      r = o.mu + o.sd * z + o.lo + (Math.random() < o.freq / 12 ? o.size : 0) - (o.tail && Math.random() < 1 / 24 ? 0.15 : 0); }
-    v = v * (1 + r) + (depOk ? o.dep : 0); if (!rnd) path.push(Math.round(v));
-    GOALS.forEach((g, i) => { if (out[i] == null && v >= g) out[i] = t; });
-    if (v <= 0) break;
-  }
-  return rnd ? out : { out, path };
+// assumptions: history unless you changed them; returns are contributions to NAV at today's allocation
+function _gpAssume(H, c) { const o = c.ovr || {}, aS = o.aS ?? H.alloc.s, aL = o.aL ?? H.alloc.l;
+  return { muS: o.muS ?? H.muS, sdS: o.sdS ?? H.sdS, muL: o.muL ?? H.muL, sdL: o.sdL ?? H.sdL, aS, aL, aC: Math.max(0, 1 - aS - aL), dep: c.dep, depEnd: c.depEnd, depOn: c.depOn }; }
+function _gpParams(H, A, scen) { const S = GP_SCEN[scen] || GP_SCEN.base;
+  // history is the contribution at today's mix: only a changed allocation scales it
+  const ks = Math.abs(A.aS - H.alloc.s) < 1e-9 ? 1 : A.aS / Math.max(0.05, H.alloc.s), kl = Math.abs(A.aL - H.alloc.l) < 1e-9 ? 1 : A.aL / Math.max(0.05, H.alloc.l);
+  return { start: H.nav, mS: A.muS * S.mu * ks / 12, vS: A.sdS * S.sd * ks / Math.sqrt(12), mL: A.muL * S.mu * kl / 12, vL: A.sdL * S.sd * kl / Math.sqrt(12),
+    mC: A.aC * CASH_YLD / 12, crash: S.crash, risk: Math.min(1, A.aS + A.aL), dep: A.depOn ? A.dep : 0, depEnd: A.depEnd }; }
+const _gpExp = P => P.mS + P.mL + P.mC - (P.crash ? 0.15 * P.risk / 24 : 0);
+const _gpDep = (P, t) => P.dep > 0 && _mAt(t).toISOString().slice(0, 10) <= P.depEnd ? P.dep : 0;
+function _gpDet(P, max = 600) { const out = GOALS.map(() => null); let v = P.start; const g = _gpExp(P);
+  for (let t = 1; t <= max && out[2] == null; t++) { v = v * (1 + g) + _gpDep(P, t); GOALS.forEach((G, i) => { if (out[i] == null && v >= G) out[i] = t; }); if (v <= 0) break; }
+  return out; }
+function _gpMC(P, n = 1500, H = 240) {
+  const key = JSON.stringify(P) + n + H; if (__gpMemo.k === key) return __gpMemo.v;
+  const hit = GOALS.map(() => []), band = Array.from({ length: H + 1 }, () => new Float64Array(n));
+  const rn = () => Math.sqrt(-2 * Math.log(Math.random() || 1e-12)) * Math.cos(2 * Math.PI * Math.random());
+  for (let k = 0; k < n; k++) { let v = P.start; const h = [null, null, null]; band[0][k] = v;
+    for (let t = 1; t <= H; t++) { let r = P.mS + P.vS * rn() + P.mL + P.vL * rn() + P.mC; if (P.crash && Math.random() < 1 / 24) r -= 0.15 * P.risk;
+      v = Math.max(0, v * (1 + r) + _gpDep(P, t)); band[t][k] = v; for (let i = 0; i < 3; i++) if (h[i] == null && v >= GOALS[i]) h[i] = t; }
+    for (let i = 0; i < 3; i++) hit[i].push(h[i] == null ? Infinity : h[i]); }
+  const q = (a, p) => a[Math.min(a.length - 1, Math.floor(p * (a.length - 1)))];
+  const bands = band.map(a => { a.sort(); return [q(a, .1), q(a, .25), q(a, .5), q(a, .75), q(a, .9)]; });
+  const goals = hit.map(a => { a.sort((x, y) => x - y); return { p10: q(a, .1), p50: q(a, .5), p90: q(a, .9), by: m => a.filter(x => x <= m).length / n }; });
+  __gpMemo = { k: key, v: { bands, goals } }; return __gpMemo.v;
 }
-function _mc(o, n = 1500) { const runs = Array.from({ length: n }, () => _goalRun(o, true));
-  return GOALS.map((g, i) => { const xs = runs.map(r => r[i] == null ? Infinity : r[i]).sort((a, b) => a - b), q = p => xs[Math.floor(p * (n - 1))];
-    const by = d => { const m = (new Date(d).getFullYear() - new Date().getFullYear()) * 12 + new Date(d).getMonth() - new Date().getMonth(); return xs.filter(x => x <= m).length / n; };
-    return { p10: q(0.1), p50: q(0.5), p90: q(0.9), by27: by('2027-12-31'), by30: by('2030-12-31') }; }); }
-const _mFmt = m => m == null || !isFinite(m) ? '30 年内到不了' : m < 12 ? `${m} 个月` : `${(m / 12).toFixed(1)} 年`;
-const _mDate = m => { if (m == null || !isFinite(m)) return ''; const d = new Date(); d.setMonth(d.getMonth() + m); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; };
+// annual return needed to reach G at month m (with the deposits), by bisection
+function _gpNeed(P, G, m) { if (m <= 0) return null; const fv = r => { let v = P.start; const g = Math.pow(1 + r, 1 / 12) - 1; for (let t = 1; t <= m; t++) v = v * (1 + g) + _gpDep(P, t); return v; };
+  let lo = -0.9, hi = 5; if (fv(hi) < G) return Infinity; if (fv(lo) >= G) return lo; for (let i = 0; i < 60; i++) { const mid = (lo + hi) / 2; if (fv(mid) >= G) hi = mid; else lo = mid; } return hi; }
+const _gpCls = p => p >= 0.75 ? 'safe' : p >= 0.5 ? 'watch' : 'danger';
 window.goalSet = (k, v) => { _goalSave({ [k]: v }); _goalRedraw(); };
-window.goalBig = (id, on) => { const c = _goalCfg(), ex = new Set(c.excl); if (on) ex.delete(id); else ex.add(id); _goalSave({ excl: [...ex] }); _goalRedraw(); };
-window.goalSlider = () => { __goalSl = ['gs-mu', 'gs-fq', 'gs-sz', 'gs-dep'].map(id => +document.getElementById(id).value); const el = document.getElementById('gs-out'); if (el) el.innerHTML = _goalSliderOut(); };
-window.goalSavePlan = () => { const H = _goalHistory(), o = _goalScen(H, 'mid', _goalCfg().depOn), r = _goalRun(o, false);
-  _goalSave({ plan: { at: Date.now(), nav: H.nav, path: r.path.slice(0, 120), params: { mu: o.mu, freq: o.freq } } }); showToast('已保存为计划, 之后每月对照实际', 'success'); _goalRedraw(); };
-function _goalRedraw() { const el = document.getElementById('goal-block'); if (el) { el.outerHTML = _safe('目标推演', _goalHTML, ''); } }
-function _goalScen(H, which, depOn) { const c = _goalCfg();
-  return { start: H.nav, mu: H.mu, sd: H.sd, lo: H.lo, size: H.size, dep: c.dep, depEnd: c.depEnd, depOn,
-    freq: which === 'opt' ? H.freq : which === 'mid' ? H.freq * 0.5 : 0, tail: which === 'low' }; }
-function _goalSliderOut() {
-  const H = _goalHistory(), [mu, fq, sz, dep] = __goalSl || [H.mu * 100, H.freq * 0.5, H.size * 100, _goalCfg().dep];
-  const o = { start: H.nav, mu: mu / 100, sd: H.sd, lo: H.lo, freq: fq, size: sz / 100, dep, depEnd: _goalCfg().depEnd, depOn: dep > 0, tail: false };
-  const r = _goalRun(o, false).out;
-  return `收租 <b>${mu.toFixed(1)}%</b>/月 · 大赚 <b>${fq.toFixed(1)}</b> 次/年 × <b>${sz.toFixed(0)}%</b> · 入金 <b>$${dep}</b>/月 → ${GOALS.map((g, i) => `<span class="gl-goal">${g / 1000}k: <b>${_mFmt(r[i])}</b></span>`).join('')}${mu / 100 > H.maxY * 1.5 ? `<div class="rk-t-alert">收租 ${mu.toFixed(1)}% 超过你历史最好月份 (${(H.maxY * 100).toFixed(1)}%) 的 1.5 倍</div>` : ''}`;
+window.goalOvr = (k, v) => { const c = _goalCfg(); const o = { ...c.ovr }; if (v === '' || v == null || isNaN(v)) delete o[k]; else o[k] = v; _goalSave({ ovr: o }); _goalRedraw(); };
+window.goalDate = (g, d) => { const c = _goalCfg(); _goalSave({ dates: { ...c.dates, [g]: d } }); _goalRedraw(); };
+window.goalInv = (k, v) => { const c = _goalCfg(); _goalSave({ inv: { ...c.inv, [k]: v } }); _goalRedraw(); };
+window.goalSavePlan = () => { const H = _goalHistory(), c = _goalCfg(), P = _gpParams(H, _gpAssume(H, c), c.scen), mc = _gpMC(P);
+  _goalSave({ plan: { at: Date.now(), nav: H.nav, scen: c.scen, path: mc.bands.slice(0, 121).map(b => Math.round(b[2])) } }); showToast('已保存为计划, 之后对照实际', 'success'); _goalRedraw(); };
+let __goalRT = null;
+function _goalRedraw() { clearTimeout(__goalRT); __goalRT = setTimeout(() => { const el = document.getElementById('goal-block'); if (el && el.isConnected) el.outerHTML = _safe('目标推演', _goalHTML, ''); }, 0); }   // merged: change fires on edit and again on blur
+function _gpFanSVG(H, mc, c, horizon) {
+  const W = _chartW(), L = 54, R = 64, T = 12, PH = 230, B = 24, Hh = T + PH + B, hist = Math.min(24, H.rows.length);
+  const x0 = -hist, X = t => L + (t - x0) / (horizon - x0) * (W - L - R);
+  const top = Math.max(GOALS[2] * 1.12, Math.min(mc.bands[horizon][3] * 1.05, GOALS[2] * 2.5)), Y = v => T + PH - Math.min(v, top) / top * PH;
+  const area = (lo, hi) => { const up = [], dn = []; for (let t = 0; t <= horizon; t++) { up.push(`${X(t).toFixed(1)},${Y(mc.bands[t][hi]).toFixed(1)}`); dn.unshift(`${X(t).toFixed(1)},${Y(mc.bands[t][lo]).toFixed(1)}`); } return up.concat(dn).join(' '); };
+  let s = '';
+  for (let v = 0; v <= top; v += top > 1.6e6 ? 500000 : 250000) s += `<line x1="${L}" x2="${W - R}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}" class="gp-grid"/><text x="${L - 6}" y="${(Y(v) + 4).toFixed(1)}" text-anchor="end" class="rk-ch-lab">${v >= 1e6 ? (v / 1e6) + 'M' : v / 1000 + 'K'}</text>`;
+  s += `<polygon points="${area(0, 4)}" class="gp-b80"/><polygon points="${area(1, 3)}" class="gp-b50"/>`;
+  s += `<polyline points="${mc.bands.slice(0, horizon + 1).map((b, t) => `${X(t).toFixed(1)},${Y(b[2]).toFixed(1)}`).join(' ')}" class="gp-med"/>`;
+  GOALS.forEach(G => { if (G <= top) s += `<line x1="${L}" x2="${W - R}" y1="${Y(G).toFixed(1)}" y2="${Y(G).toFixed(1)}" class="gp-goal"/><text x="${W - R + 6}" y="${(Y(G) + 4).toFixed(1)}" class="rk-ch-lab gp-goal-t">${G / 10000} 万</text>`; });
+  const hp = H.rows.slice(-hist).map((g, i) => [i - hist + 1, g.navEnd]); hp.push([0, H.nav]);
+  s += `<polyline points="${hp.map(([t, v]) => `${X(t).toFixed(1)},${Y(v).toFixed(1)}`).join(' ')}" class="gp-act"/><line x1="${X(0).toFixed(1)}" x2="${X(0).toFixed(1)}" y1="${T}" y2="${T + PH}" class="gp-now"/><text x="${(X(0) + 4).toFixed(1)}" y="${T + 10}" class="rk-ch-lab">今天</text>`;
+  if (c.plan && c.plan.path) { const off = -Math.round((Date.now() - c.plan.at) / (30.44 * 864e5)); const pts = c.plan.path.map((v, i) => [i + off, v]).filter(([t]) => t >= x0 && t <= horizon);
+    if (pts.length > 1) s += `<polyline points="${pts.map(([t, v]) => `${X(t).toFixed(1)},${Y(v).toFixed(1)}`).join(' ')}" class="gp-plan"/>`; }
+  const step = horizon > 120 ? 36 : horizon > 60 ? 24 : 12;
+  for (let t = 0; t <= horizon; t += step) s += `<text x="${X(t).toFixed(1)}" y="${Hh - 6}" text-anchor="middle" class="rk-ch-lab">${_mAt(t).getFullYear()}</text>`;
+  return `<svg class="rk-chart gp-fan" viewBox="0 0 ${W} ${Hh}" role="img" aria-label="NAV 预测扇形图">${s}</svg>
+    <div class="rk-legend"><span><i class="rk-sw gp-sw-med"></i>中位</span><span><i class="rk-sw gp-sw-b50"></i>50% 范围</span><span><i class="rk-sw gp-sw-b80"></i>80% 范围</span><span><i class="rk-sw gp-sw-act"></i>实际 NAV</span>${c.plan ? '<span><i class="rk-sw gp-sw-plan"></i>计划</span>' : ''}</div>`;
+}
+function _gpTornadoHTML(H, A, scen) {
+  const all = _gpDet(_gpParams(H, A, scen)), gi = [2, 1, 0].find(i => all[i] != null && GOALS[i] > H.nav);
+  if (gi == null) return '<div class="rk-quiet">按当前假设 50 年内一个目标都到不了, 敏感性分析没有意义.</div>';
+  const base = all[gi], gl = GOALS[gi] / 10000 + ' 万';
+  const v = (lab, f) => { const lo = _gpDet(_gpParams(H, f(0.75), scen))[gi], hi = _gpDet(_gpParams(H, f(1.25), scen))[gi]; return { lab, d: [lo == null ? 600 - base : lo - base, hi == null ? 600 - base : hi - base] }; };
+  const rows = [v('卖方收益', k => ({ ...A, muS: A.muS * k })), v('LEAPS 收益', k => ({ ...A, muL: A.muL * k })),
+    v('风险资产配置', k => { const s = Math.min(1, (A.aS + A.aL) * k) / Math.max(1e-9, A.aS + A.aL); return { ...A, aS: A.aS * s, aL: A.aL * s, aC: Math.max(0, 1 - (A.aS + A.aL) * s) }; }),
+    v('每月入金', k => ({ ...A, dep: A.dep * k }))].map(r => ({ ...r, span: Math.abs(r.d[0] - r.d[1]) })).sort((a, b) => b.span - a.span);
+  const mx = Math.max(6, ...rows.flatMap(r => r.d.map(Math.abs)));
+  const bar = d => { const w = Math.min(50, Math.abs(d) / mx * 50); return d < 0 ? `<i class="tn-l" style="width:${w}%"></i>` : d > 0 ? `<i class="tn-r" style="width:${w}%"></i>` : ''; };
+  const lab = d => d === 0 ? '不变' : `${d < 0 ? '提前' : '推迟'} ${Math.abs(d)} 个月`;
+  return `<div class="tn">${rows.map(r => `<div class="tn-row"><span class="tn-k">${r.lab}</span><span class="tn-bar">${bar(Math.min(r.d[0], r.d[1]))}${bar(Math.max(r.d[0], r.d[1]))}<em></em></span>
+      <span class="tn-v">−25%: ${lab(r.d[0])} · +25%: ${lab(r.d[1])}</span></div>`).join('')}</div>
+    <div class="rk-note">以当前情形下到 ${gl} 的预期时间 (${_mLab(base)}, ${base} 个月) 为中心${gi < 2 ? ' (按当前假设 50 年内到不了 100 万, 改看能到的最远目标)' : ''}, 每个假设单独变动 ±25%. 条越长, 这个假设越值得下功夫.</div>`;
 }
 function _goalHTML() {
   const H = _goalHistory(); if (!H) return '';
-  const c = _goalCfg(), head = `<summary class="rk-block-title">目标推演 <span class="rk-quiet">20 万 / 50 万 / 100 万 · 点开</span></summary>`;
-  if (!H.months || H.months < 3) return `<details class="rk-block pf-goal" id="goal-block"${__goalOpen ? ' open' : ''} ontoggle="__goalOpen = this.open">${head}<div class="rk-quiet">完整的历史月份少于 3 个, 还无法估算节奏.</div></details>`;
-  const pct = v => (v * 100).toFixed(2) + '%';
-  const scen = [['opt', '乐观', '大赚按历史频率'], ['mid', '中位', '大赚频率打对折'], ['low', '保守', '不算大赚 · 约每两年一次 −15% 月']];
-  const res = {}; scen.forEach(([k]) => { res[k] = [true, false].map(on => _goalRun(_goalScen(H, k, on), false).out); });
-  const mc = _mc(_goalScen(H, 'mid', c.depOn));
-  const cell = (m, base) => `<b>${_mFmt(m)}</b><span class="rk-quiet"> ${_mDate(m)}</span>${base != null && m != null && base !== m ? `<div class="rk-quiet gl-cmp">${m < base ? '提前' : '推迟'} ${Math.abs(base - m)} 个月</div>` : ''}`;
-  // combination grid: seller yield × big wins per year
-  const ys = [...new Set([0.01, 0.015, 0.02, 0.025, Math.round(H.mu * 1000) / 1000])].sort((a, b) => a - b), ws = [0, 1, 2, 3];
-  const grid = ys.map(y => `<tr${Math.abs(y - Math.round(H.mu * 1000) / 1000) < 1e-9 ? ' class="gl-hist"' : ''}><td><b>${(y * 100).toFixed(1)}%</b>${Math.abs(y - Math.round(H.mu * 1000) / 1000) < 1e-9 ? ' <span class="rk-quiet">你的历史</span>' : ''}</td>
-    ${ws.map(w => { const r = _goalRun({ ..._goalScen(H, 'mid', c.depOn), mu: y, freq: w }, false).out; return `<td>${r.map(_mFmt).join(' / ')}</td>`; }).join('')}</tr>`).join('');
-  // plan vs actual
-  let pv = '';
-  if (c.plan && c.plan.path && c.plan.path.length) { const mo = Math.floor((Date.now() - c.plan.at) / (30.44 * 864e5));
-    const exp = mo <= 0 ? c.plan.nav : c.plan.path[Math.min(mo, c.plan.path.length) - 1], idx = c.plan.path.findIndex(v => v >= H.nav), ahead = idx < 0 ? null : (idx + 1) - mo;
-    pv = `<div class="gl-plan">计划 (${_tsDay(c.plan.at)} 保存): 现在应在 <b>${_fmtUsd(exp)}</b>, 实际 <b>${_fmtUsd(H.nav)}</b> · ${mo <= 0 ? '本月刚保存' : ahead == null ? '远超计划' : ahead > 0 ? `<span class="rk-t-safe">领先约 ${ahead} 个月</span>` : ahead < 0 ? `<span class="rk-t-alert">落后约 ${-ahead} 个月 · 先看纪律分和规则执行, 不要靠加大仓位追进度</span>` : '与计划一致'}</div>`; }
-  __goalSl = __goalSl || [+(H.mu * 100).toFixed(1), +(H.freq * 0.5).toFixed(1), +(H.size * 100).toFixed(0), c.dep];
-  return `<details class="rk-block pf-goal" id="goal-block"${__goalOpen ? ' open' : ''} ontoggle="__goalOpen = this.open">${head}
-    <div class="gl-in">起点 NAV <b>${_fmtUsd(H.nav)}</b> · 历史 ${H.from} 起 ${H.months} 个月: 卖方净收租 <b>${pct(H.mu)}</b>/月 (波动 ${pct(H.sd)}) · 其他 LEAPS <b>${pct(H.lo)}</b>/月 · 大赚 <b>${H.freq.toFixed(1)}</b> 次/年, 平均 <b>+${(H.size * 100).toFixed(0)}%</b> NAV</div>
-    <div class="gl-dep">入金 <input type="number" class="gl-num" value="${c.dep}" min="0" step="100" onchange="goalSet('dep', +this.value || 0)"> / 月, 到 <input type="date" class="gl-date" value="${c.depEnd}" onchange="goalSet('depEnd', this.value)"> 为止
-      <label class="gl-tg"><input type="checkbox"${c.depOn ? ' checked' : ''} onchange="goalSet('depOn', this.checked)"> 计入入金</label></div>
-    ${pv}
-    <div class="rk-table-wrap"><table class="rk-table gl-t"><thead><tr><th>情形</th>${GOALS.map(g => `<th>到 ${g / 10000} 万</th>`).join('')}</tr></thead><tbody>
-      ${scen.map(([k, l, d]) => { const r = res[k][c.depOn ? 0 : 1], o = res[k][c.depOn ? 1 : 0]; return `<tr><td><b>${l}</b><div class="rk-quiet">${d}</div></td>${r.map((m, i) => `<td>${cell(m, o[i])}</td>`).join('')}</tr>`; }).join('')}
-      <tr class="gl-mc"><td><b>中位 · 模拟</b><div class="rk-quiet">1,500 次随机路径</div></td>${mc.map(x => `<td>80% 落在 ${_mFmt(x.p10)} – ${_mFmt(x.p90)}<div class="rk-quiet">2027 年底前 ${(x.by27 * 100).toFixed(0)}% · 2030 年底前 ${(x.by30 * 100).toFixed(0)}%</div></td>`).join('')}</tr>
-    </tbody></table></div>
-    <div class="rk-note">"提前 / 推迟 N 个月" = 和${c.depOn ? '不计入金' : '计入入金'}相比.</div>
-    <div class="rk-sub-title">组合 · 每月收租 × 每年大赚次数 → 到 20 万 / 50 万 / 100 万</div>
-    <div class="rk-table-wrap"><table class="rk-table gl-grid"><thead><tr><th>收租 / 月</th>${ws.map(w => `<th>大赚 ${w} 次/年</th>`).join('')}</tr></thead><tbody>${grid}</tbody></table></div>
-    <div class="rk-sub-title">自己调</div>
-    <div class="gl-sl">
-      <label>收租 %/月 <input id="gs-mu" type="range" min="0" max="5" step="0.1" value="${__goalSl[0]}" oninput="goalSlider()"></label>
-      <label>大赚 次/年 <input id="gs-fq" type="range" min="0" max="6" step="0.5" value="${__goalSl[1]}" oninput="goalSlider()"></label>
-      <label>大赚幅度 % NAV <input id="gs-sz" type="range" min="5" max="60" step="1" value="${__goalSl[2]}" oninput="goalSlider()"></label>
-      <label>入金 $/月 <input id="gs-dep" type="range" min="0" max="5000" step="250" value="${__goalSl[3]}" oninput="goalSlider()"></label></div>
-    <div id="gs-out" class="gl-out">${_goalSliderOut()}</div>
-    <div class="rk-sub-title">算作"大赚"的 LEAPS (≥ 5% NAV) · 取消勾选可剔除</div>
-    ${H.bigs.length ? `<div class="gl-bigs">${H.bigs.map(b => `<label><input type="checkbox"${b.on ? ' checked' : ''} onchange="goalBig('${esc(b.id)}', this.checked)"> ${esc(b.l.ticker)} ${b.l.strike}C · ${b.m} 平仓 · ${_fmtSigned(b.l.pnl)} (<b>+${(b.pct * 100).toFixed(0)}%</b> NAV)</label>`).join('')}</div>` : '<div class="rk-quiet">历史里还没有赚超过 5% NAV 的 LEAPS; 组合表和滑块里的大赚幅度默认按 15% 计.</div>'}
-    <div class="gl-act"><button class="btn ghost" onclick="goalSavePlan()">${c.plan ? '重新保存为计划' : '保存为计划'}</button><span class="rk-quiet">保存中位情形作为计划线, 之后每月对照实际</span></div>
-    <div class="rk-note">规划工具, 不是预测: 历史只有 ${H.months} 个月, 样本小. 收租按 NAV 百分比复利 (仓位随规模同比放大, 仍受你的仓位规则约束). 净值由已实现盈亏和入金倒推, 未计未实现盈亏; 未考虑税. 落后于计划时该检查的是纪律和执行, 而不是加大仓位.</div>
-  </details>`;
+  const c = _goalCfg(), wrap = (sum, body) => `<details class="rk-block pf-goal" id="goal-block"${__goalOpen ? ' open' : ''} ontoggle="__goalOpen = this.open"><summary class="rk-block-title">目标推演 <span class="rk-quiet gp-sum">${sum}</span></summary>${body}</details>`;
+  if (!H.months || H.months < 3) return wrap('点开', '<div class="rk-quiet">完整的历史月份少于 3 个, 还无法估算收益和波动.</div>');
+  const A = _gpAssume(H, c), P = _gpParams(H, A, c.scen), mc = _gpMC(P), det = _gpDet(P), pc = v => (v * 100).toFixed(1) + '%';
+  const nxt = GOALS.findIndex(G => G > H.nav), horizon = Math.max(36, Math.min(240, Math.ceil(((isFinite(mc.goals[2].p50) ? mc.goals[2].p50 : det[2]) || 200) * 1.15)));
+  const cards = GOALS.map((G, i) => { const g = mc.goals[i], m = _mIdx(c.dates[G]), pr = g.by(m), done = H.nav >= G;
+    return `<div class="gp-card${i === nxt ? ' next' : ''}"><div class="gp-g">${G / 10000} 万${i === nxt ? ' <span class="rk-quiet">下一个目标</span>' : ''}</div>
+      ${done ? '<div class="gp-med-d rk-t-safe">已达成</div>' : `<div class="gp-med-d">中位 <b>${_mLab(g.p50)}</b></div><div class="rk-quiet gp-rng">80% 落在 ${_mLab(g.p10)} – ${isFinite(g.p90) ? _mLab(g.p90) : '20 年后'}</div>
+      <div class="gp-prob">到 <input type="date" class="gl-date gp-dt" value="${c.dates[G]}" onchange="goalDate(${G}, this.value)"> 达成概率 <b class="rk-t-${_gpCls(pr)}">${(pr * 100).toFixed(0)}%</b></div>`}</div>`; }).join('');
+  const sumTxt = nxt >= 0 ? `${GOALS[nxt] / 10000} 万 · 中位 ${_mLab(mc.goals[nxt].p50)} · 到 ${c.dates[GOALS[nxt]].slice(0, 7)} 概率 ${(mc.goals[nxt].by(_mIdx(c.dates[GOALS[nxt]])) * 100).toFixed(0)}% · 点开` : '点开';
+  const S = GP_SCEN[c.scen] || GP_SCEN.base, exp = Math.pow(1 + _gpExp(P), 12) - 1;
+  const inp = (k, v, step, hint) => `<input type="number" class="gl-num gp-in" step="${step}" value="${(v * 100).toFixed(1)}" onchange="goalOvr('${k}', this.value === '' ? '' : +this.value / 100)">%<span class="rk-quiet gp-h">${hint}</span>`;
+  const need = (() => { const G = +c.inv.g, m = _mIdx(c.inv.d), r = _gpNeed(P, G, m); return { r, m }; })();
+  let plan = '';
+  if (c.plan && c.plan.path) { const mo = Math.round((Date.now() - c.plan.at) / (30.44 * 864e5)), exp0 = c.plan.path[Math.min(Math.max(0, mo), c.plan.path.length - 1)];
+    const ahead = mo <= 0 ? null : (c.plan.path.findIndex(v => v >= H.nav) - mo);
+    plan = `<div class="gp-plan-t">计划 (${_tsDay(c.plan.at)} · ${GP_SCEN[c.plan.scen] ? GP_SCEN[c.plan.scen].l : ''}): 现在应在 <b>${_fmtUsd(exp0)}</b>, 实际 <b>${_fmtUsd(H.nav)}</b>${ahead == null ? ' · 本月刚保存' : ahead > 0 ? ` · <span class="rk-t-safe">领先约 ${ahead} 个月</span>` : ahead < 0 ? ` · <span class="rk-t-alert">落后约 ${-ahead} 个月 · 先看纪律分和执行, 不要靠加大仓位追进度</span>` : ' · 与计划一致'}</div>`; }
+  const body = `
+    <div class="gp-bar"><span class="rk-presets">${Object.entries(GP_SCEN).map(([k, v]) => `<button class="rk-preset${c.scen === k ? ' active' : ''}" onclick="goalSet('scen', '${k}')">${v.l}</button>`).join('')}</span>
+      <span class="rk-quiet">${S.d}</span><label class="gl-tg"><input type="checkbox"${c.depOn ? ' checked' : ''} onchange="goalSet('depOn', this.checked)"> 计入入金</label></div>
+    ${H.months < 12 ? `<div class="gp-warn">历史只有 <b>${H.months}</b> 个月, 收益和波动的估计很不稳定 (一个特别好或特别差的月份就能大幅改变结果). 建议以「保守」情形为主, 或在下面的假设里手动调低.</div>` : ''}
+    <div class="gp-cards">${cards}</div>
+    ${_gpFanSVG(H, mc, c, horizon)}
+    ${plan}
+    <div class="rk-sub-title">假设 <span class="rk-quiet">· 每格右侧是你的历史值, 改动后整页一起更新</span> <button class="app-link" onclick="goalSet('ovr', {})">恢复历史值</button></div>
+    <div class="gp-asm">
+      <div><b>卖方收益</b> 年化 ${inp('muS', A.muS, 0.5, `历史 ${pc(H.muS)}`)}<br>波动 ${inp('sdS', A.sdS, 0.5, `历史 ${pc(H.sdS)}`)}</div>
+      <div><b>LEAPS 收益</b> 年化 ${inp('muL', A.muL, 0.5, `历史 ${pc(H.muL)}`)}<br>波动 ${inp('sdL', A.sdL, 0.5, `历史 ${pc(H.sdL)}`)}</div>
+      <div><b>资金配置</b> 卖方 ${inp('aS', A.aS, 1, `现在 ${pc(H.alloc.s)}`)}<br>LEAPS ${inp('aL', A.aL, 1, `现在 ${pc(H.alloc.l)}`)}<br><span class="rk-quiet">现金 ${pc(A.aC)} · 按年化 ${pc(CASH_YLD)}</span></div>
+      <div><b>入金</b> <input type="number" class="gl-num" value="${c.dep}" min="0" step="100" onchange="goalSet('dep', +this.value || 0)"> / 月<br>到 <input type="date" class="gl-date" value="${c.depEnd}" onchange="goalSet('depEnd', this.value)"></div>
+    </div>
+    <div class="rk-note">收益和波动是对整个 NAV 的贡献, 按现在的配置计; 改配置会按比例放大或缩小. 当前情形下整体预期年化 <b>${pc(exp)}</b>.</div>
+    <div class="rk-sub-title">反推 · 要多少收益才够</div>
+    <div class="gp-inv">到 <select class="gl-num gp-sel" onchange="goalInv('g', +this.value)">${GOALS.map(G => `<option value="${G}"${+c.inv.g === G ? ' selected' : ''}>${G / 10000} 万</option>`).join('')}</select>
+      , 在 <input type="date" class="gl-date" value="${c.inv.d}" onchange="goalInv('d', this.value)"> 之前 → 需要年化
+      <b class="${need.r == null ? '' : need.r <= exp ? 'rk-t-safe' : 'rk-t-danger'}">${need.r == null ? '—' : !isFinite(need.r) ? '> 500%' : pc(need.r)}</b>
+      <span class="rk-quiet">(当前情形预期 ${pc(exp)}${need.r != null && isFinite(need.r) ? need.r <= exp ? ' · 按现在的节奏够了' : ` · 还差 ${pc(need.r - exp)}, 高于你现在的节奏` : ''})</span></div>
+    <div class="rk-sub-title">敏感性 · 哪个假设对到达时间影响最大</div>
+    ${_gpTornadoHTML(H, A, c.scen)}
+    <div class="gl-act"><button class="btn ghost" onclick="goalSavePlan()">${c.plan ? '重新保存为计划' : '保存为计划'}</button><span class="rk-quiet">把当前情形的中位线存为计划, 之后在图上对照实际</span></div>
+    <details class="gp-meth"><summary>数据和方法</summary>
+      <div class="rk-note">历史 ${H.from} 起 ${H.months} 个完整月份 (其中 ${H.real} 个月用 Worker 记录的真实净值, 其余由已实现盈亏和入金倒推). 每月: 卖方 (CSP / CC / 正股) 和 LEAPS 的已实现盈亏 ÷ 月初 NAV, 年化 = 月均 × 12, 波动 = 月标准差 × √12.
+        模拟: 每月收益按正态分布随机抽取, 1,500 条路径; 保守情形每月有 1/24 的概率出现风险资产 −15%. 未计未实现盈亏、税和通胀. 历史越短, 结果越不可靠.</div>
+      <div class="rk-table-wrap"><table class="rk-table"><thead><tr><th>月份</th><th>月初 NAV</th><th>卖方</th><th>LEAPS</th><th>入金</th></tr></thead><tbody>
+        ${H.rows.slice(-24).reverse().map(g => `<tr><td>${g.k}${g.real ? '' : ' <span class="rk-quiet">倒推</span>'}</td><td>${_fmtUsd(g.navStart)}</td><td class="${_thCls(g.seller)}">${pc(g.seller / g.navStart)}</td><td class="${_thCls(g.leaps)}">${pc(g.leaps / g.navStart)}</td><td>${g.flow ? _fmtSigned(g.flow) : '—'}</td></tr>`).join('')}</tbody></table></div>
+    </details>
+    <div class="rk-note">规划工具, 不是预测. 落后于计划时, 该检查的是纪律和执行, 而不是加大仓位.</div>`;
+  return wrap(sumTxt, body);
 }
 
 /* ---------- fault isolation: one broken block never takes the page down ---------- */
