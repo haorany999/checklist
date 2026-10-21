@@ -5462,7 +5462,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.17-v54';
+const APP_BUILD = '2026.10.17-v55';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
@@ -9858,6 +9858,12 @@ function hideForcedDialog() {
   if (m) m.style.display = 'none';
 }
 
+window.respectBlocked = id => {
+  const e = loadHistory().find(x => x.id === id); if (!e) { hideForcedDialog(); return; }
+  editHistoryEntry(id, { outcome: 'skipped', respectedAt: Date.now() });
+  hideForcedDialog();
+  showToast('已记录: 尊重 checklist, 未交易', 'success', '这次会计入纪律分的「遵守硬规则」');
+};
 function showForcedTradeDialog(id) {
   const entry = loadHistory().find(e => e.id === id);
   if (!entry) return;
@@ -9897,8 +9903,9 @@ function showForcedTradeDialog(id) {
         </div>
       </div>
       <div class="modal-actions">
-        <button class="btn ghost" onclick="hideForcedDialog()">不硬冲, 我尊重 checklist</button>
-        <button class="btn primary" id="forced-save-btn" style="background: var(--fail); border-color: var(--fail);">保存理由</button>
+        <button class="btn primary" onclick="respectBlocked('${esc(id)}')">不硬冲, 我尊重 checklist</button>
+        <button class="btn ghost" onclick="hideForcedDialog()" title="结果先空着, 之后在 History 里更新">考虑一会, 稍后更新</button>
+        <button class="btn ghost" id="forced-save-btn" style="color: var(--fail); border-color: var(--fail);">硬冲 · 保存理由</button>
       </div>
     </div>
   `;
@@ -13674,7 +13681,7 @@ const GREEK_HELP = {
     read: '绿色 = 提前, 红色 = 推迟; 条越长, 这个假设对结果的影响越大, 越值得下功夫. 某一侧显示「不变」, 通常是到了上限 (例如风险资产配置已经是 100%).',
     short: '「风险资产配置」= 投入卖方和 LEAPS 的资金占 NAV 的比例, 其余是现金. 调低 25% 就是多留现金.',
     ex: '风险资产配置 80% → 60% (−25%) 推迟 65 个月 = 少投入四分之一的资金, 到 100 万要多等 5 年多; 说明你的结果主要来自资金是否在场上.' },
-  discipline: { t: '纪律分', def: '最近 30 笔新开仓的执行情况, 0–100: checklist 覆盖率 (40%) + 遵守硬规则 (30%, 1 − 强行交易比例) + 管理纪律 (30%, 卖出的期权赚到 50% 或进入 21 天后 3 个交易日内处理).',
+  discipline: { t: '纪律分', def: '执行情况, 0–100: checklist 覆盖率 (40%, 最近 30 笔新开仓里有 checklist 的比例) + 遵守硬规则 (30%, 近 90 天 checklist 判 BLOCKED 时你尊重的比例; 每尊重一次都会提高) + 管理纪律 (30%, 卖出的期权赚到 50% 或进入 21 天后 3 个交易日内处理).',
     read: '85 以上 = 稳定按规则执行; 70–85 偶有例外; 低于 70 = 规则在被绕开. 管理纪律用 Worker 每天的收盘快照判断, 数据不够时暂不计分, 其余两项按比例计算. 不计入综合风险分.',
     short: '它衡量的是你, 不是市场: 风险分高可能是市场原因, 纪律分低一定是执行原因.',
     ex: '30 笔里 27 笔做了 checklist (90%), 其中 1 笔强行交易 (96%), 6 次触发 50% / 21 天有 5 次及时处理 (83%) → 0.4×90 + 0.3×96 + 0.3×83 ≈ 90.' },
@@ -16918,6 +16925,7 @@ function _reviewBadgeHTML(e) {
     const a = e._autoOutcome; return `<span class="history-auto rv-badge" title="根据 Schwab 交易记录自动写入">自动 · ${_fmtSigned(a.pnl)} · ${RV_METHOD[a.method] || a.method || ''}${a.days != null ? ` · ${a.days} 天` : ''}</span>`;
   }
   if (!r) return '';
+  if (e.outcome === 'skipped' && r.u && (r.status === 'open' || r.status === 'closed')) return `<span class="history-auto rv-badge rv-warn" title="交易记录里找到了对应的成交">标了未交易, 但 ${Math.max(0, Math.round((r.u.openTs - (e.timestampSort || r.u.openTs)) / 864e5))} 天后成交了</span>`;
   if (r.status === 'none' && e.outcome == null) return `<span class="history-auto rv-badge rv-none" title="做完 checklist 后 5 个交易日内没有找到对应成交">自动 · 未开仓</span>`;
   if (r.status === 'open' && !e._autoOutcome && e.outcome == null) return `<span class="history-auto rv-badge">自动 · 持仓中</span>`;
   if (r.status === 'closed' && (e.outcome === 'win' || e.outcome === 'loss') && !e._autoOutcome && (r.u.pnl >= 0) !== (e.outcome === 'win'))
@@ -17035,14 +17043,20 @@ function _disciplineData() {
   if (!ckTs.length) return null;
   const from = Math.min(...ckTs) - 864e5;
   const opens = R.units.filter(u => !u.rollFrom && u.openTs >= from).sort((a, b) => b.openTs - a.openTs);
-  const calc = list => { const L = list.slice(0, 30); if (!L.length) return null;
+  // every BLOCKED verdict in the last 90 days: respected (no trade / marked 未交易) or forced (traded anyway / reason written)
+  const blockedSt = e => { const r = R.results[e.id], traded = r && (r.status === 'open' || r.status === 'closed');
+    return traded || e.forcedReason ? 'forced' : e.outcome === 'skipped' || (r && r.status === 'none') ? 'resp' : 'pending'; };
+  const blockedIn = until => hist.filter(e => _kindOfStrategy(e.strategy) && (e.hardFails || []).length && (e.timestampSort || 0) <= until && (e.timestampSort || 0) > until - 90 * 864e5);
+  const calc = (list, until = Date.now()) => { const L = list.slice(0, 30); if (!L.length) return null;
     const ck = L.filter(u => byU[u.id]), forced = ck.filter(u => (byU[u.id].hardFails || []).length), mg = _mgmtDiscipline(L);
-    const parts = [['cov', ck.length / L.length, 0.4], ['hard', ck.length ? 1 - forced.length / ck.length : null, 0.3], ['mg', mg.score, 0.3]];
+    const B = blockedIn(until), bR = B.filter(e => blockedSt(e) === 'resp'), bF = B.filter(e => blockedSt(e) === 'forced');
+    const hard = bR.length + bF.length ? bR.length / (bR.length + bF.length) : ck.length ? 1 - forced.length / ck.length : null;
+    const parts = [['cov', ck.length / L.length, 0.4], ['hard', hard, 0.3], ['mg', mg.score, 0.3]];
     const use = parts.filter(p => p[1] != null), W = use.reduce((s, p) => s + p[2], 0);
-    return { score: W ? use.reduce((s, p) => s + p[1] * p[2], 0) / W * 100 : null, cov: ck.length / L.length, hard: parts[1][1], mg, n: L.length, ck, forced, noCk: L.filter(u => !byU[u.id]), byU };
+    return { score: W ? use.reduce((s, p) => s + p[1] * p[2], 0) / W * 100 : null, cov: ck.length / L.length, hard, mg, n: L.length, ck, forced, noCk: L.filter(u => !byU[u.id]), byU, bR, bF };
   };
   let streak = 0; for (const u of opens) { if (byU[u.id]) streak++; else break; }
-  return { now: calc(opens), prev: calc(opens.filter(u => u.openTs < Date.now() - 30 * 864e5)), streak };
+  return { now: calc(opens), prev: calc(opens.filter(u => u.openTs < Date.now() - 30 * 864e5), Date.now() - 30 * 864e5), streak };
 }
 const _uLabel = u => `${u.ticker} ${u.strike}${u.putCall === 'PUT' ? 'P' : 'C'} ${u.expiry.slice(5)}`;
 function _disciplineCardHTML() {
@@ -17052,7 +17066,7 @@ function _disciplineCardHTML() {
   return `<section class="rk-block dc-card" id="dc-card" role="button" tabindex="0" onclick="showDiscipline()">
     <div class="dc-row"><span class="dc-title">纪律分 ${_qBtn('discipline', 'short')}</span><b class="dc-score rk-t-${lv}">${s != null ? Math.round(s) : '—'}</b>
       ${dlt != null ? `<span class="rk-quiet">较上月 ${dlt >= 0 ? '+' : '−'}${Math.abs(dlt).toFixed(0)}</span>` : ''}<span class="dc-streak">连续 ${D.streak} 笔做了 checklist</span><span class="rk-quiet dc-more">明细 ▸</span></div>
-    <div class="dc-parts"><span>checklist 覆盖 <b>${pc(N.cov)}</b></span><span>遵守硬规则 <b>${pc(N.hard)}</b></span><span>管理纪律 <b>${N.mg.score != null ? pc(N.mg.score) : '数据积累中'}</b></span><span class="rk-quiet">最近 ${N.n} 笔新开仓</span></div>
+    <div class="dc-parts"><span>checklist 覆盖 <b>${pc(N.cov)}</b></span><span>遵守硬规则 <b>${pc(N.hard)}</b>${N.bR.length + N.bF.length ? ` <span class="rk-quiet">(尊重 ${N.bR.length} · 硬冲 ${N.bF.length})</span>` : ''}</span><span>管理纪律 <b>${N.mg.score != null ? pc(N.mg.score) : '数据积累中'}</b></span><span class="rk-quiet">最近 ${N.n} 笔新开仓</span></div>
   </section>`;
 }
 window.showDiscipline = () => {
@@ -17064,8 +17078,9 @@ window.showDiscipline = () => {
       <button class="gl-x" style="margin-left:auto" onclick="document.getElementById('dc-modal').remove()" aria-label="关闭">×</button></div>
     <div class="dc-sec"><b>checklist 覆盖 ${(N.cov * 100).toFixed(0)}%</b> <span class="rk-quiet">权重 40% · ${N.ck.length} / ${N.n} 笔有对应的 checklist</span>
       <div class="rk-quiet">没做 checklist 的:</div>${li(N.noCk, u => `<li>${esc(_uLabel(u))} · ${_tsDay(u.openTs).slice(5)} 开仓</li>`)}</div>
-    <div class="dc-sec"><b>遵守硬规则 ${N.hard != null ? (N.hard * 100).toFixed(0) + '%' : '—'}</b> <span class="rk-quiet">权重 30% · 有 checklist 的 ${N.ck.length} 笔里, 强行交易 ${N.forced.length} 笔</span>
-      ${li(N.forced, u => `<li>${esc(_uLabel(u))} · 未通过: ${esc((N.byU[u.id].hardFails || []).join('、'))}</li>`)}</div>
+    <div class="dc-sec"><b>遵守硬规则 ${N.hard != null ? (N.hard * 100).toFixed(0) + '%' : '—'}</b> <span class="rk-quiet">权重 30% · ${N.bR.length + N.bF.length ? `近 90 天 checklist 判 BLOCKED ${N.bR.length + N.bF.length} 次: 尊重 ${N.bR.length} 次 · 硬冲 ${N.bF.length} 次` : `近 90 天没有 BLOCKED; 按有 checklist 的 ${N.ck.length} 笔里强行交易 ${N.forced.length} 笔计`}</span>
+      ${N.bR.length ? `<div class="rk-quiet">尊重了:</div>${li(N.bR, e => `<li>${esc(e.ticker)} ${esc(e.strategy || '')} · ${esc(String(e.timestamp || '').slice(0, 10))} · 未通过: ${esc((e.hardFails || []).join('、'))}</li>`)}` : ''}
+      ${N.bF.length ? `<div class="rk-quiet">硬冲了:</div>${li(N.bF, e => `<li>${(() => { const r = (computeAutoReview() || { results: {} }).results[e.id]; return r && r.u ? esc(_uLabel(r.u)) : `${esc(e.ticker)} ${esc(e.strategy || '')}`; })()} · ${esc(String(e.timestamp || '').slice(0, 10))} · 未通过: ${esc((e.hardFails || []).join('、'))}${e.outcome === 'skipped' ? ' · <span class="rk-t-alert">标了未交易, 但之后成交了</span>' : ''}</li>`)}` : ''}</div>
     <div class="dc-sec"><b>管理纪律 ${N.mg.score != null ? (N.mg.score * 100).toFixed(0) + '%' : '数据积累中'}</b> <span class="rk-quiet">权重 30% · 卖出的期权赚到 50% 或进入 21 天后, 3 个交易日内处理</span>
       ${N.mg.noData ? '<div class="rk-quiet">每日快照里还没有触发过这两条的仓位, 暂不计分 (其余两项按比例计算).</div>'
         : li(N.mg.rows.filter(r => !r.ok), r => `<li>${esc(_uLabel(r.u))} · ${r.trig.d.slice(5)} ${r.trig.why}, ${r.open ? `至今 ${r.lag} 个交易日未处理` : `${r.lag} 个交易日后才处理`}</li>`)}</div>
