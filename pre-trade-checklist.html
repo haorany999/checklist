@@ -3415,6 +3415,12 @@
   .pf-goal .tn-row { grid-template-columns: 96px minmax(120px, 1fr) 270px; } .pf-goal .tn-v { white-space: nowrap; }
   @media (max-width: 760px) { .pf-goal .tn-row { grid-template-columns: 84px minmax(80px, 1fr); } .pf-goal .tn-v { grid-column: 1 / -1; white-space: normal; } }
   .pf-goal .gp-hint { text-transform: none; letter-spacing: 0; font-weight: 500; color: var(--text-faint); }
+  /* v56 · attribution range + reconciliation */
+  .at-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 2px 0 10px; font-size: 12.5px; }
+  .at-cust { display: inline-flex; align-items: center; gap: 6px; } .at-date { font: 12.5px var(--mono); padding: 3px 4px; }
+  .at-recon { display: flex; flex-wrap: wrap; gap: 4px 18px; align-items: baseline; font-size: 13px; padding: 8px 12px; margin: 6px 0 10px; background: var(--panel-2); border-radius: 3px; }
+  .at-recon b { font-family: var(--mono); } .at-recon .rk-quiet { flex-basis: 100%; font-size: 12px; }
+  .at-hide { display: none; }
 </style>
 </head>
 <body class="theme-slate">
@@ -5462,7 +5468,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.17-v55';
+const APP_BUILD = '2026.10.17-v56';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
@@ -15881,12 +15887,15 @@ function computeAttribution(snaps) {
   const days = [];
   for (let i = 1; i < snaps.length; i++) {
     const s0 = snaps[i - 1], s1 = snaps[i], dd = Math.max(1, Math.round((Date.parse(s1.d) - Date.parse(s0.d)) / 864e5));
-    const m0 = new Map(s0.pos.map(p => [p.s, p]));
-    const day = { d: s1.d, actual: 0, theta: 0, delta: 0, gamma: 0, vega: 0, other: 0, skipped: 0, byT: {} };
+    const key = p => `${p.s}|${p.k}|${p.K ?? ''}|${p.e ?? ''}`;          // unique even when a symbol is missing (stock and option on one ticker)
+    const m0 = new Map(s0.pos.map(p => [key(p), p]));
+    const day = { d: s1.d, live: !!s1.live, at: s1.at, nav0: s0.nav, nav1: s1.nav, actual: 0, theta: 0, delta: 0, gamma: 0, vega: 0, other: 0, skipped: 0, left: [], byT: {} };
+    const m1 = new Map(s1.pos.map(p => [key(p), p]));
+    s0.pos.forEach(p0 => { if (!m1.has(key(p0))) { day.skipped++; day.left.push({ t: p0.t, s: p0.s, why: '已平仓 / 到期' }); } });
     s1.pos.forEach(p1 => {
-      const p0 = m0.get(p1.s);
-      if (!p0 || p0.q !== p1.q || p0.k !== p1.k) { if (p0 || p1) day.skipped++; return; }
-      if (_snapGreeksBad(p0) || _snapGreeksBad(p1)) { day.skipped++; return; }      // Schwab's −999 placeholders in an old snapshot
+      const p0 = m0.get(key(p1));
+      if (!p0 || p0.q !== p1.q || p0.k !== p1.k) { day.skipped++; day.left.push({ t: p1.t, s: p1.s, why: !p0 ? '新开仓' : '张数变化' }); return; }
+      if (_snapGreeksBad(p0) || _snapGreeksBad(p1)) { day.skipped++; day.left.push({ t: p1.t, s: p1.s, why: 'Greeks 无效' }); return; }      // Schwab's −999 placeholders in an old snapshot
       const dS = p1.u != null && p0.u != null ? p1.u - p0.u : 0;
       const r = { theta: 0, delta: 0, gamma: 0, vega: 0 };
       let actual;
@@ -15907,16 +15916,44 @@ function computeAttribution(snaps) {
   }
   return days;
 }
+// ── v56 · attribution: today live from yesterday's close, flexible ranges, reconciliation ──
+let __attrRange = (() => { try { return JSON.parse(localStorage.getItem('pretrade_attr_range') || 'null') || { mode: 'today' }; } catch (e) { return { mode: 'today' }; } })();
+window.setAttrRange = r => { __attrRange = { ...__attrRange, ...r }; try { localStorage.setItem('pretrade_attr_range', JSON.stringify(__attrRange)); } catch (e) {}
+  const el = document.getElementById('attr-slot'); if (el) { el.innerHTML = _safe('盈亏归因', _attribInnerHTML); _fitChartText && _fitChartText(); } };
+const _etNow = () => { try { const p = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }).formatToParts(new Date()), g = t => p.find(x => x.type === t).value;
+  return { d: `${g('year')}-${g('month')}-${g('day')}`, min: (+g('hour') % 24) * 60 + +g('minute') }; } catch (e) { return { d: _todayISO(), min: 720 }; } };
+// today's positions from the Schwab data you just refreshed, in the Worker's snapshot shape
+function _liveSnap() {
+  const pf = getPortfolio(); if (pf.source !== 'schwab' || !pf.positions.length) return null;
+  const et = (window.__etOverride || _etNow)(), wd = new Date(et.d + 'T12:00:00Z').getUTCDay();
+  if (wd === 0 || wd === 6 || US_HOLIDAYS.has(et.d) || et.min < 9 * 60 + 30) return null;   // the session hasn't produced a "today" yet
+  const cache = loadSchwabCache && loadSchwabCache();
+  return { d: et.d, live: true, at: (cache && cache.fetchedAt) || Date.now(), nav: pf.nav, pos: pf.positions.map(x => ({ s: x.symbol || x.ticker, k: x.kind, t: x.ticker, q: Number(x.qty) || 0, K: x.strike ?? null, e: x.expiry ?? null,
+    u: x.kind === 'stock' ? (x.price ?? x.und ?? null) : (x.und ?? null), m: x.mark ?? null, mv: x.marketValue ?? null, de: x.delta ?? null, ga: x.gamma ?? null, th: x.theta ?? null, ve: x.vega ?? null, iv: x.iv ?? null })) };
+}
+function _attrSeries() {
+  const c = loadSnaps(); if (!c) return null;
+  const live = _liveSnap(), base = c.data.filter(s => !live || s.d < live.d);   // an intraday record for today is replaced by the live one
+  return live ? base.concat([live]) : base;
+}
+const _attrCustomDate = (val, key) => `<input type="date" class="gl-date at-date" value="${val || ''}" onblur="if (/^\\d{4}-\\d{2}-\\d{2}$/.test(this.value) && this.value !== '${val || ''}') setAttrRange({ mode: 'custom', ${key}: this.value })" onkeydown="if (event.key === 'Enter') this.blur()">`;
+
 window.setAttrDays = n => { __attrDays = n; const el = document.getElementById('attr-slot'); if (el) { el.innerHTML = _safe('盈亏归因', _attribInnerHTML); _fitChartText(); } };
 function _attribInnerHTML() {
   const c = loadSnaps();
   if (!c) return `<div class="rk-quiet">${__snapErr ? `<span class="rk-t-alert">${esc(__snapErr)}</span>` : '读取快照…'}</div>`;
-  if (c.data.length < 2) return `<div class="rk-quiet">每个交易日收盘自动记录持仓和 Greeks (Worker v8 起). 已记录 ${c.data.length} 天, 满 2 个交易日后开始显示.</div>`;
-  const all = computeAttribution(c.data), days = all.slice(-__attrDays);
+  const series = _attrSeries();
+  if (!series || series.length < 2) return `<div class="rk-quiet">每个交易日收盘自动记录持仓和 Greeks. 已记录 ${c.data.length} 天, 满 2 个交易日后开始显示.</div>`;
+  const all = computeAttribution(series), R0 = __attrRange, md = d => `${+d.slice(5, 7)}/${+d.slice(8)}`;
+  let days = R0.mode === 'today' ? all.slice(-1) : R0.mode === 'custom' ? all.filter(d => (!R0.from || d.d >= R0.from) && (!R0.to || d.d <= R0.to)) : all.slice(-(+R0.mode || 7));
+  const segBar = `<div class="at-bar"><span class="rk-presets">${[['today', '今天'], ['7', '7 天'], ['30', '30 天'], ['90', '90 天'], ['custom', '自定义']].map(([k, l]) => `<button class="rk-preset${R0.mode === k ? ' active' : ''}" onclick="setAttrRange({ mode: '${k}'${k === 'custom' ? `, from: '${R0.from || all[Math.max(0, all.length - 5)].d}', to: '${R0.to || all[all.length - 1].d}'` : ''} })">${l}</button>`).join('')}</span>
+    ${R0.mode === 'custom' ? `<span class="at-cust">${_attrCustomDate(R0.from, 'from')} – ${_attrCustomDate(R0.to, 'to')}</span>` : ''}
+    <span class="rk-quiet">${days.length ? (days.length === 1 ? `${md(days[0].d)}${days[0].live ? ` 盘中 · 截至 ${new Date(days[0].at).toTimeString().slice(0, 5)}` : ' 收盘'}` : `${md(days[0].d)} – ${md(days[days.length - 1].d)} · ${days.length} 个交易日`) : ''}</span></div>`;
+  if (!days.length) return segBar + `<div class="rk-quiet">所选区间没有快照. 有记录的日期: ${md(all[0].d)} – ${md(all[all.length - 1].d)}.</div>`;
   const sum = k => days.reduce((s, d) => s + d[k], 0), tot = Object.fromEntries(['actual', ...ATTR_KEYS].map(k => [k, sum(k)]));
   const fig = (k, label) => `<div class="rk-fig"><span class="rk-fig-val ${_thCls(tot[k])}">${_fmtSigned(tot[k])}</span><span class="rk-fig-label">${label}</span>${k !== 'actual' && Math.abs(tot.actual) > 1 ? `<span class="rk-fig-sub">占实际 ${(tot[k] / Math.abs(tot.actual) * 100).toFixed(0)}%</span>` : ''}</div>`;
   // stacked bars per day
-  const W = _chartW(), H = 170, L = 44, R = 8, T = 10, B = 20, n = days.length;
+  const one = days.length === 1, W = _chartW(), H = 170, L = 44, R = 8, T = 10, B = 20, n = days.length;
   const up = d => ATTR_KEYS.reduce((s, k) => s + Math.max(0, d[k]), 0), dn = d => ATTR_KEYS.reduce((s, k) => s + Math.min(0, d[k]), 0);
   const hi = Math.max(1, ...days.map(up), ...days.map(d => d.actual)), lo = Math.min(-1, ...days.map(dn), ...days.map(d => d.actual));
   const Y = v => T + (hi - v) / (hi - lo) * (H - T - B), bw = Math.min(36, Math.max(3, (W - L - R) / n * 0.68)), X = i => L + (i + 0.5) * (W - L - R) / n;
@@ -15935,17 +15972,23 @@ function _attribInnerHTML() {
   const tick = Object.entries(byT).sort((a, b) => Math.abs(b[1].actual) - Math.abs(a[1].actual));
   const main = ATTR_KEYS.filter(k => k !== 'other').sort((a, b) => Math.abs(tot[b]) - Math.abs(tot[a]))[0];
   const lead = { theta: '时间价值', delta: '方向', gamma: '大幅波动 (Gamma)', vega: '隐含波动率变化' }[main];
+  // one day: line it up with the NAV move, and name what attribution can't explain
+  const D1 = days[0], navChg = one && D1.nav0 > 0 && D1.nav1 > 0 ? D1.nav1 - D1.nav0 : null;
+  const groups = {}; if (one) D1.left.forEach(x => { (groups[x.why] = groups[x.why] || []).push(x.t); });
+  const recon = one && navChg != null ? `<div class="at-recon"><span>当日 NAV 变化 <b class="${_thCls(navChg)}">${_fmtSigned(navChg)}</b></span><span>归因覆盖 <b class="${_thCls(tot.actual)}">${_fmtSigned(tot.actual)}</b></span><span>差额 <b>${_fmtSigned(navChg - tot.actual)}</b></span>
+      <div class="rk-quiet">差额来自没法归因的部分: ${Object.keys(groups).length ? Object.entries(groups).map(([w, ts]) => `${w} ${ts.length} 笔 (${esc([...new Set(ts)].join('、'))})`).join(' · ') + ' · ' : ''}已实现盈亏、利息、入金出金. Schwab 的 Day P&L 与「当日 NAV 变化」口径一致.</div></div>` : '';
   return `
-    <div class="rk-presets at-seg">${[7, 30, 90].map(d => `<button class="rk-preset${__attrDays === d ? ' active' : ''}" onclick="setAttrDays(${d})">${d} 天</button>`).join('')}<span class="rk-quiet">${days.length} 个交易日</span></div>
-    <div class="at-lead">近 ${days.length} 个交易日实际 <b class="${_thCls(tot.actual)}">${_fmtSigned(tot.actual)}</b>, 主要来自<b>${lead}</b> (${_fmtSigned(tot[main])}).</div>
+    ${segBar}
+    <div class="at-lead">${one ? `${md(D1.d)}${D1.live ? ' (盘中)' : ''}` : `这 ${days.length} 个交易日`} 实际 <b class="${_thCls(tot.actual)}">${_fmtSigned(tot.actual)}</b>, 主要来自<b>${lead}</b> (${_fmtSigned(tot[main])}).</div>
+    ${recon}
     <div class="rk-figs at-figs">${fig('actual', '实际')}${fig('theta', 'Theta')}${fig('delta', 'Delta')}${fig('gamma', 'Gamma')}${fig('vega', 'Vega')}${fig('other', `其他 ${_qBtn('attrib_other', 'short')}`)}</div>
-    ${chart}
-    <div class="rk-legend">${ATTR_KEYS.map(k => `<span><i class="rk-sw at-sw-${k}"></i>${ATTR_LABEL[k]}</span>`).join('')}<span><i class="rk-sw at-sw-actual"></i>实际</span></div>
+    ${one ? '' : chart}
+    <div class="rk-legend${one ? ' at-hide' : ''}">${ATTR_KEYS.map(k => `<span><i class="rk-sw at-sw-${k}"></i>${ATTR_LABEL[k]}</span>`).join('')}<span><i class="rk-sw at-sw-actual"></i>实际</span></div>
     <div class="rk-table-wrap"><table class="rk-table">
       <thead><tr><th>标的</th><th>实际</th><th>Theta</th><th>Delta</th><th>Gamma</th><th>Vega</th><th>其他</th></tr></thead>
       <tbody>${tick.map(([t, v]) => `<tr><td>${esc(t)}</td>${['actual', ...ATTR_KEYS].map(k => `<td class="${_thCls(v[k])}">${Math.abs(v[k]) < 0.5 ? '—' : _fmtSigned(v[k])}</td>`).join('')}</tr>`).join('')}</tbody>
     </table></div>
-    <div class="rk-note">前一日收盘的 Greeks × 当天变化. 其他 = 实际 − 以上 (高阶效应、价差、盘中变化); 当天开平仓的仓位不计入.</div>`;
+    <div class="rk-note">前一日收盘的 Greeks × 当天变化; 「今天」用昨天收盘的快照对比你刚刷新的 Schwab 数据. 当天新开、平仓、张数变化的仓位不计入.</div>`;
 }
 function _attribHTML() {
   return `<section class="rk-block"><h3 class="rk-block-title rk-title-row"><span>盈亏归因 ${_qBtn('attrib', 'short')}</span><button class="btn ghost small" onclick="fetchSnaps(true)">刷新</button></h3><div id="attr-slot">${_safe('盈亏归因', _attribInnerHTML)}</div></section>`;
