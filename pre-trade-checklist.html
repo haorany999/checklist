@@ -3357,6 +3357,9 @@
   .tn-row { grid-template-columns: 96px minmax(120px, 1fr) 300px; }
   .gp-warn { font-size: 12.5px; padding: 7px 10px; margin: 0 0 10px; border-left: 2px solid #E5793B; background: color-mix(in srgb, #E5793B 10%, transparent); }
   @media (max-width: 640px) { .tn-row { grid-template-columns: 80px minmax(80px, 1fr); } }
+  .gp-tn-sum { font-size: 13px; margin: 4px 0 8px; padding: 7px 10px; background: var(--panel-2); border-left: 2px solid var(--accent); }
+  .tn-row { grid-template-columns: 96px minmax(120px, 1fr) 260px; }
+  @media (max-width: 640px) { .tn-row { grid-template-columns: 80px minmax(80px, 1fr); } .tn-v { grid-column: 1 / -1; } }
 </style>
 </head>
 <body class="theme-slate">
@@ -5404,7 +5407,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.17-v51';
+const APP_BUILD = '2026.10.17-v52';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
@@ -13612,6 +13615,10 @@ const GREEK_HELP = {
     read: '1.0x = 和满仓 SPY 一样敏感; 0.7x = 大盘跌 1%, NAV 约跌 0.7%. 下跌时卖出的 put Delta 变大 (自动加杠杆), 而 LEAPS 和正股的美元 Delta 变小 (自动减杠杆), 两者会部分抵消; 所以同时给出跌 10% / 跌 20% 时的杠杆, 看净效果. 名义杠杆 = (正股市值 + CSP 名义 + LEAPS 正股等值) ÷ NAV: 假设 put 全被行权、LEAPS 全换成股票时持有多少股票.',
     short: '跌 20% 时明显高于当下 (例如 0.8x → 1.5x): 卖 put 的影响占主导, 下跌会自动加杠杆, 最该防; 基本持平: LEAPS / 正股抵消了卖 put 的 Gamma.',
     ex: '当下 0.85x · 跌 10%: 1.10x · 跌 20%: 1.42x · 名义 1.6x.' },
+  sensitivity: { t: '敏感性分析', def: '每次只把一个假设调低或调高 25%, 其他不变, 看到达目标的时间会提前还是推迟多少个月.',
+    read: '绿色 = 提前, 红色 = 推迟; 条越长, 这个假设对结果的影响越大, 越值得下功夫. 某一侧显示「不变」, 通常是到了上限 (例如风险资产配置已经是 100%).',
+    short: '「风险资产配置」= 投入卖方和 LEAPS 的资金占 NAV 的比例, 其余是现金. 调低 25% 就是多留现金.',
+    ex: '风险资产配置 80% → 60% (−25%) 推迟 65 个月 = 少投入四分之一的资金, 到 100 万要多等 5 年多; 说明你的结果主要来自资金是否在场上.' },
   discipline: { t: '纪律分', def: '最近 30 笔新开仓的执行情况, 0–100: checklist 覆盖率 (40%) + 遵守硬规则 (30%, 1 − 强行交易比例) + 管理纪律 (30%, 卖出的期权赚到 50% 或进入 21 天后 3 个交易日内处理).',
     read: '85 以上 = 稳定按规则执行; 70–85 偶有例外; 低于 70 = 规则在被绕开. 管理纪律用 Worker 每天的收盘快照判断, 数据不够时暂不计分, 其余两项按比例计算. 不计入综合风险分.',
     short: '它衡量的是你, 不是市场: 风险分高可能是市场原因, 纪律分低一定是执行原因.',
@@ -17013,7 +17020,7 @@ window.showDiscipline = () => {
 };
 
 /* ═════════════ v51 · goal projection (Performance): return + volatility by sleeve, Monte Carlo fan, sensitivity ═════════════ */
-const GOAL_KEY = 'pretrade_goal', GOALS = [200000, 500000, 1000000], CASH_YLD = 0.04;
+const GOAL_KEY = 'pretrade_goal', GOALS = [200000, 500000, 1000000], CASH_YLD = 0.04, GP_DEF = { s: 0.6, l: 0.2 };
 const GP_SCEN = { low: { l: '保守', mu: 0.5, sd: 1.5, crash: true, d: '历史收益 × 50% · 波动 × 1.5 · 约每两年一次 −15% 的月份' },
   base: { l: '基准', mu: 0.75, sd: 1, crash: false, d: '历史收益 × 75% · 波动不变' }, high: { l: '乐观', mu: 1, sd: 1, crash: false, d: '按历史收益和波动' } };
 let __goalOpen = false, __gpMemo = { k: null, v: null };
@@ -17046,15 +17053,21 @@ function _goalHistory() {
   let aS = (pos.filter(x => x.kind === 'short_put').reduce((s, x) => s + (x.exposure || 0), 0) + pos.filter(x => x.kind === 'stock' && (x.side || 1) > 0).reduce((s, x) => s + (x.marketValue || 0), 0)) / nav;
   let aL = pos.filter(x => x.kind === 'leaps' || x.kind === 'long_call').reduce((s, x) => s + Math.abs(x.marketValue || 0), 0) / nav;
   if (aS + aL > 1) { const k = 1 / (aS + aL); aS *= k; aL *= k; }                    // overlap / margin: scale both, never let one push the other out
+  const now = { s: aS, l: aL, c: Math.max(0, 1 - aS - aL) };
+  // the mix the history was earned with: average of the Worker's daily snapshots, else today
+  const sn = ((loadSnaps() || {}).data || []).filter(s => s.nav > 0 && Array.isArray(s.pos)).map(s => {
+    let a = (s.pos.filter(x => x.k === 'short_put').reduce((t, x) => t + (x.K || 0) * 100 * Math.abs(x.q || 0), 0) + s.pos.filter(x => x.k === 'stock').reduce((t, x) => t + Math.max(0, x.mv || 0), 0)) / s.nav;
+    let b = s.pos.filter(x => x.k === 'leaps' || x.k === 'long_call').reduce((t, x) => t + Math.abs(x.mv || 0), 0) / s.nav; if (a + b > 1) { const k = 1 / (a + b); a *= k; b *= k; } return [a, b]; });
+  const hist = sn.length >= 5 ? { s: sn.reduce((t, x) => t + x[0], 0) / sn.length, l: sn.reduce((t, x) => t + x[1], 0) / sn.length } : { s: aS, l: aL };
   return { months: done.length, from: done[0].k, rows: done, real: done.filter(g => g.real).length, nav,
-    muS: mean(ys) * 12, sdS: sd(ys) * Math.sqrt(12), muL: mean(ls) * 12, sdL: sd(ls) * Math.sqrt(12), alloc: { s: aS, l: aL, c: Math.max(0, 1 - aS - aL) } };
+    muS: mean(ys) * 12, sdS: sd(ys) * Math.sqrt(12), muL: mean(ls) * 12, sdL: sd(ls) * Math.sqrt(12), alloc: now, allocHist: hist, allocSrc: sn.length >= 5 ? `最近 ${sn.length} 个交易日的平均` : '现在的配置' };
 }
 // assumptions: history unless you changed them; returns are contributions to NAV at today's allocation
-function _gpAssume(H, c) { const o = c.ovr || {}, aS = o.aS ?? H.alloc.s, aL = o.aL ?? H.alloc.l;
+function _gpAssume(H, c) { const o = c.ovr || {}, aS = o.aS ?? GP_DEF.s, aL = o.aL ?? GP_DEF.l;
   return { muS: o.muS ?? H.muS, sdS: o.sdS ?? H.sdS, muL: o.muL ?? H.muL, sdL: o.sdL ?? H.sdL, aS, aL, aC: Math.max(0, 1 - aS - aL), dep: c.dep, depEnd: c.depEnd, depOn: c.depOn }; }
 function _gpParams(H, A, scen) { const S = GP_SCEN[scen] || GP_SCEN.base;
-  // history is the contribution at today's mix: only a changed allocation scales it
-  const ks = Math.abs(A.aS - H.alloc.s) < 1e-9 ? 1 : A.aS / Math.max(0.05, H.alloc.s), kl = Math.abs(A.aL - H.alloc.l) < 1e-9 ? 1 : A.aL / Math.max(0.05, H.alloc.l);
+  // history = return on the capital that was deployed (the mix it was earned with); the chosen mix scales it
+  const ks = A.aS / Math.max(0.05, H.allocHist.s), kl = A.aL / Math.max(0.05, H.allocHist.l);
   return { start: H.nav, mS: A.muS * S.mu * ks / 12, vS: A.sdS * S.sd * ks / Math.sqrt(12), mL: A.muL * S.mu * kl / 12, vL: A.sdL * S.sd * kl / Math.sqrt(12),
     mC: A.aC * CASH_YLD / 12, crash: S.crash, risk: Math.min(1, A.aS + A.aL), dep: A.depOn ? A.dep : 0, depEnd: A.depEnd }; }
 const _gpExp = P => P.mS + P.mL + P.mC - (P.crash ? 0.15 * P.risk / 24 : 0);
@@ -17080,6 +17093,11 @@ function _gpNeed(P, G, m) { if (m <= 0) return null; const fv = r => { let v = P
   let lo = -0.9, hi = 5; if (fv(hi) < G) return Infinity; if (fv(lo) >= G) return lo; for (let i = 0; i < 60; i++) { const mid = (lo + hi) / 2; if (fv(mid) >= G) hi = mid; else lo = mid; } return hi; }
 const _gpCls = p => p >= 0.75 ? 'safe' : p >= 0.5 ? 'watch' : 'danger';
 window.goalSet = (k, v) => { _goalSave({ [k]: v }); _goalRedraw(); };
+window.goalNowMix = () => { const H = _goalHistory(), c = _goalCfg(); _goalSave({ ovr: { ...c.ovr, aS: +H.alloc.s.toFixed(3), aL: +H.alloc.l.toFixed(3) } }); _goalRedraw(); };
+window.goalDefMix = () => { const c = _goalCfg(), o = { ...c.ovr }; delete o.aS; delete o.aL; _goalSave({ ovr: o }); _goalRedraw(); };
+// dates commit when you leave the field (typing digit by digit must not redraw mid-entry)
+const _gpDateOk = v => /^\d{4}-\d{2}-\d{2}$/.test(v) && +v.slice(0, 4) >= new Date().getFullYear() && +v.slice(0, 4) <= 2100;
+const _gpDateIn = (val, call) => `<input type="date" class="gl-date" value="${val}" onblur="if (_gpDateOk(this.value) && this.value !== '${val}') ${call}" onkeydown="if (event.key === 'Enter') this.blur()">`;
 window.goalOvr = (k, v) => { const c = _goalCfg(); const o = { ...c.ovr }; if (v === '' || v == null || isNaN(v)) delete o[k]; else o[k] = v; _goalSave({ ovr: o }); _goalRedraw(); };
 window.goalDate = (g, d) => { const c = _goalCfg(); _goalSave({ dates: { ...c.dates, [g]: d } }); _goalRedraw(); };
 window.goalInv = (k, v) => { const c = _goalCfg(); _goalSave({ inv: { ...c.inv, [k]: v } }); _goalRedraw(); };
@@ -17111,14 +17129,20 @@ function _gpTornadoHTML(H, A, scen) {
   if (gi == null) return '<div class="rk-quiet">按当前假设 50 年内一个目标都到不了, 敏感性分析没有意义.</div>';
   const base = all[gi], gl = GOALS[gi] / 10000 + ' 万';
   const v = (lab, f) => { const lo = _gpDet(_gpParams(H, f(0.75), scen))[gi], hi = _gpDet(_gpParams(H, f(1.25), scen))[gi]; return { lab, d: [lo == null ? 600 - base : lo - base, hi == null ? 600 - base : hi - base] }; };
+  const p1 = x => (x * 100).toFixed(1) + '%', rk = A.aS + A.aL;
   const rows = [v('卖方收益', k => ({ ...A, muS: A.muS * k })), v('LEAPS 收益', k => ({ ...A, muL: A.muL * k })),
-    v('风险资产配置', k => { const s = Math.min(1, (A.aS + A.aL) * k) / Math.max(1e-9, A.aS + A.aL); return { ...A, aS: A.aS * s, aL: A.aL * s, aC: Math.max(0, 1 - (A.aS + A.aL) * s) }; }),
+    v('风险资产配置', k => { const s = Math.min(1, rk * k) / Math.max(1e-9, rk); return { ...A, aS: A.aS * s, aL: A.aL * s, aC: Math.max(0, 1 - rk * s) }; }),
     v('每月入金', k => ({ ...A, dep: A.dep * k }))].map(r => ({ ...r, span: Math.abs(r.d[0] - r.d[1]) })).sort((a, b) => b.span - a.span);
+  const val = { '卖方收益': [p1(A.muS * 0.75), p1(A.muS), p1(A.muS * 1.25)], 'LEAPS 收益': [p1(A.muL * 0.75), p1(A.muL), p1(A.muL * 1.25)],
+    '风险资产配置': [p1(rk * 0.75), p1(rk), p1(Math.min(1, rk * 1.25))], '每月入金': ['$' + Math.round(A.dep * 0.75), '$' + A.dep, '$' + Math.round(A.dep * 1.25)] };
   const mx = Math.max(6, ...rows.flatMap(r => r.d.map(Math.abs)));
   const bar = d => { const w = Math.min(50, Math.abs(d) / mx * 50); return d < 0 ? `<i class="tn-l" style="width:${w}%"></i>` : d > 0 ? `<i class="tn-r" style="width:${w}%"></i>` : ''; };
   const lab = d => d === 0 ? '不变' : `${d < 0 ? '提前' : '推迟'} ${Math.abs(d)} 个月`;
-  return `<div class="tn">${rows.map(r => `<div class="tn-row"><span class="tn-k">${r.lab}</span><span class="tn-bar">${bar(Math.min(r.d[0], r.d[1]))}${bar(Math.max(r.d[0], r.d[1]))}<em></em></span>
-      <span class="tn-v">−25%: ${lab(r.d[0])} · +25%: ${lab(r.d[1])}</span></div>`).join('')}</div>
+  const t = rows[0], lo = rows[rows.length - 1], tv = val[t.lab];
+  const summary = `影响最大的是<b>${t.lab}</b>: 从 ${tv[1]} 降到 ${tv[0]}, 到 ${gl}要${t.d[0] > 0 ? `多等 ${t.d[0]} 个月` : '不变'}; 升到 ${tv[2]}, ${t.d[1] < 0 ? `提前 ${-t.d[1]} 个月` : '不变'}. 影响最小的是${lo.lab}. ${t.lab === '风险资产配置' ? '也就是说, 投入卖方和 LEAPS 的资金比例 (相对于放现金) 最关键.' : t.lab === '每月入金' ? '也就是说, 现阶段持续入金比交易收益更关键.' : '也就是说, 这部分的收益率最值得下功夫.'}`;
+  return `<div class="gp-tn-sum">${summary}</div>
+    <div class="tn">${rows.map(r => `<div class="tn-row"><span class="tn-k">${r.lab}</span><span class="tn-bar">${bar(Math.min(r.d[0], r.d[1]))}${bar(Math.max(r.d[0], r.d[1]))}<em></em></span>
+      <span class="tn-v">${val[r.lab][0]}: ${lab(r.d[0])} · ${val[r.lab][2]}: ${lab(r.d[1])}</span></div>`).join('')}</div>
     <div class="rk-note">以当前情形下到 ${gl} 的预期时间 (${_mLab(base)}, ${base} 个月) 为中心${gi < 2 ? ' (按当前假设 50 年内到不了 100 万, 改看能到的最远目标)' : ''}, 每个假设单独变动 ±25%. 条越长, 这个假设越值得下功夫.</div>`;
 }
 function _goalHTML() {
@@ -17130,7 +17154,7 @@ function _goalHTML() {
   const cards = GOALS.map((G, i) => { const g = mc.goals[i], m = _mIdx(c.dates[G]), pr = g.by(m), done = H.nav >= G;
     return `<div class="gp-card${i === nxt ? ' next' : ''}"><div class="gp-g">${G / 10000} 万${i === nxt ? ' <span class="rk-quiet">下一个目标</span>' : ''}</div>
       ${done ? '<div class="gp-med-d rk-t-safe">已达成</div>' : `<div class="gp-med-d">中位 <b>${_mLab(g.p50)}</b></div><div class="rk-quiet gp-rng">80% 落在 ${_mLab(g.p10)} – ${isFinite(g.p90) ? _mLab(g.p90) : '20 年后'}</div>
-      <div class="gp-prob">到 <input type="date" class="gl-date gp-dt" value="${c.dates[G]}" onchange="goalDate(${G}, this.value)"> 达成概率 <b class="rk-t-${_gpCls(pr)}">${(pr * 100).toFixed(0)}%</b></div>`}</div>`; }).join('');
+      <div class="gp-prob">到 ${_gpDateIn(c.dates[G], `goalDate(${G}, this.value)`).replace('class="gl-date"', 'class="gl-date gp-dt"')} 达成概率 <b class="rk-t-${_gpCls(pr)}">${(pr * 100).toFixed(0)}%</b></div>`}</div>`; }).join('');
   const sumTxt = nxt >= 0 ? `${GOALS[nxt] / 10000} 万 · 中位 ${_mLab(mc.goals[nxt].p50)} · 到 ${c.dates[GOALS[nxt]].slice(0, 7)} 概率 ${(mc.goals[nxt].by(_mIdx(c.dates[GOALS[nxt]])) * 100).toFixed(0)}% · 点开` : '点开';
   const S = GP_SCEN[c.scen] || GP_SCEN.base, exp = Math.pow(1 + _gpExp(P), 12) - 1;
   const inp = (k, v, step, hint) => `<input type="number" class="gl-num gp-in" step="${step}" value="${(v * 100).toFixed(1)}" onchange="goalOvr('${k}', this.value === '' ? '' : +this.value / 100)">%<span class="rk-quiet gp-h">${hint}</span>`;
@@ -17146,20 +17170,21 @@ function _goalHTML() {
     <div class="gp-cards">${cards}</div>
     ${_gpFanSVG(H, mc, c, horizon)}
     ${plan}
-    <div class="rk-sub-title">假设 <span class="rk-quiet">· 每格右侧是你的历史值, 改动后整页一起更新</span> <button class="app-link" onclick="goalSet('ovr', {})">恢复历史值</button></div>
+    <div class="rk-sub-title">假设 <span class="rk-quiet">· 历史 = ${H.from} 起 ${H.months} 个完整月份 (从有交易记录的第一个月到上个月) · 改动后整页一起更新</span> <button class="app-link" onclick="goalSet('ovr', {})">全部恢复</button></div>
     <div class="gp-asm">
       <div><b>卖方收益</b> 年化 ${inp('muS', A.muS, 0.5, `历史 ${pc(H.muS)}`)}<br>波动 ${inp('sdS', A.sdS, 0.5, `历史 ${pc(H.sdS)}`)}</div>
       <div><b>LEAPS 收益</b> 年化 ${inp('muL', A.muL, 0.5, `历史 ${pc(H.muL)}`)}<br>波动 ${inp('sdL', A.sdL, 0.5, `历史 ${pc(H.sdL)}`)}</div>
-      <div><b>资金配置</b> 卖方 ${inp('aS', A.aS, 1, `现在 ${pc(H.alloc.s)}`)}<br>LEAPS ${inp('aL', A.aL, 1, `现在 ${pc(H.alloc.l)}`)}<br><span class="rk-quiet">现金 ${pc(A.aC)} · 按年化 ${pc(CASH_YLD)}</span></div>
-      <div><b>入金</b> <input type="number" class="gl-num" value="${c.dep}" min="0" step="100" onchange="goalSet('dep', +this.value || 0)"> / 月<br>到 <input type="date" class="gl-date" value="${c.depEnd}" onchange="goalSet('depEnd', this.value)"></div>
+      <div><b>资金配置</b> 卖方 ${inp('aS', A.aS, 1, `现在 ${pc(H.alloc.s)}`)}<br>LEAPS ${inp('aL', A.aL, 1, `现在 ${pc(H.alloc.l)}`)}<br><span class="rk-quiet">现金 ${pc(A.aC)} · 按年化 ${pc(CASH_YLD)}</span>
+        <br><button class="app-link" onclick="goalNowMix()">按现在的配置</button> · <button class="app-link" onclick="goalDefMix()">默认 (60 / 20 / 20)</button></div>
+      <div><b>入金</b> <input type="number" class="gl-num" value="${c.dep}" min="0" step="100" onchange="goalSet('dep', +this.value || 0)"> / 月<br>到 ${_gpDateIn(c.depEnd, "goalSet('depEnd', this.value)")}</div>
     </div>
-    <div class="rk-note">收益和波动是对整个 NAV 的贡献, 按现在的配置计; 改配置会按比例放大或缩小. 当前情形下整体预期年化 <b>${pc(exp)}</b>.</div>
+    <div class="rk-note">收益和波动是对整个 NAV 的贡献. 历史是在平均配置 卖方 ${pc(H.allocHist.s)} · LEAPS ${pc(H.allocHist.l)} (${H.allocSrc}) 下取得的, 换成上面的配置时按比例放大或缩小. 当前情形下整体预期年化 <b>${pc(exp)}</b>.</div>
     <div class="rk-sub-title">反推 · 要多少收益才够</div>
     <div class="gp-inv">到 <select class="gl-num gp-sel" onchange="goalInv('g', +this.value)">${GOALS.map(G => `<option value="${G}"${+c.inv.g === G ? ' selected' : ''}>${G / 10000} 万</option>`).join('')}</select>
-      , 在 <input type="date" class="gl-date" value="${c.inv.d}" onchange="goalInv('d', this.value)"> 之前 → 需要年化
+      , 在 ${_gpDateIn(c.inv.d, "goalInv('d', this.value)")} 之前 → 需要年化
       <b class="${need.r == null ? '' : need.r <= exp ? 'rk-t-safe' : 'rk-t-danger'}">${need.r == null ? '—' : !isFinite(need.r) ? '> 500%' : pc(need.r)}</b>
       <span class="rk-quiet">(当前情形预期 ${pc(exp)}${need.r != null && isFinite(need.r) ? need.r <= exp ? ' · 按现在的节奏够了' : ` · 还差 ${pc(need.r - exp)}, 高于你现在的节奏` : ''})</span></div>
-    <div class="rk-sub-title">敏感性 · 哪个假设对到达时间影响最大</div>
+    <div class="rk-sub-title">敏感性 · 哪个假设对到达时间影响最大 ${_qBtn('sensitivity', 'short')}</div>
     ${_gpTornadoHTML(H, A, c.scen)}
     <div class="gl-act"><button class="btn ghost" onclick="goalSavePlan()">${c.plan ? '重新保存为计划' : '保存为计划'}</button><span class="rk-quiet">把当前情形的中位线存为计划, 之后在图上对照实际</span></div>
     <details class="gp-meth"><summary>数据和方法</summary>
