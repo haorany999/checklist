@@ -3322,6 +3322,9 @@
   .gl-out { font-size: 13px; margin: 8px 0; } .gl-out b { font-family: var(--mono); } .gl-goal { margin-left: 12px; white-space: nowrap; }
   .gl-bigs { display: flex; flex-direction: column; gap: 4px; font-size: 12.5px; } .gl-bigs b { font-family: var(--mono); }
   .gl-act { display: flex; gap: 10px; align-items: center; margin: 10px 0 4px; flex-wrap: wrap; }
+  .at-chart .at-tick { stroke: var(--text-faint); stroke-width: 1; }
+  .pnl-figs { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  @media (max-width: 640px) { .pnl-figs { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 </style>
 </head>
 <body class="theme-slate">
@@ -5369,7 +5372,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.17-v47';
+const APP_BUILD = '2026.10.17-v49';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
@@ -14507,12 +14510,20 @@ function _wfetch(path, init = {}) {
   return fetch(_wurl(path), { ...init, headers: { ...(init.headers || {}), Authorization: 'Bearer ' + c.token }, cache: 'no-store' });
 }
 function _isoDay(n) { return new Date(n * 86400000).toISOString().slice(0, 10); }
+// minutes since midnight in New York (exposed so tests can pin the clock)
+window._etMinutes = () => { try { const p = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', hour: '2-digit', minute: '2-digit', hour12: false }).formatToParts(new Date());
+  return (+p.find(x => x.type === 'hour').value % 24) * 60 + +p.find(x => x.type === 'minute').value; } catch (e) { return 12 * 60; } };
 function _mergeLive(rows, live) {
   const bars = rows.map(r => ({ d: _isoDay(r[0]), o: r[1], h: r[2], l: r[3], c: r[4], v: r[5] }));
-  if (!live || !(live.last > 0) || live.open == null) return { bars, live: false };
+  if (!live || !(live.last > 0)) return { bars, live: false };
   const wd = new Date(live.day + 'T12:00:00Z').getUTCDay();
-  if (wd === 0 || wd === 6) return { bars, live: false };
-  const bar = { d: live.day, o: live.open, h: Math.max(live.high ?? live.last, live.last), l: Math.min(live.low ?? live.last, live.last), c: live.last, v: live.vol || 0 };
+  if (wd === 0 || wd === 6 || (typeof US_HOLIDAYS !== 'undefined' && US_HOLIDAYS.has(live.day))) return { bars, live: false };
+  const prev = bars.length ? bars[bars.length - (bars[bars.length - 1].d === live.day ? 2 : 1)] : null, ref = prev ? prev.c : live.last;
+  // Schwab sends 0 for today's open / high / low before the session (and sometimes after) — a 0 low turns KDJ's 9-day low into 0
+  const ok = v => v != null && v > 0 && v > ref * 0.5 && v < ref * 2 ? v : null;
+  const o = ok(live.open), hi = ok(live.high), lo = ok(live.low);
+  if (o == null || (live.day === _todayISO() && window._etMinutes() < 9 * 60 + 30)) return { bars, live: false };   // the session hasn't started
+  const bar = { d: live.day, o, h: Math.max(hi ?? live.last, live.last, o), l: Math.min(lo ?? live.last, live.last, o), c: live.last, v: live.vol || 0 };
   if (bars.length && bars[bars.length - 1].d === live.day) bars[bars.length - 1] = bar; else if (!bars.length || bars[bars.length - 1].d < live.day) bars.push(bar);
   return { bars, live: true };
 }
@@ -15812,7 +15823,10 @@ function _attribInnerHTML() {
     <line x1="${L}" x2="${W - R}" y1="${Y(0).toFixed(1)}" y2="${Y(0).toFixed(1)}" class="gex-zero"/>
     <text x="${L - 6}" y="${(Y(hi) + 4).toFixed(1)}" text-anchor="end" class="rk-ch-lab">${esc(_fmtK(hi))}</text><text x="${L - 6}" y="${(Y(lo)).toFixed(1)}" text-anchor="end" class="rk-ch-lab">${esc(_fmtK(lo))}</text>
     ${bars}
-    <text x="${L}" y="${H - 5}" class="rk-ch-lab">${esc(days[0].d.slice(5))}</text><text x="${W - R}" y="${H - 5}" text-anchor="end" class="rk-ch-lab">${esc(days[n - 1].d.slice(5))}</text></svg>`;
+    ${(() => { const step = Math.max(1, Math.ceil(n / Math.max(2, Math.floor((W - L - R) / 56)))), md = d => `${+d.slice(5, 7)}/${+d.slice(8)}`, idx = [];
+      for (let i = 0; i < n; i += step) idx.push(i);
+      if (idx[idx.length - 1] !== n - 1) { if (n - 1 - idx[idx.length - 1] >= step * 0.6) idx.push(n - 1); else idx[idx.length - 1] = n - 1; }
+      return idx.map(i => `<line x1="${X(i).toFixed(1)}" x2="${X(i).toFixed(1)}" y1="${H - B}" y2="${H - B + 3}" class="at-tick"/><text x="${X(i).toFixed(1)}" y="${H - 5}" text-anchor="middle" class="rk-ch-lab">${md(days[i].d)}</text>`).join(''); })()}</svg>`;
   const byT = {}; days.forEach(d => Object.entries(d.byT).forEach(([t, v]) => { const o = byT[t] || (byT[t] = { actual: 0, theta: 0, delta: 0, gamma: 0, vega: 0, other: 0 }); Object.keys(o).forEach(k => { o[k] += v[k]; }); }));
   const tick = Object.entries(byT).sort((a, b) => Math.abs(b[1].actual) - Math.abs(a[1].actual));
   const main = ATTR_KEYS.filter(k => k !== 'other').sort((a, b) => Math.abs(tot[b]) - Math.abs(tot[a]))[0];
@@ -16009,7 +16023,9 @@ function _pnlBlockHTML() {
   return `
     <section class="rk-block" id="pnl-block">
       <h3 class="rk-block-title rk-title-row"><span>浮动盈亏</span><span class="rk-presets"><button class="rk-preset${__pnlMode === 'sleeve' ? ' active' : ''}" onclick="setPnlMode('sleeve')">按策略</button><button class="rk-preset${__pnlMode === 'ticker' ? ' active' : ''}" onclick="setPnlMode('ticker')">按标的</button></span></h3>
-      <div class="rk-figs">
+      <div class="rk-figs pnl-figs">
+        ${(() => { const s = ((loadNavs() || {}).data || []).filter(x => x && x[1] > 0), prev = [...s].reverse().find(x => x[0] < _todayISO()), chg = prev && nav ? nav - prev[1] : null;
+          return fig('NAV', nav ? _fmtUsd(nav) : '—', chg != null ? `较上一日 ${_fmtSigned(chg)} (${chg >= 0 ? '+' : '−'}${Math.abs(chg / prev[1] * 100).toFixed(2)}%)` : '较上一日 —', 'rk-t-acc'); })()}
         ${fig('浮动盈亏', _fmtSigned(total), `${nav ? (total / nav * 100).toFixed(1) + '% NAV' : ''}${cost ? ` · 成本的 ${(total / cost * 100).toFixed(1)}%` : ''}`, total >= 0 ? 'rk-t-safe' : 'rk-t-danger')}
         ${fig('盈利的仓位', _fmtSigned(win.reduce((s, x) => s + pnl(x), 0)), `${win.length} 个${best ? ` · 最多 ${esc(_posLabel(best).split(' ').slice(0, 2).join(' '))} ${_fmtSigned(pnl(best))}` : ''}`, 'rk-t-safe')}
         ${fig('亏损的仓位', _fmtSigned(lose.reduce((s, x) => s + pnl(x), 0)), `${lose.length} 个${worst ? ` · 最多 ${esc(_posLabel(worst).split(' ').slice(0, 2).join(' '))} ${_fmtSigned(pnl(worst))}` : ''}`, 'rk-t-alert')}
@@ -16618,7 +16634,7 @@ function _stockOscSVG(t) {
   const all = p.bars, c = all.map(b => b.c), h = all.map(b => b.h), l = all.map(b => b.l), n0 = c.length, endI = Math.min(n0, __stkZoom.end ?? n0), N = Math.max(20, Math.min(n0, __stkZoom.n)), off = Math.max(0, endI - N), n = n0;
   let ag = 0, al = 0; const rsi = []; for (let i = 1; i < n; i++) { const d = c[i] - c[i - 1]; if (i <= 14) { ag += Math.max(0, d) / 14; al += Math.max(0, -d) / 14; } else { ag = (ag * 13 + Math.max(0, d)) / 14; al = (al * 13 + Math.max(0, -d)) / 14; } rsi[i] = i >= 14 ? (al === 0 ? 100 : 100 - 100 / (1 + ag / al)) : null; }
   const e12 = _emaSeries(c, 12), e26 = _emaSeries(c, 26), dif = e12.map((v, i) => v - e26[i]), dea = _emaSeries(dif, 9);
-  let K = 50, D = 50; const Js = []; for (let i = 8; i < n; i++) { const hh = Math.max(...h.slice(i - 8, i + 1)), ll = Math.min(...l.slice(i - 8, i + 1)); const rsv = hh === ll ? 50 : (c[i] - ll) / (hh - ll) * 100; K = 2 / 3 * K + rsv / 3; D = 2 / 3 * D + K / 3; Js[i] = 3 * K - 2 * D; }
+  let K = 50, D = 50; const Js = [], Ks = [], Ds = []; for (let i = 8; i < n; i++) { const hh = Math.max(...h.slice(i - 8, i + 1)), ll = Math.min(...l.slice(i - 8, i + 1)); const rsv = hh === ll ? 50 : (c[i] - ll) / (hh - ll) * 100; K = 2 / 3 * K + rsv / 3; D = 2 / 3 * D + K / 3; Js[i] = 3 * K - 2 * D; Ks[i] = K; Ds[i] = D; }
   const W = _stkW(), L = 48, R = _stkR(W), PH = 78, GAP = 18, cw = (W - L - R) / N, X = i => L + (i + 0.5) * cw;
   const panel = (k, label, series, lo, hi, guides, extra = null) => { const T = k * (PH + GAP) + 4, Y = v => T + (hi - v) / (hi - lo) * PH;
     const pts = series.map((v, i) => v == null ? null : `${X(i).toFixed(1)},${Y(Math.max(lo, Math.min(hi, v))).toFixed(1)}`).filter(Boolean);
@@ -16632,7 +16648,8 @@ function _stockOscSVG(t) {
   return `<svg class="rk-chart stk-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="RSI MACD KDJ">
     ${panel(0, `RSI 14 · ${last(rs) != null ? last(rs).toFixed(1) : '—'}`, rs, 0, 100, [30, 70])}
     ${panel(1, `MACD · DIF ${last(df).toFixed(2)} / DEA ${last(de).toFixed(2)}`, df, -mm * 1.1, mm * 1.1, [0], macdBars)}
-    ${panel(2, `KDJ J · ${last(js) != null ? last(js).toFixed(1) : '—'}`, js, -20, 120, [15, 80])}</svg>`;
+    ${panel(2, `KDJ (9,3,3) · K ${Ks[endI - 1] != null ? Ks[endI - 1].toFixed(1) : '—'} · D ${Ds[endI - 1] != null ? Ds[endI - 1].toFixed(1) : '—'} · J ${last(js) != null ? last(js).toFixed(1) : '—'}`, js, -20, 120, [15, 80])}</svg>
+    <div class="rk-quiet stk-kdj-asof">KDJ / RSI / MACD 截至 ${(() => { const b = all[endI - 1], d = b ? `${+b.d.slice(5, 7)}/${+b.d.slice(8)}` : ''; return p.live && endI === n0 ? `${d} 盘中 (含今天的实时价)` : `${d} 收盘`; })()}</div>`;
 }
 function renderStockPage() {
   const t = __stockT, recent = _stockRecent();
