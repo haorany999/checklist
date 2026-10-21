@@ -3421,6 +3421,7 @@
   .at-recon { display: flex; flex-wrap: wrap; gap: 4px 18px; align-items: baseline; font-size: 13px; padding: 8px 12px; margin: 6px 0 10px; background: var(--panel-2); border-radius: 3px; }
   .at-recon b { font-family: var(--mono); } .at-recon .rk-quiet { flex-basis: 100%; font-size: 12px; }
   .at-hide { display: none; }
+  .at-chart .at-dim { opacity: .32; } body .at-chart text.at-sel { fill: var(--text) !important; font-weight: 700 !important; } .at-ctx { font-size: 11.5px; margin: 2px 0 4px; }
 </style>
 </head>
 <body class="theme-slate">
@@ -5468,7 +5469,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.17-v56';
+const APP_BUILD = '2026.10.17-v57';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
@@ -15953,13 +15954,14 @@ function _attribInnerHTML() {
   const sum = k => days.reduce((s, d) => s + d[k], 0), tot = Object.fromEntries(['actual', ...ATTR_KEYS].map(k => [k, sum(k)]));
   const fig = (k, label) => `<div class="rk-fig"><span class="rk-fig-val ${_thCls(tot[k])}">${_fmtSigned(tot[k])}</span><span class="rk-fig-label">${label}</span>${k !== 'actual' && Math.abs(tot.actual) > 1 ? `<span class="rk-fig-sub">占实际 ${(tot[k] / Math.abs(tot.actual) * 100).toFixed(0)}%</span>` : ''}</div>`;
   // stacked bars per day
-  const one = days.length === 1, W = _chartW(), H = 170, L = 44, R = 8, T = 10, B = 20, n = days.length;
+  const one = days.length === 1, sel = one ? all.indexOf(days[0]) : -1, cd = one ? all.slice(Math.max(0, sel - 19), sel + 1) : days;
+  const W = _chartW(), H = 170, L = 44, R = 8, T = 10, B = 20, n = cd.length;
   const up = d => ATTR_KEYS.reduce((s, k) => s + Math.max(0, d[k]), 0), dn = d => ATTR_KEYS.reduce((s, k) => s + Math.min(0, d[k]), 0);
-  const hi = Math.max(1, ...days.map(up), ...days.map(d => d.actual)), lo = Math.min(-1, ...days.map(dn), ...days.map(d => d.actual));
+  const hi = Math.max(1, ...cd.map(up), ...cd.map(d => d.actual)), lo = Math.min(-1, ...cd.map(dn), ...cd.map(d => d.actual));
   const Y = v => T + (hi - v) / (hi - lo) * (H - T - B), bw = Math.min(36, Math.max(3, (W - L - R) / n * 0.68)), X = i => L + (i + 0.5) * (W - L - R) / n;
-  const bars = days.map((d, i) => { let pu = 0, pd = 0; return ATTR_KEYS.map(k => { const v = d[k]; if (!v) return ''; const y0 = v > 0 ? pu : pd, y1 = y0 + v; if (v > 0) pu = y1; else pd = y1;
+  const bars = cd.map((d, i) => { const dim = one && i !== n - 1 ? ' at-dim' : ''; let pu = 0, pd = 0; return `<g class="at-day${dim}">` + ATTR_KEYS.map(k => { const v = d[k]; if (!v) return ''; const y0 = v > 0 ? pu : pd, y1 = y0 + v; if (v > 0) pu = y1; else pd = y1;
     return `<rect x="${(X(i) - bw / 2).toFixed(1)}" y="${Y(Math.max(y0, y1)).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(0.5, Math.abs(Y(y0) - Y(y1))).toFixed(1)}" class="at-${k}"><title>${d.d} · ${ATTR_LABEL[k]} ${_fmtSigned(v)}</title></rect>`; }).join('')
-    + `<circle cx="${X(i).toFixed(1)}" cy="${Y(d.actual).toFixed(1)}" r="2.6" class="at-actual"><title>${d.d} · 实际 ${_fmtSigned(d.actual)}</title></circle>`; }).join('');
+    + `<circle cx="${X(i).toFixed(1)}" cy="${Y(d.actual).toFixed(1)}" r="2.6" class="at-actual"><title>${d.d} · 实际 ${_fmtSigned(d.actual)}</title></circle></g>`; }).join('');
   const chart = `<svg class="rk-chart at-chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="每日盈亏归因">
     <line x1="${L}" x2="${W - R}" y1="${Y(0).toFixed(1)}" y2="${Y(0).toFixed(1)}" class="gex-zero"/>
     <text x="${L - 6}" y="${(Y(hi) + 4).toFixed(1)}" text-anchor="end" class="rk-ch-lab">${esc(_fmtK(hi))}</text><text x="${L - 6}" y="${(Y(lo)).toFixed(1)}" text-anchor="end" class="rk-ch-lab">${esc(_fmtK(lo))}</text>
@@ -15967,7 +15969,7 @@ function _attribInnerHTML() {
     ${(() => { const step = Math.max(1, Math.ceil(n / Math.max(2, Math.floor((W - L - R) / 56)))), md = d => `${+d.slice(5, 7)}/${+d.slice(8)}`, idx = [];
       for (let i = 0; i < n; i += step) idx.push(i);
       if (idx[idx.length - 1] !== n - 1) { if (n - 1 - idx[idx.length - 1] >= step * 0.6) idx.push(n - 1); else idx[idx.length - 1] = n - 1; }
-      return idx.map(i => `<line x1="${X(i).toFixed(1)}" x2="${X(i).toFixed(1)}" y1="${H - B}" y2="${H - B + 3}" class="at-tick"/><text x="${X(i).toFixed(1)}" y="${H - 5}" text-anchor="middle" class="rk-ch-lab">${md(days[i].d)}</text>`).join(''); })()}</svg>`;
+      return idx.map(i => `<line x1="${X(i).toFixed(1)}" x2="${X(i).toFixed(1)}" y1="${H - B}" y2="${H - B + 3}" class="at-tick"/><text x="${X(i).toFixed(1)}" y="${H - 5}" text-anchor="middle" class="rk-ch-lab${one && i === n - 1 ? ' at-sel' : ''}">${md(cd[i].d)}</text>`).join(''); })()}</svg>`;
   const byT = {}; days.forEach(d => Object.entries(d.byT).forEach(([t, v]) => { const o = byT[t] || (byT[t] = { actual: 0, theta: 0, delta: 0, gamma: 0, vega: 0, other: 0 }); Object.keys(o).forEach(k => { o[k] += v[k]; }); }));
   const tick = Object.entries(byT).sort((a, b) => Math.abs(b[1].actual) - Math.abs(a[1].actual));
   const main = ATTR_KEYS.filter(k => k !== 'other').sort((a, b) => Math.abs(tot[b]) - Math.abs(tot[a]))[0];
@@ -15982,8 +15984,9 @@ function _attribInnerHTML() {
     <div class="at-lead">${one ? `${md(D1.d)}${D1.live ? ' (盘中)' : ''}` : `这 ${days.length} 个交易日`} 实际 <b class="${_thCls(tot.actual)}">${_fmtSigned(tot.actual)}</b>, 主要来自<b>${lead}</b> (${_fmtSigned(tot[main])}).</div>
     ${recon}
     <div class="rk-figs at-figs">${fig('actual', '实际')}${fig('theta', 'Theta')}${fig('delta', 'Delta')}${fig('gamma', 'Gamma')}${fig('vega', 'Vega')}${fig('other', `其他 ${_qBtn('attrib_other', 'short')}`)}</div>
-    ${one ? '' : chart}
-    <div class="rk-legend${one ? ' at-hide' : ''}">${ATTR_KEYS.map(k => `<span><i class="rk-sw at-sw-${k}"></i>${ATTR_LABEL[k]}</span>`).join('')}<span><i class="rk-sw at-sw-actual"></i>实际</span></div>
+    ${chart}
+    ${one ? `<div class="rk-quiet at-ctx">图上是截至 ${md(D1.d)} 的最近 ${n} 个交易日, 高亮的是 ${md(D1.d)}</div>` : ''}
+    <div class="rk-legend">${ATTR_KEYS.map(k => `<span><i class="rk-sw at-sw-${k}"></i>${ATTR_LABEL[k]}</span>`).join('')}<span><i class="rk-sw at-sw-actual"></i>实际</span></div>
     <div class="rk-table-wrap"><table class="rk-table">
       <thead><tr><th>标的</th><th>实际</th><th>Theta</th><th>Delta</th><th>Gamma</th><th>Vega</th><th>其他</th></tr></thead>
       <tbody>${tick.map(([t, v]) => `<tr><td>${esc(t)}</td>${['actual', ...ATTR_KEYS].map(k => `<td class="${_thCls(v[k])}">${Math.abs(v[k]) < 0.5 ? '—' : _fmtSigned(v[k])}</td>`).join('')}</tr>`).join('')}</tbody>
