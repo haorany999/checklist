@@ -3422,6 +3422,10 @@
   .at-recon b { font-family: var(--mono); } .at-recon .rk-quiet { flex-basis: 100%; font-size: 12px; }
   .at-hide { display: none; }
   .at-chart .at-dim { opacity: .32; } body .at-chart text.at-sel { fill: var(--text) !important; font-weight: 700 !important; } .at-ctx { font-size: 11.5px; margin: 2px 0 4px; }
+  .at-live { color: var(--pass); }
+  .at-chart .at-unexp { fill: #C9A227; opacity: .85; } .at-sw-unexp { background: #C9A227 !important; }
+  .at-figs .at-main .rk-fig-val { font-size: 1.35em; } .at-un { font-size: 12px; margin: 2px 0 8px; line-height: 1.55; }
+  tr.at-un-row td { color: var(--text-dim); }
 </style>
 </head>
 <body class="theme-slate">
@@ -5469,7 +5473,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.17-v57';
+const APP_BUILD = '2026.10.17-v59';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
@@ -13696,6 +13700,10 @@ const GREEK_HELP = {
     read: '期望值 = 平均每笔盈亏. 某条规则"未通过"那组的期望值明显更差, 说明这条规则在帮你避坑; 差不多, 说明它可能只是在增加摩擦. 样本少于 10 笔的组灰色显示, 只作参考.',
     short: '配对规则: 同一标的、行权价、到期日、方向, 做完 checklist 后 5 个交易日内开仓. roll 出来的新仓位不算作"没做 checklist".',
     ex: 'CSP 「布林中轨下」: 通过 18 笔期望值 +$62, 未通过 7 笔期望值 −$45 → 这条规则有用.' },
+  attrib_unexp: { t: '盈亏归因 · 未归因', def: '当天盈亏 (NAV 变化 − 入金出金) 里, 没法用 Greeks 拆分的部分: 当天新开、平仓、张数变化的仓位, 已实现盈亏, 现金利息等.',
+    read: 'Greeks 拆分需要「前一天收盘就持有、当天张数没变」的仓位; 不满足的都归到这里. 所有项目加起来正好等于当天盈亏.',
+    short: '某天未归因特别大, 通常是那天开平仓比较多; 下方说明里列出了具体是哪几笔.',
+    ex: '今日盈亏 +$1,900: 已持有仓位 +$806 (Theta、Delta 等), 今天新开的 ASTS 45P 浮盈 +$170, 平仓的 ZZZ 和利息等 → 未归因 +$1,094.' },
   attrib_other: { t: '盈亏归因 · 其他', def: '实际盈亏 − (Theta + Delta + Gamma + Vega) 能解释的部分. 也就是四个 Greeks 按前一日收盘数值估算之外, 剩下没被解释的部分.',
     read: '主要来源: 大幅波动时的高阶效应 (Gamma 和 Vega 本身也在变)、买卖价差和报价时点的变化、盘中 Greeks 变化、模型与真实价格的差异、以及当天的除息等. 单日出现较大的「其他」很正常.',
     short: '如果长期 (例如 30 天合计) 占实际盈亏的很大比例, 说明用 Greeks 估算的风险和实际偏差较大: 常见于临近到期、深度价内 / 价外、或流动性差的合约.',
@@ -15884,7 +15892,7 @@ function _snapGreeksBad(p) {
   if (!p || p.k === 'stock') return false;
   return ['de', 'ga', 'th', 've', 'iv'].some(k => p[k] != null && (!isFinite(p[k]) || p[k] <= -998)) || (p.de != null && Math.abs(p.de) > 1.0001) || (p.th != null && Math.abs(p.th) > Math.max(1, (p.m || 0) + 0.5));
 }
-function computeAttribution(snaps) {
+function computeAttribution(snaps, flows = null) {
   const days = [];
   for (let i = 1; i < snaps.length; i++) {
     const s0 = snaps[i - 1], s1 = snaps[i], dd = Math.max(1, Math.round((Date.parse(s1.d) - Date.parse(s0.d)) / 864e5));
@@ -15913,6 +15921,9 @@ function computeAttribution(snaps) {
       const bt = day.byT[p1.t] || (day.byT[p1.t] = { actual: 0, theta: 0, delta: 0, gamma: 0, vega: 0, other: 0 });
       [['actual', actual], ['theta', r.theta], ['delta', r.delta], ['gamma', r.gamma], ['vega', r.vega], ['other', other]].forEach(([k, v]) => { day[k] += v; bt[k] += v; });
     });
+    day.flow = flows ? flows.filter(f => f.d > s0.d && f.d <= s1.d).reduce((t, f) => t + f.amt, 0) : 0;
+    day.pnl = s0.nav > 0 && s1.nav > 0 ? s1.nav - s0.nav - day.flow : null;
+    day.total = day.pnl != null ? day.pnl : day.actual; day.unexp = day.total - day.actual;
     days.push(day);
   }
   return days;
@@ -15937,6 +15948,14 @@ function _attrSeries() {
   const live = _liveSnap(), base = c.data.filter(s => !live || s.d < live.d);   // an intraday record for today is replaced by the live one
   return live ? base.concat([live]) : base;
 }
+// what a day's numbers rest on: live data, a closing record, or an intraday record an old Worker left behind
+function _attrStamp(day) {
+  const hm = ts => { try { return new Intl.DateTimeFormat('en-GB', { timeZone: 'America/New_York', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(ts)); } catch (e) { return new Date(ts).toTimeString().slice(0, 5); } };
+  if (day.live) return `<b class="at-live">实时</b> · 截至 ${new Date(day.at).toTimeString().slice(0, 5)} (你刷新 Schwab 的时间)`;
+  if (!day.at) return '收盘';
+  const t = hm(day.at), [h, m] = t.split(':').map(Number), sameDay = (() => { try { return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York' }).format(new Date(day.at)) === day.d; } catch (e) { return true; } })();
+  return sameDay && h * 60 + m < 16 * 60 ? `<span class="rk-t-alert">盘中记录 · 美东 ${t}, 不是收盘</span>` : '收盘';
+}
 const _attrCustomDate = (val, key) => `<input type="date" class="gl-date at-date" value="${val || ''}" onblur="if (/^\\d{4}-\\d{2}-\\d{2}$/.test(this.value) && this.value !== '${val || ''}') setAttrRange({ mode: 'custom', ${key}: this.value })" onkeydown="if (event.key === 'Enter') this.blur()">`;
 
 window.setAttrDays = n => { __attrDays = n; const el = document.getElementById('attr-slot'); if (el) { el.innerHTML = _safe('盈亏归因', _attribInnerHTML); _fitChartText(); } };
@@ -15945,23 +15964,25 @@ function _attribInnerHTML() {
   if (!c) return `<div class="rk-quiet">${__snapErr ? `<span class="rk-t-alert">${esc(__snapErr)}</span>` : '读取快照…'}</div>`;
   const series = _attrSeries();
   if (!series || series.length < 2) return `<div class="rk-quiet">每个交易日收盘自动记录持仓和 Greeks. 已记录 ${c.data.length} 天, 满 2 个交易日后开始显示.</div>`;
-  const all = computeAttribution(series), R0 = __attrRange, md = d => `${+d.slice(5, 7)}/${+d.slice(8)}`;
+  let flows = []; try { const pf = computePerf(); flows = ((pf && pf.flows) || []).map(f => ({ d: _tsDay(f.ts), amt: f.amt || 0 })); } catch (e) {}
+  const all = computeAttribution(series, flows), R0 = __attrRange, md = d => `${+d.slice(5, 7)}/${+d.slice(8)}`;
   let days = R0.mode === 'today' ? all.slice(-1) : R0.mode === 'custom' ? all.filter(d => (!R0.from || d.d >= R0.from) && (!R0.to || d.d <= R0.to)) : all.slice(-(+R0.mode || 7));
   const segBar = `<div class="at-bar"><span class="rk-presets">${[['today', '今天'], ['7', '7 天'], ['30', '30 天'], ['90', '90 天'], ['custom', '自定义']].map(([k, l]) => `<button class="rk-preset${R0.mode === k ? ' active' : ''}" onclick="setAttrRange({ mode: '${k}'${k === 'custom' ? `, from: '${R0.from || all[Math.max(0, all.length - 5)].d}', to: '${R0.to || all[all.length - 1].d}'` : ''} })">${l}</button>`).join('')}</span>
     ${R0.mode === 'custom' ? `<span class="at-cust">${_attrCustomDate(R0.from, 'from')} – ${_attrCustomDate(R0.to, 'to')}</span>` : ''}
-    <span class="rk-quiet">${days.length ? (days.length === 1 ? `${md(days[0].d)}${days[0].live ? ` 盘中 · 截至 ${new Date(days[0].at).toTimeString().slice(0, 5)}` : ' 收盘'}` : `${md(days[0].d)} – ${md(days[days.length - 1].d)} · ${days.length} 个交易日`) : ''}</span></div>`;
+    <span class="rk-quiet">${days.length ? (days.length === 1 ? `${md(days[0].d)} ${_attrStamp(days[0])}` : `${md(days[0].d)} – ${md(days[days.length - 1].d)} · ${days.length} 个交易日`) : ''}</span></div>`;
   if (!days.length) return segBar + `<div class="rk-quiet">所选区间没有快照. 有记录的日期: ${md(all[0].d)} – ${md(all[all.length - 1].d)}.</div>`;
-  const sum = k => days.reduce((s, d) => s + d[k], 0), tot = Object.fromEntries(['actual', ...ATTR_KEYS].map(k => [k, sum(k)]));
-  const fig = (k, label) => `<div class="rk-fig"><span class="rk-fig-val ${_thCls(tot[k])}">${_fmtSigned(tot[k])}</span><span class="rk-fig-label">${label}</span>${k !== 'actual' && Math.abs(tot.actual) > 1 ? `<span class="rk-fig-sub">占实际 ${(tot[k] / Math.abs(tot.actual) * 100).toFixed(0)}%</span>` : ''}</div>`;
+  const KS = [...ATTR_KEYS, 'unexp'], LB = { ...ATTR_LABEL, unexp: '未归因' };
+  const sum = k => days.reduce((s, d) => s + (d[k] || 0), 0), tot = Object.fromEntries(['actual', 'total', 'flow', ...KS].map(k => [k, sum(k)]));
+  const fig = (k, label, big) => `<div class="rk-fig${big ? ' at-main' : ''}"><span class="rk-fig-val ${_thCls(tot[k])}">${_fmtSigned(tot[k])}</span><span class="rk-fig-label">${label}</span>${!big && Math.abs(tot.total) > 1 ? `<span class="rk-fig-sub">占盈亏 ${(tot[k] / Math.abs(tot.total) * 100).toFixed(0)}%</span>` : ''}</div>`;
   // stacked bars per day
   const one = days.length === 1, sel = one ? all.indexOf(days[0]) : -1, cd = one ? all.slice(Math.max(0, sel - 19), sel + 1) : days;
   const W = _chartW(), H = 170, L = 44, R = 8, T = 10, B = 20, n = cd.length;
-  const up = d => ATTR_KEYS.reduce((s, k) => s + Math.max(0, d[k]), 0), dn = d => ATTR_KEYS.reduce((s, k) => s + Math.min(0, d[k]), 0);
-  const hi = Math.max(1, ...cd.map(up), ...cd.map(d => d.actual)), lo = Math.min(-1, ...cd.map(dn), ...cd.map(d => d.actual));
+  const up = d => KS.reduce((s, k) => s + Math.max(0, d[k] || 0), 0), dn = d => KS.reduce((s, k) => s + Math.min(0, d[k] || 0), 0);
+  const hi = Math.max(1, ...cd.map(up), ...cd.map(d => d.total)), lo = Math.min(-1, ...cd.map(dn), ...cd.map(d => d.total));
   const Y = v => T + (hi - v) / (hi - lo) * (H - T - B), bw = Math.min(36, Math.max(3, (W - L - R) / n * 0.68)), X = i => L + (i + 0.5) * (W - L - R) / n;
-  const bars = cd.map((d, i) => { const dim = one && i !== n - 1 ? ' at-dim' : ''; let pu = 0, pd = 0; return `<g class="at-day${dim}">` + ATTR_KEYS.map(k => { const v = d[k]; if (!v) return ''; const y0 = v > 0 ? pu : pd, y1 = y0 + v; if (v > 0) pu = y1; else pd = y1;
-    return `<rect x="${(X(i) - bw / 2).toFixed(1)}" y="${Y(Math.max(y0, y1)).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(0.5, Math.abs(Y(y0) - Y(y1))).toFixed(1)}" class="at-${k}"><title>${d.d} · ${ATTR_LABEL[k]} ${_fmtSigned(v)}</title></rect>`; }).join('')
-    + `<circle cx="${X(i).toFixed(1)}" cy="${Y(d.actual).toFixed(1)}" r="2.6" class="at-actual"><title>${d.d} · 实际 ${_fmtSigned(d.actual)}</title></circle></g>`; }).join('');
+  const bars = cd.map((d, i) => { const dim = one && i !== n - 1 ? ' at-dim' : ''; let pu = 0, pd = 0; return `<g class="at-day${dim}">` + KS.map(k => { const v = d[k] || 0; if (!v) return ''; const y0 = v > 0 ? pu : pd, y1 = y0 + v; if (v > 0) pu = y1; else pd = y1;
+    return `<rect x="${(X(i) - bw / 2).toFixed(1)}" y="${Y(Math.max(y0, y1)).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(0.5, Math.abs(Y(y0) - Y(y1))).toFixed(1)}" class="at-${k}"><title>${d.d} · ${LB[k]} ${_fmtSigned(v)}</title></rect>`; }).join('')
+    + `<circle cx="${X(i).toFixed(1)}" cy="${Y(d.total).toFixed(1)}" r="2.6" class="at-actual"><title>${d.d} · 盈亏 ${_fmtSigned(d.total)}</title></circle></g>`; }).join('');
   const chart = `<svg class="rk-chart at-chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="每日盈亏归因">
     <line x1="${L}" x2="${W - R}" y1="${Y(0).toFixed(1)}" y2="${Y(0).toFixed(1)}" class="gex-zero"/>
     <text x="${L - 6}" y="${(Y(hi) + 4).toFixed(1)}" text-anchor="end" class="rk-ch-lab">${esc(_fmtK(hi))}</text><text x="${L - 6}" y="${(Y(lo)).toFixed(1)}" text-anchor="end" class="rk-ch-lab">${esc(_fmtK(lo))}</text>
@@ -15974,24 +15995,23 @@ function _attribInnerHTML() {
   const tick = Object.entries(byT).sort((a, b) => Math.abs(b[1].actual) - Math.abs(a[1].actual));
   const main = ATTR_KEYS.filter(k => k !== 'other').sort((a, b) => Math.abs(tot[b]) - Math.abs(tot[a]))[0];
   const lead = { theta: '时间价值', delta: '方向', gamma: '大幅波动 (Gamma)', vega: '隐含波动率变化' }[main];
-  // one day: line it up with the NAV move, and name what attribution can't explain
-  const D1 = days[0], navChg = one && D1.nav0 > 0 && D1.nav1 > 0 ? D1.nav1 - D1.nav0 : null;
-  const groups = {}; if (one) D1.left.forEach(x => { (groups[x.why] = groups[x.why] || []).push(x.t); });
-  const recon = one && navChg != null ? `<div class="at-recon"><span>当日 NAV 变化 <b class="${_thCls(navChg)}">${_fmtSigned(navChg)}</b></span><span>归因覆盖 <b class="${_thCls(tot.actual)}">${_fmtSigned(tot.actual)}</b></span><span>差额 <b>${_fmtSigned(navChg - tot.actual)}</b></span>
-      <div class="rk-quiet">差额来自没法归因的部分: ${Object.keys(groups).length ? Object.entries(groups).map(([w, ts]) => `${w} ${ts.length} 笔 (${esc([...new Set(ts)].join('、'))})`).join(' · ') + ' · ' : ''}已实现盈亏、利息、入金出金. Schwab 的 Day P&L 与「当日 NAV 变化」口径一致.</div></div>` : '';
+  const D1 = days[0], groups = {}; days.forEach(d => d.left.forEach(x => { (groups[x.why] = groups[x.why] || new Set()).add(x.t); }));
+  const unexpWhy = [...Object.entries(groups).map(([w, s]) => `${w} ${s.size} 笔 (${esc([...s].join('、'))})`), '已实现盈亏、利息'].join(' · ');
   return `
     ${segBar}
-    <div class="at-lead">${one ? `${md(D1.d)}${D1.live ? ' (盘中)' : ''}` : `这 ${days.length} 个交易日`} 实际 <b class="${_thCls(tot.actual)}">${_fmtSigned(tot.actual)}</b>, 主要来自<b>${lead}</b> (${_fmtSigned(tot[main])}).</div>
-    ${recon}
-    <div class="rk-figs at-figs">${fig('actual', '实际')}${fig('theta', 'Theta')}${fig('delta', 'Delta')}${fig('gamma', 'Gamma')}${fig('vega', 'Vega')}${fig('other', `其他 ${_qBtn('attrib_other', 'short')}`)}</div>
+    <div class="at-lead">${one ? `${md(D1.d)}${D1.live ? ' (实时)' : ''}` : `这 ${days.length} 个交易日`} 盈亏 <b class="${_thCls(tot.total)}">${_fmtSigned(tot.total)}</b>${Math.abs(tot.actual) > 0.5 ? `, 已持有仓位的部分主要来自<b>${lead}</b> (${_fmtSigned(tot[main])})` : ''}.</div>
+    <div class="rk-figs at-figs">${fig('total', one ? (D1.live || D1.d === (window.__etOverride || _etNow)().d ? '今日盈亏' : `${md(D1.d)} 盈亏`) : '盈亏', true)}${fig('theta', 'Theta')}${fig('delta', 'Delta')}${fig('gamma', 'Gamma')}${fig('vega', 'Vega')}${fig('other', `其他 ${_qBtn('attrib_other', 'short')}`)}${fig('unexp', `未归因 ${_qBtn('attrib_unexp', 'short')}`)}</div>
+    ${Math.abs(tot.unexp) >= 0.5 || tot.flow ? `<div class="rk-quiet at-un">未归因 ${_fmtSigned(tot.unexp)}: ${unexpWhy}${tot.flow ? ` · 已扣除入金出金 ${_fmtSigned(tot.flow)}` : ''}. 盈亏 = NAV 变化 − 入金出金, 和 Schwab Day P&L 同一口径.</div>` : ''}
     ${chart}
     ${one ? `<div class="rk-quiet at-ctx">图上是截至 ${md(D1.d)} 的最近 ${n} 个交易日, 高亮的是 ${md(D1.d)}</div>` : ''}
-    <div class="rk-legend">${ATTR_KEYS.map(k => `<span><i class="rk-sw at-sw-${k}"></i>${ATTR_LABEL[k]}</span>`).join('')}<span><i class="rk-sw at-sw-actual"></i>实际</span></div>
+    <div class="rk-legend">${KS.map(k => `<span><i class="rk-sw at-sw-${k}"></i>${LB[k]}</span>`).join('')}<span><i class="rk-sw at-sw-actual"></i>盈亏</span></div>
     <div class="rk-table-wrap"><table class="rk-table">
-      <thead><tr><th>标的</th><th>实际</th><th>Theta</th><th>Delta</th><th>Gamma</th><th>Vega</th><th>其他</th></tr></thead>
-      <tbody>${tick.map(([t, v]) => `<tr><td>${esc(t)}</td>${['actual', ...ATTR_KEYS].map(k => `<td class="${_thCls(v[k])}">${Math.abs(v[k]) < 0.5 ? '—' : _fmtSigned(v[k])}</td>`).join('')}</tr>`).join('')}</tbody>
+      <thead><tr><th>标的</th><th>盈亏</th><th>Theta</th><th>Delta</th><th>Gamma</th><th>Vega</th><th>其他</th></tr></thead>
+      <tbody>${tick.map(([t, v]) => `<tr><td>${esc(t)}</td>${['actual', ...ATTR_KEYS].map(k => `<td class="${_thCls(v[k])}">${Math.abs(v[k]) < 0.5 ? '—' : _fmtSigned(v[k])}</td>`).join('')}</tr>`).join('')}
+        ${Math.abs(tot.unexp) >= 0.5 ? `<tr class="at-un-row"><td>未归因</td><td class="${_thCls(tot.unexp)}">${_fmtSigned(tot.unexp)}</td><td colspan="5" class="rk-quiet">新开 / 平仓 / 张数变化的仓位, 已实现盈亏, 利息</td></tr>` : ''}
+        <tr class="rk-total"><td>合计</td><td class="${_thCls(tot.total)}">${_fmtSigned(tot.total)}</td>${ATTR_KEYS.map(k => `<td class="${_thCls(tot[k])}">${Math.abs(tot[k]) < 0.5 ? '—' : _fmtSigned(tot[k])}</td>`).join('')}</tr></tbody>
     </table></div>
-    <div class="rk-note">前一日收盘的 Greeks × 当天变化; 「今天」用昨天收盘的快照对比你刚刷新的 Schwab 数据. 当天新开、平仓、张数变化的仓位不计入.</div>`;
+    <div class="rk-note">盈亏 = NAV 变化 − 入金出金. 已持有仓位按前一日收盘的 Greeks × 当天变化拆分; 「今天」用昨天收盘的快照对比你刚刷新的 Schwab 数据.</div>`;
 }
 function _attribHTML() {
   return `<section class="rk-block"><h3 class="rk-block-title rk-title-row"><span>盈亏归因 ${_qBtn('attrib', 'short')}</span><button class="btn ghost small" onclick="fetchSnaps(true)">刷新</button></h3><div id="attr-slot">${_safe('盈亏归因', _attribInnerHTML)}</div></section>`;
