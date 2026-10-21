@@ -3360,6 +3360,9 @@
   .gp-tn-sum { font-size: 13px; margin: 4px 0 8px; padding: 7px 10px; background: var(--panel-2); border-left: 2px solid var(--accent); }
   .tn-row { grid-template-columns: 96px minmax(120px, 1fr) 260px; }
   @media (max-width: 640px) { .tn-row { grid-template-columns: 80px minmax(80px, 1fr); } .tn-v { grid-column: 1 / -1; } }
+  .gp-port { margin-top: 8px; padding: 6px 8px; background: color-mix(in srgb, var(--accent) 10%, transparent); border-radius: 2px; line-height: 1.6; } .gp-port b { font: 700 16px var(--mono); }
+  .gp-w { font-size: 12px; margin-top: 4px; line-height: 1.5; }
+  .gp-in { width: 80px; }
 </style>
 </head>
 <body class="theme-slate">
@@ -5407,7 +5410,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.17-v52';
+const APP_BUILD = '2026.10.17-v53';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
@@ -15109,7 +15112,7 @@ function buildPerfLots(txs) {
         let left = qty; const per = cash / qty;
         while (left > 0 && q.length) {
           const lot = q[0], k = Math.min(left, lot.qty);
-          closed.push({ kind: 'stock', ticker: i.ticker, strategy: '正股', side: 'long', qty: k, openTs: lot.ts, closeTs: t.ts, pnl: (per - lot.per) * k, method: 'trade', assign: lot.assign });
+          closed.push({ kind: 'stock', ticker: i.ticker, strategy: '正股', side: 'long', qty: k, openTs: lot.ts, closeTs: t.ts, pnl: (per - lot.per) * k, cost: lot.per * k, method: 'trade', assign: lot.assign });
           if (lot.assign) lot.assign.stockPnl = (lot.assign.stockPnl || 0) + (per - lot.per) * k, lot.assign.sold = (lot.assign.sold || 0) + k;
           lot.qty -= k; left -= k; if (!lot.qty) q.shift();
         }
@@ -17049,27 +17052,35 @@ function _goalHistory() {
   if (!done.length) return { months: 0, nav };
   const ys = done.map(g => g.seller / g.navStart), ls = done.map(g => g.leaps / g.navStart);
   const mean = a => a.reduce((s, x) => s + x, 0) / a.length, sd = a => a.length < 2 ? 0 : Math.sqrt(a.reduce((s, x) => s + (x - mean(a)) ** 2, 0) / (a.length - 1));
+  // capital × time per sleeve, spread over the calendar months each closed trade was open
+  const inWin = new Set(done.map(g => g.k)), capM = { S: {}, L: {} }; let cyS = 0, cyL = 0, pS = 0, pL = 0;
+  const sleeve = l => l.kind === 'stock' || (l.kind === 'option' && l.side === 'short') ? 'S' : l.kind === 'option' && l.side === 'long' ? 'L' : null;
+  const capOf = l => l.kind === 'stock' ? Math.abs(l.cost || 0) : l.side === 'short' ? (l.putCall === 'PUT' ? (l.strike || 0) * 100 * (l.qty || 0) : 0) : Math.abs(l.openCash || 0);
+  p.all.forEach(l => { const sl = sleeve(l); if (!sl || !l.closeTs || !inWin.has(mk(l.closeTs))) return; const cap = capOf(l), a = l.openTs || l.closeTs, b = l.closeTs;
+    if (sl === 'S') pS += l.pnl || 0; else pL += l.pnl || 0;
+    if (!(cap > 0) || !(b > a)) return; const yrs = (b - a) / (365.25 * 864e5); if (sl === 'S') cyS += cap * yrs; else cyL += cap * yrs;
+    for (let t = a; t < b;) { const d = new Date(t), k = d.toISOString().slice(0, 7), nx = Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1), e = Math.min(b, nx), dim = (nx - Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1));
+      capM[sl][k] = (capM[sl][k] || 0) + cap * (e - t) / dim; t = e; } });
+  const rS = cyS > 0 ? pS / cyS : 0, rL = cyL > 0 ? pL / cyL : 0;
+  const mr = (sl, key) => done.filter(g => (capM[sl][g.k] || 0) > 0).map(g => g[key] / capM[sl][g.k]);
+  const vS = mr('S', 'seller'), vL = mr('L', 'leaps'), sdA = (a, r) => a.length >= 3 ? sd(a) * Math.sqrt(12) : Math.abs(r);
+  const navSum = done.reduce((s, g) => s + g.navStart, 0), hS = done.reduce((s, g) => s + (capM.S[g.k] || 0), 0) / navSum, hL = done.reduce((s, g) => s + (capM.L[g.k] || 0), 0) / navSum;
   const pos = getPortfolio().positions || [];
   let aS = (pos.filter(x => x.kind === 'short_put').reduce((s, x) => s + (x.exposure || 0), 0) + pos.filter(x => x.kind === 'stock' && (x.side || 1) > 0).reduce((s, x) => s + (x.marketValue || 0), 0)) / nav;
   let aL = pos.filter(x => x.kind === 'leaps' || x.kind === 'long_call').reduce((s, x) => s + Math.abs(x.marketValue || 0), 0) / nav;
   if (aS + aL > 1) { const k = 1 / (aS + aL); aS *= k; aL *= k; }                    // overlap / margin: scale both, never let one push the other out
   const now = { s: aS, l: aL, c: Math.max(0, 1 - aS - aL) };
-  // the mix the history was earned with: average of the Worker's daily snapshots, else today
-  const sn = ((loadSnaps() || {}).data || []).filter(s => s.nav > 0 && Array.isArray(s.pos)).map(s => {
-    let a = (s.pos.filter(x => x.k === 'short_put').reduce((t, x) => t + (x.K || 0) * 100 * Math.abs(x.q || 0), 0) + s.pos.filter(x => x.k === 'stock').reduce((t, x) => t + Math.max(0, x.mv || 0), 0)) / s.nav;
-    let b = s.pos.filter(x => x.k === 'leaps' || x.k === 'long_call').reduce((t, x) => t + Math.abs(x.mv || 0), 0) / s.nav; if (a + b > 1) { const k = 1 / (a + b); a *= k; b *= k; } return [a, b]; });
-  const hist = sn.length >= 5 ? { s: sn.reduce((t, x) => t + x[0], 0) / sn.length, l: sn.reduce((t, x) => t + x[1], 0) / sn.length } : { s: aS, l: aL };
-  return { months: done.length, from: done[0].k, rows: done, real: done.filter(g => g.real).length, nav,
-    muS: mean(ys) * 12, sdS: sd(ys) * Math.sqrt(12), muL: mean(ls) * 12, sdL: sd(ls) * Math.sqrt(12), alloc: now, allocHist: hist, allocSrc: sn.length >= 5 ? `最近 ${sn.length} 个交易日的平均` : '现在的配置' };
+  return { months: done.length, from: done[0].k, rows: done, real: done.filter(g => g.real).length, nav, capM,
+    rS, sdRS: sdA(vS, rS), rL, sdRL: sdA(vL, rL), cS: mean(ys) * 12, cL: mean(ls) * 12, alloc: now, allocHist: { s: hS, l: hL } };
 }
 // assumptions: history unless you changed them; returns are contributions to NAV at today's allocation
 function _gpAssume(H, c) { const o = c.ovr || {}, aS = o.aS ?? GP_DEF.s, aL = o.aL ?? GP_DEF.l;
-  return { muS: o.muS ?? H.muS, sdS: o.sdS ?? H.sdS, muL: o.muL ?? H.muL, sdL: o.sdL ?? H.sdL, aS, aL, aC: Math.max(0, 1 - aS - aL), dep: c.dep, depEnd: c.depEnd, depOn: c.depOn }; }
+  return { rS: o.rS ?? H.rS, sdS: o.sdS ?? H.sdRS, rL: o.rL ?? H.rL, sdL: o.sdL ?? H.sdRL, aS, aL, aC: Math.max(0, 1 - aS - aL), dep: c.dep, depEnd: c.depEnd, depOn: c.depOn }; }
 function _gpParams(H, A, scen) { const S = GP_SCEN[scen] || GP_SCEN.base;
-  // history = return on the capital that was deployed (the mix it was earned with); the chosen mix scales it
-  const ks = A.aS / Math.max(0.05, H.allocHist.s), kl = A.aL / Math.max(0.05, H.allocHist.l);
-  return { start: H.nav, mS: A.muS * S.mu * ks / 12, vS: A.sdS * S.sd * ks / Math.sqrt(12), mL: A.muL * S.mu * kl / 12, vL: A.sdL * S.sd * kl / Math.sqrt(12),
+  // each sleeve: allocation × its return on capital; cash earns the money-market rate
+  return { start: H.nav, mS: A.aS * A.rS * S.mu / 12, vS: A.aS * A.sdS * S.sd / Math.sqrt(12), mL: A.aL * A.rL * S.mu / 12, vL: A.aL * A.sdL * S.sd / Math.sqrt(12),
     mC: A.aC * CASH_YLD / 12, crash: S.crash, risk: Math.min(1, A.aS + A.aL), dep: A.depOn ? A.dep : 0, depEnd: A.depEnd }; }
+const _gpAnn = P => Math.pow(1 + _gpExp(P), 12) - 1;
 const _gpExp = P => P.mS + P.mL + P.mC - (P.crash ? 0.15 * P.risk / 24 : 0);
 const _gpDep = (P, t) => P.dep > 0 && _mAt(t).toISOString().slice(0, 10) <= P.depEnd ? P.dep : 0;
 function _gpDet(P, max = 600) { const out = GOALS.map(() => null); let v = P.start; const g = _gpExp(P);
@@ -17078,9 +17089,10 @@ function _gpDet(P, max = 600) { const out = GOALS.map(() => null); let v = P.sta
 function _gpMC(P, n = 1500, H = 240) {
   const key = JSON.stringify(P) + n + H; if (__gpMemo.k === key) return __gpMemo.v;
   const hit = GOALS.map(() => []), band = Array.from({ length: H + 1 }, () => new Float64Array(n));
-  const rn = () => Math.sqrt(-2 * Math.log(Math.random() || 1e-12)) * Math.cos(2 * Math.PI * Math.random());
+  let seed = 0x9e3779b9; const rnd = () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+  const rn = () => Math.sqrt(-2 * Math.log(rnd() || 1e-12)) * Math.cos(2 * Math.PI * rnd());
   for (let k = 0; k < n; k++) { let v = P.start; const h = [null, null, null]; band[0][k] = v;
-    for (let t = 1; t <= H; t++) { let r = P.mS + P.vS * rn() + P.mL + P.vL * rn() + P.mC; if (P.crash && Math.random() < 1 / 24) r -= 0.15 * P.risk;
+    for (let t = 1; t <= H; t++) { let r = P.mS + P.vS * rn() + P.mL + P.vL * rn() + P.mC; if (P.crash && rnd() < 1 / 24) r -= 0.15 * P.risk;
       v = Math.max(0, v * (1 + r) + _gpDep(P, t)); band[t][k] = v; for (let i = 0; i < 3; i++) if (h[i] == null && v >= GOALS[i]) h[i] = t; }
     for (let i = 0; i < 3; i++) hit[i].push(h[i] == null ? Infinity : h[i]); }
   const q = (a, p) => a[Math.min(a.length - 1, Math.floor(p * (a.length - 1)))];
@@ -17130,10 +17142,10 @@ function _gpTornadoHTML(H, A, scen) {
   const base = all[gi], gl = GOALS[gi] / 10000 + ' 万';
   const v = (lab, f) => { const lo = _gpDet(_gpParams(H, f(0.75), scen))[gi], hi = _gpDet(_gpParams(H, f(1.25), scen))[gi]; return { lab, d: [lo == null ? 600 - base : lo - base, hi == null ? 600 - base : hi - base] }; };
   const p1 = x => (x * 100).toFixed(1) + '%', rk = A.aS + A.aL;
-  const rows = [v('卖方收益', k => ({ ...A, muS: A.muS * k })), v('LEAPS 收益', k => ({ ...A, muL: A.muL * k })),
+  const rows = [v('卖方收益', k => ({ ...A, rS: A.rS * k })), v('LEAPS 收益', k => ({ ...A, rL: A.rL * k })),
     v('风险资产配置', k => { const s = Math.min(1, rk * k) / Math.max(1e-9, rk); return { ...A, aS: A.aS * s, aL: A.aL * s, aC: Math.max(0, 1 - rk * s) }; }),
     v('每月入金', k => ({ ...A, dep: A.dep * k }))].map(r => ({ ...r, span: Math.abs(r.d[0] - r.d[1]) })).sort((a, b) => b.span - a.span);
-  const val = { '卖方收益': [p1(A.muS * 0.75), p1(A.muS), p1(A.muS * 1.25)], 'LEAPS 收益': [p1(A.muL * 0.75), p1(A.muL), p1(A.muL * 1.25)],
+  const val = { '卖方收益': [p1(A.rS * 0.75), p1(A.rS), p1(A.rS * 1.25)], 'LEAPS 收益': [p1(A.rL * 0.75), p1(A.rL), p1(A.rL * 1.25)],
     '风险资产配置': [p1(rk * 0.75), p1(rk), p1(Math.min(1, rk * 1.25))], '每月入金': ['$' + Math.round(A.dep * 0.75), '$' + A.dep, '$' + Math.round(A.dep * 1.25)] };
   const mx = Math.max(6, ...rows.flatMap(r => r.d.map(Math.abs)));
   const bar = d => { const w = Math.min(50, Math.abs(d) / mx * 50); return d < 0 ? `<i class="tn-l" style="width:${w}%"></i>` : d > 0 ? `<i class="tn-r" style="width:${w}%"></i>` : ''; };
@@ -17156,7 +17168,8 @@ function _goalHTML() {
       ${done ? '<div class="gp-med-d rk-t-safe">已达成</div>' : `<div class="gp-med-d">中位 <b>${_mLab(g.p50)}</b></div><div class="rk-quiet gp-rng">80% 落在 ${_mLab(g.p10)} – ${isFinite(g.p90) ? _mLab(g.p90) : '20 年后'}</div>
       <div class="gp-prob">到 ${_gpDateIn(c.dates[G], `goalDate(${G}, this.value)`).replace('class="gl-date"', 'class="gl-date gp-dt"')} 达成概率 <b class="rk-t-${_gpCls(pr)}">${(pr * 100).toFixed(0)}%</b></div>`}</div>`; }).join('');
   const sumTxt = nxt >= 0 ? `${GOALS[nxt] / 10000} 万 · 中位 ${_mLab(mc.goals[nxt].p50)} · 到 ${c.dates[GOALS[nxt]].slice(0, 7)} 概率 ${(mc.goals[nxt].by(_mIdx(c.dates[GOALS[nxt]])) * 100).toFixed(0)}% · 点开` : '点开';
-  const S = GP_SCEN[c.scen] || GP_SCEN.base, exp = Math.pow(1 + _gpExp(P), 12) - 1;
+  const S = GP_SCEN[c.scen] || GP_SCEN.base, exp = _gpAnn(P), rk = A.aS + A.aL;
+  const annOf = k => _gpAnn(_gpParams(H, A, k)), histMix = _gpAnn(_gpParams(H, { ...A, aS: H.allocHist.s, aL: H.allocHist.l, aC: Math.max(0, 1 - H.allocHist.s - H.allocHist.l) }, 'high'));
   const inp = (k, v, step, hint) => `<input type="number" class="gl-num gp-in" step="${step}" value="${(v * 100).toFixed(1)}" onchange="goalOvr('${k}', this.value === '' ? '' : +this.value / 100)">%<span class="rk-quiet gp-h">${hint}</span>`;
   const need = (() => { const G = +c.inv.g, m = _mIdx(c.inv.d), r = _gpNeed(P, G, m); return { r, m }; })();
   let plan = '';
@@ -17172,26 +17185,31 @@ function _goalHTML() {
     ${plan}
     <div class="rk-sub-title">假设 <span class="rk-quiet">· 历史 = ${H.from} 起 ${H.months} 个完整月份 (从有交易记录的第一个月到上个月) · 改动后整页一起更新</span> <button class="app-link" onclick="goalSet('ovr', {})">全部恢复</button></div>
     <div class="gp-asm">
-      <div><b>卖方收益</b> 年化 ${inp('muS', A.muS, 0.5, `历史 ${pc(H.muS)}`)}<br>波动 ${inp('sdS', A.sdS, 0.5, `历史 ${pc(H.sdS)}`)}</div>
-      <div><b>LEAPS 收益</b> 年化 ${inp('muL', A.muL, 0.5, `历史 ${pc(H.muL)}`)}<br>波动 ${inp('sdL', A.sdL, 0.5, `历史 ${pc(H.sdL)}`)}</div>
-      <div><b>资金配置</b> 卖方 ${inp('aS', A.aS, 1, `现在 ${pc(H.alloc.s)}`)}<br>LEAPS ${inp('aL', A.aL, 1, `现在 ${pc(H.alloc.l)}`)}<br><span class="rk-quiet">现金 ${pc(A.aC)} · 按年化 ${pc(CASH_YLD)}</span>
+      <div><b>卖方 · 资本年化回报</b> ${inp('rS', A.rS, 0.5, `历史 ${pc(H.rS)}`)}<br>波动 ${inp('sdS', A.sdS, 0.5, `历史 ${pc(H.sdRS)}`)}<br><span class="rk-quiet">占用资本 = CSP 名义 + 正股成本</span></div>
+      <div><b>LEAPS · 资本年化回报</b> ${inp('rL', A.rL, 0.5, `历史 ${pc(H.rL)}`)}<br>波动 ${inp('sdL', A.sdL, 0.5, `历史 ${pc(H.sdRL)}`)}<br><span class="rk-quiet">占用资本 = 买入成本</span></div>
+      <div><b>资金配置</b> 卖方 ${inp('aS', A.aS, 1, `历史平均 ${pc(H.allocHist.s)} · 现在 ${pc(H.alloc.s)}`)}<br>LEAPS ${inp('aL', A.aL, 1, `历史平均 ${pc(H.allocHist.l)} · 现在 ${pc(H.alloc.l)}`)}<br><span class="rk-quiet">现金 ${pc(A.aC)} · 按年化 ${pc(CASH_YLD)}</span>
+        <div class="gp-port">按这个配置, 整个组合预期年化 <b class="${exp > 0.4 ? 'rk-t-danger' : ''}">${pc(exp)}</b> <span class="rk-quiet">(${S.l})</span>
+          <div class="rk-quiet">保守 ${pc(annOf('low'))} · 基准 ${pc(annOf('base'))} · 乐观 ${pc(annOf('high'))}</div></div>
+        ${rk > 1.0001 ? `<div class="rk-t-alert gp-w">卖方 + LEAPS 超过 100% = 使用杠杆或仓位重叠, 现金按 0 计</div>` : ''}
+        ${[['LEAPS', A.aL, H.allocHist.l], ['卖方', A.aS, H.allocHist.s]].filter(([, a, h]) => h > 0 && a > h * 2).map(([n, a, h]) => `<div class="rk-t-alert gp-w">${n}配置 ${pc(a)} 是你历史平均 (${pc(h)}) 的 ${(a / h).toFixed(1)} 倍: 等于假设你能一直找到同样好的机会、资金一直在场上. 历史上这类机会只够占用 ${pc(h)} 的资金.</div>`).join('')}
         <br><button class="app-link" onclick="goalNowMix()">按现在的配置</button> · <button class="app-link" onclick="goalDefMix()">默认 (60 / 20 / 20)</button></div>
       <div><b>入金</b> <input type="number" class="gl-num" value="${c.dep}" min="0" step="100" onchange="goalSet('dep', +this.value || 0)"> / 月<br>到 ${_gpDateIn(c.depEnd, "goalSet('depEnd', this.value)")}</div>
     </div>
-    <div class="rk-note">收益和波动是对整个 NAV 的贡献. 历史是在平均配置 卖方 ${pc(H.allocHist.s)} · LEAPS ${pc(H.allocHist.l)} (${H.allocSrc}) 下取得的, 换成上面的配置时按比例放大或缩小. 当前情形下整体预期年化 <b>${pc(exp)}</b>.</div>
+    <div class="rk-note">资本年化回报 = 这个策略的已实现盈亏 ÷ (占用资本 × 持有时间), 和下面的配置相乘得到它对整个组合的贡献. 按你历史上的平均配置 (卖方 ${pc(H.allocHist.s)} · LEAPS ${pc(H.allocHist.l)}), 组合年化约 ${pc(histMix)}.</div>
+    ${exp > 0.4 ? `<div class="gp-warn">当前假设下组合预期年化 <b>${pc(exp)}</b>, 远高于可长期持续的水平 (顶级基金长期约 15–30%). 通常是历史太短、几笔交易特别好造成的; 建议用「保守」情形, 或在上面手动调低资本回报.</div>` : ''}
     <div class="rk-sub-title">反推 · 要多少收益才够</div>
     <div class="gp-inv">到 <select class="gl-num gp-sel" onchange="goalInv('g', +this.value)">${GOALS.map(G => `<option value="${G}"${+c.inv.g === G ? ' selected' : ''}>${G / 10000} 万</option>`).join('')}</select>
       , 在 ${_gpDateIn(c.inv.d, "goalInv('d', this.value)")} 之前 → 需要年化
       <b class="${need.r == null ? '' : need.r <= exp ? 'rk-t-safe' : 'rk-t-danger'}">${need.r == null ? '—' : !isFinite(need.r) ? '> 500%' : pc(need.r)}</b>
-      <span class="rk-quiet">(当前情形预期 ${pc(exp)}${need.r != null && isFinite(need.r) ? need.r <= exp ? ' · 按现在的节奏够了' : ` · 还差 ${pc(need.r - exp)}, 高于你现在的节奏` : ''})</span></div>
+      <span class="rk-quiet">(按上面的配置, 当前情形组合年化 ${pc(exp)}${need.r != null && isFinite(need.r) ? need.r <= exp ? ' · 够了' : ` · 还差 ${pc(need.r - exp)}` : ''})</span></div>
     <div class="rk-sub-title">敏感性 · 哪个假设对到达时间影响最大 ${_qBtn('sensitivity', 'short')}</div>
     ${_gpTornadoHTML(H, A, c.scen)}
     <div class="gl-act"><button class="btn ghost" onclick="goalSavePlan()">${c.plan ? '重新保存为计划' : '保存为计划'}</button><span class="rk-quiet">把当前情形的中位线存为计划, 之后在图上对照实际</span></div>
     <details class="gp-meth"><summary>数据和方法</summary>
-      <div class="rk-note">历史 ${H.from} 起 ${H.months} 个完整月份 (其中 ${H.real} 个月用 Worker 记录的真实净值, 其余由已实现盈亏和入金倒推). 每月: 卖方 (CSP / CC / 正股) 和 LEAPS 的已实现盈亏 ÷ 月初 NAV, 年化 = 月均 × 12, 波动 = 月标准差 × √12.
+      <div class="rk-note">历史 ${H.from} 起 ${H.months} 个完整月份 (其中 ${H.real} 个月用 Worker 记录的真实净值, 其余由已实现盈亏和入金倒推). 资本年化回报: 这段时间内结束的每笔交易, 盈亏合计 ÷ Σ(占用资本 × 持有年数); 波动 = 每月 (盈亏 ÷ 当月平均占用资本) 的标准差 × √12; 历史平均配置 = 每月平均占用资本 ÷ 月初 NAV. 只统计已结束的交易, 还持有的不计.
         模拟: 每月收益按正态分布随机抽取, 1,500 条路径; 保守情形每月有 1/24 的概率出现风险资产 −15%. 未计未实现盈亏、税和通胀. 历史越短, 结果越不可靠.</div>
-      <div class="rk-table-wrap"><table class="rk-table"><thead><tr><th>月份</th><th>月初 NAV</th><th>卖方</th><th>LEAPS</th><th>入金</th></tr></thead><tbody>
-        ${H.rows.slice(-24).reverse().map(g => `<tr><td>${g.k}${g.real ? '' : ' <span class="rk-quiet">倒推</span>'}</td><td>${_fmtUsd(g.navStart)}</td><td class="${_thCls(g.seller)}">${pc(g.seller / g.navStart)}</td><td class="${_thCls(g.leaps)}">${pc(g.leaps / g.navStart)}</td><td>${g.flow ? _fmtSigned(g.flow) : '—'}</td></tr>`).join('')}</tbody></table></div>
+      <div class="rk-table-wrap"><table class="rk-table"><thead><tr><th>月份</th><th>月初 NAV</th><th>卖方盈亏</th><th>卖方占用资本</th><th>LEAPS 盈亏</th><th>LEAPS 占用资本</th><th>入金</th></tr></thead><tbody>
+        ${H.rows.slice(-24).reverse().map(g => `<tr><td>${g.k}${g.real ? '' : ' <span class="rk-quiet">倒推</span>'}</td><td>${_fmtUsd(g.navStart)}</td><td class="${_thCls(g.seller)}">${_fmtSigned(g.seller)}</td><td>${_fmtUsd(H.capM.S[g.k] || 0)}</td><td class="${_thCls(g.leaps)}">${_fmtSigned(g.leaps)}</td><td>${_fmtUsd(H.capM.L[g.k] || 0)}</td><td>${g.flow ? _fmtSigned(g.flow) : '—'}</td></tr>`).join('')}</tbody></table></div>
     </details>
     <div class="rk-note">规划工具, 不是预测. 落后于计划时, 该检查的是纪律和执行, 而不是加大仓位.</div>`;
   return wrap(sumTxt, body);
