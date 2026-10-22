@@ -5478,7 +5478,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.17-v61';
+const APP_BUILD = '2026.10.17-v62';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
@@ -17125,7 +17125,8 @@ function _mgmtDiscipline(units) {
   return { n: rows.length, score: rows.length ? rows.filter(r => r.ok).length / rows.length : null, rows, noData: !rows.length };
 }
 const DISC_START_KEY = 'pretrade_disc_start';
-const _discStart = () => { try { return localStorage.getItem(DISC_START_KEY) || '2026-10-19'; } catch (e) { return '2026-10-19'; } };
+try { if (localStorage.getItem('pretrade_disc_reset') !== '2026-10-23') { localStorage.setItem(DISC_START_KEY, '2026-10-23'); localStorage.setItem('pretrade_disc_reset', '2026-10-23'); } } catch (e) {}   // a clean start, once
+const _discStart = () => { try { return localStorage.getItem(DISC_START_KEY) || '2026-10-23'; } catch (e) { return '2026-10-23'; } };
 window.setDiscStart = d => { if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return; try { localStorage.setItem(DISC_START_KEY, d); } catch (e) {} __rvMemo = { key: null };
   const m = document.getElementById('dc-modal'); if (m) { m.remove(); showDiscipline(); } if (state._view === 'risk') { const y = window.scrollY; render(); window.scrollTo(0, y); } };
 function _disciplineData() {
@@ -17151,7 +17152,7 @@ function _disciplineData() {
   let streak = 0; for (const u of opens) { if (byU[u.id]) streak++; else break; }
   return { now: calc(opens), prev: Date.now() - 30 * 864e5 > from ? calc(opens.filter(u => u.openTs < Date.now() - 30 * 864e5), Date.now() - 30 * 864e5) : null, streak, from };
 }
-const _uLabel = u => `${u.ticker} ${u.strike}${u.putCall === 'PUT' ? 'P' : 'C'} ${u.expiry.slice(5)}`;
+const _uLabel = u => `${u.side === 'short' ? '卖' : '买'} ${u.ticker} ${u.strike}${u.putCall === 'PUT' ? 'P' : 'C'} ${u.expiry.slice(5).replace('-', '/')}${u.qty ? ` × ${u.qty}` : ''}`;
 function _disciplineCardHTML() {
   const D = _disciplineData(); if (!D) return '';
   if (!D.now) return `<section class="rk-block dc-card" id="dc-card"><div class="dc-row"><span class="dc-title">纪律分 ${_qBtn('discipline', 'short')}</span><span class="rk-quiet">自 ${_discStart().slice(5).replace('-', '/')} 起还没有新开仓或 BLOCKED 记录</span></div></section>`;
@@ -17170,7 +17171,8 @@ window.showDiscipline = () => {
   const D = _disciplineData(); if (!D || !D.now) return; const N = D.now, R = computeAutoReview();
   const old = document.getElementById('dc-modal'); if (old) old.remove();
   const pc = v => v == null ? '—' : (v * 100).toFixed(0) + '%', ymd = ts => _tsDay(ts).slice(5).replace('-', '/');
-  const lab = e => { const r = R && R.results[e.id]; return r && r.u ? _uLabel(r.u) : `${e.ticker} ${e.strategy || ''}`; };
+  const lab = e => { const r = R && R.results[e.id]; if (r && r.u) return _uLabel(r.u); const k = _kindOfStrategy(e.strategy), K = _snapStrike(e);
+    return `${k === 'leaps' ? '买' : '卖'} ${e.ticker}${K != null ? ` ${K}${k === 'short_put' ? 'P' : 'C'}` : ''} · ${e.strategy || ''}`; };
   // every event that moves the score, newest first
   const ev = [
     ...N.L.map(u => { const e = N.byU[u.id]; return { ts: u.openTs, what: _uLabel(u), cat: e ? 'ck' : 'nock', type: '新开仓', res: e ? `有 checklist (${esc(e.verdict || '')})` : '没做 checklist', ok: !!e }; }),
