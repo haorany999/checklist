@@ -3426,6 +3426,11 @@
   .at-chart .at-unexp { fill: #C9A227; opacity: .85; } .at-sw-unexp { background: #C9A227 !important; }
   .at-figs .at-main .rk-fig-val { font-size: 1.35em; } .at-un { font-size: 12px; margin: 2px 0 8px; line-height: 1.55; }
   tr.at-un-row td { color: var(--text-dim); }
+  .dc-card-m { max-width: 920px; width: min(920px, 94vw); }
+  .dc-mh { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; } .dc-mh b { font: 700 18px var(--mono); }
+  .dc-comp td { vertical-align: top; } .dc-v { font: 700 14px var(--mono); }
+  .dc-filt { margin: 12px 0 6px; flex-wrap: wrap; }
+  .dc-ev { max-height: 52vh; overflow-y: auto; } .dc-ev th { position: sticky; top: 0; background: var(--panel); z-index: 1; }
 </style>
 </head>
 <body class="theme-slate">
@@ -5473,7 +5478,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.17-v60';
+const APP_BUILD = '2026.10.17-v61';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
@@ -17119,56 +17124,78 @@ function _mgmtDiscipline(units) {
   });
   return { n: rows.length, score: rows.length ? rows.filter(r => r.ok).length / rows.length : null, rows, noData: !rows.length };
 }
+const DISC_START_KEY = 'pretrade_disc_start';
+const _discStart = () => { try { return localStorage.getItem(DISC_START_KEY) || '2026-10-19'; } catch (e) { return '2026-10-19'; } };
+window.setDiscStart = d => { if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return; try { localStorage.setItem(DISC_START_KEY, d); } catch (e) {} __rvMemo = { key: null };
+  const m = document.getElementById('dc-modal'); if (m) { m.remove(); showDiscipline(); } if (state._view === 'risk') { const y = window.scrollY; render(); window.scrollTo(0, y); } };
 function _disciplineData() {
   const R = computeAutoReview(); if (!R) return null;
   const hist = getActiveHistory(), byU = {};
   Object.entries(R.results).forEach(([id, r]) => { if (r.u) byU[r.u.id] = hist.find(e => e.id === id); });
   const ckTs = hist.filter(e => _kindOfStrategy(e.strategy)).map(e => e.timestampSort || 0);
   if (!ckTs.length) return null;
-  const from = Math.min(...ckTs) - 864e5;
+  const from = Math.max(Math.min(...ckTs) - 864e5, Date.parse(_discStart() + 'T00:00:00'));   // only since you started keeping score
   const opens = R.units.filter(u => !u.rollFrom && u.openTs >= from).sort((a, b) => b.openTs - a.openTs);
   // every BLOCKED verdict in the last 90 days: respected (no trade / marked 未交易) or forced (traded anyway / reason written)
   const blockedSt = e => { const r = R.results[e.id], traded = r && (r.status === 'open' || r.status === 'closed');
     return traded || e.forcedReason ? 'forced' : e.outcome === 'skipped' || (r && r.status === 'none') ? 'resp' : 'pending'; };
-  const blockedIn = until => hist.filter(e => _kindOfStrategy(e.strategy) && (e.hardFails || []).length && (e.timestampSort || 0) <= until && (e.timestampSort || 0) > until - 90 * 864e5);
-  const calc = (list, until = Date.now()) => { const L = list.slice(0, 30); if (!L.length) return null;
+  const blockedIn = until => hist.filter(e => _kindOfStrategy(e.strategy) && (e.hardFails || []).length && (e.timestampSort || 0) <= until && (e.timestampSort || 0) > Math.max(until - 90 * 864e5, from));
+  const calc = (list, until = Date.now()) => { const L = list.slice(0, 30); if (!L.length && !blockedIn(until).length) return null;
     const ck = L.filter(u => byU[u.id]), forced = ck.filter(u => (byU[u.id].hardFails || []).length), mg = _mgmtDiscipline(L);
     const B = blockedIn(until), bR = B.filter(e => blockedSt(e) === 'resp'), bF = B.filter(e => blockedSt(e) === 'forced');
     const hard = bR.length + bF.length ? bR.length / (bR.length + bF.length) : ck.length ? 1 - forced.length / ck.length : null;
-    const parts = [['cov', ck.length / L.length, 0.4], ['hard', hard, 0.3], ['mg', mg.score, 0.3]];
+    const parts = [['cov', L.length ? ck.length / L.length : null, 0.4], ['hard', hard, 0.3], ['mg', mg.score, 0.3]];
     const use = parts.filter(p => p[1] != null), W = use.reduce((s, p) => s + p[2], 0);
-    return { score: W ? use.reduce((s, p) => s + p[1] * p[2], 0) / W * 100 : null, cov: ck.length / L.length, hard, mg, n: L.length, ck, forced, noCk: L.filter(u => !byU[u.id]), byU, bR, bF };
+    return { score: W ? use.reduce((s, p) => s + p[1] * p[2], 0) / W * 100 : null, cov: L.length ? ck.length / L.length : null, hard, mg, n: L.length, ck, forced, noCk: L.filter(u => !byU[u.id]), byU, bR, bF, L };
   };
   let streak = 0; for (const u of opens) { if (byU[u.id]) streak++; else break; }
-  return { now: calc(opens), prev: calc(opens.filter(u => u.openTs < Date.now() - 30 * 864e5), Date.now() - 30 * 864e5), streak };
+  return { now: calc(opens), prev: Date.now() - 30 * 864e5 > from ? calc(opens.filter(u => u.openTs < Date.now() - 30 * 864e5), Date.now() - 30 * 864e5) : null, streak, from };
 }
 const _uLabel = u => `${u.ticker} ${u.strike}${u.putCall === 'PUT' ? 'P' : 'C'} ${u.expiry.slice(5)}`;
 function _disciplineCardHTML() {
-  const D = _disciplineData(); if (!D || !D.now) return '';
+  const D = _disciplineData(); if (!D) return '';
+  if (!D.now) return `<section class="rk-block dc-card" id="dc-card"><div class="dc-row"><span class="dc-title">纪律分 ${_qBtn('discipline', 'short')}</span><span class="rk-quiet">自 ${_discStart().slice(5).replace('-', '/')} 起还没有新开仓或 BLOCKED 记录</span></div></section>`;
   const N = D.now, s = N.score, lv = s == null ? '' : s >= 85 ? 'safe' : s >= 70 ? 'watch' : s >= 50 ? 'alert' : 'danger';
   const dlt = D.prev && D.prev.score != null && s != null ? s - D.prev.score : null, pc = v => v == null ? '—' : (v * 100).toFixed(0) + '%';
   return `<section class="rk-block dc-card" id="dc-card" role="button" tabindex="0" onclick="showDiscipline()">
     <div class="dc-row"><span class="dc-title">纪律分 ${_qBtn('discipline', 'short')}</span><b class="dc-score rk-t-${lv}">${s != null ? Math.round(s) : '—'}</b>
-      ${dlt != null ? `<span class="rk-quiet">较上月 ${dlt >= 0 ? '+' : '−'}${Math.abs(dlt).toFixed(0)}</span>` : ''}<span class="dc-streak">连续 ${D.streak} 笔做了 checklist</span><span class="rk-quiet dc-more">明细 ▸</span></div>
-    <div class="dc-parts"><span>checklist 覆盖 <b>${pc(N.cov)}</b></span><span>遵守硬规则 <b>${pc(N.hard)}</b>${N.bR.length + N.bF.length ? ` <span class="rk-quiet">(尊重 ${N.bR.length} · 硬冲 ${N.bF.length})</span>` : ''}</span><span>管理纪律 <b>${N.mg.score != null ? pc(N.mg.score) : '数据积累中'}</b></span><span class="rk-quiet">最近 ${N.n} 笔新开仓</span></div>
+      ${dlt != null ? `<span class="rk-quiet">较上月 ${dlt >= 0 ? '+' : '−'}${Math.abs(dlt).toFixed(0)}</span>` : ''}<span class="dc-streak">连续 ${D.streak} 笔做了 checklist</span><span class="rk-quiet">自 ${_discStart().slice(5).replace('-', '/')} 起</span><span class="rk-quiet dc-more">明细 ▸</span></div>
+    <div class="dc-parts"><span>checklist 覆盖 <b>${N.cov != null ? pc(N.cov) : '—'}</b></span><span>遵守硬规则 <b>${pc(N.hard)}</b>${N.bR.length + N.bF.length ? ` <span class="rk-quiet">(尊重 ${N.bR.length} · 硬冲 ${N.bF.length})</span>` : ''}</span><span>管理纪律 <b>${N.mg.score != null ? pc(N.mg.score) : '数据积累中'}</b></span><span class="rk-quiet">${N.n} 笔新开仓</span></div>
   </section>`;
 }
+let __dcFilter = 'all', __dcAll = false;
+window.dcFilter = f => { __dcFilter = f; __dcAll = false; const m = document.getElementById('dc-modal'); if (m) { m.remove(); showDiscipline(); } };
+window.dcAll = () => { __dcAll = true; const m = document.getElementById('dc-modal'); if (m) { m.remove(); showDiscipline(); } };
 window.showDiscipline = () => {
-  const D = _disciplineData(); if (!D || !D.now) return; const N = D.now;
+  const D = _disciplineData(); if (!D || !D.now) return; const N = D.now, R = computeAutoReview();
   const old = document.getElementById('dc-modal'); if (old) old.remove();
-  const li = (arr, f) => arr.length ? `<ul class="dc-list">${arr.map(f).join('')}</ul>` : '<div class="rk-quiet">无</div>';
+  const pc = v => v == null ? '—' : (v * 100).toFixed(0) + '%', ymd = ts => _tsDay(ts).slice(5).replace('-', '/');
+  const lab = e => { const r = R && R.results[e.id]; return r && r.u ? _uLabel(r.u) : `${e.ticker} ${e.strategy || ''}`; };
+  // every event that moves the score, newest first
+  const ev = [
+    ...N.L.map(u => { const e = N.byU[u.id]; return { ts: u.openTs, what: _uLabel(u), cat: e ? 'ck' : 'nock', type: '新开仓', res: e ? `有 checklist (${esc(e.verdict || '')})` : '没做 checklist', ok: !!e }; }),
+    ...N.bR.map(e => ({ ts: e.timestampSort || 0, what: lab(e), cat: 'resp', type: 'BLOCKED', res: `尊重 · 未通过: ${esc((e.hardFails || []).join('、'))}`, ok: true })),
+    ...N.bF.map(e => ({ ts: e.timestampSort || 0, what: lab(e), cat: 'forced', type: 'BLOCKED', res: `硬冲 · 未通过: ${esc((e.hardFails || []).join('、'))}${e.outcome === 'skipped' ? ' · 标了未交易, 但之后成交了' : ''}`, ok: false })),
+    ...(N.mg.rows || []).map(r => ({ ts: Date.parse(r.trig.d + 'T16:00:00'), what: _uLabel(r.u), cat: r.ok ? 'mgok' : 'mglate', type: '管理', res: `${r.trig.why}${r.ok ? ` · ${r.lag} 个交易日内处理` : r.open ? ` · 至今 ${r.lag} 个交易日未处理` : ` · ${r.lag} 个交易日后才处理`}`, ok: r.ok }))]
+    .sort((a, b) => b.ts - a.ts);
+  const F = [['all', '全部', () => true], ['nock', '没做 checklist', x => x.cat === 'nock'], ['forced', '硬冲', x => x.cat === 'forced'], ['resp', '尊重 BLOCKED', x => x.cat === 'resp'], ['mglate', '管理不及时', x => x.cat === 'mglate'], ['good', '做对的', x => x.ok]];
+  const cur = F.find(f => f[0] === __dcFilter) || F[0], rows = ev.filter(cur[2]), show = __dcAll ? rows : rows.slice(0, 30);
+  const comp = (name, w, v, how) => `<tr><td><b>${name}</b></td><td>${w}</td><td class="dc-v">${pc(v)}</td><td class="rk-quiet">${how}</td></tr>`;
   const m = document.createElement('div'); m.id = 'dc-modal'; m.className = 'snap-confirm';
-  m.innerHTML = `<div class="snap-card wh-card"><div class="snap-head" style="display:flex;align-items:baseline;gap:10px"><b>纪律分 ${N.score != null ? Math.round(N.score) : '—'}</b><span class="rk-quiet">最近 ${N.n} 笔新开仓 · 连续 ${D.streak} 笔做了 checklist</span>
+  m.innerHTML = `<div class="snap-card wh-card dc-card-m"><div class="snap-head dc-mh"><b>纪律分 ${N.score != null ? Math.round(N.score) : '—'}</b>
+      <span class="rk-quiet">从 <input type="date" class="gl-date" value="${_discStart()}" onblur="if (this.value !== '${_discStart()}') setDiscStart(this.value)" onkeydown="if (event.key === 'Enter') this.blur()"> 起算 · 连续 ${D.streak} 笔做了 checklist</span>
       <button class="gl-x" style="margin-left:auto" onclick="document.getElementById('dc-modal').remove()" aria-label="关闭">×</button></div>
-    <div class="dc-sec"><b>checklist 覆盖 ${(N.cov * 100).toFixed(0)}%</b> <span class="rk-quiet">权重 40% · ${N.ck.length} / ${N.n} 笔有对应的 checklist</span>
-      <div class="rk-quiet">没做 checklist 的:</div>${li(N.noCk, u => `<li>${esc(_uLabel(u))} · ${_tsDay(u.openTs).slice(5)} 开仓</li>`)}</div>
-    <div class="dc-sec"><b>遵守硬规则 ${N.hard != null ? (N.hard * 100).toFixed(0) + '%' : '—'}</b> <span class="rk-quiet">权重 30% · ${N.bR.length + N.bF.length ? `近 90 天 checklist 判 BLOCKED ${N.bR.length + N.bF.length} 次: 尊重 ${N.bR.length} 次 · 硬冲 ${N.bF.length} 次` : `近 90 天没有 BLOCKED; 按有 checklist 的 ${N.ck.length} 笔里强行交易 ${N.forced.length} 笔计`}</span>
-      ${N.bR.length ? `<div class="rk-quiet">尊重了:</div>${li(N.bR, e => `<li>${esc(e.ticker)} ${esc(e.strategy || '')} · ${esc(String(e.timestamp || '').slice(0, 10))} · 未通过: ${esc((e.hardFails || []).join('、'))}</li>`)}` : ''}
-      ${N.bF.length ? `<div class="rk-quiet">硬冲了:</div>${li(N.bF, e => `<li>${(() => { const r = (computeAutoReview() || { results: {} }).results[e.id]; return r && r.u ? esc(_uLabel(r.u)) : `${esc(e.ticker)} ${esc(e.strategy || '')}`; })()} · ${esc(String(e.timestamp || '').slice(0, 10))} · 未通过: ${esc((e.hardFails || []).join('、'))}${e.outcome === 'skipped' ? ' · <span class="rk-t-alert">标了未交易, 但之后成交了</span>' : ''}</li>`)}` : ''}</div>
-    <div class="dc-sec"><b>管理纪律 ${N.mg.score != null ? (N.mg.score * 100).toFixed(0) + '%' : '数据积累中'}</b> <span class="rk-quiet">权重 30% · 卖出的期权赚到 50% 或进入 21 天后, 3 个交易日内处理</span>
-      ${N.mg.noData ? '<div class="rk-quiet">每日快照里还没有触发过这两条的仓位, 暂不计分 (其余两项按比例计算).</div>'
-        : li(N.mg.rows.filter(r => !r.ok), r => `<li>${esc(_uLabel(r.u))} · ${r.trig.d.slice(5)} ${r.trig.why}, ${r.open ? `至今 ${r.lag} 个交易日未处理` : `${r.lag} 个交易日后才处理`}</li>`)}</div>
-    <div class="rk-note">只看新开仓 (roll 出来的不算), 从你第一次做 checklist 起计. 85 以上绿色, 70–85 黄色, 50–70 橙色, 50 以下红色. 不计入综合风险分.</div></div>`;
+    <div class="rk-table-wrap"><table class="rk-table dc-comp"><thead><tr><th>组成</th><th>权重</th><th>得分</th><th>怎么算</th></tr></thead><tbody>
+      ${comp('checklist 覆盖', '40%', N.cov, `${N.ck.length} / ${N.n} 笔新开仓有对应的 checklist`)}
+      ${comp('遵守硬规则', '30%', N.hard, N.bR.length + N.bF.length ? `BLOCKED ${N.bR.length + N.bF.length} 次: 尊重 ${N.bR.length} · 硬冲 ${N.bF.length}` : '还没有 BLOCKED 记录')}
+      ${comp('管理纪律', '30%', N.mg.score, N.mg.noData ? '还没有触发过 50% / 21 天的仓位' : `触发 ${N.mg.n} 次, 3 个交易日内处理 ${N.mg.rows.filter(r => r.ok).length} 次`)}
+    </tbody></table></div>
+    <div class="dc-filt rk-presets">${F.map(([k, l, f]) => `<button class="rk-preset${cur[0] === k ? ' active' : ''}" onclick="dcFilter('${k}')">${l} <span class="rk-quiet">${ev.filter(f).length}</span></button>`).join('')}</div>
+    <div class="rk-table-wrap dc-ev"><table class="rk-table"><thead><tr><th>日期</th><th>合约</th><th>事件</th><th>结果</th><th></th></tr></thead><tbody>
+      ${show.length ? show.map(x => `<tr><td>${ymd(x.ts)}</td><td><b>${esc(x.what)}</b></td><td>${x.type}</td><td>${x.res}</td><td class="${x.ok ? 'rk-t-safe' : 'rk-t-danger'}">${x.ok ? '加分' : '扣分'}</td></tr>`).join('') : '<tr><td colspan="5" class="rk-quiet">没有记录</td></tr>'}
+    </tbody></table></div>
+    ${rows.length > show.length ? `<button class="app-link" onclick="dcAll()">显示全部 ${rows.length} 条</button>` : ''}
+    <div class="rk-note">新开仓取起算日之后的最近 30 笔 (roll 不算); BLOCKED 取起算日之后、最近 90 天. 85 以上绿色, 70–85 黄色, 50–70 橙色, 50 以下红色. 不计入综合风险分.</div></div>`;
   m.addEventListener('click', e => { if (e.target === m) m.remove(); });
   document.body.appendChild(m);
 };
