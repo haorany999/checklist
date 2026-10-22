@@ -5473,7 +5473,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.17-v59';
+const APP_BUILD = '2026.10.17-v60';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
@@ -11360,7 +11360,7 @@ async function refreshSchwab(opt = {}) {
       __schwabInflight = null;
     }
     _afterSchwabChange(dataChanged);
-    if (dataChanged) { _reconcileSoon(); fetchBetas(); fetchPerf(); }
+    if (dataChanged) { _reconcileSoon(); fetchBetas(); fetchPerf(_posSigChanged()); }
     if (manual) _refreshUI(dataChanged ? 'ok' : 'fail');
   })();
   return __schwabInflight;
@@ -15085,10 +15085,13 @@ function loadHist() { try { const c = JSON.parse(localStorage.getItem(HIST_KEY) 
 function loadNavs() { try { const c = JSON.parse(localStorage.getItem(NAVS_KEY) || 'null'); return c && Array.isArray(c.data) ? c : null; } catch (e) { return null; } }
 function loadPerfStart() { try { const o = JSON.parse(localStorage.getItem(PERF_START_KEY) || '{}'); return o && typeof o === 'object' ? o : {}; } catch (e) { return {}; } }
 const _thisYear = () => new Date().getFullYear();
+let __posSig = null;
+function _posSigChanged() { const s = getPortfolio().positions.map(x => `${x.symbol || x.ticker}:${x.qty}`).sort().join(','), ch = __posSig != null && s !== __posSig; __posSig = s; return ch; }
 async function fetchPerf(force) {
   if (!loadSchwabCfg() || __perfBusy) return;
   const h = loadHist();
   if (!force && h && Date.now() - h.at < 30 * 60000) return;
+  if (force && h && Date.now() - h.at < 2 * 60000) return;
   __perfBusy = true;
   try {
     await _pullWheelCkpt();
@@ -16936,6 +16939,21 @@ function _rvUnits() {
   (L.closed || []).filter(l => l.kind === 'option').forEach(l => add(l, true));
   Object.values(L.openOpt || {}).forEach(arr => arr.filter(o => o.qty > 0 && o.item).forEach(o => add({ ticker: o.item.ticker, putCall: o.item.putCall, strike: o.item.strike, expiry: o.item.expiry, side: o.side, qty: o.qty, openTs: o.ts, openCash: o.side === 'short' ? Math.abs(o.cash || 0) : -Math.abs(o.cash || 0) }, false)));
   const list = Object.values(units);
+  const pf = getPortfolio(), h = loadHist();
+  if (pf.source === 'schwab' && h && h.status === 'ok') {
+    const key = u => `${u.ticker}|${u.putCall}|${u.strike}|${u.expiry}|${u.side}`, have = new Set(list.filter(u => u.openQty > 0).map(key));
+    let seen = {}; try { seen = JSON.parse(localStorage.getItem('pretrade_pos_seen') || '{}') || {}; } catch (e) {}
+    const first = !localStorage.getItem('pretrade_pos_baseline');      // first run: what you already hold is the baseline, not a new open
+    pf.positions.filter(x => x.kind !== 'stock' && x.strike != null && x.expiry && (Number(x.qty) || 0) > 0).forEach(x => {
+      const u = { ticker: x.ticker, putCall: /put/.test(x.kind) ? 'PUT' : 'CALL', strike: x.strike, expiry: x.expiry, side: _isShortPos(x) ? 'short' : 'long' }, k = key(u);
+      if (have.has(k)) return;
+      if (!(k in seen)) seen[k] = first ? 0 : Date.now();
+      if (!seen[k]) return;
+      const ts = seen[k], q = Number(x.qty) || 0;
+      list.push({ ...u, id: 'live:' + k, openTs: ts, qty: q, openQty: q, pnl: 0, openCash: u.side === 'short' ? (x.avg || 0) * 100 * q : -(x.cost || 0), closeTs: null, method: null, live: true });
+    });
+    try { localStorage.setItem('pretrade_pos_seen', JSON.stringify(seen)); if (first) localStorage.setItem('pretrade_pos_baseline', '1'); } catch (e) {}
+  }
   list.forEach(u => { u.open = u.openQty > 0; u.days = Math.max(0, Math.round(((u.closeTs || Date.now()) - u.openTs) / 864e5)); u.capture = u.side === 'short' && u.openCash > 0 && !u.open ? u.pnl / u.openCash * 100 : null; });
   // rolls: bought back and re-opened on the same ticker / side within a day
   list.filter(u => !u.open && /close|trade/.test(u.method || '')).forEach(u => { const v = list.find(z => z !== u && z.ticker === u.ticker && z.putCall === u.putCall && z.side === u.side && Math.abs(z.openTs - u.closeTs) < 1.5 * 864e5);
@@ -16944,7 +16962,7 @@ function _rvUnits() {
 }
 function computeAutoReview() {
   const h = loadHist(), hist = getActiveHistory();
-  const key = (h ? h.at : 0) + '|' + hist.length + '|' + hist.reduce((s, e) => s + (e.updatedAt || 0), 0);
+  const sc = loadSchwabCache(), key = (h ? h.at : 0) + '|' + hist.length + '|' + hist.reduce((s, e) => s + (e.updatedAt || 0), 0) + '|' + (sc ? sc.fetchedAt : 0);
   if (__rvMemo.key === key) return __rvMemo.v;
   const units = _rvUnits(); if (!units) return null;
   const used = new Set(), results = {};
