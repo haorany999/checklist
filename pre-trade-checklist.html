@@ -3443,6 +3443,9 @@
   .at-pop table { width: 100%; border-collapse: collapse; } .at-pop td { padding: 1px 0; } .at-pop td:last-child { text-align: right; font-family: var(--mono); }
   .at-pop-n { margin-top: 4px; color: var(--text-faint); font-size: 11px; }
   .at-pop { pointer-events: none; } .at-pop.pinned { pointer-events: auto; }
+  .lt-cell { white-space: nowrap; } .lt-in { width: 84px; font: 13px var(--mono); padding: 3px 6px; }
+  .lt-in.lt-miss { border-color: #E5793B; background: color-mix(in srgb, #E5793B 10%, transparent); } .lt-src { display: block; font-size: 10.5px; margin-top: 2px; }
+  .lt-warn { font: 600 11px var(--sans); color: #E5793B; text-transform: none; letter-spacing: 0; margin-left: 8px; }
 </style>
 </head>
 <body class="theme-slate">
@@ -5490,7 +5493,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.17-v65';
+const APP_BUILD = '2026.10.17-v67';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
@@ -10087,6 +10090,7 @@ function buildSyncPayload() {
       rocPhase: (function() { try { return localStorage.getItem(ROC_PHASE_KEY) || ''; } catch (e) { return ''; } })(),
       riskWeights: (function() { try { return localStorage.getItem(RISK_WEIGHTS_KEY) || ''; } catch (e) { return ''; } })(),
       betaOverrides: (function() { try { return localStorage.getItem(BETA_OVR_KEY) || ''; } catch (e) { return ''; } })(),
+      leapsTargets: (function() { try { return localStorage.getItem(LEAPS_TGT_KEY) || ''; } catch (e) { return ''; } })(),
       betaMode: (function() { try { return localStorage.getItem(BETA_MODE_KEY) || ''; } catch (e) { return ''; } })(),
       perfStart: (function() { try { return localStorage.getItem(PERF_START_KEY) || ''; } catch (e) { return ''; } })(),
       scanCfg: (function() { try { return localStorage.getItem(SCAN_CFG_KEY) || ''; } catch (e) { return ''; } })(),
@@ -10117,6 +10121,7 @@ function applyRemotePayload(remote, mode) {
     if (typeof s.rocPhase === 'string' && s.rocPhase) _mergeRemoteRocPhase(s.rocPhase);
     if (typeof s.riskWeights === 'string' && s.riskWeights) { try { JSON.parse(s.riskWeights); localStorage.setItem(RISK_WEIGHTS_KEY, s.riskWeights); } catch (e) {} }
     if (typeof s.betaOverrides === 'string' && s.betaOverrides) { try { JSON.parse(s.betaOverrides); localStorage.setItem(BETA_OVR_KEY, s.betaOverrides); } catch (e) {} }
+    if (typeof s.leapsTargets === 'string' && s.leapsTargets) { if (mode === 'merge') _ltMerge(s.leapsTargets); else { try { JSON.parse(s.leapsTargets); localStorage.setItem(LEAPS_TGT_KEY, s.leapsTargets); } catch (e) {} } }
     if (s.betaMode === 'beta' || s.betaMode === 'flat') { try { localStorage.setItem(BETA_MODE_KEY, s.betaMode); } catch (e) {} }
     if (typeof s.wheelCkpt === 'string' && s.wheelCkpt) { try { const inc = JSON.parse(s.wheelCkpt), cur = loadWheelCkpt(); if (inc.asOf && (!cur || inc.asOf > cur.asOf)) localStorage.setItem(WHEEL_CKPT_KEY, s.wheelCkpt); } catch (e) {} }
     if (typeof s.histStart === 'string' && /^\d{4}$/.test(s.histStart)) { const cur = parseInt(localStorage.getItem(HIST_START_KEY) || '9999', 10); if (+s.histStart < cur) localStorage.setItem(HIST_START_KEY, s.histStart); }
@@ -16257,6 +16262,25 @@ function _progBarHTML(prog, timePct, label) {
   return `<span class="pc-prog${timePct != null ? ' t' : ''}" title="${timePct != null ? `时间已过 ${timePct.toFixed(0)}%` : ''}"><i style="width:${p.toFixed(0)}%"></i>${timePct != null ? `<em style="left:${Math.max(0, Math.min(100, timePct)).toFixed(0)}%"></em>` : ''}</span> ${Math.max(0, prog).toFixed(0)}%${label ? ` <span class="rk-quiet">${label}</span>` : ''}${ahead != null ? ` <span class="${ahead >= 0 ? 'rk-t-safe' : 'rk-t-alert'} pc-ahead">${ahead >= 0 ? '快于' : '慢于'}时间</span>` : ''}`;
 }
 const SHORT_TP = 50;                                              // CSP / CC rule: buy back at 50% of the premium
+const LEAPS_TGT_KEY = 'pretrade_leaps_targets';
+const _ltKey = x => `${x.ticker}|${x.strike}|${x.expiry}`;
+function _ltLoad() { let m = {}; try { m = JSON.parse(localStorage.getItem(LEAPS_TGT_KEY) || '{}') || {}; } catch (e) {}
+  const out = {}; Object.entries(m).forEach(([k, v]) => { out[k] = v && typeof v === 'object' ? { px: v.px > 0 ? +v.px : null, at: +v.at || 0 } : { px: +v > 0 ? +v : null, at: 0 }; }); return out; }
+// two devices: each contract keeps whichever edit is newer (a cleared value is kept as a dated blank)
+function _ltMerge(remoteStr) { let r = {}; try { r = JSON.parse(remoteStr || '{}') || {}; } catch (e) { return; }
+  const L = _ltLoad(); let ch = false;
+  Object.entries(r).forEach(([k, v]) => { const rv = v && typeof v === 'object' ? { px: v.px > 0 ? +v.px : null, at: +v.at || 0 } : { px: +v > 0 ? +v : null, at: 0 };
+    if (!L[k] || rv.at > L[k].at) { L[k] = rv; ch = true; } });
+  if (ch) try { localStorage.setItem(LEAPS_TGT_KEY, JSON.stringify(L)); } catch (e) {} }
+function _leapsTgt(x) {
+  const v = _ltLoad()[_ltKey(x)]; if (v && v.px > 0) return { px: v.px, src: 'you' }; if (v && v.at) return null;   // cleared on purpose
+  const e = getActiveHistory().find(h => (h.strategy || '').startsWith('LEAPS') && _normTicker(h.ticker) === x.ticker && x.strike != null && Math.abs((_snapStrike(h) ?? -1) - x.strike) < 0.005);
+  const t = e && e.fullState && e.fullState.items ? parseFloat(e.fullState.items.target_level) : NaN;
+  return t > 0 ? { px: t, src: 'checklist' } : null;
+}
+window.setLeapsTgt = (k, v) => { const m = _ltLoad(), n = parseFloat(v); m[k] = { px: n > 0 ? n : null, at: Date.now() };
+  try { localStorage.setItem(LEAPS_TGT_KEY, JSON.stringify(m)); } catch (e) {} if (typeof scheduleAutoPushToGist === 'function') scheduleAutoPushToGist();
+  const y = window.scrollY; render(); window.scrollTo(0, y); };
 function renderPositionsPage() {
   const head = `<div class="header header-sticky"><div class="brand">Pre-Trade Checklist</div><div class="header-actions">
     <button class="btn ghost" onclick="state._view = null; render(); window.scrollTo(0, 0)">← 返回</button><button class="btn ghost" onclick="refreshSchwab(true)">刷新 Schwab</button></div></div>`;
@@ -16369,7 +16393,7 @@ function renderPositionsPage() {
   const avgHeld = (() => { const h = lpRows.filter(r => r.held); return h.length ? h.reduce((s, r) => s + r.held.days, 0) / h.length : null; })();
   const lpHTML = lp.length ? `
     <section class="rk-block">
-      <h3 class="rk-block-title" id="sec-leaps">LEAPS · ${lp.length} 笔</h3>
+      <h3 class="rk-block-title" id="sec-leaps">LEAPS · ${lp.length} 笔${(() => { const miss = lp.filter(x => !_leapsTgt(x)).length; return miss ? ` <span class="lt-warn">${miss} 个未设置正股止盈位</span>` : ''; })()}</h3>
       <div class="rk-figs">
         ${fig('成本', _fmtUsd(lT.cost), `${_pct(pn(lT.cost))} NAV`)}
         ${fig('市值', _fmtUsd(lT.val), `浮盈 ${sgn(lT.val - lT.cost)} · ${lT.cost ? _pct((lT.val - lT.cost) / lT.cost * 100) : '—'}`, _thCls(lT.val - lT.cost))}
@@ -16378,8 +16402,10 @@ function renderPositionsPage() {
         ${fig('平均持有', avgHeld != null ? avgHeld.toFixed(0) + ' 天' : '—', '仍持有的 LEAPS')}
       </div>
       <div class="rk-table-wrap"><table class="rk-table">
-        <thead><tr><th>合约</th><th>浮盈 %</th><th>止盈进度</th><th>距退出</th><th>浮盈</th><th>Δ</th><th>DTE</th><th>市值</th><th>市值 % NAV</th><th>成本</th><th>投入 % NAV</th><th>持有</th><th>正股等值</th><th>λ ${_qBtn('lambda', 'long')}</th></tr></thead>
-        <tbody>${lpRows.map(r => row(r.x, `<td><b>${esc(_posLabel(r.x))}</b></td><td class="${_thCls(r.pnl)}">${_pct(r.pnlPct)}</td><td class="pc-cell">${r.prog != null ? _progBarHTML(r.prog, null, `/ +${r.tg.pct}% ${r.tg.style ? '' : '(默认)'}`) : '—'}</td><td class="${r.toExit != null && r.toExit <= 0 ? 'rk-t-danger' : r.toExit != null && r.toExit < 90 ? 'rk-t-alert' : ''}">${r.toExit != null ? (r.toExit <= 0 ? '已到退出线' : r.toExit + ' 天') : '—'}</td><td class="${_thCls(r.pnl)}">${sgn(r.pnl)}</td><td>${r.s ? r.s.delta.toFixed(2) : '—'}</td><td>${_days(r.dte)}</td>
+        <thead><tr><th>合约</th><th>浮盈 %</th><th>止盈进度</th><th>正股止盈位</th><th>还需涨</th><th>距退出</th><th>浮盈</th><th>Δ</th><th>DTE</th><th>市值</th><th>市值 % NAV</th><th>成本</th><th>投入 % NAV</th><th>持有</th><th>正股等值</th><th>λ ${_qBtn('lambda', 'long')}</th></tr></thead>
+        <tbody>${lpRows.map(r => row(r.x, `<td><b>${esc(_posLabel(r.x))}</b></td><td class="${_thCls(r.pnl)}">${_pct(r.pnlPct)}</td><td class="pc-cell">${r.prog != null ? _progBarHTML(r.prog, null, `/ +${r.tg.pct}% ${r.tg.style ? '' : '(默认)'}`) : '—'}</td>${(() => { const T = _leapsTgt(r.x), S = r.x.und, need = T && S > 0 ? (T.px / S - 1) * 100 : null;
+          return `<td class="lt-cell" onclick="event.stopPropagation()"><input type="number" step="0.5" class="gl-num lt-in${T ? '' : ' lt-miss'}" value="${T ? T.px : ''}" placeholder="填写" onchange="setLeapsTgt('${esc(_ltKey(r.x))}', this.value)" onkeydown="if (event.key === 'Enter') this.blur()" aria-label="正股止盈位">${T && T.src === 'checklist' ? '<span class="rk-quiet lt-src">来自 checklist</span>' : ''}</td>
+          <td class="${need == null ? 'rk-quiet' : need <= 0 ? 'rk-t-safe' : ''}">${need == null ? (T ? '—' : '未设置') : need <= 0 ? '已到止盈位' : '+' + need.toFixed(1) + '%'}</td>`; })()}<td class="${r.toExit != null && r.toExit <= 0 ? 'rk-t-danger' : r.toExit != null && r.toExit < 90 ? 'rk-t-alert' : ''}">${r.toExit != null ? (r.toExit <= 0 ? '已到退出线' : r.toExit + ' 天') : '—'}</td><td class="${_thCls(r.pnl)}">${sgn(r.pnl)}</td><td>${r.s ? r.s.delta.toFixed(2) : '—'}</td><td>${_days(r.dte)}</td>
           <td>${money(r.val)}</td>
           <td>${_pct(pn(r.val))}</td><td>${money(r.cost)}</td>
           <td>${_pct(pn(r.cost))}</td>
@@ -18184,6 +18210,7 @@ window.addEventListener('scroll', updateScrolledState, { passive: true });
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible' && loadSchwabCfg()
         && _schwabAgeMin(loadSchwabCache()) >= SCHWAB_AUTO_REFRESH_MIN) refreshSchwab();
+    if (document.visibilityState === 'visible') { const sc = loadSyncConfig(); if (sc && sc.token && sc.gistId && Date.now() - (Date.parse(sc.lastSyncAt || 0) || 0) > 2 * 60000 && typeof syncMergeSilent === 'function') syncMergeSilent(); }
   });
 })();
 
