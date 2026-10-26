@@ -3431,6 +3431,18 @@
   .dc-comp td { vertical-align: top; } .dc-v { font: 700 14px var(--mono); }
   .dc-filt { margin: 12px 0 6px; flex-wrap: wrap; }
   .dc-ev { max-height: 52vh; overflow-y: auto; } .dc-ev th { position: sticky; top: 0; background: var(--panel); z-index: 1; }
+  /* v65 · composition drill-down, attribution popover */
+  .pc-dd .rk-dd-head { cursor: pointer; } .pc-dd .pc-nocaret { display: inline-block; width: 12px; }
+  .pc-dd tr.pc-sub td { font-size: 12.5px; color: var(--text-dim); background: color-mix(in srgb, var(--panel-2) 60%, transparent); }
+  .pc-dd tr.pc-sub[role=button] { cursor: pointer; } .pc-dd tr.pc-sub:hover td { color: var(--text); }
+  .pc-ind { padding-left: 26px; font-family: var(--mono); }
+  .at-wrap { position: relative; } .at-chart .at-hit { fill: transparent; cursor: pointer; }
+  .at-chart .at-day.at-on rect:not(.at-hit) { stroke: var(--text); stroke-width: 1; } .at-chart .at-day.at-on.at-dim { opacity: 1; }
+  .at-pop { position: absolute; z-index: 20; min-width: 190px; padding: 8px 10px; font-size: 12px; background: var(--panel); border: 1px solid var(--border-hi); border-radius: 4px; box-shadow: 0 8px 22px rgba(0,0,0,.35); pointer-events: auto; }
+  .at-pop[hidden] { display: none; } .at-pop-h { font-size: 12.5px; margin-bottom: 4px; } .at-pop-h b { font-family: var(--mono); }
+  .at-pop table { width: 100%; border-collapse: collapse; } .at-pop td { padding: 1px 0; } .at-pop td:last-child { text-align: right; font-family: var(--mono); }
+  .at-pop-n { margin-top: 4px; color: var(--text-faint); font-size: 11px; }
+  .at-pop { pointer-events: none; } .at-pop.pinned { pointer-events: auto; }
 </style>
 </head>
 <body class="theme-slate">
@@ -5478,7 +5490,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.17-v64';
+const APP_BUILD = '2026.10.17-v65';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
@@ -15966,6 +15978,34 @@ function _attrStamp(day) {
 }
 const _attrCustomDate = (val, key) => `<input type="date" class="gl-date at-date" value="${val || ''}" onblur="if (/^\\d{4}-\\d{2}-\\d{2}$/.test(this.value) && this.value !== '${val || ''}') setAttrRange({ mode: 'custom', ${key}: this.value })" onkeydown="if (event.key === 'Enter') this.blur()">`;
 
+let __atDays = null, __atPinned = false;
+function _atPopHTML(d) {
+  const LB = { ...ATTR_LABEL, unexp: '未归因' }, md = x => `${+x.slice(5, 7)}/${+x.slice(8)}`;
+  return `<div class="at-pop-h">${md(d.d)}${d.live ? ' (实时)' : ''} · 盈亏 <b class="${_thCls(d.total)}">${_fmtSigned(d.total)}</b></div>
+    <table>${[...ATTR_KEYS, 'unexp'].map(k => `<tr><td><i class="rk-sw at-sw-${k}"></i>${LB[k]}</td><td class="${_thCls(d[k] || 0)}">${Math.abs(d[k] || 0) < 0.5 ? '—' : _fmtSigned(d[k])}</td></tr>`).join('')}</table>
+    ${d.left && d.left.length ? `<div class="at-pop-n">未归因: ${esc([...new Set(d.left.map(x => `${x.why} ${x.t}`))].slice(0, 4).join(' · '))}</div>` : ''}`;
+}
+function _atShow(hit, clientX) {
+  const wrap = document.getElementById('at-wrap'), pop = document.getElementById('at-pop'); if (!wrap || !pop || !__atDays) return;
+  const d = __atDays[+hit.dataset.i]; if (!d) return;
+  pop.innerHTML = _atPopHTML(d); pop.hidden = false; pop.classList.toggle('pinned', __atPinned);
+  // beside the bar, never on top of it: right if there's room, else left; on narrow screens, above the chart
+  const wr = wrap.getBoundingClientRect(), hr = hit.getBoundingClientRect(), pw = pop.offsetWidth || 200, ph = pop.offsetHeight || 150;
+  const r = hr.right - wr.left + 6, l = hr.left - wr.left - pw - 6;
+  if (r + pw <= wr.width) { pop.style.left = r + 'px'; pop.style.top = '4px'; }
+  else if (l >= 0) { pop.style.left = l + 'px'; pop.style.top = '4px'; }
+  else { pop.style.left = Math.max(0, Math.min(wr.width - pw, hr.left - wr.left + hr.width / 2 - pw / 2)) + 'px'; pop.style.top = -(ph + 6) + 'px'; }
+  wrap.querySelectorAll('.at-day').forEach(g => g.classList.toggle('at-on', g.dataset.i === hit.dataset.i));
+}
+function _atHide() { const pop = document.getElementById('at-pop'); if (pop) pop.hidden = true; document.querySelectorAll('#at-wrap .at-day.at-on').forEach(g => g.classList.remove('at-on')); }
+document.addEventListener('mouseover', e => { const h = e.target.closest && e.target.closest('#at-wrap .at-hit'); if (h && !__atPinned) _atShow(h); });
+document.addEventListener('mouseout', e => { const h = e.target.closest && e.target.closest('#at-wrap .at-hit'); if (h && !__atPinned && !(e.relatedTarget && e.relatedTarget.closest && e.relatedTarget.closest('#at-wrap .at-hit'))) _atHide(); });
+document.addEventListener('click', e => {
+  const h = e.target.closest && e.target.closest('#at-wrap .at-hit');
+  if (h) { __atPinned = true; _atShow(h); return; }                         // tap / click a day: pin it
+  if (e.target.closest && e.target.closest('#at-pop')) return;
+  if (__atPinned) { __atPinned = false; _atHide(); }                        // anywhere else: close
+});
 window.setAttrDays = n => { __attrDays = n; const el = document.getElementById('attr-slot'); if (el) { el.innerHTML = _safe('盈亏归因', _attribInnerHTML); _fitChartText(); } };
 function _attribInnerHTML() {
   const c = loadSnaps();
@@ -15983,14 +16023,14 @@ function _attribInnerHTML() {
   const sum = k => days.reduce((s, d) => s + (d[k] || 0), 0), tot = Object.fromEntries(['actual', 'total', 'flow', ...KS].map(k => [k, sum(k)]));
   const fig = (k, label, big) => `<div class="rk-fig${big ? ' at-main' : ''}"><span class="rk-fig-val ${_thCls(tot[k])}">${_fmtSigned(tot[k])}</span><span class="rk-fig-label">${label}</span>${!big && Math.abs(tot.total) > 1 ? `<span class="rk-fig-sub">占盈亏 ${(tot[k] / Math.abs(tot.total) * 100).toFixed(0)}%</span>` : ''}</div>`;
   // stacked bars per day
-  const one = days.length === 1, sel = one ? all.indexOf(days[0]) : -1, cd = one ? all.slice(Math.max(0, sel - 19), sel + 1) : days;
-  const W = _chartW(), H = 170, L = 44, R = 8, T = 10, B = 20, n = cd.length;
+  __atDays = null; const one = days.length === 1, sel = one ? all.indexOf(days[0]) : -1, cd = one ? all.slice(Math.max(0, sel - 19), sel + 1) : days;
+  const W = _chartW(), H = 170, L = 44, R = 8, T = 10, B = 20, n = cd.length; __atDays = cd;
   const up = d => KS.reduce((s, k) => s + Math.max(0, d[k] || 0), 0), dn = d => KS.reduce((s, k) => s + Math.min(0, d[k] || 0), 0);
   const hi = Math.max(1, ...cd.map(up), ...cd.map(d => d.total)), lo = Math.min(-1, ...cd.map(dn), ...cd.map(d => d.total));
   const Y = v => T + (hi - v) / (hi - lo) * (H - T - B), bw = Math.min(36, Math.max(3, (W - L - R) / n * 0.68)), X = i => L + (i + 0.5) * (W - L - R) / n;
-  const bars = cd.map((d, i) => { const dim = one && i !== n - 1 ? ' at-dim' : ''; let pu = 0, pd = 0; return `<g class="at-day${dim}">` + KS.map(k => { const v = d[k] || 0; if (!v) return ''; const y0 = v > 0 ? pu : pd, y1 = y0 + v; if (v > 0) pu = y1; else pd = y1;
-    return `<rect x="${(X(i) - bw / 2).toFixed(1)}" y="${Y(Math.max(y0, y1)).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(0.5, Math.abs(Y(y0) - Y(y1))).toFixed(1)}" class="at-${k}"><title>${d.d} · ${LB[k]} ${_fmtSigned(v)}</title></rect>`; }).join('')
-    + `<circle cx="${X(i).toFixed(1)}" cy="${Y(d.total).toFixed(1)}" r="2.6" class="at-actual"><title>${d.d} · 盈亏 ${_fmtSigned(d.total)}</title></circle></g>`; }).join('');
+  const bars = cd.map((d, i) => { const dim = one && i !== n - 1 ? ' at-dim' : ''; let pu = 0, pd = 0; return `<g class="at-day${dim}" data-i="${i}" data-total="${(d.total || 0).toFixed(2)}">` + KS.map(k => { const v = d[k] || 0; if (!v) return ''; const y0 = v > 0 ? pu : pd, y1 = y0 + v; if (v > 0) pu = y1; else pd = y1;
+    return `<rect x="${(X(i) - bw / 2).toFixed(1)}" y="${Y(Math.max(y0, y1)).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(0.5, Math.abs(Y(y0) - Y(y1))).toFixed(1)}" class="at-${k}"></rect>`; }).join('')
+    + `<circle cx="${X(i).toFixed(1)}" cy="${Y(d.total).toFixed(1)}" r="2.6" class="at-actual"></circle><rect class="at-hit" x="${(X(i) - (W - L - R) / n / 2).toFixed(1)}" y="${T}" width="${((W - L - R) / n).toFixed(1)}" height="${H - T - B}" data-i="${i}"></rect></g>`; }).join('');
   const chart = `<svg class="rk-chart at-chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="每日盈亏归因">
     <line x1="${L}" x2="${W - R}" y1="${Y(0).toFixed(1)}" y2="${Y(0).toFixed(1)}" class="gex-zero"/>
     <text x="${L - 6}" y="${(Y(hi) + 4).toFixed(1)}" text-anchor="end" class="rk-ch-lab">${esc(_fmtK(hi))}</text><text x="${L - 6}" y="${(Y(lo)).toFixed(1)}" text-anchor="end" class="rk-ch-lab">${esc(_fmtK(lo))}</text>
@@ -16010,7 +16050,7 @@ function _attribInnerHTML() {
     <div class="at-lead">${one ? `${md(D1.d)}${D1.live ? ' (实时)' : ''}` : `这 ${days.length} 个交易日`} 盈亏 <b class="${_thCls(tot.total)}">${_fmtSigned(tot.total)}</b>${Math.abs(tot.actual) > 0.5 ? `, 已持有仓位的部分主要来自<b>${lead}</b> (${_fmtSigned(tot[main])})` : ''}.</div>
     <div class="rk-figs at-figs">${fig('total', one ? (D1.live || D1.d === (window.__etOverride || _etNow)().d ? '今日盈亏' : `${md(D1.d)} 盈亏`) : '盈亏', true)}${fig('theta', 'Theta')}${fig('delta', 'Delta')}${fig('gamma', 'Gamma')}${fig('vega', 'Vega')}${fig('other', `其他 ${_qBtn('attrib_other', 'short')}`)}${fig('unexp', `未归因 ${_qBtn('attrib_unexp', 'short')}`)}</div>
     ${Math.abs(tot.unexp) >= 0.5 || tot.flow ? `<div class="rk-quiet at-un">未归因 ${_fmtSigned(tot.unexp)}: ${unexpWhy}${tot.flow ? ` · 已扣除入金出金 ${_fmtSigned(tot.flow)}` : ''}. 盈亏 = NAV 变化 − 入金出金, 和 Schwab Day P&L 同一口径.</div>` : ''}
-    ${chart}
+    <div class="at-wrap" id="at-wrap">${chart}<div class="at-pop" id="at-pop" hidden></div></div>
     ${one ? `<div class="rk-quiet at-ctx">图上是截至 ${md(D1.d)} 的最近 ${n} 个交易日, 高亮的是 ${md(D1.d)}</div>` : ''}
     <div class="rk-legend">${KS.map(k => `<span><i class="rk-sw at-sw-${k}"></i>${LB[k]}</span>`).join('')}<span><i class="rk-sw at-sw-actual"></i>盈亏</span></div>
     <div class="rk-table-wrap"><table class="rk-table">
@@ -16203,7 +16243,7 @@ function _pnlBlockHTML() {
       <h3 class="rk-block-title rk-title-row"><span>浮动盈亏</span><span class="rk-presets"><button class="rk-preset${__pnlMode === 'sleeve' ? ' active' : ''}" onclick="setPnlMode('sleeve')">按策略</button><button class="rk-preset${__pnlMode === 'ticker' ? ' active' : ''}" onclick="setPnlMode('ticker')">按标的</button></span></h3>
       <div class="rk-figs pnl-figs">
         ${(() => { const s = ((loadNavs() || {}).data || []).filter(x => x && x[1] > 0), prev = [...s].reverse().find(x => x[0] < _todayISO()), chg = prev && nav ? nav - prev[1] : null;
-          return fig('NAV', nav ? _fmtUsd(nav) : '—', chg != null ? `较上一日 ${_fmtSigned(chg)} (${chg >= 0 ? '+' : '−'}${Math.abs(chg / prev[1] * 100).toFixed(2)}%)` : '较上一日 —', 'rk-t-acc'); })()}
+          return fig('NAV', nav ? _fmtUsd(nav) : '—', chg != null ? `较上一日 <span class="${_thCls(chg)}">${_fmtSigned(chg)} (${chg >= 0 ? '+' : '−'}${Math.abs(chg / prev[1] * 100).toFixed(2)}%)</span>` : '较上一日 —', 'rk-t-acc'); })()}
         ${fig('浮动盈亏', _fmtSigned(total), `${nav ? (total / nav * 100).toFixed(1) + '% NAV' : ''}${cost ? ` · 成本的 ${(total / cost * 100).toFixed(1)}%` : ''}`, total >= 0 ? 'rk-t-safe' : 'rk-t-danger')}
         ${fig('盈利的仓位', _fmtSigned(win.reduce((s, x) => s + pnl(x), 0)), `${win.length} 个${best ? ` · 最多 ${esc(_posLabel(best).split(' ').slice(0, 2).join(' '))} ${_fmtSigned(pnl(best))}` : ''}`, 'rk-t-safe')}
         ${fig('亏损的仓位', _fmtSigned(lose.reduce((s, x) => s + pnl(x), 0)), `${lose.length} 个${worst ? ` · 最多 ${esc(_posLabel(worst).split(' ').slice(0, 2).join(' '))} ${_fmtSigned(pnl(worst))}` : ''}`, 'rk-t-alert')}
@@ -16236,11 +16276,11 @@ function renderPositionsPage() {
 
   /* ── composition ── */
   const sleeves = [
-    { k: 'csp', label: 'CSP 担保名义', v: cspN, n: csp.length, pnl: sum(csp, _posPnl), th: sum(csp, theta), dd: sum(csp, _dollarDelta), cls: 'pc-csp' },
-    { k: 'stk', label: '正股', v: sum(stk, mv), n: stk.length, pnl: sum(stk, _posPnl), th: 0, dd: sum(stk, _dollarDelta), cls: 'pc-stk' },
-    { k: 'leaps', label: 'LEAPS', v: sum(lp, mv), n: lp.length, pnl: sum(lp, _posPnl), th: sum(lp, theta), dd: sum(lp, _dollarDelta), cls: 'pc-leaps' },
-    { k: 'oth', label: '其他期权', v: sum(oth, mv), n: oth.length, pnl: sum(oth, _posPnl), th: sum(oth, theta), dd: sum(oth, _dollarDelta), cls: 'pc-oth' },
-    { k: 'sc', label: 'Short call (负债)', v: sum(sc, x => -mv(x)), n: sc.length, pnl: sum(sc, _posPnl), th: sum(sc, theta), dd: sum(sc, _dollarDelta), cls: 'pc-sc', liab: true },
+    { k: 'csp', label: 'CSP 担保名义', list: csp, amt: x => x.exposure || 0, v: cspN, n: csp.length, pnl: sum(csp, _posPnl), th: sum(csp, theta), dd: sum(csp, _dollarDelta), cls: 'pc-csp' },
+    { k: 'stk', label: '正股', list: stk, amt: mv, v: sum(stk, mv), n: stk.length, pnl: sum(stk, _posPnl), th: 0, dd: sum(stk, _dollarDelta), cls: 'pc-stk' },
+    { k: 'leaps', label: 'LEAPS', list: lp, amt: mv, v: sum(lp, mv), n: lp.length, pnl: sum(lp, _posPnl), th: sum(lp, theta), dd: sum(lp, _dollarDelta), cls: 'pc-leaps' },
+    { k: 'oth', label: '其他期权', list: oth, amt: mv, v: sum(oth, mv), n: oth.length, pnl: sum(oth, _posPnl), th: sum(oth, theta), dd: sum(oth, _dollarDelta), cls: 'pc-oth' },
+    { k: 'sc', label: 'Short call (负债)', list: sc, amt: x => -mv(x), v: sum(sc, x => -mv(x)), n: sc.length, pnl: sum(sc, _posPnl), th: sum(sc, theta), dd: sum(sc, _dollarDelta), cls: 'pc-sc', liab: true },
     { k: 'free', label: '自由现金', v: free, n: null, pnl: null, th: null, dd: null, cls: free >= 0 ? 'pc-free' : 'pc-neg' },
   ];
   const barTot = sleeves.filter(s => !s.liab).reduce((s, x) => s + Math.max(0, x.v), 0) || 1;
@@ -16257,10 +16297,15 @@ function renderPositionsPage() {
       <div class="pc-bar">${bar}</div>
       <div class="rk-table-wrap"><table class="rk-table">
         <thead><tr><th>板块</th><th>仓位</th><th>金额</th><th>% NAV</th><th>浮盈</th><th>美元 Delta ${_qBtn('usd_delta', 'short')}</th><th>Theta/天</th></tr></thead>
-        <tbody>${sleeves.map(s => `<tr><td><i class="pc-sw ${s.cls}"></i>${esc(s.label)}</td><td>${s.n ?? '—'}</td><td>${money(s.v)}</td><td class="${s.k === 'free' && s.v < 0 ? 'rk-t-danger' : ''}">${_pct(pn(s.v))}</td>
-          <td class="${s.pnl == null ? '' : _thCls(s.pnl)}">${s.pnl == null ? '—' : sgn(s.pnl)}</td><td>${s.dd == null ? '—' : sgn(s.dd)}</td><td class="${s.th == null ? '' : _thCls(s.th)}">${s.th == null ? '—' : sgn(s.th)}</td></tr>`).join('')}</tbody>
+        ${sleeves.map(s => { const P = (s.list || []).slice().sort((a, b) => Math.abs(s.amt(b)) - Math.abs(s.amt(a))), can = P.length > 0;
+          return `<tbody class="rk-dd pc-dd">
+          <tr${can ? ` class="rk-dd-head" tabindex="0" role="button" onclick="this.parentElement.classList.toggle('open')" onkeydown="if(event.key==='Enter')this.click()"` : ''}><td>${can ? '<span class="rk-caret">▸</span>' : '<span class="rk-caret pc-nocaret"></span>'}<i class="pc-sw ${s.cls}"></i>${esc(s.label)}</td><td>${s.n ?? '—'}</td><td>${money(s.v)}</td><td class="${s.k === 'free' && s.v < 0 ? 'rk-t-danger' : ''}">${_pct(pn(s.v))}</td>
+          <td class="${s.pnl == null ? '' : _thCls(s.pnl)}">${s.pnl == null ? '—' : sgn(s.pnl)}</td><td>${s.dd == null ? '—' : sgn(s.dd)}</td><td class="${s.th == null ? '' : _thCls(s.th)}">${s.th == null ? '—' : sgn(s.th)}</td></tr>
+          ${P.map(x => { const a = s.amt(x), pl = _posPnl(x), d = _dollarDelta(x), t = theta(x);
+            return `<tr class="rk-dd-row pc-sub"${x.kind !== 'stock' ? ` role="button" onclick="event.stopPropagation(); openOptionLab(${idx(x)})"` : ''}><td><span class="pc-ind">${esc(_posLabel(x))}</span></td><td></td><td>${money(a)}</td><td>${_pct(pn(a))}</td>
+              <td class="${pl == null ? '' : _thCls(pl)}">${pl == null ? '—' : sgn(pl)}</td><td>${d == null ? '—' : sgn(d)}</td><td class="${t == null ? '' : _thCls(t)}">${t == null || x.kind === 'stock' ? '—' : sgn(t)}</td></tr>`; }).join('')}</tbody>`; }).join('')}
       </table></div>
-      <div class="rk-note">自由现金 = Cash + SWVXX − CSP 名义 · 表头可排序.</div>
+      <div class="rk-note">点一行展开具体仓位 · 自由现金 = Cash + SWVXX − CSP 名义 · 表头可排序.</div>
     </section>`;
 
   /* ── CSP ── */
@@ -16285,9 +16330,9 @@ function renderPositionsPage() {
         ${fig(`Theta/天 ${_qBtn('theta_day', 'short')}`, sgn(cT.th), '', _thCls(cT.th))}
       </div>
       <div class="rk-table-wrap"><table class="rk-table">
-        <thead><tr><th>合约</th><th>距行权价</th><th>状态</th><th>浮盈</th><th>名义</th><th>% NAV</th><th>开仓权利金</th><th>当前价值</th><th>DTE</th><th>持有</th><th>盈亏平衡</th><th>开仓年化</th><th>Theta/天</th><th>止盈进度 (赚 ${SHORT_TP}%)</th><th>剩余时间价值</th></tr></thead>
-        <tbody>${cspRows.map(r => row(r.x, `<td><b>${esc(_posLabel(r.x))}</b>${r.x.strategy ? ` <span class="rk-quiet">${esc(r.x.strategy)}</span>` : ''}</td><td class="${r.dist != null && r.dist < 3 ? 'rk-t-danger' : r.dist != null && r.dist < 8 ? 'rk-t-alert' : ''}">${_pct(r.dist)}</td><td>${tag(r.x)}</td><td class="${_thCls(r.pnl)}">${sgn(r.pnl)}</td><td>${money(r.x.exposure)}</td><td>${_pct(pn(r.x.exposure))}</td><td>${money(r.credit)}</td><td>${money(r.val)}</td><td>${_days(r.dte)}</td><td>${r.held ? r.held.days + ' 天' : '—'}</td><td>${r.be.toFixed(2)}</td><td>${r.ann != null ? r.ann.toFixed(0) + '%' : '—'}</td><td class="${_thCls(r.th)}">${sgn(r.th)}</td><td class="pc-cell">${r.cap != null ? _progBarHTML(r.cap / SHORT_TP * 100, r.timePct, `已赚 ${r.cap.toFixed(0)}%`) : '—'}</td><td>${money(r.ext)}</td>`)).join('')}
-          <tr class="rk-total"><td>合计</td><td></td><td></td><td class="${_thCls(cT.pnl)}">${sgn(cT.pnl)}</td><td>${money(cspN)}</td><td>${_pct(pn(cspN))}</td><td>${money(cT.credit)}</td><td>${money(cT.val)}</td><td></td><td></td><td></td><td></td><td class="${_thCls(cT.th)}">${sgn(cT.th)}</td><td></td><td>${money(cT.ext)}</td></tr></tbody>
+        <thead><tr><th>合约</th><th>距行权价</th><th>状态</th><th>浮盈</th><th>名义</th><th>% NAV</th><th>开仓权利金</th><th>当前价值</th><th>DTE</th><th>持有</th><th>开仓年化</th><th>Theta/天</th><th>止盈进度 (赚 ${SHORT_TP}%)</th><th>剩余时间价值</th></tr></thead>
+        <tbody>${cspRows.map(r => row(r.x, `<td><b>${esc(_posLabel(r.x))}</b>${r.x.strategy ? ` <span class="rk-quiet">${esc(r.x.strategy)}</span>` : ''}</td><td class="${r.dist != null && r.dist < 3 ? 'rk-t-danger' : r.dist != null && r.dist < 8 ? 'rk-t-alert' : ''}">${_pct(r.dist)}</td><td>${tag(r.x)}</td><td class="${_thCls(r.pnl)}">${sgn(r.pnl)}</td><td>${money(r.x.exposure)}</td><td>${_pct(pn(r.x.exposure))}</td><td>${money(r.credit)}</td><td>${money(r.val)}</td><td>${_days(r.dte)}</td><td>${r.held ? r.held.days + ' 天' : '—'}</td><td>${r.ann != null ? r.ann.toFixed(0) + '%' : '—'}</td><td class="${_thCls(r.th)}">${sgn(r.th)}</td><td class="pc-cell">${r.cap != null ? _progBarHTML(r.cap / SHORT_TP * 100, r.timePct, `已赚 ${r.cap.toFixed(0)}%`) : '—'}</td><td>${money(r.ext)}</td>`)).join('')}
+          <tr class="rk-total"><td>合计</td><td></td><td></td><td class="${_thCls(cT.pnl)}">${sgn(cT.pnl)}</td><td>${money(cspN)}</td><td>${_pct(pn(cspN))}</td><td>${money(cT.credit)}</td><td>${money(cT.val)}</td><td></td><td></td><td></td><td class="${_thCls(cT.th)}">${sgn(cT.th)}</td><td></td><td>${money(cT.ext)}</td></tr></tbody>
       </table></div>
       <div class="rk-note">名义 = 行权价 × 100 × 张数. 开仓年化按开仓到到期的天数折算. 点一行打开合约面板.</div>
     </section>` : '';
