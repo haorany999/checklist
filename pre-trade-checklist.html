@@ -5535,7 +5535,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.17-v72';
+const APP_BUILD = '2026.10.17-v73';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
@@ -11430,6 +11430,42 @@ async function refreshSchwab(opt = {}) {
   })();
   return __schwabInflight;
 }
+const _uiWait = async (busy, ms = 20000) => { const t0 = Date.now(); while (busy() && Date.now() - t0 < ms) await new Promise(r => setTimeout(r, 150)); };   // an automatic read already running: let it finish first
+const _hm = () => { const t = new Date(); return `${String(t.getHours()).padStart(2, '0')}:${String(t.getMinutes()).padStart(2, '0')}`; };
+const UI_REFRESH = {
+  stock: t => ({ label: `正在读取 ${t} 的日线、报价和期权链…`, run: async () => { __stockTerm[t] = null; __gex[t] = null;
+      await Promise.all([fetchPrices([t, 'SPY', 'QQQ'], { maxAge: 0, fresh: true }), fetchGex(t, { maxAge: 0 }), fetchFund([t]).catch(() => null)]);
+      const p = __px[t]; if (!p || p.err || !p.bars || !p.bars.length) throw new Error(`没有读到 ${t} 的日线`);
+      const tt = techOf(p.bars, p.live); return `${t} 已更新 · 现价 ${p.bars[p.bars.length - 1].c.toFixed(2)}${tt ? ` · J ${tt.J.toFixed(0)}` : ''} · ${_hm()}`; },
+    after: () => { if (state._view === 'stock') { const y = window.scrollY; render(); window.scrollTo(0, y); } } }),
+  perf: () => ({ label: '正在从 Schwab 读取交易记录…', run: async () => { await _uiWait(() => __perfBusy); await fetchPerf(true, true); const h = loadHist();
+      if (!h || Date.now() - h.at > 90000) throw new Error('交易记录没有更新, 请稍后再试'); return `交易记录已更新 · ${(h.data || []).length} 笔 · ${_hm()}`; } }),
+  snaps: () => ({ label: '正在读取每日快照…', run: async () => { await _uiWait(() => __snapBusy); await fetchSnaps(true); if (__snapErr) throw new Error(__snapErr); const c = loadSnaps();
+      return `快照已更新 · ${c ? c.data.length : 0} 个交易日 · ${_hm()}`; } }),
+  vol: () => ({ label: '正在读取 VIX 和期限结构…', run: async () => { await fetchPrices(VOL_SYMS, { maxAge: 0, fresh: true }); await fetchVol(false);
+      const v = __px['$VIX']; if (!v || !v.bars || !v.bars.length) throw new Error('没有读到 VIX'); return `波动率已更新 · VIX ${v.bars[v.bars.length - 1].c.toFixed(2)} · ${_hm()}`; } }),
+  crisis: () => ({ label: '正在读取历史危机数据…', run: async () => { await _uiWait(() => __crisisBusy); const a0 = (loadCrisis() || {}).at || 0; await fetchCrisis(true); const c = loadCrisis();
+      if (!c || c.at === a0) throw new Error('危机数据没有更新'); return `历史危机数据已更新 · ${_hm()}`; } })
+};
+let __uiBusy = {};
+window.uiRefresh = async (btn, kind, arg) => {
+  const job = UI_REFRESH[kind] && UI_REFRESH[kind](arg); if (!job || __uiBusy[kind]) return;
+  __uiBusy[kind] = true;
+  const lab = btn ? btn.textContent : ''; if (btn) { btn.dataset.label = lab; btn.textContent = '刷新中…'; btn.disabled = true; }
+  let bar = document.getElementById('rf-bar'); if (!bar) { bar = document.createElement('div'); bar.id = 'rf-bar'; document.body.appendChild(bar); }
+  bar.innerHTML = `<i></i><span>${esc(job.label)}</span>`; bar.className = 'on';
+  try {
+    const msg = await Promise.race([job.run(), new Promise((_, rej) => setTimeout(() => rej(new Error('超过 25 秒没有回应')), 25000))]);
+    showToast(msg, 'success');
+  } catch (e) {
+    const s = __schwabStatus || {}; showToast('刷新失败', 'error', s.state === 'reauth' ? 'Schwab 授权已过期, 请在设置里重新连接' : s.state === 'unauthorized' ? 'Worker 口令不对, 请检查设置' : (e && e.message) || '网络错误');
+  } finally {
+    __uiBusy[kind] = false;
+    if (btn && btn.isConnected) { btn.textContent = btn.dataset.label || lab; btn.disabled = false; }
+    const b2 = document.getElementById('rf-bar'); if (b2) { b2.className = 'done'; setTimeout(() => b2 && b2.remove(), 600); }
+    if (job.after) job.after();
+  }
+};
 function _refreshUI(stage) {
   let bar = document.getElementById('rf-bar');
   const btns = Array.from(document.querySelectorAll('button')).filter(b => /refreshSchwab\(/.test(b.getAttribute('onclick') || ''));
@@ -11504,7 +11540,7 @@ function _schwabStatusInnerHTML() {
   }
   return `<div class="pr-schwab-line ${cls}"><span class="pr-schwab-msg">${msg}</span>
     <span class="pr-schwab-actions">
-      <button class="pr-mini-btn" onclick="refreshSchwab({ force: true })" ${s === 'loading' ? 'disabled' : ''} title="立即刷新">⟳</button>
+      <button class="pr-mini-btn" onclick="refreshSchwab(true)" ${s === 'loading' ? 'disabled' : ''} title="立即刷新">⟳</button>
       <button class="pr-mini-btn" onclick="openSchwabSetup()">设置</button>
     </span></div>`;
 }
@@ -12376,7 +12412,7 @@ function _riskSourceNotice(R) {
   if (R.c.isSchwab) return '';
   const cfg = loadSchwabCfg(), cache = loadSchwabCache(), st = __schwabStatus.state;
   const goSetup = `<button class="btn small" onclick="hideRiskDashboard(); setTimeout(() => { openSchwabSetup(); const el = document.getElementById('pr-schwab'); if (el) el.scrollIntoView({ block: 'center' }); }, 80)">连接 Schwab</button>`;
-  const refresh = `<button class="btn small" onclick="refreshSchwab({ force: true })">刷新</button>`;
+  const refresh = `<button class="btn small" onclick="refreshSchwab(true)">刷新</button>`;
   let why, action;
   if (!cfg) { why = '本设备未连接 Schwab (每台设备单独连接).'; action = goSetup; }
   else if (st === 'loading') { why = '读取中.'; action = ''; }
@@ -14268,7 +14304,7 @@ function renderGreeksPage() {
       <div class="brand">Pre-Trade Checklist</div>
       <div class="header-actions">
         <button class="btn ghost" onclick="state._view = null; render(); window.scrollTo(0, 0)">← 返回</button>
-        ${loadSchwabCfg() ? `<button class="btn ghost" onclick="refreshSchwab({ force: true })">刷新 Schwab</button>` : ''}
+        ${loadSchwabCfg() ? `<button class="btn ghost" onclick="refreshSchwab(true)">刷新 Schwab</button>` : ''}
       </div>
     </div>
     <div class="rk-page gk-page">
@@ -14711,12 +14747,12 @@ function _mergeLive(rows, live) {
   if (bars.length && bars[bars.length - 1].d === live.day) bars[bars.length - 1] = bar; else if (!bars.length || bars[bars.length - 1].d < live.day) bars.push(bar);
   return { bars, live: true };
 }
-async function fetchPrices(tickers, { maxAge = 60000 } = {}) {
+async function fetchPrices(tickers, { maxAge = 60000, fresh = false } = {}) {
   if (!loadSchwabCfg()) return;
   const need = [...new Set(tickers.filter(t => t && /^\$?[A-Z0-9.]{1,6}$/.test(t)))].filter(t => !__px[t] || __px[t].err || Date.now() - __px[t].at > maxAge);
   if (!need.length) return;
   try {
-    const r = await _wfetch(`/prices?tickers=${encodeURIComponent(need.join(','))}`);
+    const r = await _wfetch(`/prices?tickers=${encodeURIComponent(need.join(','))}${fresh ? '&fresh=1' : ''}`);
     const b = await r.json().catch(() => null);
     if (!r.ok || !b || !b.tickers) { need.forEach(t => { __px[t] = { at: Date.now(), bars: [], err: r.status === 404 ? '需 Worker v7' : (b && b.message) || `HTTP ${r.status}` }; }); return; }
     need.forEach(t => { const x = b.tickers[t]; if (x && x.live && t[0] === '$' && x.live.open == null && x.live.last > 0) x.live.open = x.live.last;
@@ -15152,11 +15188,11 @@ function loadPerfStart() { try { const o = JSON.parse(localStorage.getItem(PERF_
 const _thisYear = () => new Date().getFullYear();
 let __posSig = null;
 function _posSigChanged() { const s = getPortfolio().positions.map(x => `${x.symbol || x.ticker}:${x.qty}`).sort().join(','), ch = __posSig != null && s !== __posSig; __posSig = s; return ch; }
-async function fetchPerf(force) {
+async function fetchPerf(force, manual = false) {
   if (!loadSchwabCfg() || __perfBusy) return;
   const h = loadHist();
   if (!force && h && Date.now() - h.at < 30 * 60000) return;
-  if (force && h && Date.now() - h.at < 2 * 60000) return;
+  if (force && !manual && h && Date.now() - h.at < 2 * 60000) return;
   __perfBusy = true;
   try {
     await _pullWheelCkpt();
@@ -15394,7 +15430,7 @@ function renderPerformancePage() {
     <div class="header header-sticky">
       <div class="brand">Pre-Trade Checklist</div>
       <div class="header-actions"><button class="btn ghost" onclick="state._view = null; render(); window.scrollTo(0, 0)">← 返回</button>
-        <button class="btn ghost" onclick="fetchPerf(true)">刷新</button></div>
+        <button class="btn ghost" onclick="uiRefresh(this, 'perf')">刷新</button></div>
     </div>`;
   if (!loadSchwabCfg()) { $app.innerHTML = head + '<div class="rk-page"><div class="rk-notice">需要连接 Schwab.</div></div>'; return; }
   if (!p) { $app.innerHTML = head + `<div class="rk-page"><div class="rk-quiet" style="padding:24px 0">${__perfErr ? `<span class="rk-t-alert">${esc(__perfErr)}</span>` : '读取交易记录…'}</div></div>`; return; }
@@ -16110,7 +16146,7 @@ function _attribInnerHTML() {
     <div class="rk-note">盈亏 = NAV 变化 − 入金出金. 已持有仓位按前一日收盘的 Greeks × 当天变化拆分; 「今天」用昨天收盘的快照对比你刚刷新的 Schwab 数据.</div>`;
 }
 function _attribHTML() {
-  return `<section class="rk-block"><h3 class="rk-block-title rk-title-row"><span>盈亏归因 ${_qBtn('attrib', 'short')}</span><button class="btn ghost small" onclick="fetchSnaps(true)">刷新</button></h3><div id="attr-slot">${_safe('盈亏归因', _attribInnerHTML)}</div></section>`;
+  return `<section class="rk-block"><h3 class="rk-block-title rk-title-row"><span>盈亏归因 ${_qBtn('attrib', 'short')}</span><button class="btn ghost small" onclick="uiRefresh(this, 'snaps')">刷新</button></h3><div id="attr-slot">${_safe('盈亏归因', _attribInnerHTML)}</div></section>`;
 }
 
 /* ═════════════ v21 · Positions page: sleeves, CSP / short calls / LEAPS / stock ═════════════ */
@@ -16670,16 +16706,19 @@ async function _scanCC(cfg, prog) {
   rows.sort((a, b) => (b.ready - a.ready) || (b.checks.filter(c => c.ok).length - a.checks.filter(c => c.ok).length));
   return { rows };
 }
-window.runScan = async tab => {
+window.runScan = async (tab, manual = !tab) => {          // the 扫描 button passes nothing; background scans name their tab
   const cfg = loadScanCfg(); tab = tab || cfg.tab;
   if (__scanBusy || !loadSchwabCfg()) return;
   __scanBusy = tab; __scanProg2 = '开始…';
-  const prog = m => { __scanProg2 = m; const el = document.getElementById('scan-prog'); if (el) el.textContent = m; };
+  let bar = null; if (manual) { bar = document.getElementById('rf-bar') || document.body.appendChild(Object.assign(document.createElement('div'), { id: 'rf-bar' })); bar.innerHTML = '<i></i><span>开始扫描…</span>'; bar.className = 'on'; }
+  const prog = m => { __scanProg2 = m; const el = document.getElementById('scan-prog'); if (el) el.textContent = m; if (bar) { const s = bar.querySelector('span'); if (s) s.textContent = m; } };
+  const L = { csp: 'CSP', leaps: 'LEAPS', pmcc: 'PMCC', cc: 'CC' }[tab];
   try {
     const fn = { csp: _scanCSP, leaps: _scanLEAPS, pmcc: _scanPMCC, cc: _scanCC }[tab];
-    _saveScan(tab, await fn(cfg, prog));
-  } catch (e) { _saveScan(tab, { err: String(e && e.message || e), rows: [] }); }
-  finally { __scanBusy = false; __scanProg2 = ''; }
+    const res = await fn(cfg, prog); _saveScan(tab, res);
+    if (manual) { const rows = res.rows || [], n = tab === 'pmcc' || tab === 'cc' ? `${rows.filter(x => x.ready).length} 个可以做 · 共 ${rows.length} 个持仓` : `${rows.length} 个机会`; showToast(`扫描完成 · ${L} · ${n} · ${_hm()}`, 'success'); }
+  } catch (e) { _saveScan(tab, { err: String(e && e.message || e), rows: [] }); if (manual) showToast('扫描失败', 'error', String(e && e.message || e)); }
+  finally { __scanBusy = false; __scanProg2 = ''; if (bar) { bar.className = 'done'; setTimeout(() => bar && bar.remove(), 600); } }
   if (state._view === 'scan') { const y = window.scrollY; render(); window.scrollTo(0, y); } else _refreshRiskCard();
 };
 let __holdScanAt = 0;
@@ -16969,7 +17008,7 @@ function _stockOscSVG(t) {
 function renderStockPage() {
   const t = __stockT, recent = _stockRecent();
   const head = `<div class="header header-sticky"><div class="brand">Pre-Trade Checklist</div><div class="header-actions">
-    <button class="btn ghost" onclick="state._view = null; render(); window.scrollTo(0, 0)">← 返回</button>${t ? `<button class="btn ghost" onclick="showBacktest('${esc(t)}')">回测</button><button class="btn ghost" onclick="__stockTerm['${esc(t)}'] = null; __gex['${esc(t)}'] = null; _stockLoad('${esc(t)}')">刷新</button>` : ''}</div></div>`;
+    <button class="btn ghost" onclick="state._view = null; render(); window.scrollTo(0, 0)">← 返回</button>${t ? `<button class="btn ghost" onclick="showBacktest('${esc(t)}')">回测</button><button class="btn ghost" onclick="uiRefresh(this, 'stock', '${esc(t)}')">刷新</button>` : ''}</div></div>`;
   const search = `<div class="stk-search"><input id="stk-in" placeholder="输入代码, 例如 MSFT" value="${esc(t || '')}" autocapitalize="characters" onkeydown="if(event.key==='Enter')showStock(this.value)"><button class="btn primary" onclick="showStock(document.getElementById('stk-in').value)">查看</button>
     <span class="stk-recent">${recent.map(r => `<button class="sc-chip${r === t ? ' ok' : ''}" onclick="showStock('${esc(r)}')">${esc(r)}</button>`).join('')}</span></div>`;
   if (!loadSchwabCfg()) { $app.innerHTML = head + `<div class="rk-page stock-page">${search}<div class="rk-notice">需要连接 Schwab.</div></div>`; return; }
@@ -18434,7 +18473,7 @@ function renderRiskPage() {
       <div class="brand">Pre-Trade Checklist</div>
       <div class="header-actions">
         <button class="btn ghost" onclick="hideRiskDashboard()">← 返回</button>
-        ${loadSchwabCfg() ? `<button class="btn ghost" onclick="refreshSchwab({ force: true })">刷新 Schwab</button>` : ''}
+        ${loadSchwabCfg() ? `<button class="btn ghost" onclick="refreshSchwab(true)">刷新 Schwab</button>` : ''}
       </div>
     </div>
     <div class="rk-page risk-page">
@@ -18454,11 +18493,11 @@ function renderRiskPage() {
       ${R.c.isSchwab ? _safe('纪律分', _disciplineCardHTML, '') : ''}
       ${_safe('构成', () => _riskDecompHTML(R))}
       ${_safe('待处理仓位', () => _mgmtHTML(R))}
-      ${R.c.isSchwab ? `<section class="rk-block"><h3 class="rk-block-title rk-title-row"><span>波动率环境</span><button class="btn ghost small" onclick="fetchVol(true)">刷新</button></h3><div data-vol-slot="full">${_safe('波动率环境', volInnerHTML)}</div></section>` : ''}
+      ${R.c.isSchwab ? `<section class="rk-block"><h3 class="rk-block-title rk-title-row"><span>波动率环境</span><button class="btn ghost small" onclick="uiRefresh(this, 'vol')">刷新</button></h3><div data-vol-slot="full">${_safe('波动率环境', volInnerHTML)}</div></section>` : ''}
       ${_safe('持仓对账', () => _reconHTML())}
       ${_safe('CSP 到期', () => _expiryChartHTML(R))}
       ${_safe('距行权价', () => _moneynessHTML(R))}
-      ${R.c.isSchwab ? `<section class="rk-block"><h3 class="rk-block-title rk-title-row"><span>历史危机 ${_qBtn('crisis', 'short')}</span><button class="btn ghost small" onclick="fetchCrisis(true)">刷新</button></h3><div id="rk-crisis"><div class="rk-quiet">计算中…</div></div></section>
+      ${R.c.isSchwab ? `<section class="rk-block"><h3 class="rk-block-title rk-title-row"><span>历史危机 ${_qBtn('crisis', 'short')}</span><button class="btn ghost small" onclick="uiRefresh(this, 'crisis')">刷新</button></h3><div id="rk-crisis"><div class="rk-quiet">计算中…</div></div></section>
       <section class="rk-block"><h3 class="rk-block-title">VaR ${_qBtn('var', 'short')}</h3><div id="rk-var"><div class="rk-quiet">计算中…</div></div></section>` : ''}
       ${_safe('压力测试', () => _stressHTML(R))}
       <div class="rk-groups">${_safe('风险变量', () => groups)}</div>
