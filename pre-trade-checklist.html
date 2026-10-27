@@ -3502,6 +3502,13 @@
   .room-raw { margin-top: 8px; font-size: 12px; } .room-raw > summary { cursor: pointer; color: var(--text-dim); }
   .qt-fixed { cursor: default; }
   @media (max-width: 760px) { .room-cards { grid-template-columns: 1fr; } .room-big { font-size: 20px; } }
+  /* v75 · Option Buying Power, quieter */
+  .room-meta { display: flex; flex-wrap: wrap; gap: 4px 18px; align-items: center; line-height: 1.8; }
+  .room-meta .room-sim { margin: 0; } .room-meta .room-sim input { width: 100px; }
+  .room-big { font-size: 24px; } .room-after { margin-top: 4px; padding-top: 4px; border-top: 1px dashed var(--border); }
+  .room-raw .fuel { margin: 8px 0; }
+  .room-meta .room-sim { display: inline-flex; flex-direction: row; flex: 0 0 auto; min-width: 0; align-items: center; gap: 6px; white-space: nowrap; } .room-meta .room-sim input { margin: 0; width: 100px; padding: 3px 6px; }
+  .room-why { font-size: 11px; color: var(--alert, #E5793B); margin-top: 2px; }
 </style>
 </head>
 <body class="theme-slate">
@@ -5550,7 +5557,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.17-v74';
+const APP_BUILD = '2026.10.17-v77';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
@@ -13814,10 +13821,10 @@ const GREEK_HELP = {
     long: 'LEAPS 的正股止损位如果离入场价不到 1.5 倍 ATR, 正常的日内波动就可能触发; 拉开止损又意味着单笔亏损更大, 这时应减少张数而不是收紧止损.',
     ex: 'ATR 3.00、现价 150: 正常一天波动约 2%. 止损放在入场价下方 4.5–6 元 (1.5–2 倍 ATR) 比较合理.' },
   room_p: { t: '被行权概率', def: '联动模拟里, 到期时价格低于行权价的比例. 大盘下跌时多个 CSP 会一起价内, 所以模拟按到期日顺序、各标的一起动.', short: '用当前 IV 和 β 估计, 不是保证; 大约相当于 |Δ|, 但考虑了联动.' },
-  leaps_room: { t: 'Option Buying Power', def: '现在还能花多少钱买期权, 而且最终不需要借钱. CSP 被行权时要掏现金接股票, 现金不够就开始借 margin; 所以「还能花」= 现金 + SWVXX − 安全垫 − 这种情况下 CSP 需要的现金, 再和 Schwab 的 Option Buying Power 取较小值.',
-    read: '三种情况: 最坏 = 全部 CSP 被行权; 概率 = 联动模拟里 95% 的情况 (20 次里大约只有 1 次需要更多现金); 自定义 = 按你逐个选择的平仓 / 持有到期 / 被行权. 有没有在借钱看最上面一行: Margin Balance 为负、或 Equity % 低于 100%, 就是在借.',
-    long: '仓位油量条: 满油箱 = NAV (全部是现金时的购买力), 已用 = NAV − 期权购买力 (正股、CSP 保证金、LEAPS 占掉的部分). 绿 ≤ 60% 充足 · 黄 60–75% 可以加但要挑 · 橙 75–90% 接近满仓 · 红 > 90% 基本满了. SWVXX 需要先卖出才是现金; 购买力随股价和保证金要求变化, 以刷新后的数字为准.',
-    ex: 'WDC 350P 已经盈利、距行权价 9%: 在自定义里选「平仓」, 花 $900 买回, 就不再需要为它准备 $35,000; 「自定义」那张卡片立刻多出约 $34,100.' },
+  leaps_room: { t: 'Option Buying Power', def: '还能花多少钱买期权, 而且最终不用借钱. CSP 被行权时要用现金接股票, 现金不够就开始借 margin. 所以: 不借钱还能花 = 现金 + SWVXX − 安全垫 − 要留着接股票的钱, 再和 Schwab 的 Option Buying Power 取较小值.',
+    read: '三张卡片: 最坏情况 = 全部 CSP 被行权; 大概率 = 95% 的情况 (20 次里大约只有 1 次要留更多); 我的计划 = 按下表你选的「买回 / 放到期 / 接股」. 「缺 $X」= 这种情况下现金不够, 会借这么多. 最上面一行看有没有在借钱: Margin Balance 为负或 Equity % 低于 100% 就是在借.',
+    long: '大概率怎么算: 用每个标的现在的 IV 和它跟大盘的联动 (β, 大盘波动取当前 VIX), 按到期日顺序模拟 4,000 次未来走势, 大盘冲击用厚尾分布 (比正态更容易出现大跌); 取 95% 的情况下要接股票的钱. 大盘一跌几个 CSP 往往一起价内, 所以它比把每个的概率加起来更保守. 没算: 以后新卖的 CSP、Short call 被行权卖出正股收回的钱. 模型基于当前 IV, 市场突变时会低估, 所以留安全垫.',
+    ex: 'WDC 350P 已经盈利、距行权价 9%: 在「我打算」里选「买回」, 现在花 $900 买回, 就不用再为它留 $35,000; 「我的计划」那张卡片立刻多出约 $34,100.' },
   expect: { t: '期望值', def: '这个策略平均每做一笔赚 (或亏) 多少钱 = 胜率 × 平均盈利 − 败率 × 平均亏损.',
     read: '它回答"按我现在的做法, 长期做下去是赚还是亏". 为正: 有优势; 为负: 做得越多亏得越多. 卖方策略常见"胜率高、期望值却为负", 只看胜率会被误导. 笔数少时 (< 20) 波动很大, 只作参考.',
     short: '提高期望值的两个方向: 减少大亏 (止损 / roll 规则) 或提高平均盈利 (选更好的权利金). 胜率本身不重要.',
@@ -16314,32 +16321,38 @@ window.roomSim = v => { __roomSpend = Math.max(0, parseFloat(String(v).replace(/
   const fu = document.getElementById('fuel'); if (r && fu) fu.outerHTML = _fuelHTML(r); };
 let __roomRT = null;
 function _roomRedraw() { clearTimeout(__roomRT); __roomRT = setTimeout(() => { const el = document.getElementById('room-block'); if (el && el.isConnected) { el.outerHTML = _safe('Option Buying Power', _roomBlockHTML, ''); _fitChartText && _fitChartText(); } }, 0); }   // change fires on edit and again on blur
-const ROOM_SC = [['worst', '最坏', '全部 CSP 被行权'], ['prob', '概率', '95% 的情况'], ['custom', '自定义', '按下表你的选择']];
+const ROOM_SC = [['worst', '最坏情况', '全部被行权'], ['prob', '大概率', '95% 的情况'], ['custom', '我的计划', '按下表']];
+const _usd0 = v => _fmtUsd(Math.abs(v));
+// which contracts the money is for, so a number never stands alone
+function _roomWhy(r, k) {
+  const nm = w => `${w.x.ticker} ${w.x.strike}P`, list = a => a.length > 3 ? a.slice(0, 3).join('、') + ` 等 ${a.length} 个` : a.join('、');
+  if (k === 'worst') return r.rows.length ? `留 ${_fmtUsd(r.sc.worst)} 接股票 · ${list(r.rows.map(nm))}` : '没有 CSP';
+  if (k === 'prob') { if (!r.sim || !r.rows.length) return '没有 CSP'; const hot = r.rows.filter(w => w.p != null && w.p >= 0.2).sort((a, b) => b.p - a.p);
+    return r.sc.prob > 0 ? `留 ${_fmtUsd(r.sc.prob)} 接股票${hot.length ? ` · 主要是 ${list(hot.map(nm))}` : ''}` : '大概率都不会被行权'; }
+  const as = r.rows.filter(w => w.ch === 'assign'), cl = r.rows.filter(w => w.ch === 'close');
+  const parts = []; if (as.length) parts.push(`留 ${_fmtUsd(as.reduce((s, w) => s + w.notional, 0))} 接股票 · ${list(as.map(nm))}`);
+  if (cl.length) parts.push(`买回 ${list(cl.map(w => w.x.ticker))} 花 ${_fmtUsd(cl.reduce((s, w) => s + w.close, 0))}`);
+  return parts.length ? parts.join('<br>') : '全部放到期, 不用留钱接股票';
+}
 function _roomCardsHTML(r) {
-  return ROOM_SC.map(([k, l, s]) => { const can = r.can(k), left = can - r.spend;
+  return ROOM_SC.map(([k, l, s]) => { const can = r.can(k), left = can - r.spend, short = can < 0;
     return `<div class="room-card room-${k}"><div class="room-l">${l} <span>${s}</span></div>
-      <div class="room-big ${can <= 0 ? 'rk-t-danger' : left < 0 ? 'rk-t-alert' : ''}">${can >= 0 ? _fmtUsd(can) : `差 ${_fmtUsd(-can)}`}</div>
-      <div class="room-s">${can >= 0 ? '不借钱还能花' : '这种情况下现金已经不够'} · 需要现金 ${_fmtUsd(r.sc[k])}${k === 'prob' && r.sim ? ` · 50% 的情况 ${_fmtUsd(r.sim.p50)}` : ''}${r.byBp(k) ? ' · 受 Schwab Option Buying Power 限制' : ''}</div>
-      ${r.spend > 0 ? `<div class="room-s">花 ${_fmtUsd(r.spend)} 后 <b class="${left < 0 ? 'rk-t-danger' : 'rk-t-safe'}">${left >= 0 ? `还剩 ${_fmtUsd(left)}` : `会借 ${_fmtUsd(-left)}`}</b></div>` : ''}</div>`; }).join('');
+      <div class="room-big ${short ? 'rk-t-danger' : ''}">${short ? `缺 ${_usd0(can)}` : _fmtUsd(can)}</div>
+      <div class="room-s">${short ? '现金不够接股票, 会借钱' : '不借钱还能花'}${r.byBp(k) ? ' · 受 Schwab 限制' : ''}</div>
+      <div class="room-s">${_roomWhy(r, k)}</div>
+      ${r.spend > 0 ? `<div class="room-s room-after">花 ${_fmtUsd(r.spend)} 后 <b class="${left < 0 ? 'rk-t-danger' : 'rk-t-safe'}">${left >= 0 ? `还剩 ${_fmtUsd(left)}` : `会借 ${_usd0(left)}`}</b></div>` : ''}</div>`; }).join('');
 }
 function _roomBlockHTML() {
   const r = _roomCalc(); if (!r) return '';
   const B = _borrowState(r.c), pc = v => v == null ? '—' : (v * 100).toFixed(0) + '%';
   const status = B.borrowing == null ? '' : `<div class="room-borrow ${B.borrowing || B.inCall ? 'bad' : 'ok'}">${B.inCall ? `<b>⚠ 追保中${B.call > 0 ? ` ${_fmtUsd(B.call)}` : ''}</b> · ` : ''}${B.borrowing ? `正在借 <b>${_fmtUsd(B.loan)}</b>` : '没有借钱'}${B.eqp != null ? ` · Equity ${B.eqp.toFixed(1)}%` : ''}${B.borrowing && B.interest ? ` · 已累计利息 ${_fmtUsd(B.interest)}` : ''}</div>`;
-  const distCls = v => v == null ? '' : v < 3 ? 'rk-t-danger' : v < 8 ? 'rk-t-alert' : 'rk-t-safe', dCls = _cspDeltaCls;
+  const distCls = v => v == null ? '' : v < 3 ? 'rk-t-danger' : v < 8 ? 'rk-t-alert' : 'rk-t-safe';
   const opt = (row, k, l) => `<button class="rk-preset${row.ch === k ? ' active' : ''}${row.def === k ? ' room-def' : ''}" onclick="roomSet('${esc(_cspKey(row.x))}', '${k}')">${l}</button>`;
-  const table = r.rows.length ? `<div class="rk-table-wrap"><table class="rk-table room-t"><thead><tr><th>合约</th><th>名义</th><th>距行权价</th><th>Δ</th><th>到期</th><th>被行权概率 ${_qBtn('room_p', 'short')}</th><th>现在平仓要花</th><th>假设</th></tr></thead><tbody>
-      ${r.rows.map(w => `<tr><td><b>${esc(_posLabel(w.x))}</b></td><td>${_fmtUsd(w.notional)}</td><td class="${distCls(w.dist)}">${w.dist == null ? '—' : (w.dist < 0 ? '价内 ' : '') + Math.abs(w.dist).toFixed(1) + '%'}</td><td class="${dCls(w.d)}">${w.d == null ? '—' : w.d.toFixed(2)}</td>
-        <td>${esc(w.x.expiry.slice(5).replace('-', '/'))} <span class="rk-quiet">${_dteOf(w.x) ?? ''} 天</span></td><td>${pc(w.p)}</td><td>${_fmtUsd(w.close)}</td>
-        <td><span class="rk-presets room-ch">${opt(w, 'close', '平仓')}${opt(w, 'hold', '持有到期')}${opt(w, 'assign', '被行权')}</span></td></tr>`).join('')}</tbody></table></div>
-    <div class="rk-quiet room-hint">虚线框 = 默认 (价内或 |Δ| > 0.55 视为被行权, 其余到期作废) · <button class="app-link" onclick="roomReset()">恢复默认</button></div>` : '<div class="rk-quiet">现在没有 CSP, 三种情况相同.</div>';
-  // when the cash is needed: cumulative by expiry date
-  let cw = 0, cc = 0; const tl = r.sim ? r.sim.dates.map((d, i) => { const rs = r.rows.filter(w => w.x.expiry === d); cw += rs.reduce((s, w) => s + w.notional, 0); cc += rs.reduce((s, w) => s + (w.ch === 'assign' ? w.notional : 0), 0);
-    return { d, rs, cw, c95: r.sim.byDate95[i], cc }; }) : [];
-  const closeNow = r.rows.reduce((s, w) => s + (w.ch === 'close' ? w.close : 0), 0), base = r.cash - r.cushion - closeNow;
-  const timeline = tl.length ? `<div class="rk-sub-title">按到期日 · 累计需要的现金 <span class="rk-quiet">· 剩余 = 现金 + SWVXX − 安全垫${closeNow ? ' − 现在平仓的花费' : ''} − 累计</span></div>
-    <div class="rk-table-wrap"><table class="rk-table"><thead><tr><th>到期日</th><th>到期的 CSP</th><th>最坏</th><th>95% 的情况</th><th>自定义</th><th>自定义下剩余现金</th></tr></thead><tbody>
-      ${tl.map(z => { const left = base - z.cc; return `<tr><td>${z.d.slice(5).replace('-', '/')}</td><td>${z.rs.map(w => esc(w.x.ticker + ' ' + w.x.strike + 'P')).join(', ')}</td><td>${_fmtUsd(z.cw)}</td><td>${_fmtUsd(z.c95)}</td><td>${_fmtUsd(z.cc)}</td><td class="${left < 0 ? 'rk-t-danger' : ''}">${left < 0 ? `差 ${_fmtUsd(-left)} · 从这天开始借钱` : _fmtUsd(left)}</td></tr>`; }).join('')}</tbody></table></div>` : '';
+  const table = r.rows.length ? `<div class="rk-table-wrap"><table class="rk-table room-t"><thead><tr><th>合约</th><th>被行权要付</th><th>距行权价</th><th>Δ</th><th>到期</th><th>被行权概率 ${_qBtn('room_p', 'short')}</th><th>现在买回</th><th>我打算</th></tr></thead><tbody>
+      ${r.rows.map(w => `<tr><td><b>${esc(_posLabel(w.x))}</b>${w.def === 'assign' ? `<div class="room-why">${w.dist != null && w.dist < 0 ? '已价内' : `Δ ${w.d.toFixed(2)} > 0.55`}, 默认接股</div>` : ''}</td><td>${_fmtUsd(w.notional)}</td><td class="${distCls(w.dist)}">${w.dist == null ? '—' : (w.dist < 0 ? '价内 ' : '') + Math.abs(w.dist).toFixed(1) + '%'}</td><td class="${_cspDeltaCls(w.d)}">${w.d == null ? '—' : w.d.toFixed(2)}</td>
+        <td>${esc(w.x.expiry.slice(5).replace('-', '/'))}</td><td>${pc(w.p)}</td><td>${_fmtUsd(w.close)}</td>
+        <td><span class="rk-presets room-ch">${opt(w, 'close', '买回')}${opt(w, 'hold', '放到期')}${opt(w, 'assign', '接股')}</span></td></tr>`).join('')}</tbody></table></div>
+    <div class="rk-quiet room-hint">虚线框 = 默认 · <button class="app-link" onclick="roomReset()">恢复默认</button></div>` : '<div class="rk-quiet">现在没有 CSP.</div>';
   const raw = [['marginBalance', 'Margin Balance (负数 = 借款)'], ['equityPercentage', 'Equity %'], ['accruedInterest', 'Accrued Interest'], ['maintenanceRequirement', 'Maintenance Requirement'], ['maintenanceCall', 'Maintenance Call'], ['regTCall', 'Reg T Call'],
     ['buyingPowerNonMarginableTrade', 'Option Buying Power'], ['availableFunds', 'Available Funds'], ['cashBalance', 'Cash Balance'], ['moneyMarketFund', 'Money Market (SWVXX)'], ['sma', 'SMA']].map(([k, l]) => [l, _balPick(r.c.bal, [k])]).filter(([, v]) => v != null);
   return `
@@ -16347,14 +16360,12 @@ function _roomBlockHTML() {
       <h3 class="rk-block-title">Option Buying Power ${_qBtn('leaps_room', 'long')}</h3>
       ${status}
       <div class="room-cards" id="room-cards">${_roomCardsHTML(r)}</div>
-      <div class="room-meta">Schwab Option Buying Power <b>${r.bp != null ? _fmtUsd(r.bp) : '—'}</b> · 现金 + SWVXX <b>${_fmtUsd(r.cash)}</b> · CSP 名义 <b>${_fmtUsd(r.cspN)}</b>
-        · 安全垫 <input class="gl-num room-cu" type="number" min="0" max="50" step="1" value="${r.cfg.cushion}" onchange="roomCushion(this.value)">% NAV = ${_fmtUsd(r.cushion)}</div>
-      <div class="room-sim"><label>模拟花费 $ <input inputmode="decimal" placeholder="例如 10000" value="${__roomSpend || ''}" oninput="roomSim(this.value)"></label></div>
+      <div class="room-meta"><span>现金 + SWVXX <b>${_fmtUsd(r.cash)}</b></span><span>Schwab Option Buying Power <b>${r.bp != null ? _fmtUsd(r.bp) : '—'}</b></span>
+        <span>安全垫 <input class="gl-num room-cu" type="number" min="0" max="50" step="1" value="${r.cfg.cushion}" onchange="roomCushion(this.value)">% NAV</span>
+        <span class="room-sim">如果花 $ <input inputmode="decimal" placeholder="金额" value="${__roomSpend || ''}" oninput="roomSim(this.value)"></span></div>
       ${table}
-      ${timeline}
       ${_fuelHTML(r)}
-      ${raw.length ? `<details class="room-raw"><summary>Schwab 账户原始数字</summary><div class="rk-table-wrap"><table class="rk-table">${raw.map(([l, v]) => `<tr><td>${l}</td><td>${typeof v === 'number' ? v.toLocaleString('en-US', { maximumFractionDigits: 2 }) : esc(String(v))}</td></tr>`).join('')}</table></div></details>` : ''}
-      <div class="rk-note">概率: 用每个标的现在的 IV、它和大盘的联动 (β, 大盘波动取当前 VIX ${r.sim ? (r.sim.sigM * 100).toFixed(0) : '—'}), 按到期日顺序模拟 ${r.sim ? r.sim.N.toLocaleString() : '4,000'} 次, 大盘冲击用厚尾分布. 取 95% 的情况下需要的现金, 也就是 20 次里大约只有 1 次会更多. 没有算新卖的 CSP、Short call 被行权卖出正股带来的现金. 模型基于当前 IV, 市场突变时会低估, 所以留安全垫.</div>
+      ${raw.length ? `<details class="room-raw"><summary>Schwab 原始数字</summary><div class="rk-table-wrap"><table class="rk-table">${raw.map(([l, v]) => `<tr><td>${l}</td><td>${typeof v === 'number' ? v.toLocaleString('en-US', { maximumFractionDigits: 2 }) : esc(String(v))}</td></tr>`).join('')}</table></div></details>` : ''}
     </section>`;
 }
 // LEAPS checklist: one line under the quote
@@ -16362,8 +16373,8 @@ function _leapsRoomLineHTML() {
   if (state.strategy !== 'leaps' || !loadSchwabCfg()) return '';
   const q = _cspQuoteFresh(), mark = q && q.option ? q.option.mark : null, n = parseInt(state.leapsContracts, 10) || 1;
   const spend = mark > 0 ? mark * 100 * n : 0, r = _roomCalc(spend); if (!r) return '';
-  const can = r.can('prob'), left = can - spend, fz = r.usedAfter != null ? _fuelZone(r.usedAfter) : null;
-  return `<div class="room-line">Option Buying Power · 95% 的情况下不借钱还能花 <b class="${can <= 0 ? 'rk-t-danger' : 'rk-t-acc'}">${can >= 0 ? _fmtUsd(can) : `差 ${_fmtUsd(-can)}`}</b>${spend ? ` · 这笔 ${n} 张约 ${_fmtUsd(spend)} · 之后 <b class="${left < 0 ? 'rk-t-danger' : 'rk-t-safe'}">${left >= 0 ? `还剩 ${_fmtUsd(left)}` : `会借 ${_fmtUsd(-left)}`}</b>` : ''}${fz ? ` · 仓位${spend ? '将' : ''}用到 <b class="rk-t-${fz[1]}">${r.usedAfter.toFixed(0)}%</b>` : ''} · 最坏 ${r.can('worst') >= 0 ? _fmtUsd(r.can('worst')) : `差 ${_fmtUsd(-r.can('worst'))}`}</div>`;
+  const can = r.can('prob'), left = can - spend;
+  return `<div class="room-line">不借钱还能花 (大概率) <b class="${can <= 0 ? 'rk-t-danger' : 'rk-t-acc'}">${can >= 0 ? _fmtUsd(can) : `缺 ${_usd0(can)}`}</b>${spend ? ` · 这笔 ${n} 张约 ${_fmtUsd(spend)} · 之后 <b class="${left < 0 ? 'rk-t-danger' : 'rk-t-safe'}">${left >= 0 ? `还剩 ${_fmtUsd(left)}` : `会借 ${_usd0(left)}`}</b>` : ''}</div>`;
 }
 /* ---------- per-ticker exposure: committed (cost + CSP notional) and market value ---------- */
 function _tickerBlocksHTML(c) {
