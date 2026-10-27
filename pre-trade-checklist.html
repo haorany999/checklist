@@ -3446,6 +3446,37 @@
   .lt-cell { white-space: nowrap; } .lt-in { width: 84px; font: 13px var(--mono); padding: 3px 6px; }
   .lt-in.lt-miss { border-color: #E5793B; background: color-mix(in srgb, #E5793B 10%, transparent); } .lt-src { display: block; font-size: 10.5px; margin-top: 2px; }
   .lt-warn { font: 600 11px var(--sans); color: #E5793B; text-transform: none; letter-spacing: 0; margin-left: 8px; }
+  /* v68 · MJ2 arrows */
+  .stk-svg .mj-b0, .mj-dot.mj-b0 { fill: #E5C100; background: #E5C100; } .stk-svg .mj-b1, .mj-dot.mj-b1 { fill: #26A69A; background: #26A69A; }
+  .stk-svg .mj-both, .mj-dot.mj-both { fill: var(--text); background: var(--text); } .stk-svg .mj-s0, .mj-dot.mj-s0 { fill: #E5C100; background: #E5C100; } .stk-svg .mj-s1, .mj-dot.mj-s1 { fill: #EF5350; background: #EF5350; }
+  .stk-svg polygon[class^="mj-"] { stroke: var(--panel); stroke-width: 0.6; }
+  .mj-list { margin-top: 6px; font-size: 12.5px; } .mj-list > summary { cursor: pointer; color: var(--text-dim); }
+  .mj-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: 1px; }
+  /* v69 · backtest */
+  .bt-page { max-width: 1200px; margin: 0 auto; }
+  .bt-h { font: 700 18px var(--sans); margin: 4px 0 10px; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; } .bt-h .rk-quiet { font: 400 12.5px var(--sans); }
+  .bt-strat, .bt-modes { flex-wrap: wrap; margin-bottom: 8px; } .bt-modes .rk-preset { font-size: 11.5px; }
+  .bt-search { margin: 6px 0 10px; } .bt-empty { padding: 18px 0; } .bt-meta { font-size: 12px; margin: 4px 0 10px; }
+  .bt-cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 10px; }
+  .bt-card { border: 1px solid var(--border); border-radius: 4px; padding: 10px 12px; background: var(--panel-2); }
+  .bt-big { font: 700 22px var(--mono); line-height: 1.2; } .bt-lab { font-size: 12.5px; color: var(--text); margin-top: 2px; } .bt-sub { font-size: 11.5px; color: var(--text-faint); margin-top: 3px; line-height: 1.45; }
+  .bt-funnel { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; font-size: 12.5px; padding: 8px 12px; background: var(--panel-2); border-radius: 3px; margin-bottom: 12px; }
+  .bt-funnel b { font-family: var(--mono); } .bt-arrow { color: var(--text-faint); }
+  .bt-chart-h { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 6px; } .bt-toggle { margin-left: auto; }
+  .bt-chart .bt-grid { stroke: var(--border); opacity: .6; } .bt-chart .bt-line { fill: none; stroke: var(--text-dim); stroke-width: 1.3; }
+  .bt-chart .bt-selline { stroke: var(--accent); stroke-dasharray: 3 3; }
+  .bt-chart .bt-mk { cursor: pointer; } .bt-chart .bt-mk polygon { fill: var(--pass); stroke: var(--panel); stroke-width: .8; } .bt-chart .bt-mk.cont polygon { fill: none; stroke: var(--pass); stroke-width: 1.2; }
+  .bt-chart .bt-mk.sel polygon { fill: var(--accent); stroke: var(--accent); } .bt-chart .bt-hit { fill: transparent; }
+  .bt-hint { font-size: 11.5px; margin: 2px 0 8px; }
+  .bt-tw { max-height: 60vh; overflow: auto; } .bt-table th { position: sticky; top: 0; background: var(--panel); z-index: 2; }
+  .bt-table td:first-child, .bt-table th:first-child { position: sticky; left: 0; background: var(--panel); z-index: 1; } .bt-table th:first-child { z-index: 3; }
+  .bt-table tbody tr { cursor: pointer; } .bt-table tr.bt-cont td { color: var(--text-dim); } .bt-table tr.bt-sel td { background: color-mix(in srgb, var(--accent) 16%, var(--panel)); }
+  .bt-tag { font-size: 10.5px; color: var(--text-faint); border: 1px solid var(--border); border-radius: 8px; padding: 0 5px; margin-left: 4px; }
+  .bt-none { padding: 14px 0; }
+  .bt-rules { margin: 12px 0; font-size: 12px; display: flex; flex-direction: column; gap: 6px; } .bt-rules b { margin-right: 8px; font-size: 12px; }
+  .bt-rule { display: inline-block; margin: 2px 6px 2px 0; padding: 2px 8px; border-radius: 10px; border: 1px solid var(--border); }
+  .bt-rule.ok { border-color: color-mix(in srgb, var(--pass) 50%, var(--border)); color: var(--text); } .bt-rule.skip { color: var(--text-faint); border-style: dashed; }
+  @media (max-width: 760px) { .bt-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } .bt-big { font-size: 19px; } .bt-toggle { margin-left: 0; } }
 </style>
 </head>
 <body class="theme-slate">
@@ -4811,6 +4842,7 @@ function _viewKey() {
   if (state._view === 'scan') return 'scan';
   if (state._view === 'positions') return 'positions';
   if (state._view === 'stock') return 'stock';
+  if (state._view === 'backtest') return 'backtest';
   if (!state.strategy) return 'picker';
   if (state.strategy === 'leaps') {
     if (!state.leapsStyle || !state.leapsPhase) return 'leaps-config';
@@ -4849,6 +4881,7 @@ function render() {
   if (state._view === 'scan') { _safe('机会扫描', renderScanPage, null); _postRender(); return; }
   if (state._view === 'positions') { _safe('持仓', renderPositionsPage, null); _postRender(); return; }
   if (state._view === 'stock') { _safe('个股', renderStockPage, null); _postRender(); return; }
+  if (state._view === 'backtest') { _safe('回测', renderBacktestPage, null); _postRender(); return; }
   if (state._view === 'performance') { _safe('Performance', renderPerformancePage, null); _postRender(); return; }
   if (!state.strategy) { renderPicker(); _postRender(); return; }
   if (state.strategy === 'leaps') {
@@ -5493,7 +5526,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.17-v67';
+const APP_BUILD = '2026.10.17-v69';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
@@ -6593,6 +6626,7 @@ function renderPicker() {
         </button>
         <button class="btn ghost customize-btn" onclick="showCustomizeModal()" title="自定义主题色 + 圆角">自定义</button>
         <button class="btn ghost" onclick="showStock()">个股</button>
+        <button class="btn ghost" onclick="showBacktest()">回测</button>
         <button class="btn ghost" onclick="showSyncModal()">Sync</button>
         <button class="btn ghost" onclick="showHistory()">History</button>
       </div>
@@ -16891,16 +16925,27 @@ function _stockOscSVG(t) {
     + `<polyline points="${de.map((v, i) => `${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(' ')}" fill="none" class="stk-osc-l2"/>`;
   const last = a => a[a.length - 1];
   const H = 3 * (PH + GAP) + 6;
+  // MJ2 arrows on the J line, colours as in thinkorswim
+  const M = mj2Series(all), mj = M.slice(off, endI);
+  const mjArrows = Y => mj.map((o, i) => { const nm = _mj2Name(o); if (!nm) return ''; const x = X(i), buy = o.B0raw || o.B1, y = Y(Math.max(-20, Math.min(120, o.J + (buy ? -10 : 10)))), s = Math.max(3.5, Math.min(6, cw * 0.45));
+    const cls = o.both ? 'mj-both' : o.B1 ? 'mj-b1' : o.B0raw ? 'mj-b0' : o.S1 ? 'mj-s1' : 'mj-s0';
+    const pts = buy ? `${x},${y - s} ${x - s},${y + s * 0.7} ${x + s},${y + s * 0.7}` : `${x},${y + s} ${x - s},${y - s * 0.7} ${x + s},${y - s * 0.7}`;
+    return `<polygon points="${pts}" class="${cls}"><title>${all[off + i].d} · ${nm}</title></polygon>`; }).join('');
   return `<svg class="rk-chart stk-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="RSI MACD KDJ">
     ${panel(0, `RSI 14 · ${last(rs) != null ? last(rs).toFixed(1) : '—'}`, rs, 0, 100, [30, 70])}
     ${panel(1, `MACD · DIF ${last(df).toFixed(2)} / DEA ${last(de).toFixed(2)}`, df, -mm * 1.1, mm * 1.1, [0], macdBars)}
-    ${panel(2, `KDJ (9,3,3) · K ${Ks[endI - 1] != null ? Ks[endI - 1].toFixed(1) : '—'} · D ${Ds[endI - 1] != null ? Ds[endI - 1].toFixed(1) : '—'} · J ${last(js) != null ? last(js).toFixed(1) : '—'}`, js, -20, 120, [15, 80])}</svg>
+    ${panel(2, `MJ2 · J ${last(js) != null ? last(js).toFixed(1) : '—'} · K ${Ks[endI - 1] != null ? Ks[endI - 1].toFixed(1) : '—'} · D ${Ds[endI - 1] != null ? Ds[endI - 1].toFixed(1) : '—'}`, js, -20, 120, [15, 80], mjArrows)}</svg>
+    ${(() => { const S = M.map((o, i) => ({ o, i, nm: _mj2Name(o) })).filter(x => x.nm).slice(-12).reverse(); if (!S.length) return '';
+      const cls = o => o.both ? 'mj-both' : o.B1 ? 'mj-b1' : o.B0raw ? 'mj-b0' : o.S1 ? 'mj-s1' : 'mj-s0';
+      return `<details class="mj-list"><summary>MJ2 最近信号 <span class="rk-quiet">最近 ${S.length} 次 · 用来和 thinkorswim 对照</span></summary><div class="rk-table-wrap"><table class="rk-table"><thead><tr><th>日期</th><th>信号</th><th>收盘</th><th>J</th><th>RSI</th></tr></thead><tbody>
+        ${S.map(x => `<tr><td>${all[x.i].d}${p.live && x.i === n0 - 1 ? ' <span class="rk-quiet">盘中</span>' : ''}</td><td><i class="mj-dot ${cls(x.o)}"></i>${x.nm}${x.o.S0 && x.o.S1 ? ' + S0' : ''}</td><td>${all[x.i].c.toFixed(2)}</td><td>${x.o.J.toFixed(1)}</td><td>${x.o.rsi != null ? x.o.rsi.toFixed(1) : '—'}</td></tr>`).join('')}</tbody></table></div>
+        <div class="rk-note">按 MJ2 v2026-04-21n_Final_RSI72_Fix_v2 逐行移植. B0 黄 ↑ · B1 绿 ↑ · B0 + B1 同框 白 ↑ · S0 黄 ↓ · S1 红 ↓. 盘中的信号会随价格和成交量变化, 和 thinkorswim 一样.</div></details>`; })()}
     <div class="rk-quiet stk-kdj-asof">KDJ / RSI / MACD 截至 ${(() => { const b = all[endI - 1], d = b ? `${+b.d.slice(5, 7)}/${+b.d.slice(8)}` : ''; return p.live && endI === n0 ? `${d} 盘中 (含今天的实时价)` : `${d} 收盘`; })()}</div>`;
 }
 function renderStockPage() {
   const t = __stockT, recent = _stockRecent();
   const head = `<div class="header header-sticky"><div class="brand">Pre-Trade Checklist</div><div class="header-actions">
-    <button class="btn ghost" onclick="state._view = null; render(); window.scrollTo(0, 0)">← 返回</button>${t ? `<button class="btn ghost" onclick="__stockTerm['${esc(t)}'] = null; __gex['${esc(t)}'] = null; _stockLoad('${esc(t)}')">刷新</button>` : ''}</div></div>`;
+    <button class="btn ghost" onclick="state._view = null; render(); window.scrollTo(0, 0)">← 返回</button>${t ? `<button class="btn ghost" onclick="showBacktest('${esc(t)}')">回测</button><button class="btn ghost" onclick="__stockTerm['${esc(t)}'] = null; __gex['${esc(t)}'] = null; _stockLoad('${esc(t)}')">刷新</button>` : ''}</div></div>`;
   const search = `<div class="stk-search"><input id="stk-in" placeholder="输入代码, 例如 MSFT" value="${esc(t || '')}" autocapitalize="characters" onkeydown="if(event.key==='Enter')showStock(this.value)"><button class="btn primary" onclick="showStock(document.getElementById('stk-in').value)">查看</button>
     <span class="stk-recent">${recent.map(r => `<button class="sc-chip${r === t ? ' ok' : ''}" onclick="showStock('${esc(r)}')">${esc(r)}</button>`).join('')}</span></div>`;
   if (!loadSchwabCfg()) { $app.innerHTML = head + `<div class="rk-page stock-page">${search}<div class="rk-notice">需要连接 Schwab.</div></div>`; return; }
@@ -17465,6 +17510,225 @@ function _goalHTML() {
           ${H.rows.slice(-24).reverse().map(g => `<tr><td>${g.k}${g.real ? '' : ' <span class="rk-quiet">倒推</span>'}</td><td>${_fmtUsd(g.navStart)}</td><td class="${_thCls(g.seller)}">${_fmtSigned(g.seller)}</td><td>${_fmtUsd(H.capM.S[g.k] || 0)}</td><td class="${_thCls(g.leaps)}">${_fmtSigned(g.leaps)}</td><td>${_fmtUsd(H.capM.L[g.k] || 0)}</td><td>${g.flow ? _fmtSigned(g.flow) : '—'}</td></tr>`).join('')}</tbody></table></div>
       </details><span class="gp-ref">规划工具, 不是预测</span></div>`;
   return wrap(sumTxt, body);
+}
+
+/* ═════════════ MJ2 (v2026-04-21n_Final_RSI72_Fix_v2), line-for-line from the ThinkScript ═════════════ */
+function mj2Series(bars) {
+  const n = bars.length, c = bars.map(b => b.c), h = bars.map(b => b.h), l = bars.map(b => b.l), v = bars.map(b => b.v || 0);
+  const P = { kPeriod: 9, kS: 3, dS: 3, rsiLen: 14, rsiSlopeTh: 0.3, rsiExtSlope: 1.0, volTh: 1.03, volPctMA: 1.10, volClimax: 1.30, jExtLow: 25, jMax: 35, jDeep: 15, bbLen: 20, bbSd: 2.0, bbPct: 20 };
+  const avg = (a, i, len) => i + 1 < len ? null : a.slice(i - len + 1, i + 1).reduce((s, x) => s + x, 0) / len;
+  const sd = (a, i, len) => { const m = avg(a, i, len); if (m == null) return null; return Math.sqrt(a.slice(i - len + 1, i + 1).reduce((s, x) => s + (x - m) ** 2, 0) / len); };   // StDev = population
+  // KDJ: CompoundValue(1, …, 50)
+  const K = [], D = [], J = [];
+  for (let i = 0; i < n; i++) {
+    const a = Math.max(0, i - P.kPeriod + 1), hh = Math.max(...h.slice(a, i + 1)), ll = Math.min(...l.slice(a, i + 1)), rsv = hh !== ll ? (c[i] - ll) / (hh - ll) * 100 : 50;
+    K[i] = i < 1 ? 50 : ((P.kS - 1) * K[i - 1] + rsv) / P.kS; D[i] = i < 1 ? 50 : ((P.dS - 1) * D[i - 1] + K[i]) / P.dS; J[i] = 3 * K[i] - 2 * D[i];
+  }
+  // RSI (Wilder), seeded with the simple average of the first 14 changes
+  const R = Array(n).fill(null); let ag = 0, al = 0;
+  for (let i = 1; i < n; i++) { const ch = c[i] - c[i - 1], g = Math.max(0, ch), s = Math.max(0, -ch);
+    if (i <= P.rsiLen) { ag += g / P.rsiLen; al += s / P.rsiLen; if (i === P.rsiLen) R[i] = ag + al === 0 ? 50 : 100 * ag / (ag + al); }
+    else { ag = (ag * (P.rsiLen - 1) + g) / P.rsiLen; al = (al * (P.rsiLen - 1) + s) / P.rsiLen; R[i] = ag + al === 0 ? 50 : 100 * ag / (ag + al); } }
+  const out = [];
+  for (let i = 0; i < n; i++) {
+    const o = { J: J[i], rsi: R[i], B0raw: false, B1: false, both: false, B0final: false, S0: false, S1: false };
+    out.push(o);
+    if (i < 21 || R[i] == null || R[i - 1] == null || R[i - 2] == null) continue;
+    const rsiSlope = R[i] - R[i - 1], rsiSlope1 = R[i - 1] - R[i - 2], jSlope = J[i] - J[i - 1], jSlope1 = J[i - 1] - J[i - 2];
+    const ma3 = avg(c, i, 3), ma5 = avg(c, i, 5), ma10 = avg(c, i, 10), volMA10 = avg(v, i, 10), vol = v[i];
+    const isWithinMA5Range = c[i] <= ma5 * 1.05;
+    const isVolStrong = vol >= volMA10 * P.volPctMA, isVolClimax = vol >= volMA10 * P.volClimax;
+    const isVolDynamic = J[i] < P.jDeep ? vol >= volMA10 : J[i] < P.jExtLow ? vol >= volMA10 * P.volTh : vol >= volMA10 * P.volPctMA;
+    const mid1 = avg(c, i - 1, P.bbLen), up1 = mid1 + P.bbSd * sd(c, i - 1, P.bbLen);
+    const bbDistPctPrev = up1 - mid1 !== 0 ? (c[i - 1] - mid1) / (up1 - mid1) * 100 : 0;
+    const bbDistPctHighPrev = up1 - mid1 !== 0 ? (h[i - 1] - mid1) / (up1 - mid1) * 100 : 0;
+    const bbBuyOk = bbDistPctPrev < -P.bbPct, bbSellOk_S1 = bbDistPctPrev > P.bbPct || bbDistPctHighPrev > P.bbPct, bbSellOk = bbDistPctPrev > P.bbPct;
+    const bbUpperCompressionFilter = bbDistPctPrev > 80 ? c[i] < ma3 : true;
+    const mainTrigger = rsiSlope > P.rsiExtSlope || (jSlope > 0 && rsiSlope > P.rsiSlopeTh);
+    const divergenceTrigger = jSlope <= 0 && J[i] < P.jExtLow && rsiSlope > P.rsiSlopeTh && isVolDynamic;
+    const B0c = (J[i] < P.jExtLow && (mainTrigger || divergenceTrigger)) || (J[i] >= P.jExtLow && J[i] < P.jMax && mainTrigger && isVolStrong);
+    const crossAbove20 = J[i - 1] <= 20 && J[i] > 20;
+    const B1c = (R[i] > 50 || rsiSlope > 2) && rsiSlope > 0 && crossAbove20 && isVolStrong;
+    const s0RSI72 = R[i] >= 70 && jSlope > 0 && rsiSlope > 0 && jSlope < jSlope1 && rsiSlope < rsiSlope1;
+    const jHasBeenHigh = Math.max(J[i - 1], J[i - 2], J[i - 3]);
+    const s1Breakdown = c[i] < ma5 && (c[i] <= c[i - 1] * 0.995 || c[i] < Math.min(c[i - 1], c[i - 2], c[i - 3])) && isVolStrong;
+    const ma10Filter = l[i] <= ma10 || c[i] < ma10;
+    const s1CrossUnder = J[i] <= J[i - 1] && c[i] >= ma5 && isVolClimax && ma10Filter;
+    const S1c = jHasBeenHigh > 60 && (s1Breakdown || s1CrossUnder) && (J[i] > 35 || c[i] < ma5) && rsiSlope <= 0 && isWithinMA5Range;
+    const s0Base = !S1c && R[i] >= 50 && J[i - 1] > 70 && ((jSlope < 0 && rsiSlope < 0) || (jSlope < 0 && rsiSlope > 0 && R[i] >= 65)) && bbUpperCompressionFilter && c[i] < ma5;
+    o.B1 = B1c && bbBuyOk; o.B0raw = B0c && bbBuyOk; o.B0final = !o.B1 && o.B0raw; o.both = o.B0raw && o.B1;
+    o.S1 = S1c && bbSellOk_S1; o.S0 = s0RSI72 ? true : (s0Base && bbSellOk);
+  }
+  return out;
+}
+const _mj2Name = o => o.both ? 'B0+B1 双重确认' : o.B1 ? 'B1' : o.B0raw ? 'B0' : o.S1 ? 'S1' : o.S0 ? 'S0' : null;
+
+/* ═════════════ v69 · Backtest: the days your checklist's automatic rules would all pass ═════════════ */
+const BT_RECENT_KEY = 'pretrade_bt_recent', BT_STRAT_KEY = 'pretrade_bt_strat';
+let __btT = null, __btBusy = false, __btErr = null, __btAll = false, __btSel = null, __btMemo = { k: null, v: null };
+let __btStrat = (() => { try { return localStorage.getItem(BT_STRAT_KEY) || 'leaps_left'; } catch (e) { return 'leaps_left'; } })();
+let __btCC = (() => { try { return localStorage.getItem('pretrade_bt_cc') || 'balanced'; } catch (e) { return 'balanced'; } })();
+const _btRecent = () => { try { return JSON.parse(localStorage.getItem(BT_RECENT_KEY) || '[]') || []; } catch (e) { return []; } };
+const _btMj = (M, i) => { for (let k = i; k >= Math.max(0, i - 2); k--) if (M[k].B0raw || M[k].B1) return { nm: _mj2Name(M[k]), ago: i - k }; return null; };
+const _btVol = c => c.t.avg5 ? `${(c.t.sigVol / c.t.avg5).toFixed(2)}×` : '—';
+const BT_LEAPS_SKIP = ['左侧动能衰竭 · K 线形态 (手动)', 'Fear & Greed', '市场未系统性大跌', '7 天内宏观事件', '基本面 · 市值', '支撑 · Volume Profile · AVWAP', '距财报 ≥ 45 天', '个股 IVP', 'DTE · Delta', '止损 · 止盈 · R:R', '仓位上限 · 现金', '计划性 · 本周加仓次数'];
+const BT_SHORT_SKIP = ['GEX Put / Call Wall', 'Delta · DTE', 'ROC · 年化', 'IV · IVP', '距财报', '支撑 · 阻力', 'VIX 环境', '仓位 · 现金', '计划性'];
+const BT_NEWLOW = () => ({ k: '未创新低', t: `收盘未创 ${_newLowWin() === 60 ? '60' : '20'} 日新低 (硬性)`, ok: c => c.F.no_new_low === 'pass' });
+const BT_STRATS = {
+  leaps_left: { l: 'LEAPS 左侧', sub: '首笔建仓 · 左侧加仓', side: 'long', rules: () => [
+    { k: 'MJ2', t: 'MJ2 最近 3 个交易日内有买入信号 (B0 / B1)', ok: c => !!c.mj, col: c => c.mj ? `${c.mj.nm}${c.mj.ago ? ` · ${c.mj.ago} 天前` : ''}` : '—' },
+    { k: 'J3', t: 'KDJ J 最近 3 个交易日最低 ≤ 15', ok: c => c.t.J3 != null && c.t.J3 <= 15, col: c => c.t.J3 != null ? c.t.J3.toFixed(1) : '—' },
+    BT_NEWLOW(),
+    { k: '放量', t: '当日成交量 > 前 5 日均量 × 1.2', ok: c => c.F.vol_confirm === 'pass', col: _btVol }], skip: BT_LEAPS_SKIP },
+  leaps_right: { l: 'LEAPS 右侧加仓', side: 'long', rules: () => [
+    { k: '收复均线', t: '收复 5MA、10MA 或 20MA 之一', ok: c => c.F.right_ma === 'pass' },
+    { k: '放量', t: '当日放量, 且不是缩量反弹 (低点以来上涨日均量 ≥ 低点前 20 日均量)', ok: c => c.F.vol_confirm_right === 'pass', col: _btVol },
+    { k: 'EMA21 / SMA50', t: '站稳 EMA21 或 SMA50 之上 (连续 2 日)', ok: c => c.F.above_ema21_sma50 === 'pass' },
+    BT_NEWLOW()], skip: BT_LEAPS_SKIP },
+  leaps_macd: { l: 'LEAPS MACD 加仓', side: 'long', rules: () => [
+    { k: 'MACD 金叉', t: '日线 MACD 低位金叉', ok: c => c.F.macd_golden === 'pass' },
+    { k: '放量', t: '当日放量, 且不是缩量反弹', ok: c => c.F.vol_confirm_macd === 'pass', col: _btVol },
+    { k: '站稳均线', t: '站稳 5 / 10 / 20MA 之一 (连续 2 日)', ok: c => c.F.price_above_ma === 'pass' },
+    BT_NEWLOW()], skip: BT_LEAPS_SKIP },
+  csp: { l: 'CSP', side: 'sp', rules: () => [
+    { k: 'BB 中轨下', t: '价格位于布林中轨之下', ok: c => c.F.bb_below_mid === 'pass', col: c => c.t.mid ? `${((c.t.px / c.t.mid - 1) * 100).toFixed(1)}%` : '—' },
+    { k: '未创新低', t: '收盘未创 20 日新低 (提醒)', ok: c => c.F.csp_new_low === 'pass' }], skip: BT_SHORT_SKIP, note: 'CSP 的大部分规则是期权规则 (Put Wall、Delta、ROC、IV), 回测只能检查两条技术面规则, 全绿的日子会偏多.' },
+  cc: { l: 'CC', side: 'sc', modes: true, rules: () => { const thr = { income: 78, balanced: 74, aggressive: 70 }[__btCC] || 74; return [
+    { k: `J > ${thr}`, t: `日线 KDJ J > ${thr} (${{ income: '收租', balanced: '平衡', aggressive: '愿放' }[__btCC]})`, ok: c => c.t.J > thr, col: c => c.t.J.toFixed(1) },
+    { k: 'BB 中轨上', t: '价格位于布林中轨之上', ok: c => c.F.bb_above_mid === 'pass' }]; }, skip: BT_SHORT_SKIP },
+  pmcc: { l: 'PMCC', side: 'sc', rules: () => [
+    { k: 'J > 78', t: '日线 KDJ J > 78', ok: c => c.t.J > 78, col: c => c.t.J.toFixed(1) },
+    { k: 'BB 上半区', t: '价格位于布林中轨与上轨的中点之上', ok: c => c.F.bb_upper_zone === 'pass' }], skip: BT_SHORT_SKIP }
+};
+// what happened after each day, from the next bar on (entry = that day's close)
+const BT_METRICS = {
+  long: { prim: 'r60', cols: [['r20', '+20 天'], ['r60', '+60 天'], ['r120', '+120 天'], ['dd60', '60 天内最大回撤'], ['up60', '60 天内最大涨幅']] },
+  sp: { prim: 'hold5', cols: [['r20', '+20 天'], ['dd20', '20 天内最大跌幅'], ['hold5', '守住 −5%'], ['hold10', '守住 −10%']] },
+  sc: { prim: 'cap5', cols: [['r20', '+20 天'], ['up20', '20 天内最大涨幅'], ['cap5', '未超 +5%'], ['cap10', '未超 +10%']] }
+};
+function _btForward(bars, i) {
+  const n = bars.length, c0 = bars[i].c, r = k => i + k < n ? bars[i + k].c / c0 - 1 : null;
+  const ext = k => { if (i + k >= n) return null; let lo = Infinity, hi = -Infinity; for (let j = i + 1; j <= i + k; j++) { lo = Math.min(lo, bars[j].l); hi = Math.max(hi, bars[j].h); } return { dd: lo / c0 - 1, up: hi / c0 - 1 }; };
+  const e20 = ext(20), e60 = ext(60);
+  return { r20: r(20), r60: r(60), r120: r(120), dd60: e60 && e60.dd, up60: e60 && e60.up, dd20: e20 && e20.dd, up20: e20 && e20.up,
+    hold5: e20 && e20.dd > -0.05, hold10: e20 && e20.dd > -0.10, cap5: e20 && e20.up < 0.05, cap10: e20 && e20.up < 0.10 };
+}
+function _btRun(t) {
+  const p = __px[t]; if (!p || !p.bars || p.bars.length < 120) return null;
+  const bars = p.live ? p.bars.slice(0, -1) : p.bars, S = BT_STRATS[__btStrat], rules = S.rules();
+  const key = [t, __btStrat, __btCC, bars.length, bars[bars.length - 1].d, bars[bars.length - 1].c, _newLowWin()].join('|');
+  if (__btMemo.k === key) return __btMemo.v;
+  const M = mj2Series(bars), from = 65, days = [];
+  for (let i = from; i < bars.length; i++) {
+    const tt = techOf(bars.slice(0, i + 1), false); if (!tt) continue;
+    const ctx = { i, t: tt, F: _techFills(tt), mj: _btMj(M, i) };
+    ctx.pass = rules.map(r => !!r.ok(ctx)); ctx.green = ctx.pass.every(Boolean); ctx.fw = _btForward(bars, i);
+    days.push(ctx);
+  }
+  // a streak of green days is one setup: only the first (no green day in the 5 before it) counts in the stats
+  let lastGreen = -99; days.forEach(d => { if (d.green) { d.ind = d.i - lastGreen > 5; lastGreen = d.i; } });
+  const funnel = []; let pool = days; rules.forEach((r, k) => { pool = pool.filter(d => d.pass[k]); funnel.push({ k: r.k, n: pool.length }); });
+  const v = { t, bars, M, days, rules, S, funnel, from: days.length ? bars[days[0].i].d : null, to: bars[bars.length - 1].d, live: !!p.live };
+  __btMemo = { k: key, v }; return v;
+}
+window.showBacktest = t => {
+  t = _normTicker(t || __btT || (_btRecent()[0] || '')); closeOptionLab(); __btT = t || null; __btErr = null; __btSel = null; state._view = 'backtest';
+  render(); window.scrollTo(0, 0); if (t) _btLoad(t);
+};
+window.btSet = (k, v) => { if (k === 'strat') { __btStrat = v; try { localStorage.setItem(BT_STRAT_KEY, v); } catch (e) {} } if (k === 'cc') { __btCC = v; try { localStorage.setItem('pretrade_bt_cc', v); } catch (e) {} } if (k === 'all') __btAll = v;
+  __btSel = null; const y = window.scrollY; render(); window.scrollTo(0, y); };
+window.btPick = (i, from) => { __btSel = __btSel === i ? null : i; const y = window.scrollY; render(); window.scrollTo(0, y);
+  if (__btSel != null && from === 'chart') { const r = document.querySelector(`#bt-table tr[data-i="${i}"]`); if (r) r.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } };
+async function _btLoad(t) {
+  __btBusy = true;
+  try { await fetchPrices([t], { maxAge: 6 * 3600000 }); if (!__px[t] || !__px[t].bars || !__px[t].bars.length) __btErr = `找不到 ${t} 的日线数据, 检查代码是否正确.`; else if (__px[t].bars.length < 120) __btErr = `${t} 的历史太短 (${__px[t].bars.length} 个交易日), 至少需要 120 个.`;
+    else { const r = [t, ..._btRecent().filter(x => x !== t)].slice(0, 8); try { localStorage.setItem(BT_RECENT_KEY, JSON.stringify(r)); } catch (e) {} } }   // only codes that worked go into 最近
+  catch (e) { __btErr = `读取 ${t} 失败: ${(e && e.message) || '网络错误'}`; }
+  finally { __btBusy = false; }
+  if (state._view === 'backtest' && __btT === t) { const y = window.scrollY; render(); window.scrollTo(0, y); }
+}
+function _btChartSVG(R, shown) {
+  const { bars, days } = R, i0 = days[0].i, i1 = bars.length - 1, W = _chartW(), H = 230, L = 50, Rt = 14, T = 14, B = 26;
+  const cl = bars.slice(i0).map(b => b.c), lo = Math.min(...cl), hi = Math.max(...cl), pad = (hi - lo) * 0.08 || 1;
+  const X = i => L + (i - i0) / Math.max(1, i1 - i0) * (W - L - Rt), Y = v => T + (hi + pad - v) / (hi - lo + 2 * pad) * (H - T - B);
+  let s = '';
+  for (let k = 0; k <= 4; k++) { const v = lo - pad + (hi - lo + 2 * pad) * k / 4; s += `<line x1="${L}" x2="${W - Rt}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}" class="bt-grid"/><text x="${L - 6}" y="${(Y(v) + 4).toFixed(1)}" text-anchor="end" class="rk-ch-lab">${v >= 1000 ? v.toFixed(0) : v.toFixed(v >= 100 ? 0 : 1)}</text>`; }
+  let lastM = ''; for (let i = i0; i <= i1; i++) { const m = bars[i].d.slice(0, 7); if (m !== lastM && (m.endsWith('-01') || m.endsWith('-04') || m.endsWith('-07') || m.endsWith('-10'))) s += `<text x="${X(i).toFixed(1)}" y="${H - 8}" text-anchor="middle" class="rk-ch-lab">${m.endsWith('-01') ? m.slice(0, 4) : +m.slice(5) + '月'}</text><line x1="${X(i).toFixed(1)}" x2="${X(i).toFixed(1)}" y1="${H - B}" y2="${H - B + 4}" class="bt-grid"/>`; lastM = m; }
+  s += `<polyline points="${cl.map((v, k) => `${X(i0 + k).toFixed(1)},${Y(v).toFixed(1)}`).join(' ')}" class="bt-line"/>`;
+  if (__btSel != null) s += `<line x1="${X(__btSel).toFixed(1)}" x2="${X(__btSel).toFixed(1)}" y1="${T}" y2="${H - B}" class="bt-selline"/>`;
+  const up = R.S.side !== 'sc';
+  shown.forEach(d => { const x = X(d.i), y = Y(bars[d.i].c), o = up ? 10 : -10, r = d.ind ? 5.5 : 3, cls = `bt-mk ${d.ind ? 'ind' : 'cont'}${__btSel === d.i ? ' sel' : ''}`;
+    const pts = up ? `${x},${y + o - r} ${x - r},${y + o + r * 0.8} ${x + r},${y + o + r * 0.8}` : `${x},${y + o + r} ${x - r},${y + o - r * 0.8} ${x + r},${y + o - r * 0.8}`;
+    s += `<g class="${cls}" onclick="btPick(${d.i}, 'chart')"><polygon points="${pts}"/><rect x="${x - 8}" y="${Math.min(y, y + o) - 10}" width="16" height="${Math.abs(o) + 20}" class="bt-hit"/><title>${bars[d.i].d} · 收盘 ${bars[d.i].c.toFixed(2)}${d.ind ? '' : ' · 延续'}</title></g>`; });
+  return `<svg class="rk-chart bt-chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="回测信号">${s}</svg>`;
+}
+function renderBacktestPage() {
+  const t = __btT, recent = _btRecent(), S = BT_STRATS[__btStrat] || BT_STRATS.leaps_left;
+  const head = `<div class="header header-sticky"><div class="brand">Pre-Trade Checklist</div><div class="header-actions">
+    <button class="btn ghost" onclick="state._view = null; render(); window.scrollTo(0, 0)">← 返回</button>${t ? `<button class="btn ghost" onclick="showStock('${esc(t)}')">个股页</button>` : ''}</div></div>`;
+  const strat = `<div class="bt-strat rk-presets">${Object.entries(BT_STRATS).map(([k, v]) => `<button class="rk-preset${__btStrat === k ? ' active' : ''}" onclick="btSet('strat', '${k}')">${v.l}</button>`).join('')}</div>
+    ${S.modes ? `<div class="bt-modes rk-presets">${[['income', '收租 J > 78'], ['balanced', '平衡 J > 74'], ['aggressive', '愿放 J > 70']].map(([k, l]) => `<button class="rk-preset${__btCC === k ? ' active' : ''}" onclick="btSet('cc', '${k}')">${l}</button>`).join('')}</div>` : ''}`;
+  const search = `<div class="stk-search bt-search"><input id="bt-in" placeholder="输入代码回车, 例如 MSFT" value="${esc(t || '')}" autocapitalize="characters" autocomplete="off" onkeydown="if(event.key==='Enter')showBacktest(this.value)"><button class="btn primary" onclick="showBacktest(document.getElementById('bt-in').value)">回测</button>
+    <span class="stk-recent">${recent.map(r => `<button class="sc-chip${r === t ? ' ok' : ''}" onclick="showBacktest('${esc(r)}')">${esc(r)}</button>`).join('')}</span></div>`;
+  const top = `<div class="rk-page bt-page"><h2 class="bt-h">回测 <span class="rk-quiet">checklist 的自动规则全部通过的日子, 以及之后的走势</span></h2>${strat}${search}`;
+  if (!loadSchwabCfg()) { $app.innerHTML = head + top + `<div class="rk-notice">需要连接 Schwab 才能读取日线.</div></div>`; return; }
+  if (!t) { $app.innerHTML = head + top + `<div class="rk-quiet bt-empty">输入代码开始. 用最近 2 年的日线, 前 65 个交易日用于计算指标, 实际回测约 1.7 年.</div></div>`; return; }
+  if (__btErr) { $app.innerHTML = head + top + `<div class="rk-notice">${esc(__btErr)}</div></div>`; return; }
+  const R = __px[t] && __px[t].bars ? _btRun(t) : null;
+  if (!R) { $app.innerHTML = head + top + `<div class="rk-quiet bt-empty">${__btBusy ? `读取 ${esc(t)} 两年日线并逐日计算…` : '没有数据.'}</div></div>`; return; }
+  const MT = BT_METRICS[S.side], green = R.days.filter(d => d.green), ind = green.filter(d => d.ind), shown = __btAll ? green : ind;
+  const pc = v => v == null ? '—' : `${v >= 0 ? '+' : '−'}${Math.abs(v * 100).toFixed(1)}%`, rate = (a, k) => { const z = a.filter(d => d.fw[k] != null); return z.length ? z.filter(d => d.fw[k] === true || d.fw[k] > 0).length / z.length : null; };
+  const mean = (a, k) => { const z = a.map(d => d.fw[k]).filter(v => v != null); return z.length ? z.reduce((s, x) => s + x, 0) / z.length : null; };
+  const med = (a, k) => { const z = a.map(d => d.fw[k]).filter(v => v != null).sort((x, y) => x - y); return z.length ? z[Math.floor((z.length - 1) / 2)] : null; };
+  const done = (a, k) => a.filter(d => d.fw[k] != null).length, all = R.days, cls = v => v == null ? '' : _thCls(v);
+  const card = (big, lab, sub) => `<div class="bt-card"><div class="bt-big">${big}</div><div class="bt-lab">${lab}</div>${sub ? `<div class="bt-sub">${sub}</div>` : ''}</div>`;
+  const p0 = v => v == null ? '—' : (v * 100).toFixed(0) + '%';
+  let cards;
+  if (S.side === 'long') {
+    const worst = ind.filter(d => d.fw.dd60 != null).sort((a, b) => a.fw.dd60 - b.fw.dd60)[0];
+    cards = card(`${ind.length}`, '独立信号', `全绿 ${green.length} 天 · 延续的不重复计算`)
+      + card(p0(rate(ind, 'r60')), '60 天后上涨的比例', `任意一天入场: ${p0(rate(all, 'r60'))} · ${done(ind, 'r60')} 次已满 60 天`)
+      + card(`<span class="${cls(mean(ind, 'r60'))}">${pc(mean(ind, 'r60'))}</span>`, '60 天平均涨跌', `中位 ${pc(med(ind, 'r60'))} · 任意一天 ${pc(mean(all, 'r60'))}`)
+      + card(`<span class="rk-t-danger">${worst ? pc(worst.fw.dd60) : '—'}</span>`, '最深的 60 天内回撤', worst ? `${R.bars[worst.i].d} 入场 · 平均 ${pc(mean(ind, 'dd60'))}` : '');
+  } else if (S.side === 'sp') {
+    const worst = ind.filter(d => d.fw.dd20 != null).sort((a, b) => a.fw.dd20 - b.fw.dd20)[0];
+    cards = card(`${ind.length}`, '独立信号', `全绿 ${green.length} 天 · 延续的不重复计算`)
+      + card(p0(rate(ind, 'hold5')), '20 天内没跌破 −5%', `任意一天: ${p0(rate(all, 'hold5'))} · 约等于行权价放在下方 5%`)
+      + card(p0(rate(ind, 'hold10')), '20 天内没跌破 −10%', `任意一天: ${p0(rate(all, 'hold10'))}`)
+      + card(`<span class="rk-t-danger">${worst ? pc(worst.fw.dd20) : '—'}</span>`, '最大的 20 天内跌幅', worst ? `${R.bars[worst.i].d} 入场` : '');
+  } else {
+    const worst = ind.filter(d => d.fw.up20 != null).sort((a, b) => b.fw.up20 - a.fw.up20)[0];
+    cards = card(`${ind.length}`, '独立信号', `全绿 ${green.length} 天 · 延续的不重复计算`)
+      + card(p0(rate(ind, 'cap5')), '20 天内没涨超 +5%', `任意一天: ${p0(rate(all, 'cap5'))} · 约等于行权价放在上方 5%`)
+      + card(p0(rate(ind, 'cap10')), '20 天内没涨超 +10%', `任意一天: ${p0(rate(all, 'cap10'))}`)
+      + card(`<span class="rk-t-danger">${worst ? pc(worst.fw.up20) : '—'}</span>`, '最大的 20 天内涨幅', worst ? `${R.bars[worst.i].d} 入场` : '');
+  }
+  const funnel = `<div class="bt-funnel"><span>${all.length} 个交易日</span>${R.funnel.map(f => `<span class="bt-arrow">→</span><span>${esc(f.k)} <b>${f.n}</b></span>`).join('')}<span class="rk-quiet">(依次叠加, 最后一个数字 = 全绿的天数)</span></div>`;
+  const colRules = R.rules.filter(r => r.col);
+  const cell = (d, k) => { const v = d.fw[k]; if (v == null) return '<td class="rk-quiet">未满</td>'; if (v === true) return '<td class="rk-t-safe">✓</td>'; if (v === false) return '<td class="rk-t-danger">✗</td>';
+    // excursions only turn red when they'd hurt this strategy: LEAPS drawdown beyond −10%, CSP drop beyond −5%, CC rise beyond +5%
+    if (k === 'dd60') return `<td class="${v <= -0.10 ? 'rk-t-danger' : ''}">${pc(v)}</td>`;
+    if (k === 'up60') return `<td>${pc(v)}</td>`;
+    if (k === 'dd20') return `<td class="${v <= -0.05 ? 'rk-t-danger' : ''}">${pc(v)}</td>`;
+    if (k === 'up20') return `<td class="${v >= 0.05 ? 'rk-t-danger' : ''}">${pc(v)}</td>`;
+    return `<td class="${_thCls(v)}">${pc(v)}</td>`; };
+  const rows = shown.slice().reverse();
+  const table = rows.length ? `<div class="rk-table-wrap bt-tw"><table class="rk-table bt-table" id="bt-table"><thead><tr><th>日期</th><th>收盘</th>${colRules.map(r => `<th>${esc(r.k)}</th>`).join('')}${MT.cols.map(([, l]) => `<th>${l}</th>`).join('')}</tr></thead><tbody>
+      ${rows.map(d => `<tr data-i="${d.i}" class="${d.ind ? '' : 'bt-cont'}${__btSel === d.i ? ' bt-sel' : ''}" onclick="btPick(${d.i})"><td>${R.bars[d.i].d}${d.ind ? '' : ' <span class="bt-tag">延续</span>'}</td><td>${R.bars[d.i].c.toFixed(2)}</td>${colRules.map(r => `<td>${r.col(d)}</td>`).join('')}${MT.cols.map(([k]) => cell(d, k)).join('')}</tr>`).join('')}
+    </tbody></table></div>` : `<div class="rk-quiet bt-none">这段时间没有全绿的日子. 上面的漏斗显示了在哪一条被拦下最多.</div>`;
+  const rulesBox = `<div class="bt-rules"><div><b>检查了 (自动)</b>${R.rules.map(r => `<span class="bt-rule ok">${esc(typeof r.t === 'function' ? r.t() : r.t)}</span>`).join('')}</div>
+    <div><b>没法回测</b>${S.skip.map(x => `<span class="bt-rule skip">${esc(x)}</span>`).join('')}</div>${S.note ? `<div class="rk-note">${esc(S.note)}</div>` : ''}</div>`;
+  $app.innerHTML = head + top + `
+    <div class="bt-meta rk-quiet">${esc(t)} · ${R.from} – ${R.to} · ${all.length} 个交易日${R.live ? ' · 今天盘中不计, 截至上一个收盘日' : ''}</div>
+    <div class="bt-cards">${cards}</div>
+    ${funnel}
+    <section class="rk-block bt-block"><div class="bt-chart-h"><b>收盘价与信号</b><span class="rk-presets bt-toggle"><button class="rk-preset${__btAll ? '' : ' active'}" onclick="btSet('all', false)">只看独立信号 ${ind.length}</button><button class="rk-preset${__btAll ? ' active' : ''}" onclick="btSet('all', true)">全部全绿日 ${green.length}</button></span></div>
+      ${R.days.length ? _btChartSVG(R, shown) : ''}
+      <div class="rk-quiet bt-hint">${S.side === 'sc' ? '▼' : '▲'} 实心 = 独立信号, 空心 = 延续 · 点图上的标记或表格的一行, 两边同时高亮</div>
+      ${table}</section>
+    ${rulesBox}
+    <div class="rk-note">每一天只用当天及以前的日线计算, 和 checklist 用同一套判断代码, 没有用到未来数据. 入场价 = 信号当天收盘价; 天数是交易日. 连续全绿的日子算一次信号 (前 5 个交易日内没有信号的才算独立), 统计只用独立信号. 「任意一天」= 这段时间里每天都入场的平均结果, 用来看信号有没有带来优势. 样本少时结论不稳定.</div>
+  </div>`;
 }
 
 /* ---------- fault isolation: one broken block never takes the page down ---------- */
