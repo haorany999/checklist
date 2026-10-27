@@ -3477,6 +3477,15 @@
   .bt-rule { display: inline-block; margin: 2px 6px 2px 0; padding: 2px 8px; border-radius: 10px; border: 1px solid var(--border); }
   .bt-rule.ok { border-color: color-mix(in srgb, var(--pass) 50%, var(--border)); color: var(--text); } .bt-rule.skip { color: var(--text-faint); border-style: dashed; }
   @media (max-width: 760px) { .bt-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } .bt-big { font-size: 19px; } .bt-toggle { margin-left: 0; } }
+  /* v71 · backtest candles */
+  .bt-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin: 2px 0 6px; } .bt-zoom .rk-preset { min-width: 30px; } .bt-zhint { font-size: 11.5px; }
+  .bt-info { font: 12px var(--mono); color: var(--text-dim); min-height: 18px; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .bt-info b { color: var(--text); } .bt-info-sig { color: var(--pass); }
+  .bt-k { touch-action: pan-y; user-select: none; -webkit-user-select: none; cursor: grab; } .bt-k:active { cursor: grabbing; }
+  .bt-chart .bt-cu { fill: var(--pass); stroke: var(--pass); } .bt-chart .bt-cd { fill: var(--fail); stroke: var(--fail); } .bt-chart .bt-wick { stroke-width: 1; }
+  .bt-chart .bt-selband { fill: color-mix(in srgb, var(--accent) 18%, transparent); } .bt-chart .bt-hovband { fill: color-mix(in srgb, var(--text) 7%, transparent); }
+  .bt-chart .bt-mk polygon { fill: var(--accent); stroke: var(--panel); } .bt-chart .bt-mk.cont polygon { fill: none; stroke: var(--accent); stroke-width: 1.3; }
+  .bt-chart .bt-mk.sel polygon { fill: #E5C100; stroke: #E5C100; } body .bt-chart text.bt-cnt { fill: var(--accent) !important; font: 700 10px var(--mono) !important; }
+  @media (max-width: 640px) { .bt-info { white-space: normal; } .bt-zhint { flex-basis: 100%; } }
 </style>
 </head>
 <body class="theme-slate">
@@ -5526,7 +5535,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.17-v69';
+const APP_BUILD = '2026.10.17-v71';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
@@ -16388,9 +16397,9 @@ function renderPositionsPage() {
         ${fig(`Theta/天 ${_qBtn('theta_day', 'short')}`, sgn(cT.th), '', _thCls(cT.th))}
       </div>
       <div class="rk-table-wrap"><table class="rk-table">
-        <thead><tr><th>合约</th><th>距行权价</th><th>状态</th><th>浮盈</th><th>名义</th><th>% NAV</th><th>开仓权利金</th><th>当前价值</th><th>DTE</th><th>持有</th><th>开仓年化</th><th>Theta/天</th><th>止盈进度 (赚 ${SHORT_TP}%)</th><th>剩余时间价值</th></tr></thead>
-        <tbody>${cspRows.map(r => row(r.x, `<td><b>${esc(_posLabel(r.x))}</b>${r.x.strategy ? ` <span class="rk-quiet">${esc(r.x.strategy)}</span>` : ''}</td><td class="${r.dist != null && r.dist < 3 ? 'rk-t-danger' : r.dist != null && r.dist < 8 ? 'rk-t-alert' : ''}">${_pct(r.dist)}</td><td>${tag(r.x)}</td><td class="${_thCls(r.pnl)}">${sgn(r.pnl)}</td><td>${money(r.x.exposure)}</td><td>${_pct(pn(r.x.exposure))}</td><td>${money(r.credit)}</td><td>${money(r.val)}</td><td>${_days(r.dte)}</td><td>${r.held ? r.held.days + ' 天' : '—'}</td><td>${r.ann != null ? r.ann.toFixed(0) + '%' : '—'}</td><td class="${_thCls(r.th)}">${sgn(r.th)}</td><td class="pc-cell">${r.cap != null ? _progBarHTML(r.cap / SHORT_TP * 100, r.timePct, `已赚 ${r.cap.toFixed(0)}%`) : '—'}</td><td>${money(r.ext)}</td>`)).join('')}
-          <tr class="rk-total"><td>合计</td><td></td><td></td><td class="${_thCls(cT.pnl)}">${sgn(cT.pnl)}</td><td>${money(cspN)}</td><td>${_pct(pn(cspN))}</td><td>${money(cT.credit)}</td><td>${money(cT.val)}</td><td></td><td></td><td></td><td class="${_thCls(cT.th)}">${sgn(cT.th)}</td><td></td><td>${money(cT.ext)}</td></tr></tbody>
+        <thead><tr><th>合约</th><th>距行权价</th><th>状态</th><th>浮盈</th><th>名义</th><th>% NAV</th><th>开仓权利金</th><th>当前价值</th><th>Delta</th><th>DTE</th><th>持有</th><th>开仓年化</th><th>Theta/天</th><th>止盈进度 (赚 ${SHORT_TP}%)</th><th>剩余时间价值</th></tr></thead>
+        <tbody>${cspRows.map(r => row(r.x, `<td><b>${esc(_posLabel(r.x))}</b>${r.x.strategy ? ` <span class="rk-quiet">${esc(r.x.strategy)}</span>` : ''}</td><td class="${r.dist != null && r.dist < 3 ? 'rk-t-danger' : r.dist != null && r.dist < 8 ? 'rk-t-alert' : ''}">${_pct(r.dist)}</td><td>${tag(r.x)}</td><td class="${_thCls(r.pnl)}">${sgn(r.pnl)}</td><td>${money(r.x.exposure)}</td><td>${_pct(pn(r.x.exposure))}</td><td>${money(r.credit)}</td><td>${money(r.val)}</td><td>${r.x.delta != null ? r.x.delta.toFixed(2) : '—'}</td><td>${_days(r.dte)}</td><td>${r.held ? r.held.days + ' 天' : '—'}</td><td>${r.ann != null ? r.ann.toFixed(0) + '%' : '—'}</td><td class="${_thCls(r.th)}">${sgn(r.th)}</td><td class="pc-cell">${r.cap != null ? _progBarHTML(r.cap / SHORT_TP * 100, r.timePct, `已赚 ${r.cap.toFixed(0)}%`) : '—'}</td><td>${money(r.ext)}</td>`)).join('')}
+          <tr class="rk-total"><td>合计</td><td></td><td></td><td class="${_thCls(cT.pnl)}">${sgn(cT.pnl)}</td><td>${money(cspN)}</td><td>${_pct(pn(cspN))}</td><td>${money(cT.credit)}</td><td>${money(cT.val)}</td><td></td><td></td><td></td><td></td><td class="${_thCls(cT.th)}">${sgn(cT.th)}</td><td></td><td>${money(cT.ext)}</td></tr></tbody>
       </table></div>
       <div class="rk-note">名义 = 行权价 × 100 × 张数. 开仓年化按开仓到到期的天数折算. 点一行打开合约面板.</div>
     </section>` : '';
@@ -17632,12 +17641,13 @@ function _btRun(t) {
   __btMemo = { k: key, v }; return v;
 }
 window.showBacktest = t => {
-  t = _normTicker(t || __btT || (_btRecent()[0] || '')); closeOptionLab(); __btT = t || null; __btErr = null; __btSel = null; state._view = 'backtest';
+  t = _normTicker(t || __btT || (_btRecent()[0] || '')); closeOptionLab(); if (t !== __btT) { __btZ = { D: null, W: null, M: null }; __btHover = null; } __btT = t || null; __btErr = null; __btSel = null; state._view = 'backtest';
   render(); window.scrollTo(0, 0); if (t) _btLoad(t);
 };
 window.btSet = (k, v) => { if (k === 'strat') { __btStrat = v; try { localStorage.setItem(BT_STRAT_KEY, v); } catch (e) {} } if (k === 'cc') { __btCC = v; try { localStorage.setItem('pretrade_bt_cc', v); } catch (e) {} } if (k === 'all') __btAll = v;
   __btSel = null; const y = window.scrollY; render(); window.scrollTo(0, y); };
-window.btPick = (i, from) => { __btSel = __btSel === i ? null : i; const y = window.scrollY; render(); window.scrollTo(0, y);
+window.btPick = (i, from) => { if (from === 'chart' && __btMoved) { __btMoved = false; return; }
+  __btSel = __btSel === i ? null : i; if (__btSel != null && from !== 'chart') _btEnsureVisible(i); const y = window.scrollY; render(); window.scrollTo(0, y);
   if (__btSel != null && from === 'chart') { const r = document.querySelector(`#bt-table tr[data-i="${i}"]`); if (r) r.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } };
 async function _btLoad(t) {
   __btBusy = true;
@@ -17647,21 +17657,97 @@ async function _btLoad(t) {
   finally { __btBusy = false; }
   if (state._view === 'backtest' && __btT === t) { const y = window.scrollY; render(); window.scrollTo(0, y); }
 }
-function _btChartSVG(R, shown) {
-  const { bars, days } = R, i0 = days[0].i, i1 = bars.length - 1, W = _chartW(), H = 230, L = 50, Rt = 14, T = 14, B = 26;
-  const cl = bars.slice(i0).map(b => b.c), lo = Math.min(...cl), hi = Math.max(...cl), pad = (hi - lo) * 0.08 || 1;
-  const X = i => L + (i - i0) / Math.max(1, i1 - i0) * (W - L - Rt), Y = v => T + (hi + pad - v) / (hi - lo + 2 * pad) * (H - T - B);
+// ── v71 · backtest chart: daily / weekly / monthly candles, wheel & pinch zoom, drag to pan ──
+let __btTf = (() => { try { return localStorage.getItem('pretrade_bt_tf') || 'D'; } catch (e) { return 'D'; } })();
+let __btZ = { D: null, W: null, M: null }, __btCtx = null, __btMoved = false, __btHover = null, __btAggMemo = { k: null, v: null };
+const BT_TF = { D: { l: '日', min: 20, unit: '日 K' }, W: { l: '周', min: 10, unit: '周 K' }, M: { l: '月', min: 6, unit: '月 K' } };
+function _btAgg(R, tf) {
+  const i0 = R.days[0].i, key = `${R.t}|${R.bars.length}|${i0}|${tf}`; if (__btAggMemo.k === key) return __btAggMemo.v;
+  const out = []; let cur = null;
+  const kOf = d => { if (tf === 'D') return d; if (tf === 'M') return d.slice(0, 7); const x = new Date(d + 'T12:00:00Z'), wd = (x.getUTCDay() + 6) % 7; x.setUTCDate(x.getUTCDate() - wd); return x.toISOString().slice(0, 10); };
+  for (let i = i0; i < R.bars.length; i++) { const b = R.bars[i], k = kOf(b.d);
+    if (!cur || cur.k !== k) { cur = { k, d0: b.d, d1: b.d, o: b.o, h: b.h, l: b.l, c: b.c, a: i, b: i }; out.push(cur); }
+    else { cur.d1 = b.d; cur.h = Math.max(cur.h, b.h); cur.l = Math.min(cur.l, b.l); cur.c = b.c; cur.b = i; } }
+  out.forEach((x, k) => { x.prev = k ? out[k - 1].c : R.bars[Math.max(0, x.a - 1)].c; });
+  __btAggMemo = { k: key, v: out }; return out;
+}
+const _btView = A => { const z = __btZ[__btTf], min = BT_TF[__btTf].min, n = Math.max(Math.min(min, A.length), Math.min(A.length, z ? z.n : A.length)), end = Math.max(n, Math.min(A.length, z && z.end != null ? z.end : A.length)); return { n, end, off: end - n }; };
+function _btKSVG() {
+  const { R, shown } = __btCtx, A = _btAgg(R, __btTf), V = _btView(A), vis = A.slice(V.off, V.end);
+  const W = _chartW(), H = 250, L = 52, Rt = 12, T = 12, B = 26, cw = (W - L - Rt) / V.n, X = k => L + (k + 0.5) * cw;
+  const lo = Math.min(...vis.map(x => x.l)), hi = Math.max(...vis.map(x => x.h)), pad = (hi - lo) * 0.10 || 1, Y = v => T + (hi + pad - v) / (hi - lo + 2 * pad) * (H - T - B);
   let s = '';
   for (let k = 0; k <= 4; k++) { const v = lo - pad + (hi - lo + 2 * pad) * k / 4; s += `<line x1="${L}" x2="${W - Rt}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}" class="bt-grid"/><text x="${L - 6}" y="${(Y(v) + 4).toFixed(1)}" text-anchor="end" class="rk-ch-lab">${v >= 1000 ? v.toFixed(0) : v.toFixed(v >= 100 ? 0 : 1)}</text>`; }
-  let lastM = ''; for (let i = i0; i <= i1; i++) { const m = bars[i].d.slice(0, 7); if (m !== lastM && (m.endsWith('-01') || m.endsWith('-04') || m.endsWith('-07') || m.endsWith('-10'))) s += `<text x="${X(i).toFixed(1)}" y="${H - 8}" text-anchor="middle" class="rk-ch-lab">${m.endsWith('-01') ? m.slice(0, 4) : +m.slice(5) + '月'}</text><line x1="${X(i).toFixed(1)}" x2="${X(i).toFixed(1)}" y1="${H - B}" y2="${H - B + 4}" class="bt-grid"/>`; lastM = m; }
-  s += `<polyline points="${cl.map((v, k) => `${X(i0 + k).toFixed(1)},${Y(v).toFixed(1)}`).join(' ')}" class="bt-line"/>`;
-  if (__btSel != null) s += `<line x1="${X(__btSel).toFixed(1)}" x2="${X(__btSel).toFixed(1)}" y1="${T}" y2="${H - B}" class="bt-selline"/>`;
-  const up = R.S.side !== 'sc';
-  shown.forEach(d => { const x = X(d.i), y = Y(bars[d.i].c), o = up ? 10 : -10, r = d.ind ? 5.5 : 3, cls = `bt-mk ${d.ind ? 'ind' : 'cont'}${__btSel === d.i ? ' sel' : ''}`;
-    const pts = up ? `${x},${y + o - r} ${x - r},${y + o + r * 0.8} ${x + r},${y + o + r * 0.8}` : `${x},${y + o + r} ${x - r},${y + o - r * 0.8} ${x + r},${y + o - r * 0.8}`;
-    s += `<g class="${cls}" onclick="btPick(${d.i}, 'chart')"><polygon points="${pts}"/><rect x="${x - 8}" y="${Math.min(y, y + o) - 10}" width="16" height="${Math.abs(o) + 20}" class="bt-hit"/><title>${bars[d.i].d} · 收盘 ${bars[d.i].c.toFixed(2)}${d.ind ? '' : ' · 延续'}</title></g>`; });
-  return `<svg class="rk-chart bt-chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="回测信号">${s}</svg>`;
+  // date labels: as many as fit, at period boundaries
+  const step = Math.max(1, Math.ceil(V.n / Math.max(3, Math.floor((W - L - Rt) / 70))));
+  let lastLab = -99; vis.forEach((x, k) => { const prev = k ? vis[k - 1] : (V.off ? A[V.off - 1] : null);
+    const boundary = !prev || (__btTf === 'M' ? x.d0.slice(0, 4) !== prev.d0.slice(0, 4) || +x.d0.slice(5, 7) % 3 === 1 : x.d0.slice(0, 7) !== prev.d0.slice(0, 7));
+    if (boundary && k - lastLab >= step) { lastLab = k; const lab = __btTf === 'M' ? (x.d0.slice(5, 7) === '01' || !prev ? x.d0.slice(0, 4) : +x.d0.slice(5, 7) + '月') : (x.d0.slice(5, 7) === '01' || !prev ? x.d0.slice(0, 7).replace('-', '/') : +x.d0.slice(5, 7) + '月');
+      s += `<line x1="${X(k).toFixed(1)}" x2="${X(k).toFixed(1)}" y1="${H - B}" y2="${H - B + 4}" class="bt-grid"/><text x="${X(k).toFixed(1)}" y="${H - 8}" text-anchor="middle" class="rk-ch-lab">${lab}</text>`; } });
+  const sel = __btSel != null ? vis.findIndex(x => __btSel >= x.a && __btSel <= x.b) : -1, hov = __btHover != null ? __btHover - V.off : -1;
+  if (sel >= 0) s += `<rect x="${(X(sel) - cw / 2).toFixed(1)}" y="${T}" width="${cw.toFixed(1)}" height="${H - T - B}" class="bt-selband"/>`;
+  if (hov >= 0 && hov < vis.length && hov !== sel) s += `<rect x="${(X(hov) - cw / 2).toFixed(1)}" y="${T}" width="${cw.toFixed(1)}" height="${H - T - B}" class="bt-hovband"/>`;
+  const bw = Math.max(1, Math.min(14, cw * 0.62));
+  vis.forEach((x, k) => { const up = x.c >= x.o, cls = up ? 'bt-cu' : 'bt-cd', y1 = Y(Math.max(x.o, x.c)), y2 = Y(Math.min(x.o, x.c));
+    s += `<line x1="${X(k).toFixed(1)}" x2="${X(k).toFixed(1)}" y1="${Y(x.h).toFixed(1)}" y2="${Y(x.l).toFixed(1)}" class="${cls} bt-wick"/><rect x="${(X(k) - bw / 2).toFixed(1)}" y="${y1.toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(0.8, y2 - y1).toFixed(1)}" class="${cls}"/>`; });
+  // signals: one marker per bar, filled if any of them is an independent signal; a count when there are several
+  const upMk = R.S.side !== 'sc', r = Math.max(3.5, Math.min(6.5, cw * 0.42));
+  vis.forEach((x, k) => { const hits = shown.filter(d => d.i >= x.a && d.i <= x.b); if (!hits.length) return;
+    const ind = hits.some(d => d.ind), pick = (hits.find(d => d.ind) || hits[0]).i, cx = X(k), cy = upMk ? Y(x.l) + 9 + r : Y(x.h) - 9 - r;
+    const pts = upMk ? `${cx},${cy - r} ${cx - r},${cy + r * 0.8} ${cx + r},${cy + r * 0.8}` : `${cx},${cy + r} ${cx - r},${cy - r * 0.8} ${cx + r},${cy - r * 0.8}`;
+    s += `<g class="bt-mk ${ind ? 'ind' : 'cont'}${k === sel ? ' sel' : ''}" onclick="btPick(${pick}, 'chart')"><polygon points="${pts}"/>${hits.length > 1 ? `<text x="${(cx + r + 2).toFixed(1)}" y="${(cy + 4).toFixed(1)}" class="bt-cnt">${hits.length}</text>` : ''}<rect x="${(cx - Math.max(8, cw / 2)).toFixed(1)}" y="${(cy - r - 4).toFixed(1)}" width="${Math.max(16, cw).toFixed(1)}" height="${(2 * r + 8).toFixed(1)}" class="bt-hit"/></g>`; });
+  return `<svg class="rk-chart bt-chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${BT_TF[__btTf].unit}与信号">${s}</svg>`;
 }
+function _btInfo() {
+  const { R, shown } = __btCtx, A = _btAgg(R, __btTf), V = _btView(A), k = __btHover != null && __btHover >= V.off && __btHover < V.end ? __btHover : V.end - 1, x = A[k]; if (!x) return '';
+  const md = d => `${+d.slice(5, 7)}/${+d.slice(8)}`, chg = x.c / x.prev - 1, hits = shown.filter(d => d.i >= x.a && d.i <= x.b);
+  return `<b>${__btTf === 'D' ? x.d0 : __btTf === 'W' ? `${x.d0} – ${md(x.d1)}` : x.d0.slice(0, 7)}</b> · 开 ${x.o.toFixed(2)} · 高 ${x.h.toFixed(2)} · 低 ${x.l.toFixed(2)} · 收 ${x.c.toFixed(2)} <span class="${_thCls(chg)}">${chg >= 0 ? '+' : '−'}${Math.abs(chg * 100).toFixed(2)}%</span>${hits.length ? ` · <span class="bt-info-sig">信号 ${hits.map(d => md(R.bars[d.i].d) + (d.ind ? '' : ' (延续)')).join(', ')}</span>` : ''}`;
+}
+function _btChartBox() {
+  const A = _btAgg(__btCtx.R, __btTf), V = _btView(A), touch = window.matchMedia && matchMedia('(pointer: coarse)').matches;
+  return `<div class="bt-tools"><span class="rk-presets">${Object.entries(BT_TF).map(([k, v]) => `<button class="rk-preset${__btTf === k ? ' active' : ''}" onclick="btTf('${k}')">${v.l}</button>`).join('')}</span>
+      <span class="rk-presets bt-zoom"><button class="rk-preset" onclick="btZoom(1 / 1.4)" aria-label="放大">＋</button><button class="rk-preset" onclick="btZoom(1.4)" aria-label="缩小">−</button><button class="rk-preset" onclick="btZoom(0)">全部</button></span>
+      <span class="rk-quiet bt-zhint">${V.n} / ${A.length} 根${BT_TF[__btTf].unit} · ${touch ? '双指缩放 · 左右拖动' : '滚轮缩放 · 拖动平移'} · 双击恢复</span></div>
+    <div class="bt-info" id="bt-info">${_btInfo()}</div>
+    <div class="bt-k" id="bt-k">${_btKSVG()}</div>`;
+}
+function _btRedraw() { const k = document.getElementById('bt-k'), i = document.getElementById('bt-info'), z = document.querySelector('.bt-zhint'); if (!k || !__btCtx) return;
+  k.innerHTML = _btKSVG(); if (i) i.innerHTML = _btInfo(); if (typeof _fitChartText === 'function') _fitChartText();   // same label size as a full render
+  if (z) { const A = _btAgg(__btCtx.R, __btTf), V = _btView(A); z.textContent = z.textContent.replace(/^\d+ \/ \d+/, `${V.n} / ${A.length}`); } }
+window.btTf = tf => { __btTf = tf; __btHover = null; try { localStorage.setItem('pretrade_bt_tf', tf); } catch (e) {} const y = window.scrollY; render(); window.scrollTo(0, y); };
+window.btZoom = f => { if (!__btCtx) return; const A = _btAgg(__btCtx.R, __btTf), V = _btView(A);
+  if (!f) __btZ[__btTf] = null; else { const n2 = Math.max(Math.min(BT_TF[__btTf].min, A.length), Math.min(A.length, Math.round(V.n * f))), mid = V.end - V.n / 2, e2 = Math.max(n2, Math.min(A.length, Math.round(mid + n2 / 2))); __btZ[__btTf] = { n: n2, end: e2 }; }
+  _btRedraw(); };
+// a signal picked in the table: make sure its bar is on screen
+function _btEnsureVisible(i) { if (!__btCtx) return; const A = _btAgg(__btCtx.R, __btTf), V = _btView(A), k = A.findIndex(x => i >= x.a && i <= x.b); if (k < 0 || (k >= V.off && k < V.end)) return;
+  const e2 = Math.max(V.n, Math.min(A.length, k + Math.ceil(V.n / 2))); __btZ[__btTf] = { n: V.n, end: e2 }; }
+function _btBind() {
+  const el = document.getElementById('bt-k'); if (!el || el.dataset.bound) return; el.dataset.bound = '1';
+  const geo = () => { const sv = el.querySelector('svg'); if (!sv) return null; const r = sv.getBoundingClientRect(), vb = sv.viewBox.baseVal; return { r, sx: vb.width / r.width, W: vb.width }; };
+  const barAt = cx => { const g = geo(); if (!g || !__btCtx) return null; const A = _btAgg(__btCtx.R, __btTf), V = _btView(A), x = (cx - g.r.left) * g.sx, f = (x - 52) / (g.W - 52 - 12); if (f < 0 || f > 1) return null; return { k: V.off + Math.min(V.n - 1, Math.floor(f * V.n)), f, A, V }; };
+  const zoomAt = (cx, factor) => { const h = barAt(cx); if (!h) return; const { A, V, f } = h, n2 = Math.max(Math.min(BT_TF[__btTf].min, A.length), Math.min(A.length, Math.round(V.n * factor)));
+    if (n2 === V.n) return; const idx = V.off + f * V.n, e2 = Math.max(n2, Math.min(A.length, Math.round(idx - f * n2 + n2))); __btZ[__btTf] = { n: n2, end: e2 }; _btRedraw(); };
+  el.addEventListener('wheel', e => { e.preventDefault(); zoomAt(e.clientX, e.deltaY > 0 ? 1.15 : 1 / 1.15); }, { passive: false });
+  const pts = new Map(); let drag = null, pinch = null;
+  el.addEventListener('pointerdown', e => { if (e.button > 0) return; pts.set(e.pointerId, { x: e.clientX, y: e.clientY }); __btMoved = false;
+    if (pts.size === 2) { const [a, b] = [...pts.values()], h = barAt((a.x + b.x) / 2); pinch = h && { d: Math.hypot(a.x - b.x, a.y - b.y) || 1, n: h.V.n, mid: (a.x + b.x) / 2 }; drag = null; return; }
+    const h = barAt(e.clientX); drag = h && { x: e.clientX, end: h.V.end, n: h.V.n }; });
+  el.addEventListener('pointermove', e => {
+    if (pts.has(e.pointerId)) pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pinch && pts.size >= 2) { e.preventDefault(); const [a, b] = [...pts.values()], d = Math.hypot(a.x - b.x, a.y - b.y) || 1, h = barAt(pinch.mid); if (!h) return;
+      const n2 = Math.max(Math.min(BT_TF[__btTf].min, h.A.length), Math.min(h.A.length, Math.round(pinch.n * pinch.d / d))); if (n2 === h.V.n) return;
+      const idx = h.V.off + h.f * h.V.n, e2 = Math.max(n2, Math.min(h.A.length, Math.round(idx - h.f * n2 + n2))); __btZ[__btTf] = { n: n2, end: e2 }; __btMoved = true; _btRedraw(); return; }
+    if (drag && pts.has(e.pointerId)) { const g = geo(); if (!g) return; const per = (g.W - 64) / g.sx / drag.n, d = Math.round((e.clientX - drag.x) / per);
+      if (Math.abs(e.clientX - drag.x) > 4) __btMoved = true; if (!d) return; const A = _btAgg(__btCtx.R, __btTf), e2 = Math.max(drag.n, Math.min(A.length, drag.end - d));
+      __btZ[__btTf] = { n: drag.n, end: e2 }; _btRedraw(); return; }
+    const h = barAt(e.clientX); const k = h ? h.k : null; if (k !== __btHover) { __btHover = k; _btRedraw(); } });
+  ['pointerup', 'pointercancel'].forEach(ev => el.addEventListener(ev, e => { pts.delete(e.pointerId); if (pts.size < 2) pinch = null; drag = null;
+    if (e.pointerType !== 'mouse' && !__btMoved) { const h = barAt(e.clientX); if (h) { __btHover = h.k; _btRedraw(); } } }));
+  el.addEventListener('pointerleave', e => { pts.delete(e.pointerId); drag = null; pinch = null; if (e.pointerType === 'mouse' && __btHover != null) { __btHover = null; _btRedraw(); } });
+  el.addEventListener('dblclick', () => { __btZ[__btTf] = null; _btRedraw(); });
+  el.addEventListener('touchmove', e => { if (e.touches && e.touches.length > 1) e.preventDefault(); }, { passive: false });
+}
+
 function renderBacktestPage() {
   const t = __btT, recent = _btRecent(), S = BT_STRATS[__btStrat] || BT_STRATS.leaps_left;
   const head = `<div class="header header-sticky"><div class="brand">Pre-Trade Checklist</div><div class="header-actions">
@@ -17674,6 +17760,7 @@ function renderBacktestPage() {
   if (!loadSchwabCfg()) { $app.innerHTML = head + top + `<div class="rk-notice">需要连接 Schwab 才能读取日线.</div></div>`; return; }
   if (!t) { $app.innerHTML = head + top + `<div class="rk-quiet bt-empty">输入代码开始. 用最近 2 年的日线, 前 65 个交易日用于计算指标, 实际回测约 1.7 年.</div></div>`; return; }
   if (__btErr) { $app.innerHTML = head + top + `<div class="rk-notice">${esc(__btErr)}</div></div>`; return; }
+  setTimeout(_btBind, 0);
   const R = __px[t] && __px[t].bars ? _btRun(t) : null;
   if (!R) { $app.innerHTML = head + top + `<div class="rk-quiet bt-empty">${__btBusy ? `读取 ${esc(t)} 两年日线并逐日计算…` : '没有数据.'}</div></div>`; return; }
   const MT = BT_METRICS[S.side], green = R.days.filter(d => d.green), ind = green.filter(d => d.ind), shown = __btAll ? green : ind;
@@ -17722,12 +17809,12 @@ function renderBacktestPage() {
     <div class="bt-meta rk-quiet">${esc(t)} · ${R.from} – ${R.to} · ${all.length} 个交易日${R.live ? ' · 今天盘中不计, 截至上一个收盘日' : ''}</div>
     <div class="bt-cards">${cards}</div>
     ${funnel}
-    <section class="rk-block bt-block"><div class="bt-chart-h"><b>收盘价与信号</b><span class="rk-presets bt-toggle"><button class="rk-preset${__btAll ? '' : ' active'}" onclick="btSet('all', false)">只看独立信号 ${ind.length}</button><button class="rk-preset${__btAll ? ' active' : ''}" onclick="btSet('all', true)">全部全绿日 ${green.length}</button></span></div>
-      ${R.days.length ? _btChartSVG(R, shown) : ''}
-      <div class="rk-quiet bt-hint">${S.side === 'sc' ? '▼' : '▲'} 实心 = 独立信号, 空心 = 延续 · 点图上的标记或表格的一行, 两边同时高亮</div>
+    <section class="rk-block bt-block"><div class="bt-chart-h"><b>K 线与信号</b><span class="rk-presets bt-toggle"><button class="rk-preset${__btAll ? '' : ' active'}" onclick="btSet('all', false)">只看独立信号 ${ind.length}</button><button class="rk-preset${__btAll ? ' active' : ''}" onclick="btSet('all', true)">全部全绿日 ${green.length}</button></span></div>
+      ${R.days.length ? (__btCtx = { R, shown }, _btChartBox()) : ''}
+      <div class="rk-quiet bt-hint">${S.side === 'sc' ? '▼' : '▲'} 实心 = 独立信号, 空心 = 延续${__btTf !== 'D' ? ` · ${BT_TF[__btTf].l}线上一根 K 有几次信号就标几` : ''} · 点图上的标记或表格的一行, 两边同时高亮</div>
       ${table}</section>
     ${rulesBox}
-    <div class="rk-note">每一天只用当天及以前的日线计算, 和 checklist 用同一套判断代码, 没有用到未来数据. 入场价 = 信号当天收盘价; 天数是交易日. 连续全绿的日子算一次信号 (前 5 个交易日内没有信号的才算独立), 统计只用独立信号. 「任意一天」= 这段时间里每天都入场的平均结果, 用来看信号有没有带来优势. 样本少时结论不稳定.</div>
+    <div class="rk-note">信号永远按日线规则计算, 周线 / 月线只是换个角度看. 每一天只用当天及以前的日线计算, 和 checklist 用同一套判断代码, 没有用到未来数据. 入场价 = 信号当天收盘价; 天数是交易日. 连续全绿的日子算一次信号 (前 5 个交易日内没有信号的才算独立), 统计只用独立信号. 「任意一天」= 这段时间里每天都入场的平均结果, 用来看信号有没有带来优势. 样本少时结论不稳定.</div>
   </div>`;
 }
 
