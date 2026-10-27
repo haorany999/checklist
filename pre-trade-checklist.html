@@ -5535,7 +5535,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.17-v71';
+const APP_BUILD = '2026.10.17-v72';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
@@ -16566,7 +16566,7 @@ async function fetchFund(list) {
   try { localStorage.setItem(FUND_KEY, JSON.stringify({ at: c && Date.now() - c.at < 30 * 60000 ? c.at : Date.now(), data: merged })); } catch (e) {}
   return merged;
 }
-async function _pricesBatched(list) { for (let i = 0; i < list.length; i += 25) await fetchPrices(list.slice(i, i + 25), { maxAge: 6 * 3600e3 }); }
+async function _pricesBatched(list) { for (let i = 0; i < list.length; i += 25) await fetchPrices(list.slice(i, i + 25), { maxAge: 5 * 60000 }); }
 async function _pool(cfg, minCap, prog) {
   const U = await fetchUniverse(), all = [...new Set([...U.sp500, ...U.ndx])], ndx = new Set(U.ndx);
   prog(`读取 ${all.length} 只股票的市值和报价…`);
@@ -16638,7 +16638,7 @@ async function _scanPMCC(cfg, prog) {
           .map(o => ({ K: o.strike, exp: o.expiry, dte: o.dte, d: Math.round(o.delta * 100), mid: o.mark, ann: o.mark / G.S * 365 / Math.max(1, o.dte) * 100 }))
           .sort((a, b) => b.mid - a.mid).slice(0, 3); }
     }
-    rows.push({ t: x.ticker, label: _posLabel(x), idx: c.pos.indexOf(x), checks, ready, cands, wall, floor: x.strike + (x.avg || 0) });
+    rows.push({ t: x.ticker, label: _posLabel(x), idx: c.pos.indexOf(x), checks, ready, cands, wall, fetched: ready, floor: x.strike + (x.avg || 0) });
   }
   rows.sort((a, b) => (b.ready - a.ready) || (b.checks.filter(c => c.ok).length - a.checks.filter(c => c.ok).length));
   return { rows };
@@ -16665,7 +16665,7 @@ async function _scanCC(cfg, prog) {
           .map(o => ({ K: o.strike, exp: o.expiry, dte: o.dte, d: Math.round(o.delta * 100), mid: o.mark, ann: o.mark / G.S * 365 / Math.max(1, o.dte) * 100 }))
           .sort((a, b) => b.ann - a.ann).slice(0, 3); }
     }
-    rows.push({ t: x.ticker, shares: Number(x.qty) || 0, free, cost, checks, ready, cands, wall });
+    rows.push({ fetched: ready, t: x.ticker, shares: Number(x.qty) || 0, free, cost, checks, ready, cands, wall });
   }
   rows.sort((a, b) => (b.ready - a.ready) || (b.checks.filter(c => c.ok).length - a.checks.filter(c => c.ok).length));
   return { rows };
@@ -16720,8 +16720,23 @@ function scanCardHTML() {
       <div class="scan-card-line"><span data-vol-slot="mini">${volMiniHTML()}</span></div>
     </div>`;
 }
+let __scanLiveBusy = false;
+function _scanLiveTech(tab, r) {
+  if (!r || r.err || !r.rows || !r.rows.length || (tab !== 'cc' && tab !== 'pmcc')) return null;
+  const tks = [...new Set(r.rows.map(x => x.t))], stale = tks.filter(t => !__px[t] || Date.now() - (__px[t].at || 0) > 5 * 60000);
+  if (stale.length && !__scanLiveBusy) { __scanLiveBusy = true;
+    fetchPrices(tks, { maxAge: 5 * 60000 }).catch(() => {}).finally(() => { __scanLiveBusy = false; if (state._view === 'scan') { const y = window.scrollY; render(); window.scrollTo(0, y); } }); }
+  let at = null;
+  r.rows.forEach(x => { const p = __px[x.t], t = p && techOf(p.bars, p.live); if (!t) return; at = Math.max(at || 0, p.at || 0);
+    x.checks.forEach(ch => {
+      const m = /^KDJ J > (\d+)/.exec(ch.k); if (m) { ch.ok = t.J > +m[1]; ch.v = t.J.toFixed(0); }
+      if (ch.k === '布林 %B > 50%') { ch.ok = t.px > t.mid; ch.v = t.pctB != null ? (t.pctB * 100).toFixed(0) + '%' : '—'; }
+      if (ch.k === '布林 %B > 75%') { ch.ok = t.px > (t.mid + t.up) / 2; ch.v = t.pctB != null ? (t.pctB * 100).toFixed(0) + '%' : '—'; } });
+    x.ready = x.checks.every(ch => ch.ok); });
+  return at;
+}
 function renderScanPage() {
-  const cfg = loadScanCfg(), a = loadScanAll(), tab = cfg.tab, r = a[tab];
+  const cfg = loadScanCfg(), a = loadScanAll(), tab = cfg.tab, r = a[tab], liveAt = _scanLiveTech(tab, r);   // before the tab counts use r
   const head = `<div class="header header-sticky"><div class="brand">Pre-Trade Checklist</div><div class="header-actions">
     <button class="btn ghost" onclick="state._view = null; render(); window.scrollTo(0, 0)">← 返回</button><button class="btn ghost" onclick="runScan()"${__scanBusy ? ' disabled' : ''}>${__scanBusy ? '扫描中…' : '扫描'}</button></div></div>`;
   if (!loadSchwabCfg()) { $app.innerHTML = head + '<div class="rk-page"><div class="rk-notice">需要连接 Schwab.</div></div>'; return; }
@@ -16764,15 +16779,15 @@ function renderScanPage() {
   else body = r.rows.length ? r.rows.map(x => `
     <div class="sc-row${x.ready ? ' sc-ready' : ''}"><div class="sc-top"><b class="sc-t">${esc(tab === 'pmcc' ? x.label : x.t)}</b>${tab === 'cc' ? `<span class="rk-quiet">${x.shares} 股 · 调整后成本 ${x.cost != null ? x.cost.toFixed(2) : '—'}</span>` : `<span class="rk-quiet">安全线 ${x.floor.toFixed(2)} (行权价 + 成本)</span>`}
       <span class="sc-state ${x.ready ? 'ok' : ''}">${x.ready ? '可以做 ' + (tab === 'pmcc' ? 'PMCC' : 'CC') : '等待'}</span></div>
-      <div class="sc-chips">${x.checks.map(ch => `<span class="sc-chip ${ch.ok ? 'ok' : 'no'}">${esc(ch.k)} · 现在 ${esc(ch.v)}</span>`).join('')}${x.wall ? `<span class="sc-chip">Call Wall ${x.wall}</span>` : ''}</div>
+      <div class="sc-chips">${x.checks.map(ch => `<span class="sc-chip ${ch.ok ? 'ok' : 'no'}">${esc(ch.k)} · ${esc(ch.v)}</span>`).join('')}${x.wall ? `<span class="sc-chip">Call Wall ${x.wall}</span>` : ''}</div>
       ${x.ready ? (x.cands.length ? `<div class="rk-table-wrap"><table class="rk-table"><thead><tr><th>合约</th><th>Δ</th><th>DTE</th><th>权利金</th><th>年化</th><th></th></tr></thead><tbody>${x.cands.map(o => `<tr><td><b>${o.K}C ${esc(_md(o.exp))}</b></td><td>${o.d}</td><td>${o.dte}</td><td>${o.mid.toFixed(2)}</td><td>${o.ann.toFixed(0)}%</td>
-        <td><button class="btn small" onclick="openScanChecklist('${esc(x.t)}', ${o.K}, '${esc(o.exp)}', '${tab}')">开 checklist</button></td></tr>`).join('')}</tbody></table></div>` : '<div class="rk-quiet">条件满足, 但没有同时满足 Δ / 行权价 / Call Wall 的合约.</div>') : ''}
+        <td><button class="btn small" onclick="openScanChecklist('${esc(x.t)}', ${o.K}, '${esc(o.exp)}', '${tab}')">开 checklist</button></td></tr>`).join('')}</tbody></table></div>` : x.fetched === false || (x.fetched == null && !x.wall) ? '<div class="rk-quiet">按最新价格条件已满足, 扫描时还没满足, 所以没读合约. 点上面的「扫描」读取合约.</div>' : '<div class="rk-quiet">条件满足, 但没有同时满足 Δ / 行权价 / Call Wall 的合约.</div>') : ''}
     </div>`).join('') : `<div class="rk-quiet">${tab === 'pmcc' ? '当前没有持有 LEAPS.' : '当前没有 ≥ 100 股的正股.'}</div>`;
   $app.innerHTML = head + `
     <div class="rk-page scan-page">
       ${tabs}
       <section class="rk-block">
-        <div class="sc-env"><span data-vol-slot="mini">${volMiniHTML()}</span>${r && r.at ? `<span class="rk-quiet">${_ago(r.at)}</span>` : ''}</div>
+        <div class="sc-env"><span data-vol-slot="mini">${volMiniHTML()}</span>${r && r.at ? `<span class="rk-quiet">扫描于 ${new Date(r.at).toTimeString().slice(0, 5)}${liveAt ? ` · J / %B 截至 ${new Date(liveAt).toTimeString().slice(0, 5)}` : ''}${__scanLiveBusy ? ' · 更新中…' : ''}</span>` : ''}</div>
         <div class="sc-cfg">${cfgHTML}<div class="rk-note">${note}</div></div>
         ${funnel}
       </section>
