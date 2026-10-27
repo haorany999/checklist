@@ -3509,6 +3509,7 @@
   .room-raw .fuel { margin: 8px 0; }
   .room-meta .room-sim { display: inline-flex; flex-direction: row; flex: 0 0 auto; min-width: 0; align-items: center; gap: 6px; white-space: nowrap; } .room-meta .room-sim input { margin: 0; width: 100px; padding: 3px 6px; }
   .room-why { font-size: 11px; color: var(--alert, #E5793B); margin-top: 2px; }
+  .room-swv { color: var(--accent); font-weight: 600; } .room-swv span { font-weight: 400; color: var(--text-faint); }
 </style>
 </head>
 <body class="theme-slate">
@@ -5557,7 +5558,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.17-v77';
+const APP_BUILD = '2026.10.17-v81';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
@@ -13822,7 +13823,7 @@ const GREEK_HELP = {
     ex: 'ATR 3.00、现价 150: 正常一天波动约 2%. 止损放在入场价下方 4.5–6 元 (1.5–2 倍 ATR) 比较合理.' },
   room_p: { t: '被行权概率', def: '联动模拟里, 到期时价格低于行权价的比例. 大盘下跌时多个 CSP 会一起价内, 所以模拟按到期日顺序、各标的一起动.', short: '用当前 IV 和 β 估计, 不是保证; 大约相当于 |Δ|, 但考虑了联动.' },
   leaps_room: { t: 'Option Buying Power', def: '还能花多少钱买期权, 而且最终不用借钱. CSP 被行权时要用现金接股票, 现金不够就开始借 margin. 所以: 不借钱还能花 = 现金 + SWVXX − 安全垫 − 要留着接股票的钱, 再和 Schwab 的 Option Buying Power 取较小值.',
-    read: '三张卡片: 最坏情况 = 全部 CSP 被行权; 大概率 = 95% 的情况 (20 次里大约只有 1 次要留更多); 我的计划 = 按下表你选的「买回 / 放到期 / 接股」. 「缺 $X」= 这种情况下现金不够, 会借这么多. 最上面一行看有没有在借钱: Margin Balance 为负或 Equity % 低于 100% 就是在借.',
+    read: '三张卡片: 最坏情况 = 全部 CSP 被行权; 大概率 = 95% 的情况 (20 次里大约只有 1 次要留更多); 我的计划 = 按下表你选的「买回 / 放到期 / 接股」. 「需从 SWVXX 卖出 $X」= 现金账户里的余额不够接股票, 要先卖 SWVXX, 不是借钱; 「缺 $X」= 现金和 SWVXX 全部用上也不够, 会借这么多. 最上面一行看有没有在借钱: Margin Balance 为负或 Equity % 低于 100% 就是在借.',
     long: '大概率怎么算: 用每个标的现在的 IV 和它跟大盘的联动 (β, 大盘波动取当前 VIX), 按到期日顺序模拟 4,000 次未来走势, 大盘冲击用厚尾分布 (比正态更容易出现大跌); 取 95% 的情况下要接股票的钱. 大盘一跌几个 CSP 往往一起价内, 所以它比把每个的概率加起来更保守. 没算: 以后新卖的 CSP、Short call 被行权卖出正股收回的钱. 模型基于当前 IV, 市场突变时会低估, 所以留安全垫.',
     ex: 'WDC 350P 已经盈利、距行权价 9%: 在「我打算」里选「买回」, 现在花 $900 买回, 就不用再为它留 $35,000; 「我的计划」那张卡片立刻多出约 $34,100.' },
   expect: { t: '期望值', def: '这个策略平均每做一笔赚 (或亏) 多少钱 = 胜率 × 平均盈利 − 败率 × 平均亏损.',
@@ -16268,7 +16269,7 @@ function _leapsRoom(spend = 0) {
   const limit = bp == null ? cash : Math.min(bp, cash), nav = c.nav || 0;
   const used = nav && bp != null ? Math.max(0, Math.min(100, (nav - bp) / nav * 100)) : null;
   const usedAfter = used != null ? Math.max(0, Math.min(100, (nav - bp + spend) / nav * 100)) : null;
-  return { bp, cash, cspN, nav, limit, used, usedAfter, spend, c };
+  return { bp, cash, cashOnly: pf.cash || 0, swv: pf.swvxx || 0, cspN, nav, limit, used, usedAfter, spend, c };
 }
 // Schwab: a negative margin balance is a loan; Equity % under 100 says the same from the other side
 function _borrowState(c) {
@@ -16312,7 +16313,7 @@ function _roomCalc(spend = __roomSpend) {
     .sort((a, b) => a.x.expiry.localeCompare(b.x.expiry) || b.notional - a.notional);
   const sc = { worst: rows.reduce((s, r) => s + r.notional, 0), prob: sim ? sim.p95 : 0, custom: rows.reduce((s, r) => s + r.need, 0) };
   const can = k => { const v = base.cash - cushion - sc[k]; return base.bp != null ? Math.min(v, base.bp) : v; };
-  return { ...base, cfg, cushion, rows, sim, sc, can, byBp: k => base.bp != null && base.bp < base.cash - cushion - sc[k] };
+  return { ...base, cfg, cushion, rows, sim, sc, can, raw: k => base.cash - sc[k], byBp: k => base.bp != null && base.bp < base.cash - cushion - sc[k] };
 }
 window.roomSet = (k, ch) => { const cfg = _roomCfg(); cfg.choices[k] = ch; _roomSave({ choices: cfg.choices }); _roomRedraw(); };
 window.roomReset = () => { _roomSave({ choices: {} }); _roomRedraw(); };
@@ -16334,13 +16335,22 @@ function _roomWhy(r, k) {
   if (cl.length) parts.push(`买回 ${list(cl.map(w => w.x.ticker))} 花 ${_fmtUsd(cl.reduce((s, w) => s + w.close, 0))}`);
   return parts.length ? parts.join('<br>') : '全部放到期, 不用留钱接股票';
 }
+// three states, never mixed up: real shortfall (borrowing) · only the cushion is touched · room to spend
+function _roomState(r, k, spend = 0) {
+  const raw = r.raw(k) - spend, can = r.can(k) - spend, use = r.sc[k] + spend, sell = Math.max(0, Math.min(r.swv, use - r.cashOnly));
+  if (raw < 0) return { st: 'borrow', v: -raw, sell: r.swv };
+  if (can < 0) return { st: r.byBp(k) && raw >= r.cushion ? 'schwab' : 'cushion', v: raw, sell };
+  return { st: 'ok', v: can, sell };
+}
+const _sellNote = S => S.sell > 0.5 ? `<div class="room-s room-swv">需从 SWVXX 卖出 ${_fmtUsd(S.sell)}</div>` : '';
 function _roomCardsHTML(r) {
-  return ROOM_SC.map(([k, l, s]) => { const can = r.can(k), left = can - r.spend, short = can < 0;
-    return `<div class="room-card room-${k}"><div class="room-l">${l} <span>${s}</span></div>
-      <div class="room-big ${short ? 'rk-t-danger' : ''}">${short ? `缺 ${_usd0(can)}` : _fmtUsd(can)}</div>
-      <div class="room-s">${short ? '现金不够接股票, 会借钱' : '不借钱还能花'}${r.byBp(k) ? ' · 受 Schwab 限制' : ''}</div>
-      <div class="room-s">${_roomWhy(r, k)}</div>
-      ${r.spend > 0 ? `<div class="room-s room-after">花 ${_fmtUsd(r.spend)} 后 <b class="${left < 0 ? 'rk-t-danger' : 'rk-t-safe'}">${left >= 0 ? `还剩 ${_fmtUsd(left)}` : `会借 ${_usd0(left)}`}</b></div>` : ''}</div>`; }).join('');
+  return ROOM_SC.map(([k, l, s]) => { const S = _roomState(r, k), A = r.spend > 0 ? _roomState(r, k, r.spend) : null;
+    const big = S.st === 'borrow' ? `<div class="room-big rk-t-danger">缺 ${_fmtUsd(S.v)}</div><div class="room-s">现金和 SWVXX 全部用上也不够接股票, 会借这么多</div>`
+      : S.st === 'cushion' ? `<div class="room-big rk-t-alert">$0</div><div class="room-s"><b>不会借钱</b>, 但会用掉安全垫 · 接完股票还剩 ${_fmtUsd(S.v)}</div>`
+      : S.st === 'schwab' ? `<div class="room-big rk-t-alert">$0</div><div class="room-s">现金够, 但 Schwab Option Buying Power 用完了</div>`
+      : `<div class="room-big">${_fmtUsd(S.v)}</div><div class="room-s">不借钱还能花${r.byBp(k) ? ' · 受 Schwab 限制' : ''}</div>`;
+    const after = !A ? '' : `<div class="room-s room-after">花 ${_fmtUsd(r.spend)} 后 ${A.st === 'borrow' ? `<b class="rk-t-danger">会借 ${_fmtUsd(A.v)}</b>` : A.st === 'cushion' ? `<b class="rk-t-alert">不借钱, 但动用安全垫</b> · 剩 ${_fmtUsd(A.v)}` : A.st === 'schwab' ? '<b class="rk-t-alert">超过 Schwab Option Buying Power</b>' : `<b class="rk-t-safe">还剩 ${_fmtUsd(A.v)}</b>`}${A.st !== 'borrow' && A.sell > 0.5 ? ` · 需从 SWVXX 卖出 ${_fmtUsd(A.sell)}` : ''}</div>`;
+    return `<div class="room-card room-${k}"><div class="room-l">${l} <span>${s}</span></div>${big}${S.st !== 'borrow' ? _sellNote(S) : ''}<div class="room-s">${_roomWhy(r, k)}</div>${after}</div>`; }).join('');
 }
 function _roomBlockHTML() {
   const r = _roomCalc(); if (!r) return '';
@@ -16360,7 +16370,7 @@ function _roomBlockHTML() {
       <h3 class="rk-block-title">Option Buying Power ${_qBtn('leaps_room', 'long')}</h3>
       ${status}
       <div class="room-cards" id="room-cards">${_roomCardsHTML(r)}</div>
-      <div class="room-meta"><span>现金 + SWVXX <b>${_fmtUsd(r.cash)}</b></span><span>Schwab Option Buying Power <b>${r.bp != null ? _fmtUsd(r.bp) : '—'}</b></span>
+      <div class="room-meta"><span>现金 <b>${_fmtUsd(r.cashOnly)}</b></span><span>SWVXX <b>${_fmtUsd(r.swv)}</b></span><span>Schwab Option Buying Power <b>${r.bp != null ? _fmtUsd(r.bp) : '—'}</b></span>
         <span>安全垫 <input class="gl-num room-cu" type="number" min="0" max="50" step="1" value="${r.cfg.cushion}" onchange="roomCushion(this.value)">% NAV</span>
         <span class="room-sim">如果花 $ <input inputmode="decimal" placeholder="金额" value="${__roomSpend || ''}" oninput="roomSim(this.value)"></span></div>
       ${table}
@@ -16373,8 +16383,10 @@ function _leapsRoomLineHTML() {
   if (state.strategy !== 'leaps' || !loadSchwabCfg()) return '';
   const q = _cspQuoteFresh(), mark = q && q.option ? q.option.mark : null, n = parseInt(state.leapsContracts, 10) || 1;
   const spend = mark > 0 ? mark * 100 * n : 0, r = _roomCalc(spend); if (!r) return '';
-  const can = r.can('prob'), left = can - spend;
-  return `<div class="room-line">不借钱还能花 (大概率) <b class="${can <= 0 ? 'rk-t-danger' : 'rk-t-acc'}">${can >= 0 ? _fmtUsd(can) : `缺 ${_usd0(can)}`}</b>${spend ? ` · 这笔 ${n} 张约 ${_fmtUsd(spend)} · 之后 <b class="${left < 0 ? 'rk-t-danger' : 'rk-t-safe'}">${left >= 0 ? `还剩 ${_fmtUsd(left)}` : `会借 ${_usd0(left)}`}</b>` : ''}</div>`;
+  const S = _roomState(r, 'prob'), A = spend ? _roomState(r, 'prob', spend) : null;
+  const say = (x, verb) => x.st === 'borrow' ? `<b class="rk-t-danger">${verb === 'now' ? '缺' : '会借'} ${_fmtUsd(x.v)}</b>` : x.st === 'cushion' ? `<b class="rk-t-alert">不借钱, 但动用安全垫</b>` : x.st === 'schwab' ? '<b class="rk-t-alert">Schwab 购买力不够</b>' : `<b class="${verb === 'now' ? 'rk-t-acc' : 'rk-t-safe'}">${verb === 'now' ? '' : '还剩 '}${_fmtUsd(x.v)}</b>`;
+  const sv = (A || S).st !== 'borrow' && (A || S).sell > 0.5 ? ` · 需从 SWVXX 卖出 ${_fmtUsd((A || S).sell)}` : '';
+  return `<div class="room-line">不借钱还能花 (大概率) ${say(S, 'now')}${spend ? ` · 这笔 ${n} 张约 ${_fmtUsd(spend)} · 之后 ${say(A, 'after')}` : ''}${sv}</div>`;
 }
 /* ---------- per-ticker exposure: committed (cost + CSP notional) and market value ---------- */
 function _tickerBlocksHTML(c) {
@@ -16506,7 +16518,8 @@ function renderPositionsPage() {
     { k: 'leaps', label: 'LEAPS', list: lp, amt: mv, v: sum(lp, mv), n: lp.length, pnl: sum(lp, _posPnl), th: sum(lp, theta), dd: sum(lp, _dollarDelta), cls: 'pc-leaps' },
     { k: 'oth', label: '其他期权', list: oth, amt: mv, v: sum(oth, mv), n: oth.length, pnl: sum(oth, _posPnl), th: sum(oth, theta), dd: sum(oth, _dollarDelta), cls: 'pc-oth' },
     { k: 'sc', label: 'Short call (负债)', list: sc, amt: x => -mv(x), v: sum(sc, x => -mv(x)), n: sc.length, pnl: sum(sc, _posPnl), th: sum(sc, theta), dd: sum(sc, _dollarDelta), cls: 'pc-sc', liab: true },
-    { k: 'free', label: '自由现金', v: free, n: null, pnl: null, th: null, dd: null, cls: free >= 0 ? 'pc-free' : 'pc-neg' },
+    { k: 'free', label: '自由现金', v: free, n: null, pnl: null, th: null, dd: null, cls: free >= 0 ? 'pc-free' : 'pc-neg',
+      parts: [['现金 (Schwab Cash)', pf.cash || 0], ['+ SWVXX (货币基金)', pf.swvxx || 0], ['− CSP 担保名义', -cspN]] },
   ];
   const barTot = sleeves.filter(s => !s.liab).reduce((s, x) => s + Math.max(0, x.v), 0) || 1;
   const bar = sleeves.filter(s => !s.liab && s.v > 0).map(s => `<i class="${s.cls}" style="width:${(s.v / barTot * 100).toFixed(2)}%" title="${esc(s.label)} ${_fmtUsd(s.v)}"></i>`).join('');
@@ -16522,10 +16535,11 @@ function renderPositionsPage() {
       <div class="pc-bar">${bar}</div>
       <div class="rk-table-wrap"><table class="rk-table">
         <thead><tr><th>板块</th><th>仓位</th><th>金额</th><th>% NAV</th><th>浮盈</th><th>美元 Delta ${_qBtn('usd_delta', 'short')}</th><th>Theta/天</th></tr></thead>
-        ${sleeves.map(s => { const P = (s.list || []).slice().sort((a, b) => Math.abs(s.amt(b)) - Math.abs(s.amt(a))), can = P.length > 0;
-          return `<tbody class="rk-dd pc-dd">
+        ${sleeves.map(s => { const P = (s.list || []).slice().sort((a, b) => Math.abs(s.amt(b)) - Math.abs(s.amt(a))), can = P.length > 0 || !!s.parts;
+          return `<tbody class="rk-dd pc-dd${s.parts ? ' open' : ''}">
           <tr${can ? ` class="rk-dd-head" tabindex="0" role="button" onclick="this.parentElement.classList.toggle('open')" onkeydown="if(event.key==='Enter')this.click()"` : ''}><td>${can ? '<span class="rk-caret">▸</span>' : '<span class="rk-caret pc-nocaret"></span>'}<i class="pc-sw ${s.cls}"></i>${esc(s.label)}</td><td>${s.n ?? '—'}</td><td>${money(s.v)}</td><td class="${s.k === 'free' && s.v < 0 ? 'rk-t-danger' : ''}">${_pct(pn(s.v))}</td>
           <td class="${s.pnl == null ? '' : _thCls(s.pnl)}">${s.pnl == null ? '—' : sgn(s.pnl)}</td><td>${s.dd == null ? '—' : sgn(s.dd)}</td><td class="${s.th == null ? '' : _thCls(s.th)}">${s.th == null ? '—' : sgn(s.th)}</td></tr>
+          ${s.parts ? s.parts.map(([l, v]) => `<tr class="rk-dd-row pc-sub pc-part"><td><span class="pc-ind">${esc(l)}</span></td><td></td><td class="${v < 0 ? 'rk-t-danger' : ''}">${v < 0 ? '−' + _fmtUsd(-v) : _fmtUsd(v)}</td><td>${_pct(pn(v))}</td><td>—</td><td>—</td><td>—</td></tr>`).join('') : ''}
           ${P.map(x => { const a = s.amt(x), pl = _posPnl(x), d = _dollarDelta(x), t = theta(x);
             return `<tr class="rk-dd-row pc-sub"${x.kind !== 'stock' ? ` role="button" onclick="event.stopPropagation(); openOptionLab(${idx(x)})"` : ''}><td><span class="pc-ind">${esc(_posLabel(x))}</span></td><td></td><td>${money(a)}</td><td>${_pct(pn(a))}</td>
               <td class="${pl == null ? '' : _thCls(pl)}">${pl == null ? '—' : sgn(pl)}</td><td>${d == null ? '—' : sgn(d)}</td><td class="${t == null ? '' : _thCls(t)}">${t == null || x.kind === 'stock' ? '—' : sgn(t)}</td></tr>`; }).join('')}</tbody>`; }).join('')}
