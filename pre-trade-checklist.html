@@ -3510,6 +3510,8 @@
   .room-meta .room-sim { display: inline-flex; flex-direction: row; flex: 0 0 auto; min-width: 0; align-items: center; gap: 6px; white-space: nowrap; } .room-meta .room-sim input { margin: 0; width: 100px; padding: 3px 6px; }
   .room-why { font-size: 11px; color: var(--alert, #E5793B); margin-top: 2px; }
   .room-swv { color: var(--accent); font-weight: 600; } .room-swv span { font-weight: 400; color: var(--text-faint); }
+  .wk-old { font-size: 12.5px; line-height: 1.6; padding: 8px 12px; margin: 6px 0; border-left: 3px solid #E5793B; background: color-mix(in srgb, #E5793B 10%, transparent); border-radius: 2px; } .wk-old b { color: #E5793B; }
+  .pos-asof { font-size: 12.5px; color: var(--text-dim); margin: 0 0 10px; } .pos-asof b { font-family: var(--mono); color: var(--text); } .pos-asof.stale { color: #E5793B; }
 </style>
 </head>
 <body class="theme-slate">
@@ -5558,7 +5560,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.17-v81';
+const APP_BUILD = '2026.10.17-v82';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
@@ -6665,6 +6667,7 @@ function renderPicker() {
     </div>
     <div class="picker pd">
       ${_quoteHTML()}
+      ${_workerAgeHTML()}
       ${syncStatusMiniHTML()}
       <div class="pd-kpis">
         ${_safe('综合风险', riskCardHTML)}
@@ -10166,9 +10169,25 @@ function buildSyncPayload() {
       trendRange: (function() { try { return localStorage.getItem(TREND_RANGE_KEY) || ''; } catch (e) { return ''; } })(),
       themeCustom: (function() { try { return localStorage.getItem(THEME_CUSTOM_KEY) || ''; } catch (e) { return ''; } })(),
       theme: (function() { try { return localStorage.getItem('pretrade_theme') || ''; } catch (e) { return ''; } })(),
+      ...Object.fromEntries(SYNC_EXTRA().map(([n, k]) => [n, (() => { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } })()]))
     }
   };
   return payload;
+}
+// settings that change verdicts or plans: the same on every device
+const SYNC_EXTRA = () => [['newLowWin', NEWLOW_KEY], ['discStart', DISC_START_KEY], ['discReset', 'pretrade_disc_reset'], ['room', ROOM_KEY], ['goal', GOAL_KEY]];
+// three-way merge: what each setting looked like at the last sync is the base. Changed only here → keep it; changed only in the cloud → take it.
+const SYNC_BASE_KEY = 'pretrade_sync_base';
+const SYNC_PLAIN = () => [['nav', NAV_KEY], ['cash', CASH_KEY], ['swvxx', SWVXX_KEY], ['riskWeights', RISK_WEIGHTS_KEY], ['betaOverrides', BETA_OVR_KEY], ['betaMode', BETA_MODE_KEY], ['scanCfg', SCAN_CFG_KEY],
+  ['density', DENSITY_KEY], ['trendRange', TREND_RANGE_KEY], ['themeCustom', THEME_CUSTOM_KEY], ['theme', 'pretrade_theme'], ...SYNC_EXTRA()];
+function _syncBase() { try { return JSON.parse(localStorage.getItem(SYNC_BASE_KEY) || '{}') || {}; } catch (e) { return {}; } }
+function _syncBaseSave() { try { const o = {}; SYNC_PLAIN().forEach(([n, k]) => { o[n] = localStorage.getItem(k) || ''; }); localStorage.setItem(SYNC_BASE_KEY, JSON.stringify(o)); } catch (e) {} }
+function _take3(name, key, remote, valid = () => true) {
+  if (typeof remote !== 'string' || !remote || !valid(remote)) return;
+  const local = localStorage.getItem(key) || '', base = _syncBase()[name];
+  if (remote === local) return;
+  if (base !== undefined && local !== base) return;          // edited on this device since the last sync: this device wins
+  localStorage.setItem(key, remote);
 }
 
 // Apply downloaded payload to local storage. Handles both v2 (history only) and v3 formats.
@@ -10180,7 +10199,20 @@ function applyRemotePayload(remote, mode) {
 
   // === Settings === (all last-write-wins from remote if present)
   const s = remote.settings || {};
+  const isJSON = v => { try { JSON.parse(v); return true; } catch (e) { return false; } };
+  if (mode === 'merge') {
+    try {
+      SYNC_PLAIN().forEach(([n, k]) => _take3(n, k, s[n], ['riskWeights', 'betaOverrides', 'scanCfg', 'room', 'goal'].includes(n) ? isJSON : n === 'betaMode' ? v => v === 'beta' || v === 'flat' : () => true));
+      if (typeof s.rocPhase === 'string' && s.rocPhase) _mergeRemoteRocPhase(s.rocPhase);
+      if (typeof s.leapsTargets === 'string' && s.leapsTargets) _ltMerge(s.leapsTargets);
+      if (typeof s.wheelCkpt === 'string' && s.wheelCkpt) { try { const inc = JSON.parse(s.wheelCkpt), cur = loadWheelCkpt(); if (inc.asOf && (!cur || inc.asOf > cur.asOf)) localStorage.setItem(WHEEL_CKPT_KEY, s.wheelCkpt); } catch (e) {} }
+      if (typeof s.histStart === 'string' && /^\d{4}$/.test(s.histStart)) { const cur = parseInt(localStorage.getItem(HIST_START_KEY) || '9999', 10); if (+s.histStart < cur) localStorage.setItem(HIST_START_KEY, s.histStart); }
+      if (typeof s.perfStart === 'string' && s.perfStart) { try { const o = JSON.parse(s.perfStart); localStorage.setItem(PERF_START_KEY, JSON.stringify({ ...loadPerfStart(), ...o })); } catch (e) {} }
+    } catch (e) { /* localStorage full or blocked */ }
+    return;
+  }
   try {
+    SYNC_EXTRA().forEach(([n, k]) => { if (typeof s[n] === 'string' && s[n]) localStorage.setItem(k, s[n]); });
     if (typeof s.nav === 'string' && s.nav) localStorage.setItem(NAV_KEY, s.nav);
     if (typeof s.cash === 'string' && s.cash) localStorage.setItem(CASH_KEY, s.cash);
     if (typeof s.swvxx === 'string' && s.swvxx) localStorage.setItem(SWVXX_KEY, s.swvxx);
@@ -10201,6 +10233,9 @@ function applyRemotePayload(remote, mode) {
 }
 
 async function pushToGist(payload) {
+  const __r = await _pushToGistRaw(payload); _syncBaseSave(); return __r;
+}
+async function _pushToGistRaw(payload) {
   const cfg = loadSyncConfig();
   const content = JSON.stringify(payload, null, 2);
   const body = JSON.stringify({
@@ -10262,7 +10297,7 @@ async function syncDownload() {
     const remote = await pullFromGist();
     if (!Array.isArray(remote.history)) throw new Error('Gist 数据格式错误');
     safeSetItem(HISTORY_KEY, JSON.stringify(remote.history));
-    applyRemotePayload(remote, 'overwrite');
+    applyRemotePayload(remote, 'overwrite'); _syncBaseSave();
     const cfg = loadSyncConfig();
     saveSyncConfig({ ...cfg, lastSyncAt: new Date().toISOString() });
     const activeCount = remote.history.filter(e => !e._deleted).length;
@@ -11369,6 +11404,13 @@ const QUOTES = [
   ['In investing, what is comfortable is rarely profitable.', '投资里, 让你舒服的事很少赚钱.', 'Robert Arnott'],
   ['Plan your trade and trade your plan.', '计划你的交易, 交易你的计划.', '交易格言'] ];
 let __qIdx = null, __qTimer = null;
+// the App expects this Worker; an older one keeps running but misses these fixes
+const WORKER_NEED = 18, WORKER_FIXES = [[15, '每日快照只在收盘后记录 (盈亏归因的「今天」准确)'], [16, '早报 / 周报按触发时间识别 (星期写法不会再错)'], [17, '日线缓存修正 (J 等指标不会停在旧数据)'], [18, '借钱 / 追保提醒和早报里的借钱状态']];
+function _workerAgeHTML() {
+  const p = getPortfolio(); if (p.source !== 'schwab' || !p.workerVersion || p.workerVersion >= WORKER_NEED) return '';
+  const miss = WORKER_FIXES.filter(([v]) => v > p.workerVersion);
+  return `<div class="wk-old"><b>Worker 还是 v${p.workerVersion}, 请部署 v${WORKER_NEED}</b> · 缺少: ${miss.map(([v, t]) => `${esc(t)} (v${v})`).join('; ')}</div>`;
+}
 function _quoteHTML() {
   return `<div class="qt qt-fixed" id="qt"><div class="qt-en">\u201CIt never was my thinking that made the big money for me. It always was my sitting.\u201D</div><div class="qt-zh">让我赚大钱的, 从来不是我的想法, 而是我坐得住.</div><div class="qt-who">\u2014 Jesse Livermore</div></div>`;
 }
@@ -12718,7 +12760,10 @@ function _fmtK(v) {             // compact axis label: +$29k, −$850, $0
   const s = v > 0 ? '+' : '−';
   return a >= 1000 ? `${s}$${(a / 1000).toFixed(a >= 10000 ? 0 : 1)}k` : `${s}$${Math.round(a)}`;
 }
-function _md(expiry) { const d = new Date(String(expiry) + 'T12:00:00'); return isFinite(d) ? `${d.getMonth() + 1}/${d.getDate()}` : ''; }
+// month / day, plus the year when it isn't this year (a LEAPS 1/21 could be 2027 or 2028)
+function _md(expiry) { const d = new Date(String(expiry).slice(0, 10) + 'T12:00:00'); if (!isFinite(d)) return ''; const y = d.getFullYear(); return `${d.getMonth() + 1}/${d.getDate()}${y !== _thisYear() ? '/' + String(y).slice(2) : ''}`; }
+// two decimals with a real minus sign (−0.25, not -0.25), like every other number in the App
+const _num2 = v => (v < 0 ? '−' : '') + Math.abs(v).toFixed(2);
 function _posLabel(x) {
   if (x.kind === 'stock') return `${x.ticker} ${Math.round(Number(x.qty) || 0)} 股`;
   const r = x.kind === 'short_put' || x.kind === 'long_put' ? 'P' : 'C';
@@ -12741,7 +12786,7 @@ function _distPct(x) {            // how far the underlying must move to reach t
 function _posMeta(x) {
   const out = [], dte = _dteOf(x), dist = _distPct(x), cap = _captured(x);
   if (dte != null) out.push(`${dte} 天`);
-  if (x.delta != null) out.push(`Δ ${x.delta.toFixed(2)}`);
+  if (x.delta != null) out.push(`Δ ${_num2(x.delta)}`);
   if (_isShortPos(x) && dist != null) out.push(dist < 0 ? '价内' : `距 ${dist.toFixed(1)}%`);
   if (cap != null) out.push(cap >= 0 ? `已赚 ${cap.toFixed(0)}%` : `权利金亏 ${Math.abs(cap).toFixed(0)}%`);
   if ((x.kind === 'leaps' || x.kind === 'long_put') && x.cost > 0 && x.marketValue != null) out.push(`浮盈 ${((x.marketValue - x.cost) / x.cost * 100).toFixed(0)}%`);
@@ -13201,7 +13246,16 @@ function _mEval(m, S1, d, dv, metric) {
   return 0;
 }
 const _IV_SHIFTS = (() => { const a = []; for (let v = -10; v <= 30.001; v += 2.5) a.push(v); return a; })();
+// the surface is a full grid of option prices (~1 s on a phone): reuse it while positions, prices and IV are unchanged; time decay → recompute every 10 minutes
+const __surfMemo = new Map();
 function portfolioSurfaceParts(pos, metric) {
+  const key = metric + '|' + Math.floor(Date.now() / 600000) + '|' + pos.map(x => [x.ticker, x.kind, x.strike, x.expiry, x.qty, x.und, x.iv, x.mark, x.price].join(',')).join(';');
+  if (__surfMemo.has(key)) return __surfMemo.get(key);
+  const v = _portfolioSurfacePartsRaw(pos, metric);
+  if (__surfMemo.size > 24) __surfMemo.delete(__surfMemo.keys().next().value);
+  __surfMemo.set(key, v); return v;
+}
+function _portfolioSurfacePartsRaw(pos, metric) {
   const base = portfolioSurface(pos, metric), tickers = [...new Set(pos.map(x => x.ticker))];
   if (tickers.length > 1) {
     base.parts = {};
@@ -14161,7 +14215,7 @@ function _leapsLabHTML(R) {
         <thead><tr><th>合约</th><th>Δ</th><th>股数</th><th>λ ${_qBtn('lambda', 'long')}</th><th>时间价值</th><th>时间价值/年 ${_qBtn('carry', 'long')}</th><th>浮盈</th><th>Theta/月</th><th>Vega/点</th><th>DTE</th></tr></thead>
         <tbody>${rows.map(({ x, i, s }) => s ? `
           <tr class="gl-row" role="button" tabindex="0" onclick="openOptionLab(${i})" onkeydown="if(event.key==='Enter')openOptionLab(${i})">
-            <td>${esc(_posLabel(x))}</td><td class="${dcls(s.delta)}">${s.delta.toFixed(2)}</td><td>${Math.round(s.shares)}</td>
+            <td>${esc(_posLabel(x))}</td><td class="${dcls(s.delta)}">${_num2(s.delta)}</td><td>${Math.round(s.shares)}</td>
             <td>${s.lambda != null ? s.lambda.toFixed(2) + '×' : '—'}</td><td>${s.extrPct != null ? s.extrPct.toFixed(0) + '%' : '—'}</td>
             <td>${s.carry.toFixed(1)}%</td>
             <td>${(() => { const rr = _leapsReturn(x, s.mark); return rr ? `<span class="${rr.ret >= 0 ? 'rk-t-safe' : 'rk-t-alert'}">${rr.ret >= 0 ? '+' : ''}${rr.ret.toFixed(0)}%</span> <span class="rk-quiet">${rr.ann != null ? (rr.ann >= 0 ? '+' : '') + rr.ann.toFixed(0) + '%/年' : '—'}</span>` : '—'; })()}</td>
@@ -15086,7 +15140,7 @@ function _rollTableHTML(x, b) {
       <tbody>${top.map(r => `<tr>
         <td>${r.o.strike}${put ? 'P' : 'C'} ${esc(_md(r.o.expiry))}</td>
         <td class="${_thCls(r.mid * 100)}">${usd(r.mid)}</td><td class="rk-quiet">${usd(r.cons)}</td>
-        <td>${r.o.delta != null ? r.o.delta.toFixed(2) : '—'}</td><td>${r.o.dte ?? '—'}</td>
+        <td>${r.o.delta != null ? _num2(r.o.delta) : '—'}</td><td>${r.o.dte ?? '—'}</td>
         ${put ? `<td>${r.be != null ? r.be.toFixed(2) : '—'}</td>` : ''}
         <td>${long ? (r.carry != null ? r.carry.toFixed(1) + '%' : '—') : (r.ann != null ? r.ann.toFixed(1) + '%' : '—')}</td></tr>`).join('')}</tbody>
     </table></div>
@@ -15230,7 +15284,7 @@ let __perfBusy = false, __perfErr = null, __perfPeriod = 'ytd', __perfMonth = nu
 function loadHist() { try { const c = JSON.parse(localStorage.getItem(HIST_KEY) || 'null'); return c && Array.isArray(c.data) ? c : null; } catch (e) { return null; } }
 function loadNavs() { try { const c = JSON.parse(localStorage.getItem(NAVS_KEY) || 'null'); return c && Array.isArray(c.data) ? c : null; } catch (e) { return null; } }
 function loadPerfStart() { try { const o = JSON.parse(localStorage.getItem(PERF_START_KEY) || '{}'); return o && typeof o === 'object' ? o : {}; } catch (e) { return {}; } }
-const _thisYear = () => new Date().getFullYear();
+const _thisYear = () => +_todayISO().slice(0, 4);
 let __posSig = null;
 function _posSigChanged() { const s = getPortfolio().positions.map(x => `${x.symbol || x.ticker}:${x.qty}`).sort().join(','), ch = __posSig != null && s !== __posSig; __posSig = s; return ch; }
 async function fetchPerf(force, manual = false) {
@@ -15717,7 +15771,10 @@ function _wheelHTML() {
 }
 
 /* ═════════════ v17 · GEX / Max Pain · volatility regime · CSP scan · P&L attribution ═════════════ */
-const _todayISO = () => new Date().toISOString().slice(0, 10);
+// every calendar date is a New York date: the market's day, whatever the device's time zone (UTC rolls over at 8 PM in New York)
+const __etFmt = (() => { try { return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' }); } catch (e) { return null; } })();
+const _etISO = ts => { const d = new Date(ts); if (!__etFmt || !isFinite(d)) return isFinite(d) ? d.toISOString().slice(0, 10) : ''; return __etFmt.format(d); };
+const _todayISO = () => _etISO(Date.now());
 function _fmtBig(v) { const a = Math.abs(v), s = v < 0 ? '−' : '+'; return a >= 1e9 ? `${s}$${(a / 1e9).toFixed(1)}B` : a >= 1e6 ? `${s}$${(a / 1e6).toFixed(1)}M` : a >= 1e3 ? `${s}$${(a / 1e3).toFixed(0)}k` : `${s}$${a.toFixed(0)}`; }
 
 /* ---------- GEX / Max Pain (Worker /chain, both sides) ---------- */
@@ -16360,7 +16417,7 @@ function _roomBlockHTML() {
   const opt = (row, k, l) => `<button class="rk-preset${row.ch === k ? ' active' : ''}${row.def === k ? ' room-def' : ''}" onclick="roomSet('${esc(_cspKey(row.x))}', '${k}')">${l}</button>`;
   const table = r.rows.length ? `<div class="rk-table-wrap"><table class="rk-table room-t"><thead><tr><th>合约</th><th>被行权要付</th><th>距行权价</th><th>Δ</th><th>到期</th><th>被行权概率 ${_qBtn('room_p', 'short')}</th><th>现在买回</th><th>我打算</th></tr></thead><tbody>
       ${r.rows.map(w => `<tr><td><b>${esc(_posLabel(w.x))}</b>${w.def === 'assign' ? `<div class="room-why">${w.dist != null && w.dist < 0 ? '已价内' : `Δ ${w.d.toFixed(2)} > 0.55`}, 默认接股</div>` : ''}</td><td>${_fmtUsd(w.notional)}</td><td class="${distCls(w.dist)}">${w.dist == null ? '—' : (w.dist < 0 ? '价内 ' : '') + Math.abs(w.dist).toFixed(1) + '%'}</td><td class="${_cspDeltaCls(w.d)}">${w.d == null ? '—' : w.d.toFixed(2)}</td>
-        <td>${esc(w.x.expiry.slice(5).replace('-', '/'))}</td><td>${pc(w.p)}</td><td>${_fmtUsd(w.close)}</td>
+        <td>${esc(_md(w.x.expiry))}</td><td>${pc(w.p)}</td><td>${_fmtUsd(w.close)}</td>
         <td><span class="rk-presets room-ch">${opt(w, 'close', '买回')}${opt(w, 'hold', '放到期')}${opt(w, 'assign', '接股')}</span></td></tr>`).join('')}</tbody></table></div>
     <div class="rk-quiet room-hint">虚线框 = 默认 · <button class="app-link" onclick="roomReset()">恢复默认</button></div>` : '<div class="rk-quiet">现在没有 CSP.</div>';
   const raw = [['marginBalance', 'Margin Balance (负数 = 借款)'], ['equityPercentage', 'Equity %'], ['accruedInterest', 'Accrued Interest'], ['maintenanceRequirement', 'Maintenance Requirement'], ['maintenanceCall', 'Maintenance Call'], ['regTCall', 'Reg T Call'],
@@ -16570,7 +16627,7 @@ function renderPositionsPage() {
       </div>
       <div class="rk-table-wrap"><table class="rk-table">
         <thead><tr><th>合约</th><th>距行权价</th><th>状态</th><th>浮盈</th><th>名义</th><th>% NAV</th><th>开仓权利金</th><th>当前价值</th><th>Delta</th><th>DTE</th><th>持有</th><th>开仓年化</th><th>Theta/天</th><th>止盈进度 (赚 ${SHORT_TP}%)</th><th>剩余时间价值</th></tr></thead>
-        <tbody>${cspRows.map(r => row(r.x, `<td><b>${esc(_posLabel(r.x))}</b>${r.x.strategy ? ` <span class="rk-quiet">${esc(r.x.strategy)}</span>` : ''}</td><td class="${r.dist == null ? '' : r.dist < 3 ? 'rk-t-danger' : r.dist < 8 ? 'rk-t-alert' : 'rk-t-safe'}">${_pct(r.dist)}</td><td>${tag(r.x)}</td><td class="${_thCls(r.pnl)}">${sgn(r.pnl)}</td><td>${money(r.x.exposure)}</td><td>${_pct(pn(r.x.exposure))}</td><td>${money(r.credit)}</td><td>${money(r.val)}</td><td class="${_cspDeltaCls(r.x.delta)}">${r.x.delta != null ? r.x.delta.toFixed(2) : '—'}</td><td>${_days(r.dte)}</td><td>${r.held ? r.held.days + ' 天' : '—'}</td><td>${r.ann != null ? r.ann.toFixed(0) + '%' : '—'}</td><td class="${_thCls(r.th)}">${sgn(r.th)}</td><td class="pc-cell">${r.cap != null ? _progBarHTML(r.cap / SHORT_TP * 100, r.timePct, `已赚 ${r.cap.toFixed(0)}%`) : '—'}</td><td>${money(r.ext)}</td>`)).join('')}
+        <tbody>${cspRows.map(r => row(r.x, `<td><b>${esc(_posLabel(r.x))}</b>${r.x.strategy ? ` <span class="rk-quiet">${esc(r.x.strategy)}</span>` : ''}</td><td class="${r.dist == null ? '' : r.dist < 3 ? 'rk-t-danger' : r.dist < 8 ? 'rk-t-alert' : 'rk-t-safe'}">${_pct(r.dist)}</td><td>${tag(r.x)}</td><td class="${_thCls(r.pnl)}">${sgn(r.pnl)}</td><td>${money(r.x.exposure)}</td><td>${_pct(pn(r.x.exposure))}</td><td>${money(r.credit)}</td><td>${money(r.val)}</td><td class="${_cspDeltaCls(r.x.delta)}">${r.x.delta != null ? _num2(r.x.delta) : '—'}</td><td>${_days(r.dte)}</td><td>${r.held ? r.held.days + ' 天' : '—'}</td><td>${r.ann != null ? r.ann.toFixed(0) + '%' : '—'}</td><td class="${_thCls(r.th)}">${sgn(r.th)}</td><td class="pc-cell">${r.cap != null ? _progBarHTML(r.cap / SHORT_TP * 100, r.timePct, `已赚 ${r.cap.toFixed(0)}%`) : '—'}</td><td>${money(r.ext)}</td>`)).join('')}
           <tr class="rk-total"><td>合计</td><td></td><td></td><td class="${_thCls(cT.pnl)}">${sgn(cT.pnl)}</td><td>${money(cspN)}</td><td>${_pct(pn(cspN))}</td><td>${money(cT.credit)}</td><td>${money(cT.val)}</td><td></td><td></td><td></td><td></td><td class="${_thCls(cT.th)}">${sgn(cT.th)}</td><td></td><td>${money(cT.ext)}</td></tr></tbody>
       </table></div>
       <div class="rk-note">名义 = 行权价 × 100 × 张数. 开仓年化按开仓到到期的天数折算. 点一行打开合约面板.</div>
@@ -16620,7 +16677,7 @@ function renderPositionsPage() {
         <thead><tr><th>合约</th><th>浮盈 %</th><th>止盈进度</th><th>正股止盈位</th><th>还需涨</th><th>距退出</th><th>浮盈</th><th>Δ</th><th>DTE</th><th>市值</th><th>市值 % NAV</th><th>成本</th><th>投入 % NAV</th><th>持有</th><th>正股等值</th><th>λ ${_qBtn('lambda', 'long')}</th></tr></thead>
         <tbody>${lpRows.map(r => row(r.x, `<td><b>${esc(_posLabel(r.x))}</b></td><td class="${_thCls(r.pnl)}">${_pct(r.pnlPct)}</td><td class="pc-cell">${r.prog != null ? _progBarHTML(r.prog, null, `/ +${r.tg.pct}% ${r.tg.style ? '' : '(默认)'}`) : '—'}</td>${(() => { const T = _leapsTgt(r.x), S = r.x.und, need = T && S > 0 ? (T.px / S - 1) * 100 : null;
           return `<td class="lt-cell" onclick="event.stopPropagation()"><input type="number" step="0.5" class="gl-num lt-in${T ? '' : ' lt-miss'}" value="${T ? T.px : ''}" placeholder="填写" onchange="setLeapsTgt('${esc(_ltKey(r.x))}', this.value)" onkeydown="if (event.key === 'Enter') this.blur()" aria-label="正股止盈位">${T && T.src === 'checklist' ? '<span class="rk-quiet lt-src">来自 checklist</span>' : ''}</td>
-          <td class="${need == null ? 'rk-quiet' : need <= 0 ? 'rk-t-safe' : ''}">${need == null ? (T ? '—' : '未设置') : need <= 0 ? '已到止盈位' : '+' + need.toFixed(1) + '%'}</td>`; })()}<td class="${r.toExit != null && r.toExit <= 0 ? 'rk-t-danger' : r.toExit != null && r.toExit < 90 ? 'rk-t-alert' : ''}">${r.toExit != null ? (r.toExit <= 0 ? '已到退出线' : r.toExit + ' 天') : '—'}</td><td class="${_thCls(r.pnl)}">${sgn(r.pnl)}</td><td>${r.s ? r.s.delta.toFixed(2) : '—'}</td><td>${_days(r.dte)}</td>
+          <td class="${need == null ? 'rk-quiet' : need <= 0 ? 'rk-t-safe' : ''}">${need == null ? (T ? '—' : '未设置') : need <= 0 ? '已到止盈位' : '+' + need.toFixed(1) + '%'}</td>`; })()}<td class="${r.toExit != null && r.toExit <= 0 ? 'rk-t-danger' : r.toExit != null && r.toExit < 90 ? 'rk-t-alert' : ''}">${r.toExit != null ? (r.toExit <= 0 ? '已到退出线' : r.toExit + ' 天') : '—'}</td><td class="${_thCls(r.pnl)}">${sgn(r.pnl)}</td><td>${r.s ? _num2(r.s.delta) : '—'}</td><td>${_days(r.dte)}</td>
           <td>${money(r.val)}</td>
           <td>${_pct(pn(r.val))}</td><td>${money(r.cost)}</td>
           <td>${_pct(pn(r.cost))}</td>
@@ -16652,7 +16709,9 @@ function renderPositionsPage() {
           <td class="${_thCls(_posPnl(x))}">${sgn(_posPnl(x))}</td><td>${_days(_dteOf(x))}</td><td>${h ? h.days + ' 天' : '—'}</td><td>${sgn(_dollarDelta(x))}</td>`); }).join('')}</tbody>
       </table></div>
     </section>` : '';
-  $app.innerHTML = head + `<div class="rk-page pos-page">${_safe('浮动盈亏', _pnlBlockHTML)}${_safe('标的 · 浮动盈亏', () => _tkPnlHTML(c), '')}${_safe('Option Buying Power', _roomBlockHTML, '')}${_safe('组合构成', () => comp)}${_safe('按标的', () => _tickerBlocksHTML(c))}${_safe('CSP', () => cspHTML)}${_safe('Short call', () => scHTML)}${_safe('LEAPS', () => lpHTML)}${_safe('正股', () => stHTML)}${_safe('其他期权', () => othHTML)}
+  const sc0 = loadSchwabCache(), stale = sc0 && _schwabAgeMin(sc0) > SCHWAB_STALE_MIN;
+  const asof = sc0 ? `<div class="pos-asof${stale ? ' stale' : ''}">Schwab 数据截至 <b>${new Date(sc0.fetchedAt).toTimeString().slice(0, 5)}</b> · ${_schwabAgeText(sc0)}${stale ? ' · 已经有点旧了, 点右上角刷新' : ''}</div>` : '';
+  $app.innerHTML = head + `<div class="rk-page pos-page">${asof}${_safe('浮动盈亏', _pnlBlockHTML)}${_safe('标的 · 浮动盈亏', () => _tkPnlHTML(c), '')}${_safe('Option Buying Power', _roomBlockHTML, '')}${_safe('组合构成', () => comp)}${_safe('按标的', () => _tickerBlocksHTML(c))}${_safe('CSP', () => cspHTML)}${_safe('Short call', () => scHTML)}${_safe('LEAPS', () => lpHTML)}${_safe('正股', () => stHTML)}${_safe('其他期权', () => othHTML)}
     ${loadHist() ? '' : '<div class="rk-note">持有天数需要交易记录, 正在读取…</div>'}</div>`;
 }
 
@@ -16807,7 +16866,7 @@ async function _scanPMCC(cfg, prog) {
       prog(`读取 ${x.ticker} 期权链…`); const G = await fetchGex(x.ticker, { maxAge: 10 * 60000 });
       if (G && !G.err) { wall = G.g.callWall;
         cands = G.cs.filter(o => o.type === 'C' && o.dte >= 5 && o.dte <= 30 && o.delta != null && o.delta * 100 <= dmax && o.mark > 0 && (!wall || o.strike > wall) && o.strike >= x.strike + (x.avg || 0))
-          .map(o => ({ K: o.strike, exp: o.expiry, dte: o.dte, d: Math.round(o.delta * 100), mid: o.mark, ann: o.mark / G.S * 365 / Math.max(1, o.dte) * 100 }))
+          .map(o => ({ K: o.strike, exp: o.expiry, dte: o.dte, d: Math.round(o.delta * 100), mid: o.mark, oi: o.oi || 0, ann: o.mark / G.S * 365 / Math.max(1, o.dte) * 100 }))
           .sort((a, b) => b.mid - a.mid).slice(0, 3); }
     }
     rows.push({ t: x.ticker, label: _posLabel(x), idx: c.pos.indexOf(x), checks, ready, cands, wall, fetched: ready, floor: x.strike + (x.avg || 0) });
@@ -16834,7 +16893,7 @@ async function _scanCC(cfg, prog) {
       prog(`读取 ${x.ticker} 期权链…`); const G = await fetchGex(x.ticker, { maxAge: 10 * 60000 });
       if (G && !G.err) { wall = G.g.callWall;
         cands = G.cs.filter(o => o.type === 'C' && o.dte >= 7 && o.dte <= 45 && o.delta != null && o.delta * 100 >= dlo && o.delta * 100 <= dhi && o.mark > 0 && (!cost || o.strike > cost) && (!wall || o.strike > wall))
-          .map(o => ({ K: o.strike, exp: o.expiry, dte: o.dte, d: Math.round(o.delta * 100), mid: o.mark, ann: o.mark / G.S * 365 / Math.max(1, o.dte) * 100 }))
+          .map(o => ({ K: o.strike, exp: o.expiry, dte: o.dte, d: Math.round(o.delta * 100), mid: o.mark, oi: o.oi || 0, ann: o.mark / G.S * 365 / Math.max(1, o.dte) * 100 }))
           .sort((a, b) => b.ann - a.ann).slice(0, 3); }
     }
     rows.push({ fetched: ready, t: x.ticker, shares: Number(x.qty) || 0, free, cost, checks, ready, cands, wall });
@@ -16943,19 +17002,19 @@ function renderScanPage() {
       <div class="sc-figs"><span><em>30 天 ROC ${_qBtn('roc30', 'short')}</em><b class="rk-t-safe">${b.roc.toFixed(2)}%</b></span><span><em>年化</em><b>${b.ann.toFixed(0)}%</b></span><span><em>Δ</em><b>${b.d}</b></span><span><em>DTE</em><b>${b.dte}</b></span>
         <span><em>权利金</em><b>${b.mid.toFixed(2)}</b></span><span><em>距现价</em><b>${b.away.toFixed(1)}%</b></span><span><em>OI</em><b>${b.oi.toLocaleString()}</b></span><span><em>名义</em><b>${_fmtUsd(b.K * 100)}</b></span></div>
       <div class="sc-chips">${chip(b.wall, `Put Wall ${x.putWall ?? '—'}`)}${chip(x.bb, '布林中轨下')}${x.newLow ? '<span class="sc-chip no">20 日新低</span>' : ''}${x.rsi != null ? `<span class="sc-chip">RSI ${x.rsi.toFixed(0)}</span>` : ''}<span class="sc-chip">${x.gexPos ? '正 Gamma' : '负 Gamma'}</span>${b.spread != null && b.spread > 15 ? `<span class="sc-chip no">价差 ${b.spread.toFixed(0)}%</span>${_qBtn('spread', 'short')}` : ''}</div>
-      ${x.alts.length ? `<div class="sc-alts">其他: ${x.alts.map(o => `<button class="app-link" onclick="openScanChecklist('${esc(x.t)}', ${o.K}, '${esc(o.exp)}', 'csp')">${o.K}P ${esc(_md(o.exp))}</button> <span class="rk-quiet">Δ${o.d} · ${o.roc.toFixed(2)}%</span>`).join(' · ')}</div>` : ''}</div>`; }).join('') : '<div class="rk-quiet">没有符合全部规则的合约.</div>';
+      ${x.alts.length ? `<div class="sc-alts">其他: ${x.alts.map(o => `<button class="app-link" onclick="openScanChecklist('${esc(x.t)}', ${o.K}, '${esc(o.exp)}', 'csp')">${o.K}P ${esc(_md(o.exp))}</button> <span class="rk-quiet">Δ${o.d} · ${o.roc.toFixed(2)}% · OI ${(o.oi || 0).toLocaleString()}</span>`).join(' · ')}</div>` : ''}</div>`; }).join('') : '<div class="rk-quiet">没有符合全部规则的合约.</div>';
   else if (tab === 'leaps') body = r.rows.length ? r.rows.map(x => { const b = x.best; return `
     <div class="sc-row"><div class="sc-top"><button class="sc-t tkx-t" onclick="showStock('${esc(x.t)}')">${esc(x.t)}</button><b class="sc-k">${b.K}C ${esc(_md(b.exp))}</b><span class="rk-quiet">现价 ${x.S.toFixed(2)}</span> ${meta(x)}
       <button class="btn small" onclick="openScanChecklist('${esc(x.t)}', ${b.K}, '${esc(b.exp)}', 'leaps')">开 checklist</button></div>
       <div class="sc-figs"><span><em>时间价值/年 ${_qBtn('carry', 'long')}</em><b class="rk-t-watch">${b.carry.toFixed(1)}%</b></span><span><em>Δ</em><b>${b.d}</b></span><span><em>DTE</em><b>${b.dte}</b></span><span><em>价格</em><b>${b.mid.toFixed(2)}</b></span>
-        <span><em>λ ${_qBtn('lambda', 'long')}</em><b>${b.lam.toFixed(1)}</b></span><span><em>每张</em><b>${_fmtUsd(b.mid * 100)}</b></span></div>
+        <span><em>λ ${_qBtn('lambda', 'long')}</em><b>${b.lam.toFixed(1)}</b></span><span><em>OI</em><b class="${(b.oi || 0) < 100 ? 'rk-t-alert' : ''}">${(b.oi || 0).toLocaleString()}</b></span><span><em>每张</em><b>${_fmtUsd(b.mid * 100)}</b></span></div>
       <div class="sc-chips"><span class="sc-chip ok">近 3 日 J 最低 ${x.J.toFixed(0)} (≤ 15)</span><span class="sc-chip ok">收盘未创新低</span><span class="sc-chip">RSI ${x.rsi.toFixed(0)}</span>${x.d200 != null ? `<span class="sc-chip ${Math.abs(x.d200) <= 5 ? 'ok' : ''}">距 200MA ${x.d200 >= 0 ? '+' : ''}${x.d200.toFixed(1)}%</span>` : ''}${x.d250 != null ? `<span class="sc-chip ${Math.abs(x.d250) <= 5 ? 'ok' : ''}">距 250MA ${x.d250 >= 0 ? '+' : ''}${x.d250.toFixed(1)}%</span>` : ''}<span class="sc-chip">52 周位置 ${(x.pos52 * 100).toFixed(0)}%</span>${b.spread != null && b.spread > 15 ? `<span class="sc-chip no">价差 ${b.spread.toFixed(0)}%</span>` : ''}</div>
-      ${x.alts.length ? `<div class="sc-alts">其他: ${x.alts.map(o => `<button class="app-link" onclick="openScanChecklist('${esc(x.t)}', ${o.K}, '${esc(o.exp)}', 'leaps')">${o.K}C ${esc(_md(o.exp))}</button> <span class="rk-quiet">Δ${o.d} · ${o.carry.toFixed(1)}%/年</span>`).join(' · ')}</div>` : ''}</div>`; }).join('') : '<div class="rk-quiet">目前没有 KDJ J ≤ 15 且有合适合约的标的.</div>';
+      ${x.alts.length ? `<div class="sc-alts">其他: ${x.alts.map(o => `<button class="app-link" onclick="openScanChecklist('${esc(x.t)}', ${o.K}, '${esc(o.exp)}', 'leaps')">${o.K}C ${esc(_md(o.exp))}</button> <span class="rk-quiet">Δ${o.d} · ${o.carry.toFixed(1)}%/年 · OI ${(o.oi || 0).toLocaleString()}</span>`).join(' · ')}</div>` : ''}</div>`; }).join('') : '<div class="rk-quiet">目前没有 KDJ J ≤ 15 且有合适合约的标的.</div>';
   else body = r.rows.length ? r.rows.map(x => `
     <div class="sc-row${x.ready ? ' sc-ready' : ''}"><div class="sc-top"><b class="sc-t">${esc(tab === 'pmcc' ? x.label : x.t)}</b>${tab === 'cc' ? `<span class="rk-quiet">${x.shares} 股 · 调整后成本 ${x.cost != null ? x.cost.toFixed(2) : '—'}</span>` : `<span class="rk-quiet">安全线 ${x.floor.toFixed(2)} (行权价 + 成本)</span>`}
       <span class="sc-state ${x.ready ? 'ok' : ''}">${x.ready ? '可以做 ' + (tab === 'pmcc' ? 'PMCC' : 'CC') : '等待'}</span></div>
       <div class="sc-chips">${x.checks.map(ch => `<span class="sc-chip ${ch.ok ? 'ok' : 'no'}">${esc(ch.k)} · ${esc(ch.v)}</span>`).join('')}${x.wall ? `<span class="sc-chip">Call Wall ${x.wall}</span>` : ''}</div>
-      ${x.ready ? (x.cands.length ? `<div class="rk-table-wrap"><table class="rk-table"><thead><tr><th>合约</th><th>Δ</th><th>DTE</th><th>权利金</th><th>年化</th><th></th></tr></thead><tbody>${x.cands.map(o => `<tr><td><b>${o.K}C ${esc(_md(o.exp))}</b></td><td>${o.d}</td><td>${o.dte}</td><td>${o.mid.toFixed(2)}</td><td>${o.ann.toFixed(0)}%</td>
+      ${x.ready ? (x.cands.length ? `<div class="rk-table-wrap"><table class="rk-table"><thead><tr><th>合约</th><th>Δ</th><th>DTE</th><th>权利金</th><th>年化</th><th>OI</th><th></th></tr></thead><tbody>${x.cands.map(o => `<tr><td><b>${o.K}C ${esc(_md(o.exp))}</b></td><td>${o.d}</td><td>${o.dte}</td><td>${o.mid.toFixed(2)}</td><td>${o.ann.toFixed(0)}%</td><td class="${(o.oi || 0) < 100 ? 'rk-t-alert' : ''}">${o.oi != null ? o.oi.toLocaleString() : '—'}</td>
         <td><button class="btn small" onclick="openScanChecklist('${esc(x.t)}', ${o.K}, '${esc(o.exp)}', '${tab}')">开 checklist</button></td></tr>`).join('')}</tbody></table></div>` : x.fetched === false || (x.fetched == null && !x.wall) ? '<div class="rk-quiet">按最新价格条件已满足, 扫描时还没满足, 所以没读合约. 点上面的「扫描」读取合约.</div>' : '<div class="rk-quiet">条件满足, 但没有同时满足 Δ / 行权价 / Call Wall 的合约.</div>') : ''}
     </div>`).join('') : `<div class="rk-quiet">${tab === 'pmcc' ? '当前没有持有 LEAPS.' : '当前没有 ≥ 100 股的正股.'}</div>`;
   $app.innerHTML = head + `
@@ -17410,7 +17469,7 @@ async function _pushAppSummary() {
 }
 
 /* ═════════════ v47 · discipline score (risk page) ═════════════ */
-const _tsDay = ts => new Date(ts).toISOString().slice(0, 10);
+const _tsDay = ts => _etISO(ts);
 function _tradingDaysBetween(a, b) { let n = 0; for (let d = _isoAdd(a, 1); d <= b; d = _isoAdd(d, 1)) { const w = new Date(d + 'T12:00:00').getDay(); if (w && w !== 6 && !US_HOLIDAYS.has(d)) n++; } return n; }
 // 50% / 21-day rule: from the first daily snapshot that hit either, was it handled within 3 trading days?
 function _mgmtDiscipline(units) {
@@ -17464,7 +17523,7 @@ function _disciplineData() {
   let streak = 0; for (const u of opens) { if (byU[u.id]) streak++; else break; }
   return { now: calc(opens), prev: Date.now() - 30 * 864e5 > from ? calc(opens.filter(u => u.openTs < Date.now() - 30 * 864e5), Date.now() - 30 * 864e5) : null, streak, from };
 }
-const _uLabel = u => `${u.side === 'short' ? '卖' : '买'} ${u.ticker} ${u.strike}${u.putCall === 'PUT' ? 'P' : 'C'} ${u.expiry.slice(5).replace('-', '/')}${u.qty ? ` × ${u.qty}` : ''}`;
+const _uLabel = u => `${u.side === 'short' ? '卖' : '买'} ${u.ticker} ${u.strike}${u.putCall === 'PUT' ? 'P' : 'C'} ${_md(u.expiry)}${u.qty ? ` × ${u.qty}` : ''}`;
 function _disciplineCardHTML() {
   const D = _disciplineData(); if (!D) return '';
   if (!D.now) return `<section class="rk-block dc-card" id="dc-card"><div class="dc-row"><span class="dc-title">纪律分 ${_qBtn('discipline', 'short')}</span><span class="rk-quiet">自 ${_discStart().slice(5).replace('-', '/')} 起还没有新开仓或 BLOCKED 记录</span></div></section>`;
@@ -18357,7 +18416,7 @@ function _moneynessHTML(R) {
             <td>${x.strike}${x.kind === 'short_put' ? 'P' : 'C'} × ${x.qty}</td>
             <td class="rk-t-${cls(dist)}">${dist < 0 ? '价内 ' : ''}${Math.abs(dist).toFixed(1)}%</td>
             <td>${_dteOf(x) ?? '—'}</td>
-            <td class="${x.kind === 'short_put' ? _cspDeltaCls(x.delta) : ''}">${x.delta != null ? x.delta.toFixed(2) : '—'}</td>
+            <td class="${x.kind === 'short_put' ? _cspDeltaCls(x.delta) : ''}">${x.delta != null ? _num2(x.delta) : '—'}</td>
             <td>${x.und.toFixed(2)}</td>
             <td>${x.kind === 'short_put' ? _fmtUsd(x.exposure) : '—'}</td>
           </tr>`).join('')}</tbody>
