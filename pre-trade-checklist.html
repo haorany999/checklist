@@ -5564,7 +5564,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.17-v85';
+const APP_BUILD = '2026.10.17-v86';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
@@ -11409,7 +11409,7 @@ const QUOTES = [
   ['Plan your trade and trade your plan.', '计划你的交易, 交易你的计划.', '交易格言'] ];
 let __qIdx = null, __qTimer = null;
 // the App expects this Worker; an older one keeps running but misses these fixes
-const WORKER_NEED = 18, WORKER_FIXES = [[15, '每日快照只在收盘后记录 (盈亏归因的「今天」准确)'], [16, '早报 / 周报按触发时间识别 (星期写法不会再错)'], [17, '日线缓存修正 (J 等指标不会停在旧数据)'], [18, '借钱 / 追保提醒和早报里的借钱状态']];
+const WORKER_NEED = 19, WORKER_FIXES = [[15, '每日快照只在收盘后记录 (盈亏归因的「今天」准确)'], [16, '早报 / 周报按触发时间识别 (星期写法不会再错)'], [17, '日线缓存修正 (J 等指标不会停在旧数据)'], [18, '借钱 / 追保提醒和早报里的借钱状态'], [19, '盘中报价时间和是否实时']];
 function _workerAgeHTML() {
   const p = getPortfolio(); if (p.source !== 'schwab' || !p.workerVersion || p.workerVersion >= WORKER_NEED) return '';
   const miss = WORKER_FIXES.filter(([v]) => v > p.workerVersion);
@@ -14860,7 +14860,7 @@ async function fetchPrices(tickers, { maxAge = 60000, fresh = false } = {}) {
     const b = await r.json().catch(() => null);
     if (!r.ok || !b || !b.tickers) { need.forEach(t => { __px[t] = { at: Date.now(), bars: [], err: r.status === 404 ? '需 Worker v7' : (b && b.message) || `HTTP ${r.status}` }; }); return; }
     need.forEach(t => { const x = b.tickers[t]; if (x && x.live && t[0] === '$' && x.live.open == null && x.live.last > 0) x.live.open = x.live.last;
-      const m = x ? _mergeLive(x.rows || [], x.live) : { bars: [], live: false }; __px[t] = { at: Date.now(), ...m, err: m.bars.length ? null : (!x && t[0] === '$' ? 'no_index' : t[0] === '$' ? 'no_index_rows' : '无历史数据') }; });
+      const m = x ? _mergeLive(x.rows || [], x.live) : { bars: [], live: false }; __px[t] = { at: Date.now(), ...m, q: x && x.live ? { qt: x.live.qt || null, tt: x.live.tt || null, rt: x.live.rt ?? null } : null, err: m.bars.length ? null : (!x && t[0] === '$' ? 'no_index' : t[0] === '$' ? 'no_index_rows' : '无历史数据') }; });
   } catch (e) { need.forEach(t => { __px[t] = { at: Date.now(), bars: [], err: '网络错误' }; }); }
 }
 
@@ -15085,7 +15085,7 @@ function techStripInnerHTML(loading) {
   const filled = [...new Set(Object.keys(_TECH_LABEL).filter(k => ids.has(k) && state.quoteFill && state.quoteFill[k] != null).map(k => _TECH_LABEL[k]))];
   const iv = _cspQuoteFresh() && _cspQuoteFresh().option ? _cspQuoteFresh().option.iv : null;
   return `
-    <div class="tc-head"><b>技术面</b><span class="rk-quiet">${esc(t)} · 日线 · ${p.live ? '含今日实时' : '截至 ' + esc(x.day)} · ${_ago(p.at)}</span><button class="pr-mini-btn" onclick="refreshTech(true)" title="刷新">⟳</button></div>
+    <div class="tc-head"><b>技术面</b><span class="rk-quiet">${esc(t)} · 日线 · ${p.live ? `盘中 · ${_quoteStamp(p)}` : '截至 ' + esc(x.day)} · ${_ago(p.at)}</span><button class="pr-mini-btn" onclick="refreshTech(true)" title="刷新">⟳</button></div>
     <div class="tc-grid">
       ${cell('现价', f2(x.px), `${x.px >= x.prevClose ? '+' : ''}${((x.px / x.prevClose - 1) * 100).toFixed(2)}%`, x.px >= x.prevClose ? 'rk-t-safe' : 'rk-t-alert')}
       ${cell('RSI 14', x.rsi.toFixed(1), x.rsi >= 70 ? '超买' : x.rsi <= 30 ? '超卖' : '', x.rsi >= 70 ? 'rk-t-alert' : x.rsi <= 30 ? 'rk-t-safe' : '')}
@@ -16648,18 +16648,22 @@ function renderPositionsPage() {
     const cover = x.nakedQty > 0 ? '裸卖' : sh >= 100 ? '正股' : hasLeaps ? 'LEAPS (PMCC)' : x.wing ? '价差' : '—';
     const w = wheel && wheel.rows ? wheel.rows.find(r => r.T === x.ticker) : null;
     const dte = _dteOf(x), life = held && dte != null ? held.days + dte : null;
-    return { x, q, credit, val, cap: _captured(x), pnl: _posPnl(x), dte, held, dist: _distPct(x), th: theta(x), cover, room: w && w.adj ? (x.strike / w.adj - 1) * 100 : null, adj: w ? w.adj : null, timePct: life ? held.days / life * 100 : null };
+    const notional = (x.strike || 0) * 100 * q, intr = x.und != null ? Math.max(0, x.und - x.strike) * 100 * q : 0;   // same columns as CSP: notional = strike × 100 × contracts
+    return { x, q, credit, val, cap: _captured(x), pnl: _posPnl(x), dte, held, dist: _distPct(x), th: theta(x), cover, room: w && w.adj ? (x.strike / w.adj - 1) * 100 : null, adj: w ? w.adj : null, timePct: life ? held.days / life * 100 : null,
+      notional, ext: Math.max(0, val - intr), ann: life && notional ? credit / notional * 365 / Math.max(1, life) * 100 : null };
   });
+  const sT = { pnl: scRows.reduce((s, r) => s + (r.pnl || 0), 0), notional: scRows.reduce((s, r) => s + r.notional, 0), credit: scRows.reduce((s, r) => s + r.credit, 0), val: scRows.reduce((s, r) => s + r.val, 0), th: scRows.reduce((s, r) => s + (r.th || 0), 0), ext: scRows.reduce((s, r) => s + r.ext, 0) };
   const scHTML = sc.length ? `
     <section class="rk-block">
       <h3 class="rk-block-title" id="sec-sc">Short call · CC / PMCC · ${sc.length} 笔</h3>
       <div class="rk-table-wrap"><table class="rk-table">
-        <thead><tr><th>合约</th><th>距行权价</th><th>状态</th><th>行权价 vs 调整后成本 ${_qBtn('adj_cost', 'long')}</th><th>浮盈</th><th>DTE</th><th>覆盖</th><th>开仓权利金</th><th>当前价值</th><th>持有</th><th>Theta/天</th><th>止盈进度 (赚 ${SHORT_TP}%)</th></tr></thead>
+        <thead><tr><th>合约</th><th>距行权价</th><th>状态</th><th>行权价 vs 调整后成本 ${_qBtn('adj_cost', 'long')}</th><th>浮盈</th><th>覆盖</th><th>名义</th><th>% NAV</th><th>开仓权利金</th><th>当前价值</th><th>Delta</th><th>DTE</th><th>持有</th><th>开仓年化</th><th>Theta/天</th><th>止盈进度 (赚 ${SHORT_TP}%)</th><th>剩余时间价值</th></tr></thead>
         <tbody>${scRows.map(r => row(r.x, `<td><b>${esc(_posLabel(r.x))}</b></td><td class="${r.dist == null ? '' : r.dist < 3 ? 'rk-t-danger' : r.dist < 8 ? 'rk-t-alert' : 'rk-t-safe'}">${_pct(r.dist)}</td><td>${tag(r.x)}</td><td class="${r.room == null ? '' : r.room >= 0 ? 'rk-t-safe' : 'rk-t-danger'}">${r.room != null ? `${r.room >= 0 ? '+' : '−'}${Math.abs(r.room).toFixed(1)}% <span class="rk-quiet">(${r.adj.toFixed(2)})</span>` : '—'}</td>
-          <td class="${_thCls(r.pnl)}">${sgn(r.pnl)}</td><td>${_days(r.dte)}</td><td class="${r.cover === '裸卖' ? 'rk-t-danger' : ''}">${esc(r.cover)}</td><td>${money(r.credit)}</td>
-          <td>${money(r.val)}</td>
-          <td>${r.held ? r.held.days + ' 天' : '—'}</td>
-          <td class="${_thCls(r.th)}">${sgn(r.th)}</td><td class="pc-cell">${r.cap != null ? _progBarHTML(r.cap / SHORT_TP * 100, r.timePct, `已赚 ${r.cap.toFixed(0)}%`) : '—'}</td>`)).join('')}</tbody>
+          <td class="${_thCls(r.pnl)}">${sgn(r.pnl)}</td><td class="${r.cover === '裸卖' ? 'rk-t-danger' : ''}">${esc(r.cover)}</td><td>${money(r.notional)}</td><td>${_pct(pn(r.notional))}</td><td>${money(r.credit)}</td>
+          <td>${money(r.val)}</td><td class="${_cspDeltaCls(r.x.delta)}">${r.x.delta != null ? _num2(r.x.delta) : '—'}</td><td>${_days(r.dte)}</td>
+          <td>${r.held ? r.held.days + ' 天' : '—'}</td><td>${r.ann != null ? r.ann.toFixed(0) + '%' : '—'}</td>
+          <td class="${_thCls(r.th)}">${sgn(r.th)}</td><td class="pc-cell">${r.cap != null ? _progBarHTML(r.cap / SHORT_TP * 100, r.timePct, `已赚 ${r.cap.toFixed(0)}%`) : '—'}</td><td>${money(r.ext)}</td>`)).join('')}
+          ${scRows.length > 1 ? `<tr class="rk-total"><td>合计</td><td></td><td></td><td></td><td class="${_thCls(sT.pnl)}">${sgn(sT.pnl)}</td><td></td><td>${money(sT.notional)}</td><td>${_pct(pn(sT.notional))}</td><td>${money(sT.credit)}</td><td>${money(sT.val)}</td><td></td><td></td><td></td><td></td><td class="${_thCls(sT.th)}">${sgn(sT.th)}</td><td></td><td>${money(sT.ext)}</td></tr>` : ''}</tbody>
       </table></div>
       <div class="rk-note">行权价 vs 调整后成本: 为正时即使被 call 走也是盈利的; 为负说明这张 CC 的行权价低于本轮 wheel 的真实成本.</div>
     </section>` : '';
@@ -17182,6 +17186,13 @@ function _stkBind() {
   el.addEventListener('touchmove', e => { if (e.touches && e.touches.length > 1) e.preventDefault(); }, { passive: false });   // two fingers zoom the chart, not the page
 }
 
+// today's bar comes from a quote: say when it was, and whether Schwab marked it realtime or delayed
+function _quoteStamp(p) {
+  if (!p || !p.live) return '';
+  const q = p.q || {}, t = q.tt || q.qt, hms = ts => new Date(ts).toTimeString().slice(0, 8);
+  const rt = q.rt === true ? '<span class="rk-t-safe">实时</span>' : q.rt === false ? '<span class="rk-t-danger">延迟报价 (约 15 分钟)</span>' : '<span class="rk-quiet">是否实时未知 (需 Worker v19)</span>';
+  return `报价 ${t ? hms(t) : '—'} · ${rt}`;
+}
 // every number J rests on, day by day, to put next to thinkorswim's daily bars
 function _jAuditHTML(t, p) {
   const b = p && p.bars; if (!b || b.length < 12) return '';
@@ -17192,10 +17203,10 @@ function _jAuditHTML(t, p) {
     K = 2 / 3 * K + rsv / 3; D = 2 / 3 * D + K / 3; if (i >= n - 10) rows.push({ i, hh, ll, rsv, K, D, J: 3 * K - 2 * D }); }
   const f = v => v.toFixed(2), wv = getPortfolio().workerVersion, at = p.at ? new Date(p.at).toTimeString().slice(0, 5) : '—';
   return `<details class="j-audit"><summary>J 值核对 <span class="rk-quiet">和 thinkorswim 的日线逐日对照</span></summary>
-    <div class="rk-note">日线读取于 ${at} · Worker v${wv || '?'}${wv && wv < 17 ? ' <span class="rk-t-danger">(低于 v17: 可能用到盘中存下的旧日线)</span>' : ''} · ${p.live ? '最后一行是今天的实时报价' : '不含今天盘中'}. 逐行对照开高低收, 哪一天和 thinkorswim 不同, 就是 J 不同的原因.</div>
+    <div class="rk-note">日线读取于 ${at} · Worker v${wv || '?'}${wv && wv < 17 ? ' <span class="rk-t-danger">(低于 v17: 可能用到盘中存下的旧日线)</span>' : ''} · ${p.live ? `最后一行是今天盘中的报价 (${_quoteStamp(p)}), 只是这一刻的快照, 盘中以 thinkorswim 为准` : '不含今天盘中'}. 逐行对照开高低收, 哪一天和 thinkorswim 不同, 就是 J 不同的原因.</div>
     <div class="rk-table-wrap"><table class="rk-table"><thead><tr><th>日期</th><th>开</th><th>高</th><th>低</th><th>收</th><th>9 日最高</th><th>9 日最低</th><th>RSV</th><th>K</th><th>D</th><th>J</th></tr></thead><tbody>
       ${rows.slice().reverse().map(r => { const x = b[r.i], live = p.live && r.i === n - 1;
-        return `<tr><td>${x.d}${live ? ' <span class="rk-quiet">实时</span>' : ''}</td><td>${f(x.o)}</td><td>${f(x.h)}</td><td>${f(x.l)}</td><td>${f(x.c)}</td><td>${f(r.hh)}</td><td>${f(r.ll)}</td><td>${r.rsv.toFixed(1)}</td><td>${r.K.toFixed(1)}</td><td>${r.D.toFixed(1)}</td><td><b>${r.J.toFixed(1)}</b></td></tr>`; }).join('')}</tbody></table></div>
+        return `<tr><td>${x.d}${live ? ` <span class="j-q">${_quoteStamp(p)}</span>` : ''}</td><td>${f(x.o)}</td><td>${f(x.h)}</td><td>${f(x.l)}</td><td>${f(x.c)}</td><td>${f(r.hh)}</td><td>${f(r.ll)}</td><td>${r.rsv.toFixed(1)}</td><td>${r.K.toFixed(1)}</td><td>${r.D.toFixed(1)}</td><td><b>${r.J.toFixed(1)}</b></td></tr>`; }).join('')}</tbody></table></div>
     <div class="rk-note">RSV = (收 − 9 日最低) ÷ (9 日最高 − 9 日最低) × 100; K = ⅔ 前 K + ⅓ RSV; D = ⅔ 前 D + ⅓ K; J = 3K − 2D (9, 3, 3, 和 MJ2 相同).</div></details>`;
 }
 function _stockOscSVG(t) {
@@ -17229,7 +17240,7 @@ function _stockOscSVG(t) {
       return `<details class="mj-list"><summary>MJ2 最近信号 <span class="rk-quiet">最近 ${S.length} 次 · 用来和 thinkorswim 对照</span></summary><div class="rk-table-wrap"><table class="rk-table"><thead><tr><th>日期</th><th>信号</th><th>收盘</th><th>J</th><th>RSI</th></tr></thead><tbody>
         ${S.map(x => `<tr><td>${all[x.i].d}${p.live && x.i === n0 - 1 ? ' <span class="rk-quiet">盘中</span>' : ''}</td><td><i class="mj-dot ${cls(x.o)}"></i>${x.nm}${x.o.S0 && x.o.S1 ? ' + S0' : ''}</td><td>${all[x.i].c.toFixed(2)}</td><td>${x.o.J.toFixed(1)}</td><td>${x.o.rsi != null ? x.o.rsi.toFixed(1) : '—'}</td></tr>`).join('')}</tbody></table></div>
         <div class="rk-note">按 MJ2 v2026-04-21n_Final_RSI72_Fix_v2 逐行移植. B0 黄 ↑ · B1 绿 ↑ · B0 + B1 同框 白 ↑ · S0 黄 ↓ · S1 红 ↓. 盘中的信号会随价格和成交量变化, 和 thinkorswim 一样.</div></details>`; })()}
-    <div class="rk-quiet stk-kdj-asof">KDJ / RSI / MACD 截至 ${(() => { const b = all[endI - 1], d = b ? `${+b.d.slice(5, 7)}/${+b.d.slice(8)}` : ''; return p.live && endI === n0 ? `${d} 盘中 (含今天的实时价)` : `${d} 收盘`; })()}</div>
+    <div class="rk-quiet stk-kdj-asof">KDJ / RSI / MACD 截至 ${(() => { const b = all[endI - 1], d = b ? `${+b.d.slice(5, 7)}/${+b.d.slice(8)}` : ''; return p.live && endI === n0 ? `${d} 盘中 · ${_quoteStamp(p)}` : `${d} 收盘`; })()}</div>
     ${_jAuditHTML(t, p)}`;
 }
 function renderStockPage() {
