@@ -3512,6 +3512,10 @@
   .room-swv { color: var(--accent); font-weight: 600; } .room-swv span { font-weight: 400; color: var(--text-faint); }
   .wk-old { font-size: 12.5px; line-height: 1.6; padding: 8px 12px; margin: 6px 0; border-left: 3px solid #E5793B; background: color-mix(in srgb, #E5793B 10%, transparent); border-radius: 2px; } .wk-old b { color: #E5793B; }
   .pos-asof { font-size: 12.5px; color: var(--text-dim); margin: 0 0 10px; } .pos-asof b { font-family: var(--mono); color: var(--text); } .pos-asof.stale { color: #E5793B; }
+  .room-cards { grid-template-columns: repeat(4, minmax(0, 1fr)); } .room-card.room-obp { background: color-mix(in srgb, var(--accent) 8%, var(--panel-2)); }
+  @media (max-width: 1100px) { .room-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 640px) { .room-cards { grid-template-columns: 1fr; } }
+  .j-audit { margin-top: 6px; font-size: 12.5px; } .j-audit > summary { cursor: pointer; color: var(--text-dim); }
 </style>
 </head>
 <body class="theme-slate">
@@ -5560,7 +5564,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.17-v82';
+const APP_BUILD = '2026.10.17-v85';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
@@ -13875,10 +13879,11 @@ const GREEK_HELP = {
     read: '用来设止损: 止损距离太近 (小于 1 倍 ATR) 很容易被正常波动扫掉, 一般放在 1.5–2 倍 ATR 之外. 也可以比较不同股票的波动程度 (看百分比).',
     long: 'LEAPS 的正股止损位如果离入场价不到 1.5 倍 ATR, 正常的日内波动就可能触发; 拉开止损又意味着单笔亏损更大, 这时应减少张数而不是收紧止损.',
     ex: 'ATR 3.00、现价 150: 正常一天波动约 2%. 止损放在入场价下方 4.5–6 元 (1.5–2 倍 ATR) 比较合理.' },
+  real_pnl: { t: '真实浮盈', def: '按调整后成本算的浮盈: (现价 − 调整后成本) × 股数. 调整后成本已经扣掉了这只股票上收到的期权权利金 (CSP、CC), 所以比 Schwab 的账面浮盈更接近你实际赚亏了多少.', short: '账面浮盈是 Schwab 按它的均价算的, 不含权利金; 两者的差 ≈ 降低金额.' },
   room_p: { t: '被行权概率', def: '联动模拟里, 到期时价格低于行权价的比例. 大盘下跌时多个 CSP 会一起价内, 所以模拟按到期日顺序、各标的一起动.', short: '用当前 IV 和 β 估计, 不是保证; 大约相当于 |Δ|, 但考虑了联动.' },
-  leaps_room: { t: 'Option Buying Power', def: '还能花多少钱买期权, 而且最终不用借钱. CSP 被行权时要用现金接股票, 现金不够就开始借 margin. 所以: 不借钱还能花 = 现金 + SWVXX − 安全垫 − 要留着接股票的钱, 再和 Schwab 的 Option Buying Power 取较小值.',
+  leaps_room: { t: 'Option Buying Power', def: '还能花多少钱买期权, 而且最终不用借钱. CSP 被行权时要用现金接股票, 现金不够就开始借 margin. 所以: 不借钱还能花 = 现金 + SWVXX − 要留着接股票的钱, 再和 Schwab 的 Option Buying Power 取较小值. 第一张卡片是 Schwab 自己的 Option Buying Power: 它扣掉了 CSP 占用的保证金, 但不考虑被行权时现金够不够.',
     read: '三张卡片: 最坏情况 = 全部 CSP 被行权; 大概率 = 95% 的情况 (20 次里大约只有 1 次要留更多); 我的计划 = 按下表你选的「买回 / 放到期 / 接股」. 「需从 SWVXX 卖出 $X」= 现金账户里的余额不够接股票, 要先卖 SWVXX, 不是借钱; 「缺 $X」= 现金和 SWVXX 全部用上也不够, 会借这么多. 最上面一行看有没有在借钱: Margin Balance 为负或 Equity % 低于 100% 就是在借.',
-    long: '大概率怎么算: 用每个标的现在的 IV 和它跟大盘的联动 (β, 大盘波动取当前 VIX), 按到期日顺序模拟 4,000 次未来走势, 大盘冲击用厚尾分布 (比正态更容易出现大跌); 取 95% 的情况下要接股票的钱. 大盘一跌几个 CSP 往往一起价内, 所以它比把每个的概率加起来更保守. 没算: 以后新卖的 CSP、Short call 被行权卖出正股收回的钱. 模型基于当前 IV, 市场突变时会低估, 所以留安全垫.',
+    long: '大概率怎么算: 用每个标的现在的 IV 和它跟大盘的联动 (β, 大盘波动取当前 VIX), 按到期日顺序模拟 4,000 次未来走势, 大盘冲击用厚尾分布 (比正态更容易出现大跌); 取 95% 的情况下要接股票的钱. 大盘一跌几个 CSP 往往一起价内, 所以它比把每个的概率加起来更保守. 没算: 以后新卖的 CSP、Short call 被行权卖出正股收回的钱. 模型基于当前 IV, 市场突变时会低估.',
     ex: 'WDC 350P 已经盈利、距行权价 9%: 在「我打算」里选「买回」, 现在花 $900 买回, 就不用再为它留 $35,000; 「我的计划」那张卡片立刻多出约 $34,100.' },
   expect: { t: '期望值', def: '这个策略平均每做一笔赚 (或亏) 多少钱 = 胜率 × 平均盈利 − 败率 × 平均亏损.',
     read: '它回答"按我现在的做法, 长期做下去是赚还是亏". 为正: 有优势; 为负: 做得越多亏得越多. 卖方策略常见"胜率高、期望值却为负", 只看胜率会被误导. 笔数少时 (< 20) 波动很大, 只作参考.',
@@ -15760,7 +15765,7 @@ function _wheelHTML() {
               <td>${f2(r.px)}</td>
               <td class="${vs == null ? '' : vs >= 0 ? 'rk-t-safe' : 'rk-t-alert'}">${vs != null ? (vs >= 0 ? '+' : '') + vs.toFixed(1) + '%' : '—'}</td>
               <td class="${_thCls(r.prem)}">${_fmtSigned(r.prem)}</td>
-              <td>${down != null ? `<span class="${down >= 0 ? 'rk-t-safe' : 'rk-t-alert'}">${down >= 0 ? '−' : '+'}${Math.abs(down).toFixed(2)}</span> <span class="rk-quiet">${r.buyAvg ? (Math.abs(down) / r.buyAvg * 100).toFixed(1) + '%' : ''}</span>` : '—'}</td>
+              <td>${down == null ? '—' : Math.abs(down) < 0.005 ? '<span class="rk-quiet">0</span>' : `<span class="${down >= 0 ? 'rk-t-safe' : 'rk-t-alert'}">${down >= 0 ? '−' : '+'}${Math.abs(down).toFixed(2)}</span> <span class="rk-quiet">${r.buyAvg ? (Math.abs(down) / r.buyAvg * 100).toFixed(1) + '%' : ''}</span>`}</td>
               <td>${f2(r.buyAvg)}</td></tr>
             <tr class="rk-dd-row wh-host"><td colspan="8">${_wheelDetailHTML(r)}</td></tr>
             <tr class="rk-dd-row"><td></td><td colspan="7" class="rk-quiet">Schwab 均价 ${f2(r.schwabAvg)}${r.cycleStart ? ` · 本轮自 ${dt(r.cycleStart)} 起` : ''}</td></tr>
@@ -16363,7 +16368,7 @@ let __roomSpend = 0;
 function _roomCalc(spend = __roomSpend) {
   const base = _leapsRoom(spend); if (!base) return null;
   const c = base.c, cfg = _roomCfg(), csps = c.pos.filter(x => x.kind === 'short_put' && x.strike > 0 && x.expiry && (Number(x.qty) || 0) > 0);
-  const cushion = base.nav * cfg.cushion / 100, sim = csps.length ? _cspSim(csps) : null;
+  const cushion = 0, sim = csps.length ? _cspSim(csps) : null;
   const rows = csps.map((x, i) => { const q = Number(x.qty) || 0, notional = x.strike * 100 * q, dist = _distPct(x), close = Math.abs(x.mark || 0) * 100 * q, d = x.delta != null ? Math.abs(x.delta) : null;
     const def = (dist != null && dist < 0) || (d != null && d > 0.55) ? 'assign' : 'hold', ch = cfg.choices[_cspKey(x)] || def;
     return { x, q, notional, dist, close, d, def, ch, p: sim ? sim.pHit[i] : null, need: ch === 'assign' ? notional : ch === 'close' ? close : 0 }; })
@@ -16392,21 +16397,24 @@ function _roomWhy(r, k) {
   if (cl.length) parts.push(`买回 ${list(cl.map(w => w.x.ticker))} 花 ${_fmtUsd(cl.reduce((s, w) => s + w.close, 0))}`);
   return parts.length ? parts.join('<br>') : '全部放到期, 不用留钱接股票';
 }
-// three states, never mixed up: real shortfall (borrowing) · only the cushion is touched · room to spend
+// three states, never mixed up: real shortfall (borrowing) · Schwab says no · room to spend
 function _roomState(r, k, spend = 0) {
   const raw = r.raw(k) - spend, can = r.can(k) - spend, use = r.sc[k] + spend, sell = Math.max(0, Math.min(r.swv, use - r.cashOnly));
   if (raw < 0) return { st: 'borrow', v: -raw, sell: r.swv };
-  if (can < 0) return { st: r.byBp(k) && raw >= r.cushion ? 'schwab' : 'cushion', v: raw, sell };
+  if (can < 0) return { st: 'schwab', v: raw, sell };
   return { st: 'ok', v: can, sell };
 }
 const _sellNote = S => S.sell > 0.5 ? `<div class="room-s room-swv">需从 SWVXX 卖出 ${_fmtUsd(S.sell)}</div>` : '';
 function _roomCardsHTML(r) {
-  return ROOM_SC.map(([k, l, s]) => { const S = _roomState(r, k), A = r.spend > 0 ? _roomState(r, k, r.spend) : null;
+  const bp = r.bp, bpLeft = bp != null ? bp - r.spend : null;
+  const obp = `<div class="room-card room-obp"><div class="room-l">Option Buying Power <span>Schwab</span></div>
+      <div class="room-big">${bp != null ? _fmtUsd(bp) : '—'}</div><div class="room-s">Schwab 现在允许你买期权的钱</div><div class="room-s">已经扣掉 CSP 占用的保证金, 但不管被行权时现金够不够</div>
+      ${r.spend > 0 && bp != null ? `<div class="room-s room-after">花 ${_fmtUsd(r.spend)} 后 <b class="${bpLeft < 0 ? 'rk-t-danger' : 'rk-t-safe'}">${bpLeft >= 0 ? `还剩 ${_fmtUsd(bpLeft)}` : `超出 ${_fmtUsd(-bpLeft)}`}</b></div>` : ''}</div>`;
+  return obp + ROOM_SC.map(([k, l, s]) => { const S = _roomState(r, k), A = r.spend > 0 ? _roomState(r, k, r.spend) : null;
     const big = S.st === 'borrow' ? `<div class="room-big rk-t-danger">缺 ${_fmtUsd(S.v)}</div><div class="room-s">现金和 SWVXX 全部用上也不够接股票, 会借这么多</div>`
-      : S.st === 'cushion' ? `<div class="room-big rk-t-alert">$0</div><div class="room-s"><b>不会借钱</b>, 但会用掉安全垫 · 接完股票还剩 ${_fmtUsd(S.v)}</div>`
       : S.st === 'schwab' ? `<div class="room-big rk-t-alert">$0</div><div class="room-s">现金够, 但 Schwab Option Buying Power 用完了</div>`
-      : `<div class="room-big">${_fmtUsd(S.v)}</div><div class="room-s">不借钱还能花${r.byBp(k) ? ' · 受 Schwab 限制' : ''}</div>`;
-    const after = !A ? '' : `<div class="room-s room-after">花 ${_fmtUsd(r.spend)} 后 ${A.st === 'borrow' ? `<b class="rk-t-danger">会借 ${_fmtUsd(A.v)}</b>` : A.st === 'cushion' ? `<b class="rk-t-alert">不借钱, 但动用安全垫</b> · 剩 ${_fmtUsd(A.v)}` : A.st === 'schwab' ? '<b class="rk-t-alert">超过 Schwab Option Buying Power</b>' : `<b class="rk-t-safe">还剩 ${_fmtUsd(A.v)}</b>`}${A.st !== 'borrow' && A.sell > 0.5 ? ` · 需从 SWVXX 卖出 ${_fmtUsd(A.sell)}` : ''}</div>`;
+      : `<div class="room-big">${_fmtUsd(S.v)}</div><div class="room-s">不借钱还能花${r.byBp(k) ? ` · 受 Schwab 限制 (接完股票其实还剩 ${_fmtUsd(r.raw(k))})` : ''}</div>`;
+    const after = !A ? '' : `<div class="room-s room-after">花 ${_fmtUsd(r.spend)} 后 ${A.st === 'borrow' ? `<b class="rk-t-danger">会借 ${_fmtUsd(A.v)}</b>` : A.st === 'schwab' ? '<b class="rk-t-alert">超过 Schwab Option Buying Power</b>' : `<b class="rk-t-safe">还剩 ${_fmtUsd(A.v)}</b>`}${A.st !== 'borrow' && A.sell > 0.5 ? ` · 需从 SWVXX 卖出 ${_fmtUsd(A.sell)}` : ''}</div>`;
     return `<div class="room-card room-${k}"><div class="room-l">${l} <span>${s}</span></div>${big}${S.st !== 'borrow' ? _sellNote(S) : ''}<div class="room-s">${_roomWhy(r, k)}</div>${after}</div>`; }).join('');
 }
 function _roomBlockHTML() {
@@ -16427,8 +16435,7 @@ function _roomBlockHTML() {
       <h3 class="rk-block-title">Option Buying Power ${_qBtn('leaps_room', 'long')}</h3>
       ${status}
       <div class="room-cards" id="room-cards">${_roomCardsHTML(r)}</div>
-      <div class="room-meta"><span>现金 <b>${_fmtUsd(r.cashOnly)}</b></span><span>SWVXX <b>${_fmtUsd(r.swv)}</b></span><span>Schwab Option Buying Power <b>${r.bp != null ? _fmtUsd(r.bp) : '—'}</b></span>
-        <span>安全垫 <input class="gl-num room-cu" type="number" min="0" max="50" step="1" value="${r.cfg.cushion}" onchange="roomCushion(this.value)">% NAV</span>
+      <div class="room-meta"><span>现金 <b>${_fmtUsd(r.cashOnly)}</b></span><span>SWVXX <b>${_fmtUsd(r.swv)}</b></span>
         <span class="room-sim">如果花 $ <input inputmode="decimal" placeholder="金额" value="${__roomSpend || ''}" oninput="roomSim(this.value)"></span></div>
       ${table}
       ${_fuelHTML(r)}
@@ -16441,9 +16448,9 @@ function _leapsRoomLineHTML() {
   const q = _cspQuoteFresh(), mark = q && q.option ? q.option.mark : null, n = parseInt(state.leapsContracts, 10) || 1;
   const spend = mark > 0 ? mark * 100 * n : 0, r = _roomCalc(spend); if (!r) return '';
   const S = _roomState(r, 'prob'), A = spend ? _roomState(r, 'prob', spend) : null;
-  const say = (x, verb) => x.st === 'borrow' ? `<b class="rk-t-danger">${verb === 'now' ? '缺' : '会借'} ${_fmtUsd(x.v)}</b>` : x.st === 'cushion' ? `<b class="rk-t-alert">不借钱, 但动用安全垫</b>` : x.st === 'schwab' ? '<b class="rk-t-alert">Schwab 购买力不够</b>' : `<b class="${verb === 'now' ? 'rk-t-acc' : 'rk-t-safe'}">${verb === 'now' ? '' : '还剩 '}${_fmtUsd(x.v)}</b>`;
+  const say = (x, verb) => x.st === 'borrow' ? `<b class="rk-t-danger">${verb === 'now' ? '缺' : '会借'} ${_fmtUsd(x.v)}</b>` : x.st === 'schwab' ? '<b class="rk-t-alert">Schwab 购买力不够</b>' : `<b class="${verb === 'now' ? 'rk-t-acc' : 'rk-t-safe'}">${verb === 'now' ? '' : '还剩 '}${_fmtUsd(x.v)}</b>`;
   const sv = (A || S).st !== 'borrow' && (A || S).sell > 0.5 ? ` · 需从 SWVXX 卖出 ${_fmtUsd((A || S).sell)}` : '';
-  return `<div class="room-line">不借钱还能花 (大概率) ${say(S, 'now')}${spend ? ` · 这笔 ${n} 张约 ${_fmtUsd(spend)} · 之后 ${say(A, 'after')}` : ''}${sv}</div>`;
+  return `<div class="room-line">Option Buying Power <b class="rk-t-acc">${r.bp != null ? _fmtUsd(r.bp) : '—'}</b> · 不借钱还能花 (大概率) ${say(S, 'now')}${spend ? ` · 这笔 ${n} 张约 ${_fmtUsd(spend)} · 之后 ${say(A, 'after')}` : ''}${sv}</div>`;
 }
 /* ---------- per-ticker exposure: committed (cost + CSP notional) and market value ---------- */
 function _tickerBlocksHTML(c) {
@@ -16689,15 +16696,23 @@ function renderPositionsPage() {
   /* ── stock ── */
   const stRows = stk.map(x => { const px = _stockPx(x), q = Number(x.qty) || 0, w = wheel && wheel.rows ? wheel.rows.find(r => r.T === x.ticker) : null;
     const cc = sc.filter(s => s.ticker === x.ticker).reduce((s, y) => s + (Number(y.qty) || 0), 0);
-    return { x, px, q, val: mv(x), pnl: _posPnl(x), held: _heldSince(x), adj: w ? w.adj : null, cover: q >= 100 ? cc * 100 / q * 100 : null }; });
+    const adj = w ? w.adj : null, buy = w ? w.buyAvg : null, down = buy != null && adj != null ? buy - adj : null;   // same basis as Performance · 持股成本
+    return { x, px, q, val: mv(x), pnl: _posPnl(x), held: _heldSince(x), adj, buy, down, downAmt: down != null ? down * q : null, real: px != null && adj != null ? (px - adj) * q : null, realPct: px != null && adj ? (px / adj - 1) * 100 : null,
+      cover: q >= 100 ? cc * 100 / q * 100 : null }; });
+  const stT = k => stRows.reduce((s, r) => s + (r[k] || 0), 0);
   const stHTML = stk.length ? `
     <section class="rk-block">
       <h3 class="rk-block-title" id="sec-stock">正股 · ${stk.length} 只</h3>
       <div class="rk-table-wrap"><table class="rk-table">
-        <thead><tr><th>标的</th><th>股数</th><th>现价</th><th>调整后成本 ${_qBtn('adj_cost', 'long')}</th><th>浮盈</th><th>% NAV</th><th>CC 覆盖</th><th>市值</th><th>Schwab 均价</th><th>持有</th></tr></thead>
+        <thead><tr><th>标的</th><th>股数</th><th>现价</th><th>调整后成本 ${_qBtn('adj_cost', 'long')}</th><th>真实浮盈 ${_qBtn('real_pnl', 'short')}</th><th>账面浮盈</th><th>Schwab 均价</th><th>每股降低</th><th>降低金额</th><th>CC 覆盖</th><th>% NAV</th><th>市值</th><th>持有</th></tr></thead>
         <tbody>${stRows.map(r => `<tr><td><b>${esc(r.x.ticker)}</b></td><td>${Math.round(r.q)}</td><td>${r.px != null ? r.px.toFixed(2) : '—'}</td><td class="rk-t-acc">${r.adj != null ? `<button class="app-link wh-open" onclick="showWheelDetail('${esc(r.x.ticker)}')">${r.adj.toFixed(2)} ▸</button>` : '—'}</td>
-          <td class="${_thCls(r.pnl)}">${sgn(r.pnl)}</td><td>${_pct(pn(r.val))}</td><td>${r.cover != null ? r.cover.toFixed(0) + '%' : '—'}</td><td>${money(r.val)}</td><td>${r.x.avg != null ? r.x.avg.toFixed(2) : '—'}</td>
-          <td>${r.held ? r.held.days + ' 天' : '—'}</td></tr>`).join('')}</tbody>
+          <td class="${r.real == null ? '' : _thCls(r.real)}">${r.real != null ? `${sgn(r.real)} <span class="rk-quiet">${r.realPct >= 0 ? '+' : '−'}${Math.abs(r.realPct).toFixed(1)}%</span>` : '—'}</td>
+          <td class="${_thCls(r.pnl)}">${sgn(r.pnl)}</td><td>${r.x.avg != null ? r.x.avg.toFixed(2) : '—'}</td>
+          <td>${r.down == null ? '—' : Math.abs(r.down) < 0.005 ? '<span class="rk-quiet">0</span>' : `<span class="${r.down >= 0 ? 'rk-t-safe' : 'rk-t-alert'}">${r.down >= 0 ? '−' : '+'}${Math.abs(r.down).toFixed(2)}</span> <span class="rk-quiet">${r.buy ? (Math.abs(r.down) / r.buy * 100).toFixed(1) + '%' : ''}</span>`}</td>
+          <td class="${r.downAmt == null || Math.abs(r.downAmt) < 0.5 ? '' : r.downAmt >= 0 ? 'rk-t-safe' : 'rk-t-alert'}">${r.downAmt == null ? '—' : Math.abs(r.downAmt) < 0.5 ? '<span class="rk-quiet">$0</span>' : (r.downAmt >= 0 ? '−' : '+') + _fmtUsd(Math.abs(r.downAmt))}</td>
+          <td>${r.cover != null ? r.cover.toFixed(0) + '%' : '—'}</td><td>${_pct(pn(r.val))}</td><td>${money(r.val)}</td>
+          <td>${r.held ? r.held.days + ' 天' : '—'}</td></tr>`).join('')}
+          ${stRows.length > 1 ? `<tr class="rk-total"><td>合计</td><td></td><td></td><td></td><td class="${_thCls(stT('real'))}">${sgn(stT('real'))}</td><td class="${_thCls(stT('pnl'))}">${sgn(stT('pnl'))}</td><td></td><td></td><td class="rk-t-safe">${stT('downAmt') ? '−' + _fmtUsd(Math.abs(stT('downAmt'))) : '—'}</td><td></td><td>${_pct(pn(stT('val')))}</td><td>${money(stT('val'))}</td><td></td></tr>` : ''}</tbody>
       </table></div>
     </section>` : '';
   const othHTML = oth.length ? `
@@ -17167,6 +17182,22 @@ function _stkBind() {
   el.addEventListener('touchmove', e => { if (e.touches && e.touches.length > 1) e.preventDefault(); }, { passive: false });   // two fingers zoom the chart, not the page
 }
 
+// every number J rests on, day by day, to put next to thinkorswim's daily bars
+function _jAuditHTML(t, p) {
+  const b = p && p.bars; if (!b || b.length < 12) return '';
+  const n = b.length, h = b.map(x => x.h), l = b.map(x => x.l), c = b.map(x => x.c), rows = [];
+  let K = 50, D = 50;
+  for (let i = 8; i < n; i++) {
+    const hh = Math.max(...h.slice(i - 8, i + 1)), ll = Math.min(...l.slice(i - 8, i + 1)), rsv = hh === ll ? 50 : (c[i] - ll) / (hh - ll) * 100;
+    K = 2 / 3 * K + rsv / 3; D = 2 / 3 * D + K / 3; if (i >= n - 10) rows.push({ i, hh, ll, rsv, K, D, J: 3 * K - 2 * D }); }
+  const f = v => v.toFixed(2), wv = getPortfolio().workerVersion, at = p.at ? new Date(p.at).toTimeString().slice(0, 5) : '—';
+  return `<details class="j-audit"><summary>J 值核对 <span class="rk-quiet">和 thinkorswim 的日线逐日对照</span></summary>
+    <div class="rk-note">日线读取于 ${at} · Worker v${wv || '?'}${wv && wv < 17 ? ' <span class="rk-t-danger">(低于 v17: 可能用到盘中存下的旧日线)</span>' : ''} · ${p.live ? '最后一行是今天的实时报价' : '不含今天盘中'}. 逐行对照开高低收, 哪一天和 thinkorswim 不同, 就是 J 不同的原因.</div>
+    <div class="rk-table-wrap"><table class="rk-table"><thead><tr><th>日期</th><th>开</th><th>高</th><th>低</th><th>收</th><th>9 日最高</th><th>9 日最低</th><th>RSV</th><th>K</th><th>D</th><th>J</th></tr></thead><tbody>
+      ${rows.slice().reverse().map(r => { const x = b[r.i], live = p.live && r.i === n - 1;
+        return `<tr><td>${x.d}${live ? ' <span class="rk-quiet">实时</span>' : ''}</td><td>${f(x.o)}</td><td>${f(x.h)}</td><td>${f(x.l)}</td><td>${f(x.c)}</td><td>${f(r.hh)}</td><td>${f(r.ll)}</td><td>${r.rsv.toFixed(1)}</td><td>${r.K.toFixed(1)}</td><td>${r.D.toFixed(1)}</td><td><b>${r.J.toFixed(1)}</b></td></tr>`; }).join('')}</tbody></table></div>
+    <div class="rk-note">RSV = (收 − 9 日最低) ÷ (9 日最高 − 9 日最低) × 100; K = ⅔ 前 K + ⅓ RSV; D = ⅔ 前 D + ⅓ K; J = 3K − 2D (9, 3, 3, 和 MJ2 相同).</div></details>`;
+}
 function _stockOscSVG(t) {
   const p = __px[t]; if (!p || !p.bars || p.bars.length < 60) return '';
   const all = p.bars, c = all.map(b => b.c), h = all.map(b => b.h), l = all.map(b => b.l), n0 = c.length, endI = Math.min(n0, __stkZoom.end ?? n0), N = Math.max(20, Math.min(n0, __stkZoom.n)), off = Math.max(0, endI - N), n = n0;
@@ -17198,7 +17229,8 @@ function _stockOscSVG(t) {
       return `<details class="mj-list"><summary>MJ2 最近信号 <span class="rk-quiet">最近 ${S.length} 次 · 用来和 thinkorswim 对照</span></summary><div class="rk-table-wrap"><table class="rk-table"><thead><tr><th>日期</th><th>信号</th><th>收盘</th><th>J</th><th>RSI</th></tr></thead><tbody>
         ${S.map(x => `<tr><td>${all[x.i].d}${p.live && x.i === n0 - 1 ? ' <span class="rk-quiet">盘中</span>' : ''}</td><td><i class="mj-dot ${cls(x.o)}"></i>${x.nm}${x.o.S0 && x.o.S1 ? ' + S0' : ''}</td><td>${all[x.i].c.toFixed(2)}</td><td>${x.o.J.toFixed(1)}</td><td>${x.o.rsi != null ? x.o.rsi.toFixed(1) : '—'}</td></tr>`).join('')}</tbody></table></div>
         <div class="rk-note">按 MJ2 v2026-04-21n_Final_RSI72_Fix_v2 逐行移植. B0 黄 ↑ · B1 绿 ↑ · B0 + B1 同框 白 ↑ · S0 黄 ↓ · S1 红 ↓. 盘中的信号会随价格和成交量变化, 和 thinkorswim 一样.</div></details>`; })()}
-    <div class="rk-quiet stk-kdj-asof">KDJ / RSI / MACD 截至 ${(() => { const b = all[endI - 1], d = b ? `${+b.d.slice(5, 7)}/${+b.d.slice(8)}` : ''; return p.live && endI === n0 ? `${d} 盘中 (含今天的实时价)` : `${d} 收盘`; })()}</div>`;
+    <div class="rk-quiet stk-kdj-asof">KDJ / RSI / MACD 截至 ${(() => { const b = all[endI - 1], d = b ? `${+b.d.slice(5, 7)}/${+b.d.slice(8)}` : ''; return p.live && endI === n0 ? `${d} 盘中 (含今天的实时价)` : `${d} 收盘`; })()}</div>
+    ${_jAuditHTML(t, p)}`;
 }
 function renderStockPage() {
   const t = __stockT, recent = _stockRecent();
