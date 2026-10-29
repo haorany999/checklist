@@ -3516,6 +3516,17 @@
   @media (max-width: 1100px) { .room-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   @media (max-width: 640px) { .room-cards { grid-template-columns: 1fr; } }
   .j-audit { margin-top: 6px; font-size: 12.5px; } .j-audit > summary { cursor: pointer; color: var(--text-dim); }
+  /* v88 · verdict details, per-check ROC */
+  #bottom-status-main, .verdict-pill { cursor: pointer; } .sab-why { font-size: .75em; opacity: .7; }
+  .vl-pop { position: fixed; left: 50%; transform: translateX(-50%); z-index: 60; width: min(560px, calc(100vw - 24px)); max-height: 55vh; overflow-y: auto; padding: 10px 12px; background: var(--panel); border: 1px solid var(--border-hi); border-radius: 6px; box-shadow: 0 10px 30px rgba(0,0,0,.35); }
+  .vl-g + .vl-g { margin-top: 8px; } .vl-h { font: 700 12px var(--sans); margin-bottom: 4px; }
+  .vl-i { display: flex; width: 100%; justify-content: space-between; gap: 10px; text-align: left; padding: 6px 8px; margin: 2px 0; font-size: 13px; color: var(--text); background: var(--panel-2); border: 1px solid var(--border); border-radius: 3px; cursor: pointer; }
+  .vl-i:hover { border-color: var(--accent); } .vl-v { font-family: var(--mono); color: var(--text-dim); white-space: nowrap; }
+  .item.vl-flash { outline: 2px solid var(--accent); outline-offset: 2px; transition: outline-color .3s; }
+  .roc-ovr { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 6px; font-size: 12px; color: var(--text-dim); } .roc-ovr .ms-btn { padding: 3px 8px; font-size: 11.5px; } .roc-ovr .roc-on { font-weight: 700; }
+  .exp-svg .exp-cc { cursor: pointer; } .exp-svg .exp-cc rect { fill: color-mix(in srgb, #E5793B 22%, transparent); stroke: #E5793B; stroke-width: .8; }
+  body .exp-svg .exp-cc text { fill: #E5793B !important; font: 600 9.5px var(--sans) !important; } body .exp-svg text.exp-cc-lab { fill: #E5793B !important; font-weight: 700 !important; }
+  .exp-sw-cc { background: #E5793B !important; }
 </style>
 </head>
 <body class="theme-slate">
@@ -5564,7 +5575,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.17-v86';
+const APP_BUILD = '2026.10.17-v90';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
@@ -7014,7 +7025,7 @@ function bottomSummaryHTML() {
         <div class="sab-ring-num" id="sab-ring-num">${pct}%</div>
       </div>
       <div class="sab-status-block">
-        <div class="sab-status ${cls}" id="bottom-status-main">${esc(displayVerdict(v.status))}</div>
+        <div class="sab-status ${cls}" id="bottom-status-main" role="button" tabindex="0" onclick="showVerdictList(event)" title="点开看具体是哪几项">${esc(displayVerdict(v.status))} <span class="sab-why">▴</span></div>
         <div class="sab-note" id="bottom-status-note">${esc(v.note)}</div>
       </div>
       <div class="sab-actions">
@@ -7067,6 +7078,23 @@ function qrefHTML() {
 }
 
 // Sticky verdict bar — compact, appears when status bar is scrolled out of view
+window.showVerdictList = ev => {
+  if (ev) ev.stopPropagation();
+  const old = document.getElementById('vl-pop'); if (old) { old.remove(); return; }
+  const items = currentItems(), hard = [], soft = [], open = [];
+  items.forEach(it => { const v = itemVerdict(it); if (v === 'fail') (it.hard ? hard : soft).push(it); else if (v !== 'pass') open.push(it); });
+  const val = it => { const s = state.items ? state.items[it.id] : null; return s != null && s !== 'pass' && s !== 'fail' && s !== '' ? ` <span class="vl-v">${esc(String(s))}</span>` : ''; };
+  const group = (title, cls, a) => a.length ? `<div class="vl-g"><div class="vl-h ${cls}">${title} · ${a.length}</div>${a.map(it => `<button class="vl-i" onclick="jumpToItem('${esc(it.id)}')"><span>${esc(it.title)}</span>${val(it)}</button>`).join('')}</div>` : '';
+  const pop = document.createElement('div'); pop.id = 'vl-pop'; pop.className = 'vl-pop';
+  pop.innerHTML = (group('HARD 阻断', 'rk-t-danger', hard) + group('软未达标', 'rk-t-alert', soft) + group('还没填', 'rk-quiet', open)) || '<div class="rk-quiet">全部达标</div>';
+  document.body.appendChild(pop);
+  const bar = document.querySelector('.sticky-action-bar, .sab'), r = bar ? bar.getBoundingClientRect() : null;
+  pop.style.bottom = (r ? Math.max(8, window.innerHeight - r.top + 8) : 90) + 'px';
+};
+window.jumpToItem = id => { const p = document.getElementById('vl-pop'); if (p) p.remove(); const el = document.getElementById('item-' + id); if (!el) return;
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.classList.add('vl-flash'); setTimeout(() => el.classList.remove('vl-flash'), 1600); };
+document.addEventListener('click', e => { const p = document.getElementById('vl-pop'); if (p && !p.contains(e.target)) p.remove(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { const p = document.getElementById('vl-pop'); if (p) p.remove(); } });
 function stickyVerdictBarHTML() {
   const v = overallVerdict();
   const pillCls = v.status === 'BLOCKED' ? 'block'
@@ -7079,7 +7107,7 @@ function stickyVerdictBarHTML() {
     : '条件不足';
   return `
     <div class="sticky-verdict-bar" id="sticky-verdict-bar">
-      <span class="verdict-pill ${pillCls}">${shortStatus}</span>
+      <span class="verdict-pill ${pillCls}" role="button" tabindex="0" onclick="showVerdictList(event)" title="点开看具体是哪几项">${shortStatus} ▾</span>
       <span class="verdict-tally">
         <span><b>${v.pass}</b> pass</span>
         <span><b>${v.hardFail}</b> hard</span>
@@ -7512,7 +7540,7 @@ function updateVerdictsInPlace() {
       : v.status.startsWith('CLEAR') ? 'pass'
       : 'pending';
     $bottomMain.className = 'sab-status ' + cls;
-    $bottomMain.textContent = v.status;
+    $bottomMain.innerHTML = `${esc(displayVerdict(v.status))} <span class="sab-why">▴</span>`;   // keep the tap-for-details arrow
   }
   const $bottomNote = document.getElementById('bottom-status-note');
   if ($bottomNote) $bottomNote.textContent = v.note;
@@ -7707,7 +7735,9 @@ function itemHTML(it) {
         <div class="item-head">
           <div class="item-text">
             <div class="item-title">${esc(it.title)} ${hardBadge}</div>
-            ${it.desc ? `<div class="item-desc">${esc(it.desc)} <em style="color:var(--text-faint);">— 由首页 Market Signal 自动判定</em></div>` : ''}
+            ${it.desc ? `<div class="item-desc">${esc(it.desc)} <em style="color:var(--text-faint);">${(() => { const ev = it.id === 'vtv_qqq_roc' ? _rocPhaseForEval() : null; return ev && ev.override ? `— 本次手动设为 ${ROC_PHASES[ev.phase].short}${ev.global ? `, 首页是 ${ROC_PHASES[ev.global].short}` : ''}` : '— 由首页 Market Signal 自动判定'; })()}</em></div>` : ''}
+            ${it.id === 'vtv_qqq_roc' && !it.legacy && __tempStateDepth === 0 ? (() => { const ev = _rocPhaseForEval(), g = loadRocPhase();
+              return `<div class="roc-ovr"><span>本次:</span>${[1, 2, 3, 4].map(n => `<button class="ms-btn ms-${ROC_PHASES[n].cls}${ev.override && ev.phase === n ? ' active' : ''}" onclick="setRocOverride(${n})" title="只改这一次 checklist, 不影响首页">${ROC_PHASES[n].short}</button>`).join('')}<button class="app-link${ev.override ? '' : ' roc-on'}" onclick="setRocOverride(0)">跟随首页${g ? ` (${ROC_PHASES[g.phase].short})` : ''}</button></div>`; })() : ''}
           </div>
         </div>
       </div>
@@ -7769,6 +7799,7 @@ function _clearContractFields() {
 function pickStrategy(s) {
   state.strategy = s;
   state.items = {};
+  delete state.rocPhaseOverride;   // new checklist: back to the home page's ROC phase
   _clearContractFields();
   // New checklist: exposure fields follow Portfolio (a previous trade's manual value is stale)
   state._autoExposure = _defaultAutoFlags();
@@ -7787,6 +7818,7 @@ function switchStrategy() {
 }
 function resetAll(silent) {
   if (!silent && !confirm('清空所有输入和勾选?')) return;
+  delete state.rocPhaseOverride;   // a new check follows the home page's ROC phase again
   state.strategy = null;
   state.leapsDirection = null;
   state.leapsPhase = null; state.leapsStyle = null; state.leapsBluechip = false;
@@ -7937,6 +7969,7 @@ const DRAFT_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 days (was 6 hours)
 
 function snapshotStateForStorage() {
   return {
+    rocPhaseOverride: ROC_PHASES[state.rocPhaseOverride] ? state.rocPhaseOverride : undefined,   // this check's own ROC phase, kept when it's reopened
     strategy: state.strategy,
     leapsDirection: state.leapsDirection,
     leapsPhase: state.leapsPhase,
@@ -8124,7 +8157,7 @@ function saveToHistory() {
       notes: '',
       fullState: snapshotStateForStorage()
     };
-    const rocNow = loadRocPhase();
+    const rocEv = _rocPhaseForEval(), rocNow = rocEv.phase ? { phase: rocEv.phase } : null;   // this check's phase (its own override, else the home page's)
     entry.rocPhase = rocNow ? rocNow.phase : null;
     entry.fullState.rocPhaseAtSave = rocNow ? rocNow.phase : null;
     if (rocNow) entry.inputs = (entry.inputs ? entry.inputs + '; ' : '') + `roc=${rocNow.phase}`;
@@ -11409,7 +11442,7 @@ const QUOTES = [
   ['Plan your trade and trade your plan.', '计划你的交易, 交易你的计划.', '交易格言'] ];
 let __qIdx = null, __qTimer = null;
 // the App expects this Worker; an older one keeps running but misses these fixes
-const WORKER_NEED = 19, WORKER_FIXES = [[15, '每日快照只在收盘后记录 (盈亏归因的「今天」准确)'], [16, '早报 / 周报按触发时间识别 (星期写法不会再错)'], [17, '日线缓存修正 (J 等指标不会停在旧数据)'], [18, '借钱 / 追保提醒和早报里的借钱状态'], [19, '盘中报价时间和是否实时']];
+const WORKER_NEED = 20, WORKER_FIXES = [[15, '每日快照只在收盘后记录 (盈亏归因的「今天」准确)'], [16, '早报 / 周报按触发时间识别 (星期写法不会再错)'], [17, '日线缓存修正 (J 等指标不会停在旧数据)'], [18, '借钱 / 追保提醒和早报里的借钱状态'], [19, '盘中报价时间和是否实时'], [20, '邮件里的 Equity % 按账户计算 (多个账户时不再被减半)']];
 function _workerAgeHTML() {
   const p = getPortfolio(); if (p.source !== 'schwab' || !p.workerVersion || p.workerVersion >= WORKER_NEED) return '';
   const miss = WORKER_FIXES.filter(([v]) => v > p.workerVersion);
@@ -12011,8 +12044,10 @@ function _rocPhaseForEval() {
     return { phase: null, legacy: true };   // saved before the regime layer → original checkbox
   }
   const o = loadRocPhase();
+  if (ROC_PHASES[state.rocPhaseOverride]) return { phase: state.rocPhaseOverride, legacy: false, override: true, global: o ? o.phase : null };   // set for this check only
   return { phase: o ? o.phase : null, legacy: false, age: rocAgeDays(o) };
 }
+window.setRocOverride = n => { if (ROC_PHASES[n]) state.rocPhaseOverride = n; else delete state.rocPhaseOverride; const y = window.scrollY; render(); window.scrollTo(0, y); if (typeof scheduleSaveDraft === 'function') scheduleSaveDraft(); };
 
 function rocRegimeItem(kind) {
   const base = { group: 'Market environment · 宏观环境', id: 'vtv_qqq_roc', regimeCheck: true, regimeKind: kind };
@@ -12028,7 +12063,7 @@ function rocRegimeItem(kind) {
   }
   const rule = ROC_MATRIX[kind][ev.phase];
   let desc = ROC_DESC[kind][ev.phase];
-  if (!ev.fromSnapshot && ev.age >= ROC_STALE_DAYS) desc += ` ⚠ ${ev.age} 天未确认.`;
+  if (!ev.fromSnapshot && !ev.override && ev.age >= ROC_STALE_DAYS) desc += ` ⚠ ${ev.age} 天未确认.`;
   return { ...base, hard: kind === 'leaps' && rule !== 'soft',
     title: `VTV/QQQ ROC 阶段 · ${ROC_PHASES[ev.phase].label}`, desc };
 }
@@ -16334,8 +16369,14 @@ function _leapsRoom(spend = 0) {
   return { bp, cash, cashOnly: pf.cash || 0, swv: pf.swvxx || 0, cspN, nav, limit, used, usedAfter, spend, c };
 }
 // Schwab: a negative margin balance is a loan; Equity % under 100 says the same from the other side
+// Equity % belongs to each account: only the accounts that report it, weighted by their value (never summed across accounts)
+function _equityPct() {
+  const raw = (((_schwabUsable() || {}).data) || {}).balancesRaw || [], R = raw.filter(b => typeof b.equityPercentage === 'number'); if (!R.length) return null;
+  const wt = b => b.liquidationValue > 0 ? b.liquidationValue : 1, W = R.reduce((s, b) => s + wt(b), 0);
+  return R.reduce((s, b) => s + b.equityPercentage * wt(b), 0) / W;
+}
 function _borrowState(c) {
-  const d = ((_schwabUsable() || {}).data) || {}, mb = _balPick(c.bal, ['marginBalance']), eqp = _balPick(c.bal, ['equityPercentage']), ai = _balPick(c.bal, ['accruedInterest']);
+  const d = ((_schwabUsable() || {}).data) || {}, mb = _balPick(c.bal, ['marginBalance']), eqp = _equityPct(), ai = _balPick(c.bal, ['accruedInterest']);
   const call = Math.max(_balPick(c.bal, ['maintenanceCall']) || 0, _balPick(c.bal, ['regTCall']) || 0);
   return { borrowing: mb != null ? mb < -1 : eqp != null ? eqp < 99.5 : null, loan: mb != null && mb < 0 ? -mb : 0, eqp, interest: ai != null ? Math.abs(ai) : null, call, inCall: !!d.isInCall || call > 0, mb };
 }
@@ -16429,7 +16470,7 @@ function _roomBlockHTML() {
         <td><span class="rk-presets room-ch">${opt(w, 'close', '买回')}${opt(w, 'hold', '放到期')}${opt(w, 'assign', '接股')}</span></td></tr>`).join('')}</tbody></table></div>
     <div class="rk-quiet room-hint">虚线框 = 默认 · <button class="app-link" onclick="roomReset()">恢复默认</button></div>` : '<div class="rk-quiet">现在没有 CSP.</div>';
   const raw = [['marginBalance', 'Margin Balance (负数 = 借款)'], ['equityPercentage', 'Equity %'], ['accruedInterest', 'Accrued Interest'], ['maintenanceRequirement', 'Maintenance Requirement'], ['maintenanceCall', 'Maintenance Call'], ['regTCall', 'Reg T Call'],
-    ['buyingPowerNonMarginableTrade', 'Option Buying Power'], ['availableFunds', 'Available Funds'], ['cashBalance', 'Cash Balance'], ['moneyMarketFund', 'Money Market (SWVXX)'], ['sma', 'SMA']].map(([k, l]) => [l, _balPick(r.c.bal, [k])]).filter(([, v]) => v != null);
+    ['buyingPowerNonMarginableTrade', 'Option Buying Power'], ['availableFunds', 'Available Funds'], ['cashBalance', 'Cash Balance'], ['moneyMarketFund', 'Money Market (SWVXX)'], ['sma', 'SMA']].map(([k, l]) => [l, k === 'equityPercentage' ? _equityPct() : _balPick(r.c.bal, [k])]).filter(([, v]) => v != null);
   return `
     <section class="rk-block" id="room-block">
       <h3 class="rk-block-title">Option Buying Power ${_qBtn('leaps_room', 'long')}</h3>
@@ -16711,7 +16752,7 @@ function renderPositionsPage() {
         <thead><tr><th>标的</th><th>股数</th><th>现价</th><th>调整后成本 ${_qBtn('adj_cost', 'long')}</th><th>真实浮盈 ${_qBtn('real_pnl', 'short')}</th><th>账面浮盈</th><th>Schwab 均价</th><th>每股降低</th><th>降低金额</th><th>CC 覆盖</th><th>% NAV</th><th>市值</th><th>持有</th></tr></thead>
         <tbody>${stRows.map(r => `<tr><td><b>${esc(r.x.ticker)}</b></td><td>${Math.round(r.q)}</td><td>${r.px != null ? r.px.toFixed(2) : '—'}</td><td class="rk-t-acc">${r.adj != null ? `<button class="app-link wh-open" onclick="showWheelDetail('${esc(r.x.ticker)}')">${r.adj.toFixed(2)} ▸</button>` : '—'}</td>
           <td class="${r.real == null ? '' : _thCls(r.real)}">${r.real != null ? `${sgn(r.real)} <span class="rk-quiet">${r.realPct >= 0 ? '+' : '−'}${Math.abs(r.realPct).toFixed(1)}%</span>` : '—'}</td>
-          <td class="${_thCls(r.pnl)}">${sgn(r.pnl)}</td><td>${r.x.avg != null ? r.x.avg.toFixed(2) : '—'}</td>
+          <td class="${_thCls(r.pnl)}">${sgn(r.pnl)}${r.pnl != null && r.x.avg > 0 && r.q ? ` <span class="rk-quiet">${r.pnl >= 0 ? '+' : '−'}${Math.abs(r.pnl / (r.x.avg * r.q) * 100).toFixed(1)}%</span>` : ''}</td><td>${r.x.avg != null ? r.x.avg.toFixed(2) : '—'}</td>
           <td>${r.down == null ? '—' : Math.abs(r.down) < 0.005 ? '<span class="rk-quiet">0</span>' : `<span class="${r.down >= 0 ? 'rk-t-safe' : 'rk-t-alert'}">${r.down >= 0 ? '−' : '+'}${Math.abs(r.down).toFixed(2)}</span> <span class="rk-quiet">${r.buy ? (Math.abs(r.down) / r.buy * 100).toFixed(1) + '%' : ''}</span>`}</td>
           <td class="${r.downAmt == null || Math.abs(r.downAmt) < 0.5 ? '' : r.downAmt >= 0 ? 'rk-t-safe' : 'rk-t-alert'}">${r.downAmt == null ? '—' : Math.abs(r.downAmt) < 0.5 ? '<span class="rk-quiet">$0</span>' : (r.downAmt >= 0 ? '−' : '+') + _fmtUsd(Math.abs(r.downAmt))}</td>
           <td>${r.cover != null ? r.cover.toFixed(0) + '%' : '—'}</td><td>${_pct(pn(r.val))}</td><td>${money(r.val)}</td>
@@ -18331,7 +18372,7 @@ function _expItems(c) {
     if (x.kind === 'short_call') { const sh = pos.filter(s => s.kind === 'stock' && s.ticker === x.ticker).reduce((s, y) => s + (Number(y.qty) || 0), 0);
       strat = sh >= 100 ? 'cc' : pos.some(l => l.kind === 'leaps' && l.ticker === x.ticker) ? 'pmcc' : 'cc'; }
     const n = x.kind === 'short_put' ? (x.exposure || x.strike * 100 * (Number(x.qty) || 0)) : x.strike * 100 * (Number(x.qty) || 0);
-    return { x, strat, t: x.ticker, d: x.expiry, n, pct: nav ? n / nav * 100 : 0 };
+    return { x, strat, t: x.ticker, d: x.expiry, n, pct: nav && strat === 'csp' ? n / nav * 100 : 0 };   // % NAV is CSP only: a called-away CC brings cash in
   }).sort((a, b) => a.d < b.d ? -1 : a.d > b.d ? 1 : 0);
 }
 function _expBuckets(items) {
@@ -18350,9 +18391,10 @@ function _expBuckets(items) {
 }
 function _expBarsSVG(c, items) {
   const nav = c.nav || 1, { gran, buckets } = _expBuckets(items), n = buckets.length; if (!n) return '';
-  const tks = [...new Set(items.map(i => i.t))].sort((a, b) => items.filter(i => i.t === b).reduce((s, i) => s + i.n, 0) - items.filter(i => i.t === a).reduce((s, i) => s + i.n, 0));
+  const csps = items.filter(i => i.strat === 'csp'), hasCC = items.some(i => i.strat !== 'csp');
+  const tks = [...new Set(csps.map(i => i.t))].sort((a, b) => csps.filter(i => i.t === b).reduce((s, i) => s + i.n, 0) - csps.filter(i => i.t === a).reduce((s, i) => s + i.n, 0));
   const col = t => TK_PALETTE[tks.indexOf(t) % TK_PALETTE.length];
-  const W = _chartW(), L = 34, R = 46, T = 30, H = 230, B = 34, PH = H - T - B, cw = (W - L - R) / n, X = i => L + (i + 0.5) * cw, bw = Math.max(3, Math.min(30, cw * 0.66));
+  const W = _chartW(), L = 34, R = 46, T = 30, H = hasCC ? 252 : 230, B = hasCC ? 56 : 34, PH = H - T - B, cw = (W - L - R) / n, X = i => L + (i + 0.5) * cw, bw = Math.max(3, Math.min(30, cw * 0.66));
   const tot = b => b.items.reduce((s, i) => s + i.pct, 0), maxPct = Math.max(20, ...buckets.map(tot)) * 1.15, Y = v => T + PH - v / maxPct * PH;
   const cspTot = items.filter(i => i.strat === 'csp').reduce((s, i) => s + i.pct, 0) || 1;
   let s = `<line x1="${L}" x2="${W - R}" y1="${Y(15).toFixed(1)}" y2="${Y(15).toFixed(1)}" class="exp-guide"/><text x="${L - 4}" y="${(Y(15) + 3).toFixed(1)}" text-anchor="end" class="rk-ch-lab">15%</text>`;
@@ -18367,7 +18409,10 @@ function _expBarsSVG(c, items) {
       if (gran === 'week' && b.key !== 'later') { const byDay = {}; b.items.forEach(it => { byDay[it.d] = (byDay[it.d] || 0) + it.pct; }); const top = Object.entries(byDay).sort((a, z) => z[1] - a[1])[0];
         if (top && top[1] >= 15) s += `<text x="${X(i).toFixed(1)}" y="${(Y(pct) - 17).toFixed(1)}" text-anchor="middle" class="rk-ch-lab exp-day">${+top[0].slice(5, 7)}/${+top[0].slice(8)}</text>`; }
       s += `<rect x="${(X(i) - cw / 2).toFixed(1)}" y="${T}" width="${cw.toFixed(1)}" height="${PH}" class="exp-hit" onclick="showExpDetail('${b.key}')"><title>点开看明细</title></rect>`; }
-    if (i % step === 0 || i === n - 1 || pct) s += `<text x="${X(i).toFixed(1)}" y="${H - B + 14}" text-anchor="middle" class="rk-ch-lab${pct ? ' exp-has' : ''}">${b.label}</text>`;
+    const ccs = b.items.filter(it => it.strat !== 'csp');
+    if (ccs.length) { const tk = [...new Set(ccs.map(it => it.t))], lab = cw >= 52 ? `${tk.slice(0, 2).join(' ')}${tk.length > 2 ? '…' : ''}` : `${ccs.length}`, ly = T + PH + 8;
+      s += `<g class="exp-cc" onclick="showExpDetail('${b.key}')"><rect x="${(X(i) - Math.min(cw * 0.9, 56) / 2).toFixed(1)}" y="${ly}" width="${Math.min(cw * 0.9, 56).toFixed(1)}" height="14" rx="3"/><text x="${X(i).toFixed(1)}" y="${ly + 10.5}" text-anchor="middle">${esc(lab)}</text><title>${ccs.map(it => `${EXP_STRAT[it.strat][0]} ${it.t} ${it.x.strike}C ${it.d}`).join(', ')} · 不计入 NAV %</title></g>`; }
+    if (i % step === 0 || i === n - 1 || pct || ccs.length) s += `<text x="${X(i).toFixed(1)}" y="${H - B + (hasCC ? 36 : 14)}" text-anchor="middle" class="rk-ch-lab${pct || ccs.length ? ' exp-has' : ''}">${b.label}</text>`;
     cum += b.items.filter(it => it.strat === 'csp').reduce((q, it) => q + it.pct, 0);
     cpts.push([X(i), T + PH - cum / cspTot * PH]);
   });
@@ -18375,10 +18420,11 @@ function _expBarsSVG(c, items) {
     s += `<polyline points="${cpts.map(p => `${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' ')}" fill="none" class="exp-cum"/>`;
     s += `<text x="${W - R + 4}" y="${(T + 4).toFixed(1)}" class="rk-ch-lab exp-cum-t">${cspTot.toFixed(0)}%</text><text x="${W - R + 4}" y="${(T + 16).toFixed(1)}" class="rk-ch-lab exp-cum-t">累计</text>`;
   }
-  const legend = tks.map(t => `<span><i class="rk-sw" style="background:${col(t)}"></i>${esc(t)}</span>`).join('');
+  if (hasCC) s += `<text x="${L - 4}" y="${T + PH + 18.5}" text-anchor="end" class="rk-ch-lab exp-cc-lab">CC</text>`;
+  const legend = tks.map(t => `<span><i class="rk-sw" style="background:${col(t)}"></i>${esc(t)}</span>`).join('') + (hasCC ? `<span><i class="rk-sw exp-sw-cc"></i>CC / PMCC 到期 (单独一行, 不计入 NAV %)</span>` : '');
   return `<svg class="rk-chart exp-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="期权到期">${s}</svg>
     <div class="rk-legend">${legend}<span><i class="rk-sw exp-sw-cum"></i>CSP 累计释放 (右侧刻度)</span></div>
-    <div class="rk-note">${gran === 'day' ? '按交易日' : '按周 (标签为周五)'} · 柱子按标的堆叠, 高度 = 到期名义 % NAV · 虚线 15% · ${gran === 'week' ? '单日超过 15% 时在柱子上标出那一天 · ' : ''}点柱子看明细.</div>`;
+    <div class="rk-note">${gran === 'day' ? '按交易日' : '按周 (标签为周五)'} · 柱子按标的堆叠, 高度 = CSP 到期名义 % NAV (被行权要准备的现金) · 虚线 15% · ${gran === 'week' ? '单日超过 15% 时在柱子上标出那一天 · ' : ''}点柱子看明细.</div>`;
 }
 function _expCalHTML(c, items) {
   const today = _todayISO(), last = items.length ? items[items.length - 1].d : today;
@@ -18413,14 +18459,15 @@ window.showExpDetail = key => {
   else { const { buckets } = _expBuckets(items), b = buckets.find(z => z.key === key); list = b ? b.items : []; title = b ? (b.key === 'later' ? '之后到期' : b.from === b.to ? `${b.from} 到期` : `${b.from} ~ ${b.to} 到期`) : ''; }
   if (!list.length) return;
   const old = document.getElementById('exp-modal'); if (old) old.remove();
-  const tot = list.reduce((s, i) => s + i.n, 0);
+  list = [...list.filter(i => i.strat === 'csp'), ...list.filter(i => i.strat !== 'csp')];
+  const cspL = list.filter(i => i.strat === 'csp'), ccN = list.length - cspL.length, tot = cspL.reduce((s, i) => s + i.n, 0);
   const m = document.createElement('div'); m.id = 'exp-modal'; m.className = 'snap-confirm';
-  m.innerHTML = `<div class="snap-card wh-card"><div class="snap-head" style="display:flex;align-items:baseline;gap:10px"><b>${esc(title)}</b><span class="rk-quiet">${list.length} 笔 · 名义 ${_fmtUsd(tot)} · ${(tot / (c.nav || 1) * 100).toFixed(1)}% NAV</span>
+  m.innerHTML = `<div class="snap-card wh-card"><div class="snap-head" style="display:flex;align-items:baseline;gap:10px"><b>${esc(title)}</b><span class="rk-quiet">${cspL.length ? `CSP ${cspL.length} 笔 · 名义 ${_fmtUsd(tot)} · ${(tot / (c.nav || 1) * 100).toFixed(1)}% NAV` : '没有 CSP'}${ccN ? ` · CC / PMCC ${ccN} 笔 (不计入 NAV %)` : ''}</span>
       <button class="gl-x" style="margin-left:auto" onclick="document.getElementById('exp-modal').remove()" aria-label="关闭">×</button></div>
     <div class="rk-table-wrap"><table class="rk-table"><thead><tr><th>合约</th><th>策略</th><th>距行权价</th><th>已赚</th><th>浮盈</th><th>DTE</th><th>名义</th><th>% NAV</th></tr></thead><tbody>
       ${list.map(i => { const cap = _captured(i.x), dist = _distPct(i.x), pl = _posPnl(i.x) || 0;
         return `<tr class="gl-row" role="button" onclick="document.getElementById('exp-modal').remove(); openOptionLab(${c.pos.indexOf(i.x)})"><td><b>${esc(_posLabel(i.x))}</b></td><td><span class="ec-chip" style="--c:${EXP_STRAT[i.strat][1]}">${EXP_STRAT[i.strat][0]}</span></td>
-          <td class="${dist != null && dist < 3 ? 'rk-t-danger' : dist != null && dist < 8 ? 'rk-t-alert' : ''}">${_pct(dist)}</td><td>${cap != null ? cap.toFixed(0) + '%' : '—'}</td><td class="${_thCls(pl)}">${_fmtSigned(pl)}</td><td>${_dteOf(i.x) ?? '—'}</td><td>${_fmtUsd(i.n)}</td><td>${i.pct.toFixed(1)}%</td></tr>`; }).join('')}</tbody></table></div>
+          <td class="${dist != null && dist < 3 ? 'rk-t-danger' : dist != null && dist < 8 ? 'rk-t-alert' : ''}">${_pct(dist)}</td><td>${cap != null ? cap.toFixed(0) + '%' : '—'}</td><td class="${_thCls(pl)}">${_fmtSigned(pl)}</td><td>${_dteOf(i.x) ?? '—'}</td><td>${_fmtUsd(i.n)}</td><td>${i.strat === 'csp' ? i.pct.toFixed(1) + '%' : '<span class="rk-quiet">不计入</span>'}</td></tr>`; }).join('')}</tbody></table></div>
     <div class="rk-note">点一行打开合约面板.</div></div>`;
   m.addEventListener('click', e => { if (e.target === m) m.remove(); });
   document.body.appendChild(m);
@@ -18428,13 +18475,13 @@ window.showExpDetail = key => {
 function _expiryChartHTML(R) {
   const c = R.c, items = _expItems(c);
   if (!c.nav || !items.length) return '';
-  const byDay = {}; items.forEach(i => { byDay[i.d] = (byDay[i.d] || 0) + i.n; });
-  const top = Object.entries(byDay).sort((a, b) => b[1] - a[1])[0], topPct = top[1] / c.nav * 100, lv = riskLevel(_scoreMax(topPct, [15, 25, 35]));
+  const byDay = {}; items.filter(i => i.strat === 'csp').forEach(i => { byDay[i.d] = (byDay[i.d] || 0) + i.n; });
+  const top = Object.entries(byDay).sort((a, b) => b[1] - a[1])[0], topPct = top ? top[1] / c.nav * 100 : 0, lv = riskLevel(_scoreMax(topPct, [15, 25, 35]));
   const seg = (k, opts) => `<span class="rk-presets">${opts.map(([v, l]) => `<button class="rk-preset${(k === 'v' ? __expView : __expRange) === v ? ' active' : ''}" onclick="${k === 'v' ? 'setExpView' : 'setExpRange'}('${v}')">${l}</button>`).join('')}</span>`;
   return `
     <section class="rk-block" id="exp-block">
       <h3 class="rk-block-title rk-title-row"><span>期权到期</span><span class="exp-ctl">${seg('v', [['bars', '柱状'], ['cal', '日历']])}${seg('r', [['auto', '自动'], ['30', '30 天'], ['90', '3 个月'], ['180', '6 个月']])}</span></h3>
-      <div class="exp-top">单日最大到期 <b class="rk-t-${lv.key}">${+top[0].slice(5, 7)}/${+top[0].slice(8)}</b> · ${_fmtUsd(top[1])} · <b class="rk-t-${lv.key}">${topPct.toFixed(0)}% NAV</b> <span class="rk-quiet">· 共 ${items.length} 笔 (CSP ${items.filter(i => i.strat === 'csp').length} · CC ${items.filter(i => i.strat === 'cc').length} · PMCC ${items.filter(i => i.strat === 'pmcc').length})</span></div>
+      <div class="exp-top">${top ? `CSP 单日最大到期 <b class="rk-t-${lv.key}">${+top[0].slice(5, 7)}/${+top[0].slice(8)}</b> · ${_fmtUsd(top[1])} · <b class="rk-t-${lv.key}">${topPct.toFixed(0)}% NAV</b>` : '没有 CSP 到期'} <span class="rk-quiet">· CSP ${items.filter(i => i.strat === 'csp').length} 笔${items.some(i => i.strat !== 'csp') ? ` · CC / PMCC ${items.filter(i => i.strat !== 'csp').length} 笔另列, 不计入 NAV %` : ''}</span></div>
       ${__expView === 'cal' ? _expCalHTML(c, items) : _expBarsSVG(c, items)}
     </section>`;
 }
