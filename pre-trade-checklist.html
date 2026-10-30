@@ -3563,6 +3563,15 @@
   @media (max-width: 640px) { .rl-best { gap: 4px 12px; font-size: 12.5px; } }
   .rl-order > div { white-space: normal; overflow-wrap: anywhere; } .rl-tot::before { content: ' · '; color: var(--text-faint); }
   @media (max-width: 640px) { .rl-tot { display: block; } .rl-tot::before { content: ''; } .rl-flow-t td { white-space: nowrap; } .rl-flow-t td:first-child { white-space: normal; min-width: 96px; } }
+  /* v95 · grouped cash flow, custom CC box */
+  .rl-flow-t tr.rl-g td { font-weight: 700; border-top: 1px solid var(--border-hi); background: color-mix(in srgb, var(--panel-2) 60%, transparent); }
+  .rl-flow-t tr.rl-k1 td:first-child { padding-left: 26px; } .rl-flow-t tr.rl-k2 td:first-child { padding-left: 46px; }
+  .rl-flow-t tr.rl-k1 td, .rl-flow-t tr.rl-k2 td { font-size: 12.5px; } .rl-flow-t tr.rl-k2 td { color: var(--text-dim); }
+  .rl-flow-t tr.rl-k2 td:first-child::before { content: '└ '; color: var(--text-faint); }
+  .rl-flow-t tr.rl-total td { font-weight: 700; border-top: 2px solid var(--text-dim); }
+  .rl-n { display: inline-block; min-width: 22px; margin-right: 6px; color: var(--accent); font-family: var(--mono); }
+  .rl-cus { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 2px 0 8px; font-size: 12.5px; color: var(--text-dim); }
+  .rl-cus select { min-width: 110px; } .rl-cus input { width: 80px; }
 </style>
 </head>
 <body class="theme-slate">
@@ -5613,7 +5622,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.17-v94';
+const APP_BUILD = '2026.10.17-v95';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
@@ -15291,43 +15300,62 @@ async function _rollNextFetch(force) {
   __rollNext[k] = { ...(c || {}), busy: true };
   const today = _todayISO();
   try {
-    const r = await _wfetch(`/chain?ticker=${encodeURIComponent(x.ticker)}&type=${x.kind === 'short_put' ? 'C' : 'P'}&from=${_addDays(today, 5)}&to=${_addDays(today, 70)}&strikeCount=60`); const b = await r.json().catch(() => null);
+    const r = await _wfetch(`/chain?ticker=${encodeURIComponent(x.ticker)}&type=${x.kind === 'short_put' ? 'C' : 'P'}&from=${_addDays(today, 5)}&to=${_addDays(today, 120)}&strikeCount=60`); const b = await r.json().catch(() => null);
     __rollNext[k] = r.ok && b && Array.isArray(b.contracts) ? { at: Date.now(), b } : { at: Date.now(), err: (b && b.message) || 'HTTP ' + r.status };
   } catch (e) { __rollNext[k] = { at: Date.now(), err: '网络错误' }; }
   _rollRedraw();
 }
+const __rollCus = {};
+window.setRollCus = (k, v) => { const c = (__rollCus[__rollKey] = { ...(__rollCus[__rollKey] || {}) });
+  if (k === 'exp') { c.exp = v; c.K = null; } else if (k === 'K') c.K = +v; else if (k === 'prem') c.prem = v === '' || !(+v > 0) ? null : +v; _rollRedraw(); };
 function _rollWheelHTML(x, R) {
-  const put = R.put, q = R.q, S = R.S, eff = put ? R.K - R.creditPS : R.K + R.creditPS, nb = __rollNext[__rollKey];
-  const title = put ? `接股之后: 卖 CC (轮子的另一半) · 假设以 ${R.K} 接股, 有效成本 ${eff.toFixed(2)}` : `被 call 走之后: 重新卖 CSP (轮子的另一半) · 假设以 ${R.K} 卖出, 有效卖价 ${eff.toFixed(2)}`;
+  const put = R.put, q = R.q, S = R.S, K = R.K, eff = put ? K - R.creditPS : K + R.creditPS, nb = __rollNext[__rollKey];
+  const title = put ? `接股之后: 卖 CC (轮子的另一半) · 假设以 ${K} 接股, 有效成本 ${eff.toFixed(2)}` : `被 call 走之后: 重新卖 CSP (轮子的另一半) · 假设以 ${K} 卖出, 有效卖价 ${eff.toFixed(2)}`;
   const wrap = inner => `<section class="rk-block"><h3 class="rk-block-title">${title}</h3>${inner}</section>`;
   if (!nb || (nb.busy && !nb.b)) { if (!nb) setTimeout(() => _rollNextFetch(), 0); return wrap(`<div class="rk-quiet">读取 ${put ? 'call' : 'put'} 期权链…</div>`); }
   if (nb.err) return wrap(`<div class="rk-t-alert">读取 ${put ? 'call' : 'put'} 期权链失败: ${esc(nb.err)}</div>`);
-  const C = nb.b.contracts.filter(o => o.mark > 0 && o.dte >= 5), exps = [...new Set(C.map(o => o.expiry))].sort();
+  const C = nb.b.contracts.filter(o => o.mark > 0 && o.dte >= 5), exps = [...new Set(C.map(o => o.expiry))].sort(), L = put ? 'C' : 'P';
   const dteOf = e => (C.find(o => o.expiry === e) || {}).dte;
   const picks = [...new Set([14, 30, 45].map(t => exps.slice().sort((a, b) => Math.abs(dteOf(a) - t) - Math.abs(dteOf(b) - t))[0]).filter(Boolean))].sort();
   const at = (e, test, asc) => C.filter(o => o.expiry === e && test(o.strike)).sort((a, b) => asc ? a.strike - b.strike : b.strike - a.strike)[0];
   const pct = v => v == null ? '—' : (v * 100).toFixed(0) + '%', usd = v => _fmtUsd(v), n0 = v => Math.max(0, Math.ceil(v - 1e-9));
-  let plans;
-  if (put) plans = [
-    { k: 'A', name: '方案 A · 按现价卖 CC', sub: `行权价贴着现价 ${S.toFixed(2)}: 权利金多, 但被 call 走就是低于成本卖出`, pick: e => at(e, s => s >= S - 1e-9, true),
-      cols: ['这一次被 call 走', '要做几次才不亏'], cells: (o, p) => { const res = (o.strike - eff + p) * 100 * q, n = n0((eff - o.strike) / p);
-        return [`<span class="${res >= 0 ? 'rk-t-safe' : 'rk-t-danger'}">${res >= 0 ? '赚' : '亏'} ${usd(Math.abs(res))}</span>`, `<span class="${_rlC.n(n)}">${n <= 1 ? '1 次' : `${n} 次 · 约 ${(n * o.dte / 30).toFixed(0)} 个月`}</span>`]; } },
-    { k: 'B', name: '方案 B · 按真实成本卖 CC', sub: `行权价 ≥ 有效成本 ${eff.toFixed(2)}: 权利金少, 但被 call 走也不亏`, pick: e => at(e, s => s >= eff - 1e-9, true),
-      cols: ['被 call 走的结果', '几次把成本降到现价'], cells: (o, p) => { const res = (o.strike - eff + p) * 100 * q, n = n0((eff - S) / p);
-        return [`<span class="rk-t-safe">赚 ${usd(res)}</span>`, eff <= S ? '<span class="rk-t-safe">已经低于现价</span>' : `<span class="${_rlC.n(n)}">${n} 次 · 约 ${(n * o.dte / 30).toFixed(0)} 个月</span>`]; } }];
-  else plans = [
-    { k: 'A', name: '方案 A · 按现价卖 CSP', sub: `行权价贴着现价 ${S.toFixed(2)}: 权利金多, 更容易重新接回`, pick: e => at(e, s => s <= S + 1e-9, false),
-      cols: ['被行权时的买入成本', '相比有效卖价'], cells: (o, p) => { const c0 = o.strike - p, g = eff - c0; return [c0.toFixed(2), `<span class="${g >= 0 ? 'rk-t-safe' : 'rk-t-danger'}">${g >= 0 ? '低' : '高'} ${Math.abs(g).toFixed(2)} / 股 · ${usd(Math.abs(g) * 100 * q)}</span>`]; } },
-    { k: 'B', name: '方案 B · 低 10% 卖 CSP', sub: '行权价约低于现价 10%: 权利金少, 接回来的价格更低', pick: e => at(e, s => s <= S * 0.9 + 1e-9, false),
-      cols: ['被行权时的买入成本', '相比有效卖价'], cells: (o, p) => { const c0 = o.strike - p, g = eff - c0; return [c0.toFixed(2), `<span class="${g >= 0 ? 'rk-t-safe' : 'rk-t-danger'}">${g >= 0 ? '低' : '高'} ${Math.abs(g).toFixed(2)} / 股 · ${usd(Math.abs(g) * 100 * q)}</span>`]; } }];
-  const L = put ? 'C' : 'P';
-  const block = P => { const rows = picks.map(e => P.pick(e)).filter(Boolean);
-    if (!rows.length) return `<div class="rl-plan-h"><b>${P.name}</b> <span class="rk-quiet">${P.sub}</span></div><div class="rk-quiet">期权链里没有合适的行权价.</div>`;
-    return `<div class="rl-plan-h"><b>${P.name}</b> <span class="rk-quiet">${P.sub}</span></div><div class="rk-table-wrap"><table class="rk-table rl-cc-t"><thead><tr><th>合约</th><th>权利金 / 股 · 每次</th><th>年化</th><th>每月约</th><th>被${put ? ' call 走' : '行权'}的概率 (Δ)</th>${P.cols.map(c => `<th>${c}</th>`).join('')}</tr></thead><tbody>
-      ${rows.map(o => { const p = o.mark, ann = p / (put ? S : o.strike) * 365 / o.dte * 100, dl = o.delta != null ? Math.abs(o.delta) : null;
-        return `<tr><td><b>${o.strike}${L} ${esc(_md(o.expiry))}</b> <span class="rk-quiet">${o.dte} 天</span></td><td>$${p.toFixed(2)} · ${usd(p * 100 * q)}</td><td class="${ann >= 30 ? 'rk-t-safe' : ann < 10 ? 'rk-quiet' : ''}">${ann.toFixed(0)}%</td><td>${usd(p * 100 * q * 30 / o.dte)}</td><td class="${dl == null ? '' : dl >= 0.45 ? 'rk-t-alert' : dl < 0.25 ? 'rk-t-safe' : ''}">${dl != null ? pct(dl) : '—'}</td>${P.cells(o, p).map(c => `<td>${c}</td>`).join('')}</tr>`; }).join('')}</tbody></table></div>`; };
-  return wrap(`${plans.map(block).join('')}
-    <div class="rk-note">按实时${put ? ' call' : ' put'} 期权链的中间价; ${put ? '年化按现价计算' : '年化按行权价计算'}. 「几次」假设股价大致不动、每次收到的权利金差不多; 实际每次都会不同, 只用来估计量级. ${put ? `每卖一次没被 call 走, 有效成本就降低这次的权利金.` : ''} 期权链 ${_ago(nb.at)}.</div>`);
+  const mo = (n, o) => `约 ${Math.max(1, Math.round(n * o.dte / 30))} 个月`;
+  // one set of columns for every plan and for the custom box
+  const heads = put ? ['合约', '权利金 / 股 · 每次', '年化', '每月约', '被 call 走的概率 (Δ)', '这一次被 call 走', '几次被 call 也不亏', '几次把成本降到现价']
+    : ['合约', '权利金 / 股 · 每次', '年化', '每月约', '被行权的概率 (Δ)', '被行权时的买入成本', '相比有效卖价'];
+  const cells = (o, p) => {
+    const ann = p / (put ? S : o.strike) * 365 / o.dte * 100, dl = o.delta != null ? Math.abs(o.delta) : null;
+    const base = [`<b>${o.strike}${L} ${esc(_md(o.expiry))}</b> <span class="rk-quiet">${o.dte} 天</span>`, `$${p.toFixed(2)} · ${usd(p * 100 * q)}`,
+      `<span class="${ann >= 30 ? 'rk-t-safe' : ann < 10 ? 'rk-quiet' : ''}">${ann.toFixed(0)}%</span>`, usd(p * 100 * q * 30 / o.dte),
+      `<span class="${dl == null ? '' : dl >= 0.45 ? 'rk-t-alert' : dl < 0.25 ? 'rk-t-safe' : ''}">${dl != null ? pct(dl) : '—'}</span>`];
+    if (put) { const res = (o.strike - eff + p) * 100 * q, nNo = o.strike >= eff ? 0 : n0((eff - o.strike) / p), nDn = eff <= S ? 0 : n0((eff - S) / p);
+      return base.concat([`<span class="${res >= 0 ? 'rk-t-safe' : 'rk-t-danger'}">${res >= 0 ? '赚' : '亏'} ${usd(Math.abs(res))}</span>`,
+        nNo === 0 ? '<span class="rk-t-safe">不用, 行权价已高于成本</span>' : `<span class="${_rlC.n(nNo)}">${nNo} 次 · ${mo(nNo, o)}</span>`,
+        nDn === 0 ? '<span class="rk-t-safe">已经低于现价</span>' : `<span class="${_rlC.n(nDn)}">${nDn} 次 · ${mo(nDn, o)}</span>`]); }
+    const c0 = o.strike - p, g = eff - c0;
+    return base.concat([c0.toFixed(2), `<span class="${g >= 0 ? 'rk-t-safe' : 'rk-t-danger'}">${g >= 0 ? '低' : '高'} ${Math.abs(g).toFixed(2)} / 股 · ${usd(Math.abs(g) * 100 * q)}</span>`]);
+  };
+  const table = rows => `<div class="rk-table-wrap"><table class="rk-table rl-cc-t"><thead><tr>${heads.map(h => `<th>${h}</th>`).join('')}</tr></thead><tbody>${rows.map(([o, p]) => `<tr>${cells(o, p).map(c => `<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+  const plans = put ? [
+    ['A', '按现价卖 CC', `行权价 ≥ 现价 ${S.toFixed(2)}: 权利金最多, 但被 call 走就是低于成本卖出`, e => at(e, s => s >= S - 1e-9, true)],
+    ['B', '按真实成本卖 CC', `行权价 ≥ 有效成本 ${eff.toFixed(2)}: 被 call 走也不亏`, e => at(e, s => s >= eff - 1e-9, true)],
+    ['C', '按接股价卖 CC', `行权价 ≥ ${K}: 被 call 走等于按原价卖出, 赚的是这一路的权利金`, e => at(e, s => s >= K - 1e-9, true)]]
+  : [['A', '按现价卖 CSP', `行权价 ≤ 现价 ${S.toFixed(2)}: 权利金最多, 更容易重新接回`, e => at(e, s => s <= S + 1e-9, false)],
+    ['B', '低 10% 卖 CSP', '行权价约低于现价 10%: 接回来的价格更低', e => at(e, s => s <= S * 0.9 + 1e-9, false)],
+    ['C', '按卖出价卖 CSP', `行权价 ≤ ${K}: 被行权等于按卖出的价格接回`, e => at(e, s => s <= K + 1e-9, false)]];
+  const planHTML = plans.map(([k, name, sub, pick]) => { const rows = picks.map(e => pick(e)).filter(Boolean).map(o => [o, o.mark]);
+    return `<div class="rl-plan-h"><b>方案 ${k} · ${name}</b> <span class="rk-quiet">${sub}</span></div>${rows.length ? table(rows) : '<div class="rk-quiet">期权链里没有合适的行权价.</div>'}`; }).join('');
+  // custom: any expiry, any strike, your own fill
+  const cu = __rollCus[__rollKey] || {}, exp = exps.includes(cu.exp) ? cu.exp : (picks[1] || picks[0] || exps[0]), ks = C.filter(o => o.expiry === exp).map(o => o.strike).sort((a, b) => a - b);
+  const kDef = put ? (ks.find(s => s >= eff - 1e-9) ?? ks[ks.length - 1]) : ([...ks].reverse().find(s => s <= S + 1e-9) ?? ks[0]), kSel = ks.includes(cu.K) ? cu.K : kDef;
+  const oc = C.find(o => o.expiry === exp && o.strike === kSel), pUse = cu.prem > 0 ? cu.prem : oc ? oc.mark : null;
+  const custom = `<div class="rl-plan-h"><b>自定义</b> <span class="rk-quiet">自己选到期日和行权价; 成交价不填就用中间价</span></div>
+    <div class="rl-cus">到期 <select class="gl-num" onchange="setRollCus('exp', this.value)">${exps.map(e => `<option value="${e}"${e === exp ? ' selected' : ''}>${esc(_md(e))} · ${dteOf(e)} 天</option>`).join('')}</select>
+      行权价 <select class="gl-num" onchange="setRollCus('K', this.value)">${ks.map(s => `<option value="${s}"${s === kSel ? ' selected' : ''}>${s}${s === kDef ? (put ? ' (≥ 成本)' : ' (≤ 现价)') : ''}</option>`).join('')}</select>
+      成交价 $ <input class="gl-num" type="number" step="0.05" min="0" value="${cu.prem || ''}" placeholder="${oc ? oc.mark.toFixed(2) : ''}" onchange="setRollCus('prem', this.value)"></div>
+    ${oc && pUse ? table([[oc, pUse]]) : '<div class="rk-quiet">这个到期日没有这个行权价.</div>'}`;
+  return wrap(`${planHTML}${custom}
+    <div class="rk-note">按实时${put ? ' call' : ' put'} 期权链的中间价; ${put ? '年化按现价计算' : '年化按行权价计算'}. 「几次」假设股价大致不动、每次收到的权利金差不多, 只用来估计量级${put ? '; 每卖一次没被 call 走, 有效成本就降低这次的权利金' : ''}. 期权链 ${_ago(nb.at)}.</div>`);
 }
 // this position's roll chain: every earlier leg it was rolled from, with what each one made
 function _rollHistory(x) {
@@ -15373,25 +15401,37 @@ function _rollCands(x, b, mode, cfg) {
   rows.sort((a, z) => (cfg.creditOnly ? (z.credit - a.credit) : 0) || z.score - a.score);
   return { rows, cur, cMid, cAsk, cDte, S, q, H, creditPS, put, K, earn };
 }
-// the whole cash flow: what's already in the account, the buy-back, the new sale, and where it leaves the position
+// the whole cash flow, grouped: ① what this position has already collected (every earlier roll listed), ② this roll, ① + ② where it leaves you
 function _rollFlowHTML(x, R, r) {
-  const q = R.q, put = R.put, L = put ? 'P' : 'C', open = x.avg || 0, prior = R.H.realized / (100 * q);
+  const q = R.q, put = R.put, L = put ? 'P' : 'C', legs = R.H.legs, ps = v => v / (100 * q);
+  const nm = u => `${u.strike}${L} ${esc(_md(u.expiry))}`;
+  // ① from the trade history: the first sale, then each roll = buy back the old leg + sell the next one
+  const prior = [];
+  if (legs.length >= 2) {
+    prior.push({ lv: 1, l: `开仓卖出 ${nm(legs[0])}`, v: ps(legs[0].openCash || 0) });
+    for (let i = 1; i < legs.length; i++) { const a0 = legs[i - 1], b0 = legs[i], buy = ps((a0.openCash || 0) - (a0.pnl || 0)), sell = ps(b0.openCash || 0);
+      prior.push({ lv: 1, l: `第 ${i} 次 roll`, v: sell - buy }, { lv: 2, l: `买回 ${nm(a0)}`, v: -buy }, { lv: 2, l: `卖出 ${nm(b0)}`, v: sell }); }
+  } else prior.push({ lv: 1, l: `开仓卖出 ${x.strike}${L} ${esc(_md(x.expiry))}`, v: x.avg || 0 });
+  const listed = prior.filter(z => z.lv === 1).reduce((s, z) => s + z.v, 0);
+  if (Math.abs(listed - R.creditPS) > 0.005) prior.push({ lv: 1, l: '交易记录里对不上的部分', v: R.creditPS - listed, quiet: true });
   const midB = R.cMid, midS = r.o.mark, conB = R.cAsk != null ? R.cAsk : R.cMid, conS = r.o.bid != null ? r.o.bid : r.o.mark;
-  const col = (b, s) => { const net = s - b, cum = R.creditPS + net; return { b, s, net, cum, be: put ? r.o.strike - cum : r.o.strike + cum }; }, M = col(midB, midS), C = col(conB, conS);
-  const f0 = (v, sign = true) => `${sign ? (v >= 0 ? '+' : '−') : ''}$${Math.abs(v).toFixed(2)}`, t0 = v => `${v >= 0 ? '+' : '−'}${_fmtUsd(Math.abs(v * 100 * q))}`;
-  const f = v => `<span class="${v >= 0 ? 'rk-t-safe' : 'rk-t-danger'}">${f0(v)}</span>`, t = v => `<span class="${v >= 0 ? 'rk-t-safe' : 'rk-t-danger'}">${t0(v)}</span>`;
-  const row = (l, a, b, cls = '') => `<tr class="${cls}"><td>${l}</td><td>${a}</td><td>${b}</td></tr>`;
-  return `<div class="rl-flow"><div class="rl-order-h">这一路的现金流 <span class="rk-quiet">· 每股 / 合计 (${q} 张)</span></div>
+  const M = { net: midS - midB }, C = { net: conS - conB }; M.cum = R.creditPS + M.net; C.cum = R.creditPS + C.net; M.be = put ? r.o.strike - M.cum : r.o.strike + M.cum;
+  const f0 = v => `${v >= 0 ? '+' : '−'}$${Math.abs(v).toFixed(2)}`, t0 = v => `${v >= 0 ? '+' : '−'}${_fmtUsd(Math.abs(v * 100 * q))}`;
+  const cell = (v, tot = true) => `<span class="${v >= 0 ? 'rk-t-safe' : 'rk-t-danger'}">${f0(v)}</span>${tot ? `<span class="rl-tot ${v >= 0 ? 'rk-t-safe' : 'rk-t-danger'}">${t0(v)}</span>` : ''}`;
+  const row = (cls, l, a, b) => `<tr class="${cls}"><td>${l}</td><td>${a}</td><td>${b}</td></tr>`;
+  const grp = (n, l, va, vb) => row('rl-g', `<span class="rl-n">${n}</span>${l}`, `<b>${cell(va)}</b>`, `<b>${cell(vb)}</b>`);
+  const kid = (z, a, b) => row(`rl-k${z.lv}${z.quiet ? ' rk-quiet' : ''}`, z.l, a, b);
+  return `<div class="rl-flow"><div class="rl-order-h">这一路的现金流 <span class="rk-quiet">· 每股${q > 1 || true ? ` / 合计 (${q} 张)` : ''}</span></div>
     <div class="rk-table-wrap"><table class="rk-table rl-flow-t"><thead><tr><th></th><th>按中间价</th><th>按买卖价成交</th></tr></thead><tbody>
-      ${row(`开仓收到 (${x.strike}${L} 这一张)`, `${f(open)}<span class="rl-tot">${t(open)}</span>`, `${f(open)}<span class="rl-tot">${t(open)}</span>`)}
-      ${R.H.rolls ? row(`之前 ${R.H.rolls} 次 roll 已实现`, `${f(prior)}<span class="rl-tot">${t(prior)}</span>`, `${f(prior)}<span class="rl-tot">${t(prior)}</span>`) : ''}
-      ${row(`买入平仓 ${x.strike}${L} ${esc(_md(x.expiry))}`, `${f(-M.b)}<span class="rl-tot">${t(-M.b)}</span>`, `${f(-C.b)}<span class="rl-tot">${t(-C.b)}</span>`)}
-      ${row(`卖出开仓 ${r.o.strike}${L} ${esc(_md(r.o.expiry))}`, `${f(M.s)}<span class="rl-tot">${t(M.s)}</span>`, `${f(C.s)}<span class="rl-tot">${t(C.s)}</span>`)}
-      ${row('<b>本次 roll 净额</b>', `<b>${f(M.net)}<span class="rl-tot">${t(M.net)}</span></b>`, `<b>${f(C.net)}<span class="rl-tot">${t(C.net)}</span></b>`, 'rl-sum')}
-      ${row('<b>这一路累计净收</b>', `<b>${f(M.cum)}<span class="rl-tot">${t(M.cum)}</span></b>`, `<b>${f(C.cum)}<span class="rl-tot">${t(C.cum)}</span></b>`, 'rl-sum')}</tbody></table></div>
+      ${grp('①', '到现在已收', R.creditPS, R.creditPS)}
+      ${prior.map(z => kid(z, cell(z.v, z.lv === 1), cell(z.v, z.lv === 1))).join('')}
+      ${grp('②', '本次 roll', M.net, C.net)}
+      ${kid({ lv: 1, l: `买入平仓 ${x.strike}${L} ${esc(_md(x.expiry))}` }, cell(-midB), cell(-conB))}
+      ${kid({ lv: 1, l: `卖出开仓 ${r.o.strike}${L} ${esc(_md(r.o.expiry))}` }, cell(midS), cell(conS))}
+      ${row('rl-total', '<span class="rl-n">① + ②</span>这一路累计净收', `<b>${cell(M.cum)}</b>`, `<b>${cell(C.cum)}</b>`)}</tbody></table></div>
     <div class="rl-ends"><span><b>到期作废</b>: 这一路<b class="${M.cum >= 0 ? 'rk-t-safe' : 'rk-t-danger'}">${M.cum >= 0 ? '赚' : '亏'} ${_fmtUsd(Math.abs(M.cum * 100 * q))}</b></span>
       <span><b>${put ? '被行权' : '被 call 走'}</b>: ${put ? `以 ${r.o.strike} 接股, 有效成本 <b class="${_rlC.gap((M.be / R.S - 1) * 100)}">${M.be.toFixed(2)}</b> (= ${r.o.strike} − ${M.cum.toFixed(2)}, 比现价${M.be >= R.S ? '高' : '低'} ${Math.abs((M.be / R.S - 1) * 100).toFixed(1)}%)` : `以 ${r.o.strike} 卖出, 有效卖价 <b>${M.be.toFixed(2)}</b> (= ${r.o.strike} + ${M.cum.toFixed(2)})`}</span></div>
-    <div class="rk-note">开仓收到的权利金已经在账户里, roll 不会改变它; 本次净额是加在它上面的. 「之前的 roll 已实现」= 之前每一次卖出和买回之间的盈亏.</div></div>`;
+    <div class="rk-note">① 已经在账户里, roll 不会改变它; ② 是这次 roll 的买回和卖出; 两组相加就是这一路最后留下的权利金. 之前的 roll 按 Schwab 交易记录的实际成交价.</div></div>`;
 }
 const _rlC = {
   ext: (v, cfg) => v <= cfg.fullDays ? 'rk-t-safe' : v <= 90 ? '' : v <= 150 ? 'rk-t-alert' : 'rk-t-danger',
