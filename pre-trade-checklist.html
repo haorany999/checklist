@@ -5575,7 +5575,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.17-v90';
+const APP_BUILD = '2026.10.17-v91';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
@@ -10197,6 +10197,7 @@ function buildSyncPayload() {
       riskWeights: (function() { try { return localStorage.getItem(RISK_WEIGHTS_KEY) || ''; } catch (e) { return ''; } })(),
       betaOverrides: (function() { try { return localStorage.getItem(BETA_OVR_KEY) || ''; } catch (e) { return ''; } })(),
       leapsTargets: (function() { try { return localStorage.getItem(LEAPS_TGT_KEY) || ''; } catch (e) { return ''; } })(),
+      leapsStops: (function() { try { return localStorage.getItem(LEAPS_STOP_KEY) || ''; } catch (e) { return ''; } })(),
       betaMode: (function() { try { return localStorage.getItem(BETA_MODE_KEY) || ''; } catch (e) { return ''; } })(),
       perfStart: (function() { try { return localStorage.getItem(PERF_START_KEY) || ''; } catch (e) { return ''; } })(),
       scanCfg: (function() { try { return localStorage.getItem(SCAN_CFG_KEY) || ''; } catch (e) { return ''; } })(),
@@ -10242,6 +10243,7 @@ function applyRemotePayload(remote, mode) {
       SYNC_PLAIN().forEach(([n, k]) => _take3(n, k, s[n], ['riskWeights', 'betaOverrides', 'scanCfg', 'room', 'goal'].includes(n) ? isJSON : n === 'betaMode' ? v => v === 'beta' || v === 'flat' : () => true));
       if (typeof s.rocPhase === 'string' && s.rocPhase) _mergeRemoteRocPhase(s.rocPhase);
       if (typeof s.leapsTargets === 'string' && s.leapsTargets) _ltMerge(s.leapsTargets);
+      if (typeof s.leapsStops === 'string' && s.leapsStops) _ltMerge(s.leapsStops, 'stop');
       if (typeof s.wheelCkpt === 'string' && s.wheelCkpt) { try { const inc = JSON.parse(s.wheelCkpt), cur = loadWheelCkpt(); if (inc.asOf && (!cur || inc.asOf > cur.asOf)) localStorage.setItem(WHEEL_CKPT_KEY, s.wheelCkpt); } catch (e) {} }
       if (typeof s.histStart === 'string' && /^\d{4}$/.test(s.histStart)) { const cur = parseInt(localStorage.getItem(HIST_START_KEY) || '9999', 10); if (+s.histStart < cur) localStorage.setItem(HIST_START_KEY, s.histStart); }
       if (typeof s.perfStart === 'string' && s.perfStart) { try { const o = JSON.parse(s.perfStart); localStorage.setItem(PERF_START_KEY, JSON.stringify({ ...loadPerfStart(), ...o })); } catch (e) {} }
@@ -10257,6 +10259,7 @@ function applyRemotePayload(remote, mode) {
     if (typeof s.riskWeights === 'string' && s.riskWeights) { try { JSON.parse(s.riskWeights); localStorage.setItem(RISK_WEIGHTS_KEY, s.riskWeights); } catch (e) {} }
     if (typeof s.betaOverrides === 'string' && s.betaOverrides) { try { JSON.parse(s.betaOverrides); localStorage.setItem(BETA_OVR_KEY, s.betaOverrides); } catch (e) {} }
     if (typeof s.leapsTargets === 'string' && s.leapsTargets) { if (mode === 'merge') _ltMerge(s.leapsTargets); else { try { JSON.parse(s.leapsTargets); localStorage.setItem(LEAPS_TGT_KEY, s.leapsTargets); } catch (e) {} } }
+    if (typeof s.leapsStops === 'string' && s.leapsStops) { if (mode === 'merge') _ltMerge(s.leapsStops, 'stop'); else { try { JSON.parse(s.leapsStops); localStorage.setItem(LEAPS_STOP_KEY, s.leapsStops); } catch (e) {} } }
     if (s.betaMode === 'beta' || s.betaMode === 'flat') { try { localStorage.setItem(BETA_MODE_KEY, s.betaMode); } catch (e) {} }
     if (typeof s.wheelCkpt === 'string' && s.wheelCkpt) { try { const inc = JSON.parse(s.wheelCkpt), cur = loadWheelCkpt(); if (inc.asOf && (!cur || inc.asOf > cur.asOf)) localStorage.setItem(WHEEL_CKPT_KEY, s.wheelCkpt); } catch (e) {} }
     if (typeof s.histStart === 'string' && /^\d{4}$/.test(s.histStart)) { const cur = parseInt(localStorage.getItem(HIST_START_KEY) || '9999', 10); if (+s.histStart < cur) localStorage.setItem(HIST_START_KEY, s.histStart); }
@@ -16580,25 +16583,29 @@ function _progBarHTML(prog, timePct, label) {
   return `<span class="pc-prog${timePct != null ? ' t' : ''}" title="${timePct != null ? `时间已过 ${timePct.toFixed(0)}%` : ''}"><i style="width:${p.toFixed(0)}%"></i>${timePct != null ? `<em style="left:${Math.max(0, Math.min(100, timePct)).toFixed(0)}%"></em>` : ''}</span> ${Math.max(0, prog).toFixed(0)}%${label ? ` <span class="rk-quiet">${label}</span>` : ''}${ahead != null ? ` <span class="${ahead >= 0 ? 'rk-t-safe' : 'rk-t-alert'} pc-ahead">${ahead >= 0 ? '快于' : '慢于'}时间</span>` : ''}`;
 }
 const SHORT_TP = 50;                                              // CSP / CC rule: buy back at 50% of the premium
-const LEAPS_TGT_KEY = 'pretrade_leaps_targets';
+const LEAPS_TGT_KEY = 'pretrade_leaps_targets', LEAPS_STOP_KEY = 'pretrade_leaps_stops';
+const LT_KIND = { tgt: { key: LEAPS_TGT_KEY, field: 'target_level' }, stop: { key: LEAPS_STOP_KEY, field: 'stop_level' } };
 const _ltKey = x => `${x.ticker}|${x.strike}|${x.expiry}`;
-function _ltLoad() { let m = {}; try { m = JSON.parse(localStorage.getItem(LEAPS_TGT_KEY) || '{}') || {}; } catch (e) {}
+function _ltLoad(kind = 'tgt') { let m = {}; try { m = JSON.parse(localStorage.getItem(LT_KIND[kind].key) || '{}') || {}; } catch (e) {}
   const out = {}; Object.entries(m).forEach(([k, v]) => { out[k] = v && typeof v === 'object' ? { px: v.px > 0 ? +v.px : null, at: +v.at || 0 } : { px: +v > 0 ? +v : null, at: 0 }; }); return out; }
 // two devices: each contract keeps whichever edit is newer (a cleared value is kept as a dated blank)
-function _ltMerge(remoteStr) { let r = {}; try { r = JSON.parse(remoteStr || '{}') || {}; } catch (e) { return; }
-  const L = _ltLoad(); let ch = false;
+function _ltMerge(remoteStr, kind = 'tgt') { let r = {}; try { r = JSON.parse(remoteStr || '{}') || {}; } catch (e) { return; }
+  const L = _ltLoad(kind); let ch = false;
   Object.entries(r).forEach(([k, v]) => { const rv = v && typeof v === 'object' ? { px: v.px > 0 ? +v.px : null, at: +v.at || 0 } : { px: +v > 0 ? +v : null, at: 0 };
     if (!L[k] || rv.at > L[k].at) { L[k] = rv; ch = true; } });
-  if (ch) try { localStorage.setItem(LEAPS_TGT_KEY, JSON.stringify(L)); } catch (e) {} }
-function _leapsTgt(x) {
-  const v = _ltLoad()[_ltKey(x)]; if (v && v.px > 0) return { px: v.px, src: 'you' }; if (v && v.at) return null;   // cleared on purpose
+  if (ch) try { localStorage.setItem(LT_KIND[kind].key, JSON.stringify(L)); } catch (e) {} }
+// your number first; otherwise the LEAPS checklist's stop / target for this contract
+function _leapsLevel(x, kind) {
+  const v = _ltLoad(kind)[_ltKey(x)]; if (v && v.px > 0) return { px: v.px, src: 'you' }; if (v && v.at) return null;   // cleared on purpose
   const e = getActiveHistory().find(h => (h.strategy || '').startsWith('LEAPS') && _normTicker(h.ticker) === x.ticker && x.strike != null && Math.abs((_snapStrike(h) ?? -1) - x.strike) < 0.005);
-  const t = e && e.fullState && e.fullState.items ? parseFloat(e.fullState.items.target_level) : NaN;
+  const t = e && e.fullState && e.fullState.items ? parseFloat(e.fullState.items[LT_KIND[kind].field]) : NaN;
   return t > 0 ? { px: t, src: 'checklist' } : null;
 }
-window.setLeapsTgt = (k, v) => { const m = _ltLoad(), n = parseFloat(v); m[k] = { px: n > 0 ? n : null, at: Date.now() };
-  try { localStorage.setItem(LEAPS_TGT_KEY, JSON.stringify(m)); } catch (e) {} if (typeof scheduleAutoPushToGist === 'function') scheduleAutoPushToGist();
+const _leapsTgt = x => _leapsLevel(x, 'tgt'), _leapsStop = x => _leapsLevel(x, 'stop');
+window.setLeapsLevel = (kind, k, v) => { const m = _ltLoad(kind), n = parseFloat(v); m[k] = { px: n > 0 ? n : null, at: Date.now() };
+  try { localStorage.setItem(LT_KIND[kind].key, JSON.stringify(m)); } catch (e) {} if (typeof scheduleAutoPushToGist === 'function') scheduleAutoPushToGist();
   const y = window.scrollY; render(); window.scrollTo(0, y); };
+window.setLeapsTgt = (k, v) => setLeapsLevel('tgt', k, v);
 function renderPositionsPage() {
   const head = `<div class="header header-sticky"><div class="brand">Pre-Trade Checklist</div><div class="header-actions">
     <button class="btn ghost" onclick="state._view = null; render(); window.scrollTo(0, 0)">← 返回</button><button class="btn ghost" onclick="refreshSchwab(true)">刷新 Schwab</button></div></div>`;
@@ -16717,7 +16724,8 @@ function renderPositionsPage() {
   const avgHeld = (() => { const h = lpRows.filter(r => r.held); return h.length ? h.reduce((s, r) => s + r.held.days, 0) / h.length : null; })();
   const lpHTML = lp.length ? `
     <section class="rk-block">
-      <h3 class="rk-block-title" id="sec-leaps">LEAPS · ${lp.length} 笔${(() => { const miss = lp.filter(x => !_leapsTgt(x)).length; return miss ? ` <span class="lt-warn">${miss} 个未设置正股止盈位</span>` : ''; })()}</h3>
+      <h3 class="rk-block-title" id="sec-leaps">LEAPS · ${lp.length} 笔${(() => { const mT = lp.filter(x => !_leapsTgt(x)).length, mS = lp.filter(x => !_leapsStop(x)).length, a = [];
+          if (mT) a.push(`${mT} 个未设置正股止盈位`); if (mS) a.push(`${mS} 个未设置正股止损位`); return a.length ? ` <span class="lt-warn">${a.join(' · ')}</span>` : ''; })()}</h3>
       <div class="rk-figs">
         ${fig('成本', _fmtUsd(lT.cost), `${_pct(pn(lT.cost))} NAV`)}
         ${fig('市值', _fmtUsd(lT.val), `浮盈 ${sgn(lT.val - lT.cost)} · ${lT.cost ? _pct((lT.val - lT.cost) / lT.cost * 100) : '—'}`, _thCls(lT.val - lT.cost))}
@@ -16726,10 +16734,15 @@ function renderPositionsPage() {
         ${fig('平均持有', avgHeld != null ? avgHeld.toFixed(0) + ' 天' : '—', '仍持有的 LEAPS')}
       </div>
       <div class="rk-table-wrap"><table class="rk-table">
-        <thead><tr><th>合约</th><th>浮盈 %</th><th>止盈进度</th><th>正股止盈位</th><th>还需涨</th><th>距退出</th><th>浮盈</th><th>Δ</th><th>DTE</th><th>市值</th><th>市值 % NAV</th><th>成本</th><th>投入 % NAV</th><th>持有</th><th>正股等值</th><th>λ ${_qBtn('lambda', 'long')}</th></tr></thead>
-        <tbody>${lpRows.map(r => row(r.x, `<td><b>${esc(_posLabel(r.x))}</b></td><td class="${_thCls(r.pnl)}">${_pct(r.pnlPct)}</td><td class="pc-cell">${r.prog != null ? _progBarHTML(r.prog, null, `/ +${r.tg.pct}% ${r.tg.style ? '' : '(默认)'}`) : '—'}</td>${(() => { const T = _leapsTgt(r.x), S = r.x.und, need = T && S > 0 ? (T.px / S - 1) * 100 : null;
-          return `<td class="lt-cell" onclick="event.stopPropagation()"><input type="number" step="0.5" class="gl-num lt-in${T ? '' : ' lt-miss'}" value="${T ? T.px : ''}" placeholder="填写" onchange="setLeapsTgt('${esc(_ltKey(r.x))}', this.value)" onkeydown="if (event.key === 'Enter') this.blur()" aria-label="正股止盈位">${T && T.src === 'checklist' ? '<span class="rk-quiet lt-src">来自 checklist</span>' : ''}</td>
-          <td class="${need == null ? 'rk-quiet' : need <= 0 ? 'rk-t-safe' : ''}">${need == null ? (T ? '—' : '未设置') : need <= 0 ? '已到止盈位' : '+' + need.toFixed(1) + '%'}</td>`; })()}<td class="${r.toExit != null && r.toExit <= 0 ? 'rk-t-danger' : r.toExit != null && r.toExit < 90 ? 'rk-t-alert' : ''}">${r.toExit != null ? (r.toExit <= 0 ? '已到退出线' : r.toExit + ' 天') : '—'}</td><td class="${_thCls(r.pnl)}">${sgn(r.pnl)}</td><td>${r.s ? _num2(r.s.delta) : '—'}</td><td>${_days(r.dte)}</td>
+        <thead><tr><th>合约</th><th>浮盈 %</th><th>止盈进度</th><th>正股止盈位</th><th>需涨</th><th>正股止损位</th><th>需跌</th><th>距退出</th><th>浮盈</th><th>Δ</th><th>DTE</th><th>市值</th><th>市值 % NAV</th><th>成本</th><th>投入 % NAV</th><th>持有</th><th>正股等值</th><th>λ ${_qBtn('lambda', 'long')}</th></tr></thead>
+        <tbody>${lpRows.map(r => row(r.x, `<td><b>${esc(_posLabel(r.x))}</b></td><td class="${_thCls(r.pnl)}">${_pct(r.pnlPct)}</td><td class="pc-cell">${r.prog != null ? _progBarHTML(r.prog, null, `/ +${r.tg.pct}% ${r.tg.style ? '' : '(默认)'}`) : '—'}</td>${(() => { const S = r.x.und, k = esc(_ltKey(r.x));
+          const cell = (kind, L, label) => `<td class="lt-cell" onclick="event.stopPropagation()"><input type="number" step="0.5" class="gl-num lt-in${L ? '' : ' lt-miss'}" value="${L ? L.px : ''}" placeholder="填写" onchange="setLeapsLevel('${kind}', '${k}', this.value)" onkeydown="if (event.key === 'Enter') this.blur()" aria-label="${label}">${L && L.src === 'checklist' ? '<span class="rk-quiet lt-src">来自 checklist</span>' : ''}</td>`;
+          const T = _leapsTgt(r.x), up = T && S > 0 ? (T.px / S - 1) * 100 : null;        // farther from the target = redder
+          const P = _leapsStop(r.x), dn = P && S > 0 ? (1 - P.px / S) * 100 : null;      // closer to the stop = redder
+          const upCls = up == null ? 'rk-quiet' : up <= 0 ? 'rk-t-safe' : up < 10 ? 'rk-t-safe' : up < 25 ? 'rk-t-alert' : 'rk-t-danger';
+          const dnCls = dn == null ? 'rk-quiet' : dn <= 0 ? 'rk-t-danger' : dn < 5 ? 'rk-t-danger' : dn < 12 ? 'rk-t-alert' : 'rk-t-safe';
+          return cell('tgt', T, '正股止盈位') + `<td class="${upCls}">${up == null ? (T ? '—' : '未设置') : up <= 0 ? '已到止盈位' : '+' + up.toFixed(1) + '%'}</td>`
+            + cell('stop', P, '正股止损位') + `<td class="${dnCls}">${dn == null ? (P ? '—' : '未设置') : dn <= 0 ? '已到止损位' : '−' + dn.toFixed(1) + '%'}</td>`; })()}<td class="${r.toExit != null && r.toExit <= 0 ? 'rk-t-danger' : r.toExit != null && r.toExit < 90 ? 'rk-t-alert' : ''}">${r.toExit != null ? (r.toExit <= 0 ? '已到退出线' : r.toExit + ' 天') : '—'}</td><td class="${_thCls(r.pnl)}">${sgn(r.pnl)}</td><td>${r.s ? _num2(r.s.delta) : '—'}</td><td>${_days(r.dte)}</td>
           <td>${money(r.val)}</td>
           <td>${_pct(pn(r.val))}</td><td>${money(r.cost)}</td>
           <td>${_pct(pn(r.cost))}</td>
@@ -18914,3 +18927,4 @@ window.addEventListener('scroll', updateScrolledState, { passive: true });
 </script>
 </body>
 </html>
+  
