@@ -3608,6 +3608,7 @@
   body svg text.rk-t-safe { fill: var(--pass) !important; } body svg text.rk-t-danger { fill: var(--fail) !important; } body svg text.rk-t-alert { fill: #E5793B !important; }
   body svg text.rk-t-watch { fill: #D4A72C !important; } body svg text.rk-t-acc { fill: var(--accent) !important; }
   body svg text.wf-val { font-weight: 700 !important; }
+  .room-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); } @media (max-width: 1100px) { .room-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); } } @media (max-width: 760px) { .room-cards { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body class="theme-slate">
@@ -5660,7 +5661,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.17-v101';
+const APP_BUILD = '2026.10.17-v102';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
@@ -11530,7 +11531,7 @@ const QUOTES = [
   ['Plan your trade and trade your plan.', '计划你的交易, 交易你的计划.', '交易格言'] ];
 let __qIdx = null, __qTimer = null;
 // the App expects this Worker; an older one keeps running but misses these fixes
-const WORKER_NEED = 21, WORKER_FIXES = [[15, '每日快照只在收盘后记录 (盈亏归因的「今天」准确)'], [16, '早报 / 周报按触发时间识别 (星期写法不会再错)'], [17, '日线缓存修正 (J 等指标不会停在旧数据)'], [18, '借钱 / 追保提醒和早报里的借钱状态'], [19, '盘中报价时间和是否实时'], [20, '邮件里的 Equity % 按账户计算 (多个账户时不再被减半)'], [21, 'Roll 提醒: 提前行权风险、执行 roll 计划、到提醒价']];
+const WORKER_NEED = 22, WORKER_FIXES = [[15, '每日快照只在收盘后记录 (盈亏归因的「今天」准确)'], [16, '早报 / 周报按触发时间识别 (星期写法不会再错)'], [17, '日线缓存修正 (J 等指标不会停在旧数据)'], [18, '借钱 / 追保提醒和早报里的借钱状态'], [19, '盘中报价时间和是否实时'], [20, '邮件里的 Equity % 按账户计算 (多个账户时不再被减半)'], [21, 'Roll 提醒: 提前行权风险、执行 roll 计划、到提醒价'], [22, '提醒邮件里「21 天」的写法和 App 一致']];
 function _workerAgeHTML() {
   const p = getPortfolio(); if (p.source !== 'schwab' || !p.workerVersion || p.workerVersion >= WORKER_NEED) return '';
   const miss = WORKER_FIXES.filter(([v]) => v > p.workerVersion);
@@ -12967,7 +12968,7 @@ function _mgmtItems(c) {
       else if (cap != null && cap >= 50)
         items.push({ x, level: 'info', tag: '可止盈', facts: `已赚 ${cap.toFixed(0)}%${left} · ${dte ?? '—'} 天`, act: '买回止盈' });
       else if (dte != null && dte <= 21)
-        items.push({ x, level: 'watch', tag: '进入 21 天', facts: `${dte} 天 · ${away}${cap != null ? ` · 已赚 ${cap.toFixed(0)}%` : ''}`, act: '止盈或 roll' });
+        items.push({ x, level: 'watch', tag: '21 天', facts: `${dte} 天 · ${away}${cap != null ? ` · 已赚 ${cap.toFixed(0)}%` : ''}`, act: '止盈或 roll' });
     } else if (x.kind === 'leaps') {
       const style = _leapsStyleFor(x), th = { stock_sub: 150, balanced: 100, swing: 50 }[style] || 100;
       const prof = x.cost > 0 && x.marketValue != null ? (x.marketValue - x.cost) / x.cost * 100 : null;
@@ -14031,15 +14032,15 @@ const GREEK_HELP = {
     read: '点一行可以看分数每一项是怎么来的. 权重和区间都能在页面底部的「规则和权重」里调.', note: '净收入优先, 再看谁最快结束、降得最有意义.' },
   cc_called: { t: '被 call 走', def: '这张 CC 被行权、100 股按行权价卖出时, 相对你的调整后成本赚多少 (含这次的权利金). 「比成本」= 行权价比调整后成本高多少.', note: '潜在机会只列行权价高于调整后成本的合约, 所以被 call 走都不亏.' },
   lm_advice: { t: 'LEAPS 建议', scale: [['止损平仓', 'rk-t-danger', '正股跌破你设的止损位'], ['必须退出', 'rk-t-danger', '只剩 6 个月以内: roll 到 ≥ 400 天或平仓'], ['平一半', 'rk-t-safe', '浮盈 ≥ 200%'], ['分批止盈', 'rk-t-safe', '到止盈梯度或正股止盈位: 平约 1/3, 或 roll up and out 拿回现金'], ['roll 到 ≥ 400 天', 'rk-t-alert', '进入 9 个月窗口'], ['继续持有', '', '以上都没有']], def: '按你的 LEAPS 退出规则排优先级: 跌破正股止损位 → 止损; 6 个月以内 → 必须退出 (roll 或平仓); 浮盈 ≥ 200% → 平一半; 到止盈梯度或正股止盈位 → 分批止盈 (或 roll up and out 拿回现金); 进入 9 个月 → roll 到 ≥ 400 天; 其余继续持有.', note: '梯度按你的风格: 第一档是风格目标 (替代 150 · 平衡 100 · 波段 50), 然后 150%、200%.' },
-  lm_add: { t: '加仓时机', scale: [['可以考虑加仓', 'rk-t-safe', '必须的条件都满足: MJ2 信号、没创新低、冷却期、资金、集中度, 再加上 J3 ≤ 15 或 RSI 抬头 (两者之一). 价格回落和放量只是参考, 不影响等级'], ['接近', 'rk-t-alert', '必须的条件只差一条 (J3 和 RSI 抬头算作一条)'], ['还不是时机', 'rk-quiet', '必须的条件差两条或更多']], def: '和回测、checklist 的「LEAPS 左侧」同一套技术判断: MJ2 最近 3 天有买入信号、J3 ≤ 15 或 RSI 抬头、收盘没创新低, 再加上价格已经从 20 日高点回落 ≥ 8%、距上次 LEAPS checklist ≥ 7 天、95% 情况下不借钱还能买一张、加一张后这只股票不超过 NAV 的 30%.', note: 'MJ2、新低、冷却期、资金、集中度必须满足; J3 和 RSI 抬头满足一个就行; 放量和回落是参考.' },
+  lm_add: { t: '加仓时机', scale: [['可以考虑加仓', 'rk-t-safe', '必须的条件都满足: MJ2 信号、没创新低、冷却期、资金、集中度, 再加上 J3 ≤ 15 或 RSI 抬头 (两者之一). 价格回落和放量只是参考, 不影响等级'], ['接近', 'rk-t-alert', '必须的条件只差一条 (J3 和 RSI 抬头算作一条)'], ['还不是时机', 'rk-quiet', '必须的条件差两条或更多']], def: '和回测、checklist 的「LEAPS 左侧」同一套技术判断: MJ2 最近 3 天有买入信号、J3 ≤ 15 或 RSI 抬头、收盘没创新低, 再加上价格已经从 20 日高点回落 ≥ 8%、距上次 LEAPS checklist ≥ 7 天、按「我的计划」不借钱还能买一张、加一张后这只股票不超过 NAV 的 30%.', note: 'MJ2、新低、冷却期、资金、集中度必须满足; J3 和 RSI 抬头满足一个就行; 放量和回落是参考.' },
   lm_roll: { t: 'roll up and out', def: '卖掉现在这张 LEAPS, 买一张更远 (≥ 400 天)、行权价不低于现在的. 新合约通常更便宜, 差价就是拿回来的现金, 同时保留大部分上涨敞口. 「敞口保留」= 新 Δ ÷ 现在的 Δ; 「时间成本 / 年」= 新合约的时间价值按年摊, 占现价的比例.', note: '用来把一部分利润拿出来, 或者在 9 个月窗口里延长时间.' },
   tp_advice: { t: '止盈还是继续持有', scale: [['买回止盈', 'rk-t-safe', '已经赚到 50% 止盈线, 或者剩下的年化不到新卖一张的一半'], ['止盈或 roll out', 'rk-t-alert', '只剩 21 天以内, 又离行权价不到 5%'], ['继续持有', '', '其余情况: 剩下的权利金还值得拿']], def: '还没价内、已经赚了一部分时: 看剩下的权利金每天值多少、年化多少, 和同一只股票现在新卖一张 (约 35 天, Δ 0.25 左右) 比. 已经赚到止盈线, 或者剩下的年化不到新卖一张的一半, 就建议买回止盈.', note: '把资金从「快拿完的」挪到「刚开始赚的」上, 同时少承担最后几周的风险.' },
-  roll_advice: { t: '建议', scale: [['接股, 然后按真实成本卖 CC', 'rk-t-alert', '触发停止 roll 的规则; 或三种 roll 都只能倒贴; 或接股后卖 CC 比 roll 快 20% 以上降到同样成本, 而且接股不用借钱'], ['roll (三种方式里分数最高的)', 'rk-t-safe', '其余情况: 能收到净收入的 roll 里, 用同一把尺子比出最高分的那个']], def: '把三种 roll 方式和「接股后卖 CC」都算一遍: 先看规则有没有叫停, 再看能不能收到净收入, 然后比谁更快把成本降到同样水平、接股会不会借钱, 最后在能收到净收入的方式里选分数最高的. 每一步的数字都列在下面.', note: '按规则和当前报价算出的建议, 不是保证; 最后由你决定.' },
+  roll_advice: { t: '建议', scale: [['接股, 然后卖 CC', 'rk-t-alert', '触发停止 roll 的规则; 或三种 roll 都只能倒贴; 或接股后卖 CC 比 roll 快 20% 以上降到同样成本, 而且接股不用借钱. 卖 CC 默认按接股价 (行权价更高、更不容易被 call 走); 只有按真实成本快 20% 以上、并且 Δ 在你 CC 模式的上限以内, 才按真实成本'], ['roll (三种方式里分数最高的)', 'rk-t-safe', '其余情况: 能收到净收入的 roll 里, 用同一把尺子比出最高分的那个']], def: '把三种 roll 方式和「接股后卖 CC」都算一遍: 先看规则有没有叫停, 再看能不能收到净收入, 然后比谁更快把成本降到同样水平、接股会不会借钱, 最后在能收到净收入的方式里选分数最高的. 每一步的数字都列在下面.', note: '按规则和当前报价算出的建议, 不是保证; 最后由你决定.' },
   roll_report: { t: 'Roll 成绩单', def: '交易记录里所有 roll 过的仓位: 买回后一天内在同一只股票上重新卖出同类期权, 算作一次 roll, 连成一条链. 看它们最后的结果, 用来检验你的 roll 规则.', note: '结果只算已经实现的盈亏.' },
   room_p: { t: '被行权概率', def: '联动模拟里, 到期时价格低于行权价的比例. 大盘下跌时多个 CSP 会一起价内, 所以模拟按到期日顺序、各标的一起动.', note: '用当前 IV 和 β 估计, 不是保证; 大约相当于 |Δ|, 但考虑了联动.' },
   leaps_room: { t: 'Option Buying Power', def: '还能花多少钱买期权, 而且最终不用借钱. CSP 被行权时要用现金接股票, 现金不够就开始借 margin. 所以: 不借钱还能花 = 现金 + SWVXX − 要留着接股票的钱, 再和 Schwab 的 Option Buying Power 取较小值. 第一张卡片是 Schwab 自己的 Option Buying Power: 它扣掉了 CSP 占用的保证金, 但不考虑被行权时现金够不够.',
-    read: '三张卡片: 最坏情况 = 全部 CSP 被行权; 大概率 = 95% 的情况 (20 次里大约只有 1 次要留更多); 我的计划 = 按下表你选的「买回 / 放到期 / 接股」. 「需从 SWVXX 卖出 $X」= 现金账户里的余额不够接股票, 要先卖 SWVXX, 不是借钱; 「缺 $X」= 现金和 SWVXX 全部用上也不够, 会借这么多. 最上面一行看有没有在借钱: Margin Balance 为负或 Equity % 低于 100% 就是在借.',
-    long: '大概率怎么算: 用每个标的现在的 IV 和它跟大盘的联动 (β, 大盘波动取当前 VIX), 按到期日顺序模拟 4,000 次未来走势, 大盘冲击用厚尾分布 (比正态更容易出现大跌); 取 95% 的情况下要接股票的钱. 大盘一跌几个 CSP 往往一起价内, 所以它比把每个的概率加起来更保守. 没算: 以后新卖的 CSP、Short call 被行权卖出正股收回的钱. 模型基于当前 IV, 市场突变时会低估.',
+    read: '三张卡片: Option Buying Power = Schwab 现在允许你买期权的钱; 最坏情况 = 全部 CSP 被行权; 我的计划 = 按下表你选的「买回 / 放到期 / 接股 / roll」. 「需从 SWVXX 卖出 $X」= 现金账户里的余额不够接股票, 要先卖 SWVXX, 不是借钱; 「缺 $X」= 现金和 SWVXX 全部用上也不够, 会借这么多. 最上面一行看有没有在借钱: Margin Balance 为负或 Equity % 低于 100% 就是在借.',
+    long: '表里的「被行权概率」怎么算: 用每个标的现在的 IV 和它跟大盘的联动 (β, 大盘波动取当前 VIX), 按到期日顺序模拟 4,000 次未来走势, 大盘冲击用厚尾分布 (比正态更容易出现大跌). 大盘一跌几个 CSP 往往一起价内, 所以它比单独看每个 CSP 的 Δ 更接近真实情况. 用它来决定「我打算」里每一笔选什么.',
     ex: 'WDC 350P 已经盈利、距行权价 9%: 在「我打算」里选「买回」, 现在花 $900 买回, 就不用再为它留 $35,000; 「我的计划」那张卡片立刻多出约 $34,100.' },
   expect: { t: '期望值', def: '这个策略平均每做一笔赚 (或亏) 多少钱 = 胜率 × 平均盈利 − 败率 × 平均亏损.',
     read: '它回答"按我现在的做法, 长期做下去是赚还是亏". 为正: 有优势; 为负: 做得越多亏得越多. 卖方策略常见"胜率高、期望值却为负", 只看胜率会被误导. 笔数少时 (< 20) 波动很大, 只作参考.',
@@ -14053,7 +14054,7 @@ const GREEK_HELP = {
     read: '绿色 = 提前, 红色 = 推迟; 条越长, 这个假设对结果的影响越大, 越值得下功夫. 某一侧显示「不变」, 通常是到了上限 (例如风险资产配置已经是 100%).',
     short: '「风险资产配置」= 投入卖方和 LEAPS 的资金占 NAV 的比例, 其余是现金. 调低 25% 就是多留现金.',
     ex: '风险资产配置 80% → 60% (−25%) 推迟 65 个月 = 少投入四分之一的资金, 到 100 万要多等 5 年多; 说明你的结果主要来自资金是否在场上.' },
-  discipline: { t: '纪律分', def: '执行情况, 0–100: checklist 覆盖率 (40%, 最近 30 笔新开仓里有 checklist 的比例) + 遵守硬规则 (30%, 近 90 天 checklist 判 BLOCKED 时你尊重的比例; 每尊重一次都会提高) + 管理纪律 (30%, 卖出的期权赚到 50% 或进入 21 天后 3 个交易日内处理).',
+  discipline: { t: '纪律分', def: '执行情况, 0–100: checklist 覆盖率 (40%, 最近 30 笔新开仓里有 checklist 的比例) + 遵守硬规则 (30%, 近 90 天 checklist 判 BLOCKED 时你尊重的比例; 每尊重一次都会提高) + 管理纪律 (30%, 卖出的期权赚到 50% 或到 21 天以内后 3 个交易日内处理).',
     read: '85 以上 = 稳定按规则执行; 70–85 偶有例外; 低于 70 = 规则在被绕开. 管理纪律用 Worker 每天的收盘快照判断, 数据不够时暂不计分, 其余两项按比例计算. 不计入综合风险分.',
     short: '它衡量的是你, 不是市场: 风险分高可能是市场原因, 纪律分低一定是执行原因.',
     ex: '30 笔里 27 笔做了 checklist (90%), 其中 1 笔强行交易 (96%), 6 次触发 50% / 21 天有 5 次及时处理 (83%) → 0.4×90 + 0.3×96 + 0.3×83 ≈ 90.' },
@@ -15550,16 +15551,31 @@ function _rollAdviceHTML(x, ch, cfg) {
   steps.push({ h: '能不能收到净收入', body: Object.keys(MODES).map(m => best[m] ? ok(`${MODES[m]}: 最好的是 ${best[m].r.o.strike}${L} ${esc(_md(best[m].r.o.expiry))}, 净收 $${f2(best[m].r.net)} / 股, 延长 ${best[m].r.ext} 天`) : no(`${MODES[m]}: 180 天内没有能收到净收入的合约`)).join('<br>') });
   const cands = Object.keys(MODES).filter(m => best[m]).map(m => ({ m, ...best[m] })).sort((a, b) => b.s - a.s), top = cands[0];
   // 3 · roll vs the other half of the wheel: who gets the cost down to the same level sooner
-  const nb = __rollNext[__rollKey]; let cc = null;
+  const nb = __rollNext[__rollKey]; let cc = null, ccB = null, ccC = null, useB = false;
   if (nb && nb.b) { const C = nb.b.contracts.filter(o => o.mark > 0 && o.dte >= 5), exps = [...new Set(C.map(o => o.expiry))].sort(), dte = e => (C.find(o => o.expiry === e) || {}).dte;
     const e30 = exps.slice().sort((a, b) => Math.abs(dte(a) - 30) - Math.abs(dte(b) - 30))[0];
-    cc = e30 ? C.filter(o => o.expiry === e30 && (put ? o.strike >= eff - 1e-9 : o.strike <= S + 1e-9)).sort((a, b) => put ? a.strike - b.strike : b.strike - a.strike)[0] : null; }
+    const first = min => e30 ? C.filter(o => o.expiry === e30 && o.strike >= min - 1e-9).sort((a, b) => a.strike - b.strike)[0] : null;
+    if (put) { ccB = first(eff); ccC = first(K); }
+    else cc = e30 ? C.filter(o => o.expiry === e30 && o.strike <= S + 1e-9).sort((a, b) => b.strike - a.strike)[0] : null; }
+  if (put && (ccB || ccC)) {
+    const md = (loadScanCfg() || {}).ccMode, M = CC_MODES[md] || CC_MODES.balanced, cap = M[2] / 100;
+    const same = ccB && ccC && Math.abs(ccB.strike - ccC.strike) < 0.005, gap = Math.max(0, eff - S);
+    const nDn = o => gap <= 0 ? 0 : Math.ceil(gap / o.mark - 1e-9), mo = o => nDn(o) * o.dte / 30, dl = o => o.delta != null ? Math.abs(o.delta) : null;
+    const res = o => (o.strike - eff + o.mark) * 100 * q;
+    if (ccB && ccC && !same) useB = mo(ccB) <= mo(ccC) * 0.8 && dl(ccB) != null && dl(ccB) <= cap;
+    cc = useB ? ccB : (ccC || ccB);
+    const line = (tag, o) => o ? `${tag} ${o.strike}C ${esc(_md(o.expiry))}: 每次 $${f2(o.mark)} · Δ ${dl(o) != null ? dl(o).toFixed(2) : '—'} · 被 call 走<span class="${res(o) >= 0 ? 'rk-t-safe' : 'rk-t-danger'}">${res(o) >= 0 ? '赚' : '亏'} ${usd(Math.abs(res(o)))}</span> · 降到现价 ${gap <= 0 ? '已经低于现价' : `${nDn(o)} 次, 约 ${mo(o).toFixed(1)} 个月`}` : `${tag}: 期权链里没有`;
+    steps.push({ h: '接股后按真实成本还是按接股价卖 CC', body: same ? ok(`两者是同一个行权价 (${ccC.strike}C), 没有差别`)
+      : `${line('B · 按真实成本', ccB)}<br>${line('C · 按接股价', ccC)}<br>`
+        + (useB ? mid(`选 B: 快 ${((1 - mo(ccB) / mo(ccC)) * 100).toFixed(0)}% (≥ 20%), Δ ${dl(ccB).toFixed(2)} 在${M[0]}模式上限 ${cap.toFixed(2)} 以内`)
+          : ok(`选 C${ccB && ccC ? (mo(ccB) > mo(ccC) * 0.8 ? `: B 只快 ${Math.max(0, (1 - mo(ccB) / (mo(ccC) || 1)) * 100).toFixed(0)}%, 不值得多承担被 call 走的风险` : `: B 的 Δ ${dl(ccB) != null ? dl(ccB).toFixed(2) : '—'} 超过${M[0]}模式上限 ${cap.toFixed(2)}`) : ''}`)) });
+  }
   let lean = null;
   if (put && top) {
     const beR = top.r.be, moR = top.r.o.dte / 30;
     if (cc) { const n = Math.max(0, Math.ceil((eff - beR) / cc.mark - 1e-9)), moC = n * cc.dte / 30;
       lean = moC < moR * 0.8 ? 'assign' : 'roll';
-      steps.push({ h: 'roll 和接股比, 谁更快把成本降下来', body: `roll (${top.r.o.strike}${L} ${esc(_md(top.r.o.expiry))}): ${top.r.o.dte} 天后盈亏平衡 <b>${f2(beR)}</b><br>接股后按真实成本卖 CC (${cc.strike}C ${esc(_md(cc.expiry))}, 每次约 $${f2(cc.mark)}): 从 ${f2(eff)} 降到 ${f2(beR)} 要卖 <b>${n} 次, 约 ${moC.toFixed(1)} 个月</b><br>`
+      steps.push({ h: 'roll 和接股比, 谁更快把成本降下来', body: `roll (${top.r.o.strike}${L} ${esc(_md(top.r.o.expiry))}): ${top.r.o.dte} 天后盈亏平衡 <b>${f2(beR)}</b><br>接股后${useB ? '按真实成本' : '按接股价'}卖 CC (${cc.strike}C ${esc(_md(cc.expiry))}, 每次约 $${f2(cc.mark)}): 从 ${f2(eff)} 降到 ${f2(beR)} 要卖 <b>${n} 次, 约 ${moC.toFixed(1)} 个月</b><br>`
         + (lean === 'roll' ? ok(`roll 更快 (约 ${moR.toFixed(1)} 个月 vs ${moC.toFixed(1)} 个月)`) : mid(`卖 CC 更快 (约 ${moC.toFixed(1)} 个月 vs roll ${moR.toFixed(1)} 个月)`)) }); }
     else steps.push({ h: 'roll 和接股比, 谁更快把成本降下来', body: '<span class="rk-quiet">读取 call 期权链…</span>' });
   }
@@ -15581,7 +15597,7 @@ function _rollAdviceHTML(x, ch, cfg) {
   let rec, act = '';
   if (st.list.length || !top || (put && cashShort === false && lean === 'assign')) {
     const why = st.list.length ? '已经触发停止 roll 的规则' : !top ? '三种方式都只能倒贴' : '接股后卖 CC 能更快把成本降到同样水平';
-    rec = put ? `接股, 然后按真实成本卖 CC${cc ? ` (例如 ${cc.strike}C ${esc(_md(cc.expiry))}, 每次约 $${f2(cc.mark)})` : ''}` : '让正股被 call 走, 然后重新卖 CSP';
+    rec = put ? `接股, 然后${useB ? '按真实成本' : '按接股价'}卖 CC${cc ? ` (例如 ${cc.strike}C ${esc(_md(cc.expiry))}, 每次约 $${f2(cc.mark)})` : ''}` : '让正股被 call 走, 然后重新卖 CSP';
     rec += ` <span class="rk-quiet">· 因为${why}</span>`;
   } else {
     rec = `${MODES[top.m]} → <b>${top.r.o.strike}${L} ${esc(_md(top.r.o.expiry))}</b>, 净收 <b class="rk-t-safe">$${f2(top.r.net)}</b> / 股${put ? `, 盈亏平衡降到 ${f2(top.r.be)}` : ''}`;
@@ -15795,7 +15811,7 @@ function _lmAddCheck(x) {
   const hi20 = Math.max(...p.bars.slice(-20).map(b => b.h)), pull = (1 - t.px / hi20) * 100;
   const last = getActiveHistory().filter(h => (h.strategy || '').startsWith('LEAPS') && _normTicker(h.ticker) === x.ticker).sort((a, b) => (b.timestampSort || 0) - (a.timestampSort || 0))[0];
   const since = last ? Math.floor((Date.now() - (last.timestampSort || 0)) / 864e5) : null;
-  const one = (x.mark || 0) * 100, room = (() => { try { const r = _roomCalc(0); return r ? r.can('prob') : null; } catch (e) { return null; } })();
+  const one = (x.mark || 0) * 100, room = (() => { try { const r = _roomCalc(0); return r ? r.can('custom') : null; } catch (e) { return null; } })();
   const c = computeRisk().c, nav = c.nav || 0, expo = c.pos.filter(z => z.ticker === x.ticker).reduce((s, z) => s + (z.exposure || 0), 0), concAfter = nav ? (expo + one) / nav * 100 : null;
   const rows = [
     { k: '价格回落', ok: pull >= 8, v: `距 20 日高点 −${pull.toFixed(1)}%`, need: '回落 ≥ 8%' },
@@ -15805,7 +15821,7 @@ function _lmAddCheck(x) {
     { k: '收盘未创新低', ok: F.no_new_low === 'pass', v: F.no_new_low === 'pass' ? '是' : '创新低了', need: `${_newLowWin()} 日`, core: true },
     { k: '放量', ok: F.vol_confirm === 'pass', v: F.vol_confirm === 'pass' ? '是' : '没有', need: '成交量 > 前 5 日均量 × 1.2' },
     { k: '冷却期', ok: since == null || since >= 7, v: since == null ? '没有记录' : `上次 ${since} 天前`, need: '距上次 LEAPS checklist ≥ 7 天', core: true },
-    { k: '不借钱还能花', ok: room != null && room >= one, v: room != null ? `${_fmtUsd(Math.max(0, room))} (大概率)` : '—', need: `≥ 一张 ${_fmtUsd(one)}`, core: true },
+    { k: '不借钱还能花', ok: room != null && room >= one, v: room != null ? `${_fmtUsd(Math.max(0, room))} (我的计划)` : '—', need: `≥ 一张 ${_fmtUsd(one)}`, core: true },
     { k: '集中度', ok: concAfter != null && concAfter <= 30, v: concAfter != null ? `加一张后 ${concAfter.toFixed(1)}% NAV` : '—', need: '≤ 30%', core: true }];
   const turn = rows.filter(r => r.alt === 'turn').some(r => r.ok);
   // required: the five core rows, plus "J3 ≤ 15 or RSI turning up" counted as one; pullback and volume are only for reference
@@ -17122,7 +17138,7 @@ window.roomSim = v => { __roomSpend = Math.max(0, parseFloat(String(v).replace(/
   const fu = document.getElementById('fuel'); if (r && fu) fu.outerHTML = _fuelHTML(r); };
 let __roomRT = null;
 function _roomRedraw() { clearTimeout(__roomRT); __roomRT = setTimeout(() => { const el = document.getElementById('room-block'); if (el && el.isConnected) { el.outerHTML = _safe('Option Buying Power', _roomBlockHTML, ''); _fitChartText && _fitChartText(); } }, 0); }   // change fires on edit and again on blur
-const ROOM_SC = [['worst', '最坏情况', '全部被行权'], ['prob', '大概率', '95% 的情况'], ['custom', '我的计划', '按下表']];
+const ROOM_SC = [['worst', '最坏情况', '全部被行权'], ['custom', '我的计划', '按下表']];
 const _usd0 = v => _fmtUsd(Math.abs(v));
 // which contracts the money is for, so a number never stands alone
 function _roomWhy(r, k) {
@@ -17186,10 +17202,10 @@ function _leapsRoomLineHTML() {
   if (state.strategy !== 'leaps' || !loadSchwabCfg()) return '';
   const q = _cspQuoteFresh(), mark = q && q.option ? q.option.mark : null, n = parseInt(state.leapsContracts, 10) || 1;
   const spend = mark > 0 ? mark * 100 * n : 0, r = _roomCalc(spend); if (!r) return '';
-  const S = _roomState(r, 'prob'), A = spend ? _roomState(r, 'prob', spend) : null;
+  const S = _roomState(r, 'custom'), A = spend ? _roomState(r, 'custom', spend) : null;
   const say = (x, verb) => x.st === 'borrow' ? `<b class="rk-t-danger">${verb === 'now' ? '缺' : '会借'} ${_fmtUsd(x.v)}</b>` : x.st === 'schwab' ? '<b class="rk-t-alert">Schwab 购买力不够</b>' : `<b class="${verb === 'now' ? 'rk-t-acc' : 'rk-t-safe'}">${verb === 'now' ? '' : '还剩 '}${_fmtUsd(x.v)}</b>`;
   const sv = (A || S).st !== 'borrow' && (A || S).sell > 0.5 ? ` · 需从 SWVXX 卖出 ${_fmtUsd((A || S).sell)}` : '';
-  return `<div class="room-line">Option Buying Power <b class="rk-t-acc">${r.bp != null ? _fmtUsd(r.bp) : '—'}</b> · 不借钱还能花 (大概率) ${say(S, 'now')}${spend ? ` · 这笔 ${n} 张约 ${_fmtUsd(spend)} · 之后 ${say(A, 'after')}` : ''}${sv}</div>`;
+  return `<div class="room-line">Option Buying Power <b class="rk-t-acc">${r.bp != null ? _fmtUsd(r.bp) : '—'}</b> · 不借钱还能花 (我的计划) ${say(S, 'now')}${spend ? ` · 这笔 ${n} 张约 ${_fmtUsd(spend)} · 之后 ${say(A, 'after')}` : ''}${sv}</div>`;
 }
 /* ---------- per-ticker exposure: committed (cost + CSP notional) and market value ---------- */
 function _tickerBlocksHTML(c) {
@@ -18309,7 +18325,7 @@ function _mgmtDiscipline(units) {
       const p = (s.pos || []).find(p => p.t === u.ticker && p.k === kind && Math.abs((p.K || 0) - u.strike) < 0.005 && p.e === u.expiry); if (!p) continue;
       const dte = (Date.parse(u.expiry + 'T16:00:00') - Date.parse(s.d + 'T16:00:00')) / 864e5;
       if (p.m != null && p.m <= per * 0.5) { trig = { d: s.d, why: '赚到 50%' }; break; }
-      if (dte <= 21) { trig = { d: s.d, why: '进入 21 天' }; break; }
+      if (dte <= 21) { trig = { d: s.d, why: '21 天以内' }; break; }
     }
     if (!trig) return;
     const lag = _tradingDaysBetween(trig.d, closeD || today);
