@@ -3616,6 +3616,36 @@
   .ck-exp { flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 5px 10px; border: 1px solid var(--border); border-radius: 4px; background: var(--panel); color: var(--text); font: 600 12.5px var(--mono); cursor: pointer; }
   .ck-exp span { font: 400 10.5px var(--sans); color: var(--text-faint); } .ck-exp.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, var(--panel)); } .ck-exp.on span { color: var(--accent); }
   .ck-t { margin-top: 8px; } .ck-t tr.on td { background: color-mix(in srgb, var(--accent) 14%, transparent); } .ck-t tr.on td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
+  .rk-pill.rl-top { color: var(--text-dim); border: 1px solid var(--border-hi); background: var(--panel-2); font-weight: 700; }
+  /* v106 · phone comfort: tap targets, legibility, narrow segmented buttons */
+  @media (max-width: 640px) {
+    .rk-preset, .rk-presets button, .autofill-btn, .segmented button, .ck-exp { min-height: 30px; }
+    .autofill-btn { font-size: 11px !important; padding: 4px 9px !important; }
+    .modal-close, .sf-fs-btn { min-width: 34px; min-height: 34px; }
+    .roll-btn { display: inline-block; padding: 6px 3px; }
+    .hard-badge { font-size: 10.5px !important; }
+    .picker-card-tag { font-size: 11px !important; }
+    .segmented button { white-space: normal; line-height: 1.25; }
+  }
+  @media (max-width: 400px) { .segmented button { font-size: 11.5px; padding-left: 5px; padding-right: 5px; } }
+  @media (max-width: 640px) {
+    .pa-win .app-link { display: inline-block; min-height: 30px; padding: 6px 6px; }
+    .gl-x { min-width: 36px; min-height: 36px; font-size: 20px; }
+    .sc-mini span, .fuel-scale span, .rk-scale-labels span, .rm-scale span { font-size: 10.5px !important; }
+  }
+  /* v106 · contrast: darker orange / amber on light backgrounds, deeper fills behind white text on dark */
+  body[class*="light"] { --rk-alert: #C2410C; --rk-watch: #B45309; }
+  body[class*="light"] .room-why, body[class*="light"] .wk-old b, body[class*="light"] .rk-pill.rl-v-near, body[class*="light"] .rl-dk { color: #C2410C !important; }
+  body[class*="light"] .rk-pill.rl-v-near { border-color: #C2410C !important; }
+  body[class*="light"] svg text.rk-t-alert, body[class*="light"] .exp-svg .exp-cc text, body[class*="light"] .exp-svg text.exp-cc-lab, body[class*="light"] .exp-svg text.exp-val.rk-t-alert { fill: #C2410C !important; }
+  body[class*="light"] svg text.rk-t-watch, body[class*="light"] .exp-svg text.exp-val.rk-t-watch { fill: #B45309 !important; }
+  body[class*="light"] .sf-tlab em, body[class*="light"] .sf-expl b { color: #8A6512 !important; } body[class*="light"] .gl-lab.sf-exp-row { fill: #8A6512 !important; }
+  body:not([class*="light"]) .btn.primary { background: #2B6FD6 !important; border-color: #2B6FD6 !important; color: #fff !important; }
+  body:not([class*="light"]) .sab-btn-snap { background: #15805A !important; border-color: #15805A !important; color: #fff !important; }
+  .stk-pw-chip { background: #1F8278 !important; }
+  body:not([class*="light"]) .rk-preset.active, body:not([class*="light"]) .rl-mode.active b { }
+  body:not([class*="light"]) .rk-preset.active { background: #2B6FD6 !important; border-color: #2B6FD6 !important; color: #fff !important; }
+  body[class*="light"] .lt-warn { color: #C2410C !important; }
 </style>
 </head>
 <body class="theme-slate">
@@ -5668,7 +5698,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.17-v103';
+const APP_BUILD = '2026.10.17-v106';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
@@ -12892,6 +12922,15 @@ window.setStressIV = v => {
 
 /* ---------- position helpers (labels, management, sizing) ---------- */
 function _thCls(v) { return v == null || Math.abs(v) < 0.5 ? '' : v > 0 ? 'rk-t-safe' : 'rk-t-danger'; }   // money: gain green, loss red
+// v106 · one minus sign on screen: "-5%" from any template shows as "−5%" (dates like 2026-11-20 and ranges like 15-25 are left alone)
+(() => {
+  const RE = /(^|[\s(·:：,，>~≈≤≥<\/])-(?=\$?\d)/g, HAS = /(^|[\s(·:：,，>~≈≤≥<\/])-(?=\$?\d)/;
+  const fix = n => { if (n.nodeType === 3) { const t = n.nodeValue; if (t && t.indexOf('-') >= 0 && HAS.test(t)) n.nodeValue = t.replace(RE, '$1−'); return; }
+    if (n.nodeType !== 1 || /^(SCRIPT|STYLE|TEXTAREA|INPUT|CODE|PRE)$/.test(n.tagName)) return; for (const c of n.childNodes) fix(c); };
+  const mo = new MutationObserver(ms => ms.forEach(m => { if (m.type === 'characterData') fix(m.target); else m.addedNodes.forEach(fix); }));
+  const start = () => { fix(document.body); mo.observe(document.body, { childList: true, subtree: true, characterData: true }); };
+  if (document.body) start(); else document.addEventListener('DOMContentLoaded', start);
+})();
 const _rCls = v => v == null || !isFinite(v) ? '' : v > 0.0005 ? 'rk-t-safe' : v < -0.0005 ? 'rk-t-danger' : '';   // for ratios (0.05 = 5%)
 const _sg = v => v == null ? '—' : `<span class="${_thCls(v)}">${_fmtSigned(v)}</span>`;
 const _sgP = (v, d = 1) => v == null || !isFinite(v) ? '—' : `<span class="${Math.abs(v) < 0.05 ? '' : v > 0 ? 'rk-t-safe' : 'rk-t-danger'}">${v >= 0 ? '+' : '−'}${Math.abs(v).toFixed(d)}%</span>`;
@@ -15562,31 +15601,38 @@ function _rollFlowHTML(x, R, r) {
 window.rollFollow = (m, i) => { __rollMode = m; __rollPick = i; __rollAll = i >= 12; _rollRedraw();
   setTimeout(() => { const el = document.querySelector('.rl-t tr.rl-open'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 60); };
 // v97 · out of the money and already earning: is what's left worth the risk, compared with selling a fresh one now?
+const __tpFresh = {};
+async function _tpFreshFetch(x) { const k = __rollKey; if (__tpFresh[k]) return; __tpFresh[k] = { busy: true }; const today = _todayISO();
+  try { const r = await _wfetch(`/chain?ticker=${encodeURIComponent(x.ticker)}&type=${_pcL(x)}&from=${_addDays(today, 21)}&to=${_addDays(today, 60)}&strikeCount=40`); const b = await r.json().catch(() => null);
+    __tpFresh[k] = r.ok && b && Array.isArray(b.contracts) ? { at: Date.now(), b } : { at: Date.now(), err: true }; } catch (e) { __tpFresh[k] = { at: Date.now(), err: true }; }
+  _rollRedraw(); }
 function _tpAdviceHTML(x, ch, cfg) {
   const put = x.kind === 'short_put', L = put ? 'P' : 'C', q = Math.abs(Number(x.qty)) || 1, K = x.strike, b = ch.b, S = b.underlying || x.und;
   const cur = b.contracts.find(o => o.expiry === x.expiry && Math.abs(o.strike - K) < 0.005), mark = cur && cur.mark != null ? cur.mark : x.mark, dte = Math.max(1, _dteOf(x) ?? 1);
   if (mark == null || !S) return '';
   const cap = _captured(x), left = mark * 100 * q, annLeft = mark / (put ? K : S) * 365 / dte * 100, dist = _distPct(x), f2 = v => v.toFixed(2);
   const ok = t => `<span class="rk-t-safe">${t}</span>`, no = t => `<span class="rk-t-danger">${t}</span>`, mid = t => `<span class="rk-t-alert">${t}</span>`, steps = [];
-  // a fresh one on the same stock: ~35 days, Δ near 0.25
-  const fresh = b.contracts.filter(o => o.mark > 0 && o.delta != null && o.dte >= 21 && o.dte <= 60 && o.expiry !== x.expiry), dte35 = fresh.length ? fresh.slice().sort((a, z) => Math.abs(a.dte - 35) - Math.abs(z.dte - 35))[0].dte : null;
+  // a fresh one on the same stock: ~35 days, Δ near 0.25 (from its own 21–60 day chain when this one expires later)
+  const fx = __tpFresh[__rollKey]; if (!fx && _addDays(_todayISO(), 21) < x.expiry) setTimeout(() => _tpFreshFetch(x), 0);
+  const fresh = (fx && fx.b ? fx.b.contracts : []).concat(b.contracts).filter(o => o.mark > 0 && o.delta != null && o.dte >= 21 && o.dte <= 60 && o.expiry !== x.expiry), dte35 = fresh.length ? fresh.slice().sort((a, z) => Math.abs(a.dte - 35) - Math.abs(z.dte - 35))[0].dte : null;
   const alt = dte35 != null ? fresh.filter(o => o.dte === dte35).sort((a, z) => Math.abs(Math.abs(a.delta) - 0.25) - Math.abs(Math.abs(z.delta) - 0.25))[0] : null;
   const annNew = alt ? alt.mark / (put ? alt.strike : S) * 365 / alt.dte * 100 : null;
   const scan = (() => { try { const r = (loadScanAll().csp || {}).rows || []; const t = r.filter(z => z.best && z.best.ann != null).sort((a, z) => z.best.ann - a.best.ann)[0]; return put && t ? { t: t.t, ann: t.best.ann } : null; } catch (e) { return null; } })();
-  steps.push({ h: '已经赚了多少', body: cap != null ? (cap >= SHORT_TP ? ok(`已赚 ${cap.toFixed(0)}% (止盈线 ${SHORT_TP}%), 剩下 ${_fmtUsd(left)} 还没到手`) : mid(`已赚 ${cap.toFixed(0)}%, 还没到 ${SHORT_TP}% 止盈线, 剩下 ${_fmtUsd(left)}`)) : `剩下 ${_fmtUsd(left)} 还没到手` });
+  steps.push({ h: '已经赚了多少', body: cap != null ? (cap >= SHORT_TP ? ok(`已赚 ${cap.toFixed(0)}% (止盈线 ${SHORT_TP}%), 剩下 ${_fmtUsd(left)} 还没到手`) : cap < 0 ? no(`现在是亏的: 已赚 −${Math.abs(cap).toFixed(0)}%, 买回要花 ${_fmtUsd(left)}`) : mid(`已赚 ${cap.toFixed(0)}%, 还没到 ${SHORT_TP}% 止盈线, 剩下 ${_fmtUsd(left)}`)) : `剩下 ${_fmtUsd(left)} 还没到手` });
   const worse = annNew != null && annLeft < annNew * 0.5;
   steps.push({ h: '剩下的权利金值不值得拿', body: `持有到期: 再拿 ${dte} 天, 每天约 ${_fmtUsd(left / dte)}, 年化 <b>${annLeft.toFixed(0)}%</b>`
     + (alt ? `<br>现在新卖一张 ${x.ticker} ${alt.strike}${L} ${esc(_md(alt.expiry))} (${alt.dte} 天, Δ ${Math.abs(alt.delta).toFixed(2)}): 年化 <b>${annNew.toFixed(0)}%</b>` : '')
     + (scan && scan.t !== x.ticker ? `<br>潜在机会里最好的 CSP: ${esc(scan.t)}, 年化约 <b>${scan.ann.toFixed(0)}%</b>` : '')
-    + `<br>` + (annNew == null ? '<span class="rk-quiet">没找到可比的新合约</span>' : worse ? no(`剩下的年化不到新卖一张的一半, 继续拿着不划算`) : ok(`剩下的年化还不错 (新卖一张的 ${(annLeft / annNew * 100).toFixed(0)}%)`)) });
+    + `<br>` + (annNew == null ? '<span class="rk-quiet">没找到可比的新合约</span>' : worse ? (cap != null && cap < 0 ? mid('剩下的年化不到新卖一张的一半; 但这张现在是亏的, 买回就是认亏 (见结论)') : no('剩下的年化不到新卖一张的一半, 继续拿着不划算')) : ok(`剩下的年化还不错 (新卖一张的 ${(annLeft / annNew * 100).toFixed(0)}%)`)) });
   const risk = [];
   if (dist != null && dist < 5) risk.push(mid(`离行权价只有 ${dist.toFixed(1)}%`)); else if (dist != null) risk.push(ok(`离行权价 ${dist.toFixed(1)}%`));
   if (dte <= 21) risk.push(mid(`只剩 ${dte} 天, 最后几周 Gamma 变大, 股价一动期权价格变化很快`));
   const earn = _earnOf(x.ticker); if (earn && earn >= _todayISO() && earn <= x.expiry) risk.push(mid(`到期前有财报 (${_md(earn)})`));
   steps.push({ h: '继续持有的风险', body: risk.join('<br>') });
   let rec;
-  const tp = (cap != null && cap >= SHORT_TP) || worse;
-  if (tp) rec = `<b>买回止盈</b>, 花 ${_fmtUsd(left)}${alt ? `, 然后可以重新卖 ${alt.strike}${L} ${esc(_md(alt.expiry))} (年化 ${annNew.toFixed(0)}%)` : ''} <span class="rk-quiet">· 因为${cap != null && cap >= SHORT_TP ? `已经赚到 ${cap.toFixed(0)}%` : ''}${cap != null && cap >= SHORT_TP && worse ? ', 而且' : ''}${worse ? '剩下的年化不到新卖一张的一半' : ''}</span>`;
+  const tp = (cap != null && cap >= SHORT_TP) || (worse && cap != null && cap >= 0);
+  if (worse && cap != null && cap < 0) rec = `<b>继续持有, 或者 roll out</b> <span class="rk-quiet">· 现在买回是认亏 ${_fmtUsd(Math.abs(cap / 100 * (x.avg || 0) * 100 * q))}; 剩下的年化虽然不如新卖一张, 但这张还在价外, 下面可以看 roll out 的候选</span>`;
+  else if (tp) rec = `<b>买回止盈</b>, 花 ${_fmtUsd(left)}${alt ? `, 然后可以重新卖 ${alt.strike}${L} ${esc(_md(alt.expiry))} (年化 ${annNew.toFixed(0)}%)` : ''} <span class="rk-quiet">· 因为${cap != null && cap >= SHORT_TP ? `已经赚到 ${cap.toFixed(0)}%` : ''}${cap != null && cap >= SHORT_TP && worse ? ', 而且' : ''}${worse ? '剩下的年化不到新卖一张的一半' : ''}</span>`;
   else if (dte <= 21 && dist != null && dist < 5) rec = `<b>止盈或 roll out</b> <span class="rk-quiet">· 只剩 ${dte} 天又离行权价很近, 下面可以看 roll out 的候选</span>`;
   else rec = `<b>继续持有</b> <span class="rk-quiet">· 剩下的年化 ${annLeft.toFixed(0)}% 还值得拿${risk.some(r => r.includes('rk-t-alert')) ? ', 但留意上面的风险' : ''}</span>`;
   return `<section class="rk-block rl-advice"><h3 class="rk-block-title">建议 · 止盈还是继续持有 ${_qBtn('tp_advice', 'short')}</h3>
@@ -15603,7 +15649,7 @@ function _rollAdviceHTML(x, ch, cfg) {
   const ok = t => `<span class="rk-t-safe">${t}</span>`, no = t => `<span class="rk-t-danger">${t}</span>`, mid = t => `<span class="rk-t-alert">${t}</span>`;
   // 1 · rules
   const st = _rollStops(R0, cfg), cum = st.cum;
-  const ruleLines = [`roll 次数 ${R0.H.rolls} / ${cfg.maxRolls}`, `仓位持续 ${cum ?? 0} 天 / ${cfg.maxCumDays}`].concat(put ? [`接股成本比现价高 ${Math.max(0, (eff / S - 1) * 100).toFixed(1)}% / ${cfg.gapStop}%`] : []);
+  const ruleLines = [`roll 次数 ${R0.H.rolls} / ${cfg.maxRolls}`, cum == null ? '仓位持续天数未知 (交易记录里找不到开仓)' : `仓位持续 ${cum} 天 / ${cfg.maxCumDays}`].concat(put ? [`接股成本比现价高 ${Math.max(0, (eff / S - 1) * 100).toFixed(1)}% / ${cfg.gapStop}%`] : []);
   steps.push({ h: '规则检查', body: st.list.length ? no(`触发停止 roll: ${st.list.join('; ')}`) : ok(`没有触发停止 roll (${ruleLines.join(' · ')})`) });
   // 2 · a credit anywhere?
   const W = cfg.w, wAll = W.time + W.strike + W.credit + W.delta + W.liq;
@@ -15612,24 +15658,31 @@ function _rollAdviceHTML(x, ch, cfg) {
   steps.push({ h: '能不能收到净收入', body: Object.keys(MODES).map(m => best[m] ? ok(`${MODES[m]}: 最好的是 ${best[m].r.o.strike}${L} ${esc(_md(best[m].r.o.expiry))}, 净收 $${f2(best[m].r.net)} / 股, 延长 ${best[m].r.ext} 天`) : no(`${MODES[m]}: 180 天内没有能收到净收入的合约`)).join('<br>') });
   const cands = Object.keys(MODES).filter(m => best[m]).map(m => ({ m, ...best[m] })).sort((a, b) => b.s - a.s), top = cands[0];
   // 3 · roll vs the other half of the wheel: who gets the cost down to the same level sooner
-  const nb = __rollNext[__rollKey]; let cc = null, ccB = null, ccC = null, useB = false;
+  const nb = __rollNext[__rollKey]; let cc = null, ccB = null, ccC = null, rawB = null, rawC = null, useB = false;
   if (nb && nb.b) { const C = nb.b.contracts.filter(o => o.mark > 0 && o.dte >= 5), exps = [...new Set(C.map(o => o.expiry))].sort(), dte = e => (C.find(o => o.expiry === e) || {}).dte;
     const e30 = exps.slice().sort((a, b) => Math.abs(dte(a) - 30) - Math.abs(dte(b) - 30))[0];
-    const first = min => e30 ? C.filter(o => o.expiry === e30 && o.strike >= min - 1e-9).sort((a, b) => a.strike - b.strike)[0] : null;
-    if (put) { ccB = first(eff); ccC = first(K); }
+    const first = (min, cap) => e30 ? C.filter(o => o.expiry === e30 && o.strike >= min - 1e-9 && (cap == null || (o.delta != null && Math.abs(o.delta) <= cap + 1e-9))).sort((a, b) => a.strike - b.strike)[0] : null;
+    if (put) { const M0 = CC_MODES[(loadScanCfg() || {}).ccMode] || CC_MODES.balanced, cap0 = M0[2] / 100;
+      rawB = first(eff); rawC = first(K); ccB = first(eff, cap0); ccC = first(K, cap0); }
     else cc = e30 ? C.filter(o => o.expiry === e30 && o.strike <= S + 1e-9).sort((a, b) => b.strike - a.strike)[0] : null; }
-  if (put && (ccB || ccC)) {
+  if (put && (ccB || ccC || rawB || rawC)) {
     const md = (loadScanCfg() || {}).ccMode, M = CC_MODES[md] || CC_MODES.balanced, cap = M[2] / 100;
-    const same = ccB && ccC && Math.abs(ccB.strike - ccC.strike) < 0.005, gap = Math.max(0, eff - S);
-    const nDn = o => gap <= 0 ? 0 : Math.ceil(gap / o.mark - 1e-9), mo = o => nDn(o) * o.dte / 30, dl = o => o.delta != null ? Math.abs(o.delta) : null;
+    const gap = Math.max(0, eff - S), nDn = o => gap <= 0 ? 0 : Math.ceil(gap / o.mark - 1e-9), mo = o => nDn(o) * o.dte / 30, dl = o => o.delta != null ? Math.abs(o.delta) : null;
     const res = o => (o.strike - eff + o.mark) * 100 * q;
-    if (ccB && ccC && !same) useB = mo(ccB) <= mo(ccC) * 0.8 && dl(ccB) != null && dl(ccB) <= cap;
-    cc = useB ? ccB : (ccC || ccB);
-    const line = (tag, o) => o ? `${tag} ${o.strike}C ${esc(_md(o.expiry))}: 每次 $${f2(o.mark)} · Δ ${dl(o) != null ? dl(o).toFixed(2) : '—'} · 被 call 走<span class="${res(o) >= 0 ? 'rk-t-safe' : 'rk-t-danger'}">${res(o) >= 0 ? '赚' : '亏'} ${usd(Math.abs(res(o)))}</span> · 降到现价 ${gap <= 0 ? '已经低于现价' : `${nDn(o)} 次, 约 ${mo(o).toFixed(1)} 个月`}` : `${tag}: 期权链里没有`;
-    steps.push({ h: '接股后按真实成本还是按接股价卖 CC', body: same ? ok(`两者是同一个行权价 (${ccC.strike}C), 没有差别`)
-      : `${line('B · 按真实成本', ccB)}<br>${line('C · 按接股价', ccC)}<br>`
-        + (useB ? mid(`选 B: 快 ${((1 - mo(ccB) / mo(ccC)) * 100).toFixed(0)}% (≥ 20%), Δ ${dl(ccB).toFixed(2)} 在${M[0]}模式上限 ${cap.toFixed(2)} 以内`)
-          : ok(`选 C${ccB && ccC ? (mo(ccB) > mo(ccC) * 0.8 ? `: B 只快 ${Math.max(0, (1 - mo(ccB) / (mo(ccC) || 1)) * 100).toFixed(0)}%, 不值得多承担被 call 走的风险` : `: B 的 Δ ${dl(ccB) != null ? dl(ccB).toFixed(2) : '—'} 超过${M[0]}模式上限 ${cap.toFixed(2)}`) : ''}`)) });
+    const line = (tag, o) => o ? `${tag} ${o.strike}C ${esc(_md(o.expiry))}: 每次 $${f2(o.mark)} · Δ ${dl(o) != null ? dl(o).toFixed(2) : '—'} · 被 call 走<span class="${res(o) >= 0 ? 'rk-t-safe' : 'rk-t-danger'}">${res(o) >= 0 ? '赚' : '亏'} ${usd(Math.abs(res(o)))}</span> · 降到现价 ${gap <= 0 ? '已经低于现价' : `${nDn(o)} 次, 约 ${mo(o).toFixed(1)} 个月`}` : `${tag}: 这个到期日没有 Δ ≤ ${cap.toFixed(2)} 的合约`;
+    // the mode's Δ cap applies to both: say which first strikes were too close
+    const skipped = [rawB, rawC].filter((o, k, a) => o && a.findIndex(z => z && z.strike === o.strike) === k && dl(o) != null && dl(o) > cap);
+    const skipNote = skipped.length ? mid(`${skipped.map(o => `${o.strike}C Δ ${dl(o).toFixed(2)}`).join('、')} 超过${M[0]}模式上限 ${cap.toFixed(2)}, 改用第一个 Δ ≤ ${cap.toFixed(2)} 的行权价`) + '<br>' : '';
+    const same = ccB && ccC && Math.abs(ccB.strike - ccC.strike) < 0.005;
+    let why;
+    if (!ccB && !ccC) { cc = rawC || rawB; why = no(`这个到期日没有 Δ ≤ ${cap.toFixed(2)} 的合约, 暂时按 ${cc ? cc.strike + 'C' : '—'} 计算; 可以换更远的到期日, 或者在潜在机会里换 CC 模式`); }
+    else if (same) { cc = ccC; why = ok(`两者是同一个行权价 (${ccC.strike}C), 没有差别`); }
+    else if (!ccB || !ccC) { cc = ccC || ccB; why = ok(`只有${ccC ? ' C' : ' B'} 满足 Δ 上限, 选它`); useB = !ccC; }
+    else if (gap <= 0) { cc = ccC; why = ok(`选 C: 有效成本已经低于现价, 不用比降成本的速度; C 被 call 走多赚 ${usd(res(ccC) - res(ccB))}`); }
+    else { useB = mo(ccB) <= mo(ccC) * 0.8; cc = useB ? ccB : ccC;
+      why = useB ? mid(`选 B: 快 ${((1 - mo(ccB) / mo(ccC)) * 100).toFixed(0)}% (≥ 20%), Δ ${dl(ccB).toFixed(2)} 在${M[0]}模式上限 ${cap.toFixed(2)} 以内`)
+        : ok(`选 C: B 只快 ${Math.max(0, (1 - mo(ccB) / (mo(ccC) || 1)) * 100).toFixed(0)}%, 不值得多承担被 call 走的风险`); }
+    steps.push({ h: '接股后按真实成本还是按接股价卖 CC', body: `<span class="rk-quiet">两边都要满足${M[0]}模式的 Δ ≤ ${cap.toFixed(2)}</span><br>${skipNote}${same ? '' : `${line('B · 按真实成本', ccB)}<br>${line('C · 按接股价', ccC)}<br>`}${why}` });
   }
   let lean = null;
   if (put && top) {
@@ -15658,8 +15711,9 @@ function _rollAdviceHTML(x, ch, cfg) {
   let rec, act = '';
   if (st.list.length || !top || (put && cashShort === false && lean === 'assign')) {
     const why = st.list.length ? '已经触发停止 roll 的规则' : !top ? '三种方式都只能倒贴' : '接股后卖 CC 能更快把成本降到同样水平';
+    const borrowNote = put && cashShort ? (() => { const pf = getPortfolio(), need = K * 100 * q, have = (pf.cash || 0) + (pf.swvxx || 0); return ` <b class="rk-t-danger">· 注意: 接股会借 ${usd(need - have)}</b>; 不想借钱就考虑现在认亏买回 (${usd(R0.cMid * 100 * q)})`; })() : '';
     rec = put ? `接股, 然后${useB ? '按真实成本' : '按接股价'}卖 CC${cc ? ` (例如 ${cc.strike}C ${esc(_md(cc.expiry))}, 每次约 $${f2(cc.mark)})` : ''}` : '让正股被 call 走, 然后重新卖 CSP';
-    rec += ` <span class="rk-quiet">· 因为${why}</span>`;
+    rec += ` <span class="rk-quiet">· 因为${why}</span>${borrowNote}`;
   } else {
     rec = `${MODES[top.m]} → <b>${top.r.o.strike}${L} ${esc(_md(top.r.o.expiry))}</b>, 净收 <b class="rk-t-safe">$${f2(top.r.net)}</b> / 股${put ? `, 盈亏平衡降到 ${f2(top.r.be)}` : ''}`;
     rec += ` <span class="rk-quiet">· 因为${cashShort ? '接股会借钱, ' : ''}能收到净收入${lean === 'roll' ? '、比接股后卖 CC 更快降低成本' : ''}, 而且在三种方式里分数最高</span>`;
@@ -15732,7 +15786,7 @@ function renderRollPage() {
       ${card('到期', `${_md(x.expiry)}`, `${dte ?? '—'} 天`)}
       ${card('现在买回', cMid != null ? _fmtUsd(cMid * 100 * q) : '—', cMid != null ? `内在 ${_fmtUsd((intr || 0) * 100 * q)} · 时间价值 ${_fmtUsd(Math.max(0, extPS) * 100 * q)}` : '')}
       ${card('剩余时间价值 / 股', extPS != null ? '$' + Math.max(0, extPS).toFixed(2) : '—', ea ? `<span class="rk-t-${ea[0]}">${ea[1]}</span>` : intr > 0 ? '价内' : '', ea ? 'rk-t-' + ea[0] : '')}
-      ${card('已收权利金', _fmtUsd(creditPS * 100 * q), H.rolls ? `含之前 ${H.rolls} 次 roll` : '这一张', creditPS >= 0 ? 'rk-t-safe' : 'rk-t-danger')}
+      ${card(H.rolls ? '这一路净收' : '已收权利金', H.rolls ? _fmtSigned(creditPS * 100 * q) : _fmtUsd(creditPS * 100 * q), H.rolls ? `开仓 + 之前 ${H.rolls} 次 roll` : '这一张', creditPS >= 0 ? 'rk-t-safe' : 'rk-t-danger')}
       ${(() => { const g = S ? (eff / S - 1) * 100 : 0, cls = put ? _rlC.gap(g) : (g >= 0 ? 'rk-t-safe' : 'rk-t-alert');
         return card(put ? '接股的有效成本' : '被 call 走的有效卖价', eff.toFixed(2), S ? `<span class="${cls}">比现价${eff >= S ? '高' : '低'} ${Math.abs(g).toFixed(1)}%</span>` : '', cls); })()}</div>
     <div class="rl-earn">财报日 <input type="date" class="gl-num" value="${earn || ''}" onchange="setEarn('${esc(x.ticker)}', this.value)"> <span class="rk-quiet">手动填写, 跨设备同步; 候选合约跨财报时会标出来</span></div>
@@ -15754,7 +15808,7 @@ function renderRollPage() {
     const nCredit = rows.filter(r => r.credit).length;
     body = !rows.length ? '<div class="rk-quiet">这种方式在 180 天内没有可选的合约.</div>' : `
       ${(() => { const r = rows[0]; if (!r) return ''; const g = (r.be / R.S - 1) * 100;
-        return `<div class="rl-best"><span class="rk-pill rl-rec">推荐</span><b>${r.o.strike}${_pcL(x)} ${esc(_md(r.o.expiry))}</b>
+        return `<div class="rl-best"><span class="rk-pill rl-top">本组最高分</span><b>${r.o.strike}${_pcL(x)} ${esc(_md(r.o.expiry))}</b>
           <span>${r.credit ? '净收' : '净付'} <b class="${r.credit ? 'rk-t-safe' : 'rk-t-danger'}">${r.credit ? '+' : '−'}$${Math.abs(r.net).toFixed(2)}</b> / 股</span>
           <span>延长 <b class="${_rlC.ext(r.ext, cfg)}">${r.ext} 天</b></span>
           <span>${put ? '新盈亏平衡' : '有效卖价'} <b>${r.be.toFixed(2)}</b>${put ? ` <em class="${_rlC.gap(g)}">比现价${g >= 0 ? '高' : '低'} ${Math.abs(g).toFixed(1)}%</em>` : ''}</span>
@@ -15763,7 +15817,7 @@ function renderRollPage() {
       <div class="rk-table-wrap"><table class="rk-table rl-t"><thead><tr><th>#</th><th>新合约</th><th>净额 / 股</th><th>延长</th><th>新 Δ</th><th>不被行权 ${_qBtn('roll_prob', 'short')}</th>${put ? `<th>到期盈利 ${_qBtn('roll_win', 'short')}</th><th>新盈亏平衡</th>` : '<th>有效卖价</th>'}<th>分数 ${_qBtn('roll_score', 'long')}</th><th></th></tr></thead><tbody>
       ${show.map((r, i) => { const open = __rollPick === i, order = _rollOrderText(x, r, R.q), P = r.parts;
         const g = (r.be / R.S - 1) * 100, dK = r.o.strike - R.K;
-        return `<tr class="gl-row${r.credit ? '' : ' rl-debit'}${open ? ' rl-open' : ''}" role="button" tabindex="0" onclick="pickRoll(${i})"><td>${i === 0 ? '<span class="rk-pill rl-rec">推荐</span>' : i + 1}</td><td><b>${r.o.strike}${_pcL(x)} ${esc(_md(r.o.expiry))}</b>${dK ? ` <span class="rl-dk">${dK > 0 ? '+' : '−'}${Math.abs(dK)}</span>` : ''} <span class="rk-quiet">${r.o.dte} 天</span></td>
+        return `<tr class="gl-row${r.credit ? '' : ' rl-debit'}${open ? ' rl-open' : ''}" role="button" tabindex="0" onclick="pickRoll(${i})"><td>${i === 0 ? '<span class="rk-pill rl-top">1</span>' : i + 1}</td><td><b>${r.o.strike}${_pcL(x)} ${esc(_md(r.o.expiry))}</b>${dK ? ` <span class="rl-dk">${dK > 0 ? '+' : '−'}${Math.abs(dK)}</span>` : ''} <span class="rk-quiet">${r.o.dte} 天</span></td>
           <td class="${r.credit ? 'rk-t-safe' : 'rk-t-danger'}"><b>${r.credit ? '+' : '−'}$${Math.abs(r.net).toFixed(2)}</b></td><td class="${_rlC.ext(r.ext, cfg)}">${r.ext > 0 ? '+' + r.ext + ' 天' : r.ext === 0 ? '同一天' : r.ext + ' 天'}</td>
           <td class="${_rlC.d(r.d, cfg)}">${r.d != null ? r.d.toFixed(2) : '—'}</td><td class="${_rlC.p(r.pNo)}">${pct(r.pNo)}</td>${put ? `<td class="${_rlC.p(r.pWin)}">${pct(r.pWin)}</td><td>${r.be.toFixed(2)} <span class="${_rlC.gap(g)} rl-gap">${g >= 0 ? '+' : '−'}${Math.abs(g).toFixed(1)}%</span></td>` : `<td>${r.be.toFixed(2)}</td>`}
           <td><span class="${_rlC.score(r.score)}">${r.score.toFixed(0)}</span></td><td>${r.tags.map(([t, c]) => `<span class="rk-pill rk-c-${c}">${esc(t)}</span>`).join(' ')}</td></tr>
