@@ -3609,6 +3609,13 @@
   body svg text.rk-t-watch { fill: #D4A72C !important; } body svg text.rk-t-acc { fill: var(--accent) !important; }
   body svg text.wf-val { font-weight: 700 !important; }
   .room-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); } @media (max-width: 1100px) { .room-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); } } @media (max-width: 760px) { .room-cards { grid-template-columns: 1fr; } }
+  /* v103 · option chain picker in the checklist */
+  .ck-chain { margin: 10px 0 4px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 4px; background: var(--panel-2); font-size: 13px; }
+  .ck-h { margin-bottom: 8px; } .ck-h .rk-quiet { margin-left: 6px; font-size: 12px; }
+  .ck-exps { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: thin; }
+  .ck-exp { flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 5px 10px; border: 1px solid var(--border); border-radius: 4px; background: var(--panel); color: var(--text); font: 600 12.5px var(--mono); cursor: pointer; }
+  .ck-exp span { font: 400 10.5px var(--sans); color: var(--text-faint); } .ck-exp.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, var(--panel)); } .ck-exp.on span { color: var(--accent); }
+  .ck-t { margin-top: 8px; } .ck-t tr.on td { background: color-mix(in srgb, var(--accent) 14%, transparent); } .ck-t tr.on td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
 </style>
 </head>
 <body class="theme-slate">
@@ -5661,7 +5668,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.17-v102';
+const APP_BUILD = '2026.10.17-v103';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
@@ -7259,6 +7266,7 @@ function renderChecklist() {
               <button data-v="yes">是 (≤${capYes}%)</button>
             </div></div>
         </div>
+        ${state.leapsDirection === 'open' ? _ckChainHTML() : ''}
         <div class="position-summary ${pctCls}" id="position-summary">
           <div class="position-summary-line">
             <span class="position-summary-label">本 ticker 敞口 / NAV</span>
@@ -7331,6 +7339,7 @@ function renderChecklist() {
               <button data-v="high">高波动 (≤10%)</button>
             </div></div>
         </div>
+        ${_ckChainHTML()}
         ${(() => { const cs = _cspSummaryState(); return `
         <div class="position-summary ${cs.totalCls}" id="csp-total-summary">
           <span class="position-summary-label">CSP 总敞口 / NAV</span>
@@ -7887,6 +7896,7 @@ function pickStrategy(s) {
   state.items = {};
   delete state.rocPhaseOverride;   // new checklist: back to the home page's ROC phase
   _clearContractFields();
+  ['cspContracts', 'leapsContracts', 'tradeContracts'].forEach(k => { if (!state[k]) state[k] = '1'; });   // one contract unless you change it
   // New checklist: exposure fields follow Portfolio (a previous trade's manual value is stale)
   state._autoExposure = _defaultAutoFlags();
   // Prefill NAV: Schwab when active (source of truth), else saved global NAV
@@ -14872,6 +14882,56 @@ function _tradeLegHTML() {
            : `<div class="cq-leg"><span>正股</span><span class="rk-quiet">Schwab 无该标的正股 · 成本取下方「底仓成本价」</span></div>`);
   return leg;
 }
+/* v103 · pick the contract from the option chain: an expiry, then a strike */
+const __ckChain = {}; let __ckAll = false;
+const _ckRange = sp => sp.kind === 'leaps' ? [300, 900] : sp.kind === 'short_put' ? [7, 75] : [7, 60];
+const _ckBand = sp => sp.kind === 'leaps' ? [0.5, 0.85] : sp.kind === 'short_put' ? [0.15, 0.35] : [0.10, 0.30];
+function _ckKey() { const sp = _tradeSpec(), t = _normTicker(state.ticker); return sp && t ? `${t}|${sp.type}|${_ckRange(sp).join('-')}` : null; }
+async function _ckFetch(force) {
+  const sp = _tradeSpec(), t = _normTicker(state.ticker), k = _ckKey(); if (!k || !loadSchwabCfg()) return;
+  const c = __ckChain[k]; if (!force && c && (c.busy || (c.b && Date.now() - c.at < 10 * 60000))) return;
+  __ckChain[k] = { ...(c || {}), busy: true };
+  const [a, z] = _ckRange(sp), today = _todayISO();
+  try { const r = await _wfetch(`/chain?ticker=${encodeURIComponent(t)}&type=${sp.type}&from=${_addDays(today, a)}&to=${_addDays(today, z)}&strikeCount=50`); const b = await r.json().catch(() => null);
+    __ckChain[k] = r.ok && b && Array.isArray(b.contracts) ? { at: Date.now(), b } : { at: Date.now(), err: (b && b.message) || 'HTTP ' + r.status };
+  } catch (e) { __ckChain[k] = { at: Date.now(), err: '网络错误' }; }
+  _ckRedraw();
+}
+window.ckRetry = () => _ckFetch(true);
+function _ckRedraw() { const el = document.getElementById('ck-chain'); if (el) el.outerHTML = _ckChainHTML(); }
+function _ckApply() {
+  const sp = _tradeSpec(); if (!sp) return; if (!state[sp.qtyKey]) state[sp.qtyKey] = '1';
+  const y = window.scrollY; render(); window.scrollTo(0, y);
+  try { if (typeof _cqLocalFill === 'function') _cqLocalFill(); if (typeof scheduleCspQuote === 'function') scheduleCspQuote(); } catch (e) {}
+  if (typeof scheduleSaveDraft === 'function') scheduleSaveDraft();
+}
+window.ckPickExp = e => { state.tradeExpiry = e; __ckAll = false; _ckApply(); };
+window.ckPick = (e, K) => { const sp = _tradeSpec(); if (!sp) return; state.tradeExpiry = e; state[sp.strikeKey] = String(K); _ckApply(); };
+window.ckAll = () => { __ckAll = !__ckAll; _ckRedraw(); };
+function _ckChainHTML() {
+  const sp = _tradeSpec(), t = _normTicker(state.ticker); if (!sp || !loadSchwabCfg()) return '';
+  if (!t) return `<div id="ck-chain" class="ck-chain rk-quiet">先填上面的代码, 这里会列出期权链.</div>`;
+  const ch = __ckChain[_ckKey()];
+  if (!ch) setTimeout(() => _ckFetch(), 0);
+  if (!ch || (ch.busy && !ch.b)) return `<div id="ck-chain" class="ck-chain rk-quiet">读取 ${esc(t)} 期权链…</div>`;
+  if (ch.err) return `<div id="ck-chain" class="ck-chain rk-t-alert">读取期权链失败: ${esc(ch.err)} · <button class="app-link" onclick="ckRetry()">重试</button></div>`;
+  const C = ch.b.contracts.filter(o => o.mark > 0), S = ch.b.underlying, exps = [...new Set(C.map(o => o.expiry))].sort(), dte = e => (C.find(o => o.expiry === e) || {}).dte;
+  const sel = exps.includes(state.tradeExpiry) ? state.tradeExpiry : null, [lo, hi] = _ckBand(sp), K = parseFloat(state[sp.strikeKey]);
+  const chips = exps.map(e => `<button class="ck-exp${e === sel ? ' on' : ''}" onclick="ckPickExp('${e}')">${esc(_md(e))}<span>${dte(e)} 天</span></button>`).join('');
+  let table = '';
+  if (sel) {
+    const rows = C.filter(o => o.expiry === sel).sort((a, b) => sp.type === 'P' ? b.strike - a.strike : a.strike - b.strike);
+    const inBand = o => o.delta != null && Math.abs(o.delta) >= lo - 1e-9 && Math.abs(o.delta) <= hi + 1e-9, show = __ckAll ? rows : rows.filter(inBand);
+    const leaps = sp.kind === 'leaps', ret = o => leaps ? Math.max(0, o.mark - Math.max(0, S - o.strike)) / (o.dte / 365) / S * 100 : o.mark / (sp.type === 'P' ? o.strike : S) * 365 / o.dte * 100;
+    table = `<div class="rk-table-wrap"><table class="rk-table ck-t"><thead><tr><th>行权价</th><th>距现价</th><th>中间价</th><th>每张</th><th>Δ</th><th>${leaps ? '时间成本 / 年' : '年化'}</th><th>OI</th></tr></thead><tbody>
+      ${show.map(o => { const r = ret(o), d = o.delta != null ? Math.abs(o.delta) : null; return `<tr class="gl-row${Math.abs(o.strike - K) < 0.005 ? ' on' : ''}" role="button" tabindex="0" onclick="ckPick('${o.expiry}', ${o.strike})">
+        <td><b>${o.strike}</b></td><td>${S ? `${o.strike >= S ? '+' : '−'}${Math.abs((o.strike / S - 1) * 100).toFixed(1)}%` : '—'}</td><td>$${o.mark.toFixed(2)}</td><td>${_fmtUsd(o.mark * 100)}</td>
+        <td class="${d != null && inBand(o) ? '' : 'rk-quiet'}">${d != null ? d.toFixed(2) : '—'}</td><td class="${leaps ? (r <= 8 ? 'rk-t-safe' : r >= 15 ? 'rk-t-alert' : '') : (r >= 30 ? 'rk-t-safe' : r < 10 ? 'rk-quiet' : '')}">${r.toFixed(leaps ? 1 : 0)}%</td>
+        <td class="${(o.oi || 0) < 100 ? 'rk-t-alert' : ''}">${(o.oi || 0).toLocaleString()}</td></tr>`; }).join('') || `<tr><td colspan="7" class="rk-quiet">Δ ${lo}–${hi} 之间没有合约</td></tr>`}</tbody></table></div>
+      <button class="app-link" onclick="ckAll()">${__ckAll ? `只看 Δ ${lo}–${hi}` : `显示全部 ${rows.length} 个行权价`}</button>`;
+  }
+  return `<div id="ck-chain" class="ck-chain"><div class="ck-h"><b>期权链</b> · ${esc(t)}${S ? ` ${S.toFixed(2)}` : ''} <span class="rk-quiet">${sel ? '点一行填入行权价' : '先点一个到期日'}</span></div><div class="ck-exps">${chips}</div>${table}</div>`;
+}
 function _callTradeConfigHTML() {
   return `
     <div class="config">
@@ -14884,6 +14944,7 @@ function _callTradeConfigHTML() {
         <div class="num-field"><label class="num-field-label">到期日</label>
           <input type="date" id="in-trade-expiry" value="${esc(state.tradeExpiry || '')}"></div>
       </div>
+      ${_ckChainHTML()}
       <div id="cq-leg-wrap">${_tradeLegHTML()}</div>
       ${_quoteBlocksHTML()}
       ${_previewBlockHTML()}
