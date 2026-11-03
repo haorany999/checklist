@@ -3646,6 +3646,20 @@
   body:not([class*="light"]) .rk-preset.active, body:not([class*="light"]) .rl-mode.active b { }
   body:not([class*="light"]) .rk-preset.active { background: #2B6FD6 !important; border-color: #2B6FD6 !important; color: #fff !important; }
   body[class*="light"] .lt-warn { color: #C2410C !important; }
+  /* v110 · Roll 成绩单 */
+  .rr-bar { display: inline-block; width: 60px; height: 6px; margin-right: 6px; vertical-align: middle; border-radius: 3px; background: var(--panel-2); overflow: hidden; } .rr-bar i { display: block; height: 100%; background: var(--accent); }
+  .rk-pill.rr-tag { font-size: 10.5px; color: var(--accent); border: 1px solid var(--accent); } .rk-pill.rr-tag.good { color: var(--pass); border-color: var(--pass); }
+  .rr-hint { font-size: 12px; margin: 4px 0 8px; }
+  .rr-stack { display: flex; height: 12px; border-radius: 6px; overflow: hidden; background: var(--panel-2); margin: 4px 0 6px; } .rr-stack i { display: block; height: 100%; }
+  .rr-s-good { background: var(--pass) !important; } .rr-s-mid { background: var(--accent) !important; } .rr-s-bad { background: var(--fail) !important; } .rr-s-muted { background: var(--text-faint) !important; }
+  .rr-tops { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 8px 16px; margin: 10px 0; }
+  .rr-tops > div { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; } .rr-tops > div > span { width: 100%; font-size: 12px; }
+  .rr-top { padding: 6px 10px; font-size: 12.5px; border: 1px solid var(--border); border-radius: 4px; background: var(--panel-2); color: var(--text); cursor: pointer; } .rr-top:hover { border-color: var(--accent); }
+  .rr-ctl { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; } .rr-ctl input { width: 110px; }
+  .rr-detail td { background: var(--panel-2); white-space: normal; } .rr-detail td > div { position: sticky; left: 8px; max-width: min(100%, calc(100vw - 76px)); overflow-x: auto; }
+  .rr-steps { margin: 4px 0; font-size: 12.5px; }
+  .rr-steps th, .rr-steps td { white-space: nowrap; } .rr-head > span:first-child { white-space: nowrap; }
+  @media (max-width: 640px) { .rr-head { flex-direction: column; align-items: flex-start; gap: 6px; } .rr-ctl input { width: 140px; } }
 </style>
 </head>
 <body class="theme-slate">
@@ -5698,7 +5712,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.17-v109';
+const APP_BUILD = '2026.10.17-v110';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
@@ -14086,7 +14100,8 @@ const GREEK_HELP = {
   lm_roll: { t: 'roll up and out', def: '卖掉现在这张 LEAPS, 买一张更远 (≥ 400 天)、行权价不低于现在的. 新合约通常更便宜, 差价就是拿回来的现金, 同时保留大部分上涨敞口. 「敞口保留」= 新 Δ ÷ 现在的 Δ; 「时间成本 / 年」= 新合约的时间价值按年摊, 占现价的比例.', note: '用来把一部分利润拿出来, 或者在 9 个月窗口里延长时间.' },
   tp_advice: { t: '止盈还是继续持有', scale: [['买回止盈', 'rk-t-safe', '已经赚到 50% 止盈线, 或者剩下的年化不到新卖一张的一半'], ['止盈或 roll out', 'rk-t-alert', '只剩 21 天以内, 又离行权价不到 5%'], ['继续持有', '', '其余情况: 剩下的权利金还值得拿']], def: '还没价内、已经赚了一部分时: 看剩下的权利金每天值多少、年化多少, 和同一只股票现在新卖一张 (约 35 天, Δ 0.25 左右) 比. 已经赚到止盈线, 或者剩下的年化不到新卖一张的一半, 就建议买回止盈.', note: '把资金从「快拿完的」挪到「刚开始赚的」上, 同时少承担最后几周的风险.' },
   roll_advice: { t: '建议', scale: [['接股, 然后卖 CC', 'rk-t-alert', '触发停止 roll 的规则; 或三种 roll 都只能倒贴; 或接股后卖 CC 比 roll 快 20% 以上降到同样成本, 而且接股不用借钱. 卖 CC 默认按接股价 (行权价更高、更不容易被 call 走); 只有按真实成本快 20% 以上、并且 Δ 在你 CC 模式的上限以内, 才按真实成本'], ['roll (三种方式里分数最高的)', 'rk-t-safe', '其余情况: 能收到净收入的 roll 里, 用同一把尺子比出最高分的那个']], def: '把三种 roll 方式和「接股后卖 CC」都算一遍: 先看规则有没有叫停, 再看能不能收到净收入, 然后比谁更快把成本降到同样水平、接股会不会借钱, 最后在能收到净收入的方式里选分数最高的. 每一步的数字都列在下面.', note: '按规则和当前报价算出的建议, 不是保证; 最后由你决定.' },
-  roll_report: { t: 'Roll 成绩单', def: '交易记录里所有 roll 过的仓位: 买回后一天内在同一只股票上重新卖出同类期权, 算作一次 roll, 连成一条链. 看它们最后的结果, 用来检验你的 roll 规则.', note: '结果只算已经实现的盈亏.' },
+  roll_report: { t: 'Roll 成绩单', def: '交易记录里所有 roll 过的仓位: 买回之后 1.5 天内, 在同一只股票上卖出另一张同类期权 (行权价或到期日不同), 算作一次 roll, 连成一条链. 重新卖同一张合约不算 roll. 看它们最后的结果, 用来检验你的 roll 规则.', note: '结果只算已经实现的盈亏; 进行中的仓位只计入次数, 不计入盈亏.' },
+  roll_types: { t: '按 roll 方式', def: '每次 roll 按行权价和到期日的变化分类. Put: 降行权价 = roll down (防守), 升行权价 = roll up (更激进); Call 反过来. 「收到净收入」= 卖出新合约收到的比买回旧合约花的多. 「仓位最终赚钱」= 用过这种方式、已经结束的仓位里, 整条链最后赚钱的比例.', note: '「最成功」只在至少 2 个仓位结束后才评出来, 避免一两个样本误导.' },
   room_p: { t: '被行权概率', def: '联动模拟里, 到期时价格低于行权价的比例. 大盘下跌时多个 CSP 会一起价内, 所以模拟按到期日顺序、各标的一起动.', note: '用当前 IV 和 β 估计, 不是保证; 大约相当于 |Δ|, 但考虑了联动.' },
   leaps_room: { t: 'Option Buying Power', def: '还能花多少钱买期权, 而且最终不用借钱. CSP 被行权时要用现金接股票, 现金不够就开始借 margin. 所以: 不借钱还能花 = 现金 + SWVXX − 要留着接股票的钱, 再和 Schwab 的 Option Buying Power 取较小值. 第一张卡片是 Schwab 自己的 Option Buying Power: 它扣掉了 CSP 占用的保证金, 但不考虑被行权时现金够不够.',
     read: '三张卡片: Option Buying Power = Schwab 现在允许你买期权的钱; 最坏情况 = 全部 CSP 被行权; 我的计划 = 按下表你选的「买回 / 放到期 / 接股 / roll」. 「需从 SWVXX 卖出 $X」= 现金账户里的余额不够接股票, 要先卖 SWVXX, 不是借钱; 「缺 $X」= 现金和 SWVXX 全部用上也不够, 会借这么多. 最上面一行看有没有在借钱: Margin Balance 为负或 Equity % 低于 100% 就是在借.',
@@ -15529,8 +15544,8 @@ function _rollWheelHTML(x, R) {
 function _rollHistory(x) {
   const U = (() => { try { return _rvUnits() || []; } catch (e) { return []; } })(), pc = /put/.test(x.kind) ? 'PUT' : 'CALL';
   let u = U.find(z => z.open && z.ticker === x.ticker && z.putCall === pc && z.side === 'short' && Math.abs((z.strike ?? -1) - x.strike) < 0.005 && z.expiry === x.expiry);
-  const legs = []; let g = 0;
-  while (u && g++ < 20) { legs.unshift(u); const prev = u.rollFrom; u = prev ? U.find(z => z.id === prev) : null; }
+  const legs = [], seen = new Set();
+  while (u && !seen.has(u.id)) { seen.add(u.id); legs.unshift(u); const prev = u.rollFrom; u = prev ? U.find(z => z.id === prev) : null; }
   const prior = legs.slice(0, -1);
   return { legs, prior, rolls: prior.length, realized: prior.reduce((s, z) => s + (z.pnl || 0), 0), start: legs.length ? legs[0].openTs : null };
 }
@@ -15874,24 +15889,78 @@ function _rollBtn(x) {
   if (!p && !(d != null && d < 5) && !(dte != null && dte <= 21) && !(cap != null && cap >= SHORT_TP)) return '';
   return `<button class="app-link roll-btn" onclick="event.stopPropagation(); showRoll('${esc(_posKey(x))}')">${p ? `已规划 → ${p.K}${_pcL(x)} ${esc(_md(p.exp))}` : d != null && d < 0 ? 'Roll ▸' : '管理 ▸'}</button>`;
 }
-// Performance: how rolled positions ended
+// v110 · Roll 成绩单: how rolled positions ended, which kind of roll you use and which works, every step on demand
+let __rrQ = '', __rrSort = 'new', __rrOpen = {};
+window.rrSearch = v => { __rrQ = String(v || '').trim().toUpperCase(); _rrRedraw(); };
+window.rrSortBy = v => { __rrSort = v; _rrRedraw(); };
+window.rrToggle = k => { __rrOpen[k] = !__rrOpen[k]; _rrRedraw(); };
+function _rrRedraw() { const el = document.getElementById('rr-block'); if (!el) return; const f = document.activeElement && document.activeElement.id === 'rr-q';
+  el.outerHTML = _safe('Roll 成绩单', _rollReportHTML, ''); if (f) { const i = document.getElementById('rr-q'); if (i) { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } } }
+// a → b: what kind of roll it was. For puts lowering the strike is the defensive move, for calls raising it
+function _rollType(a, b) {
+  const put = a.putCall === 'PUT', dk = (b.strike ?? 0) - (a.strike ?? 0), later = b.expiry > a.expiry, same = Math.abs(dk) < 0.005;
+  if (same) return later ? 'out' : 'in';
+  const defensive = put ? dk < 0 : dk > 0;
+  return (defensive ? 'def' : 'agg') + (later ? '+out' : '');
+}
+const _rrTypeName = (t, put) => ({ out: '只 roll out', in: 'roll in (提前)', def: put ? 'roll down' : 'roll up', 'def+out': put ? 'roll down + out' : 'roll up + out', agg: put ? 'roll up (更激进)' : 'roll down (更激进)', 'agg+out': put ? 'roll up + out (更激进)' : 'roll down + out (更激进)' })[t] || t;
 function _rollReportHTML() {
   const U = (() => { try { return _rvUnits() || []; } catch (e) { return []; } })();
-  if (!U.length) return loadSchwabCfg() ? `<section class="rk-block"><h3 class="rk-block-title">Roll 成绩单 ${_qBtn('roll_report', 'short')}</h3><div class="rk-quiet">读取 Schwab 交易记录后显示.</div></section>` : '';
-  const heads = U.filter(u => u.side === 'short' && u.rollTo && !u.rollFrom), chains = heads.map(h => { const legs = [h]; let u = h, g = 0; while (u.rollTo && g++ < 20) { u = U.find(z => z.id === u.rollTo); if (!u) break; legs.push(u); } return legs; });
-  if (!chains.length) return `<section class="rk-block"><h3 class="rk-block-title">Roll 成绩单 ${_qBtn('roll_report', 'short')}</h3><div class="rk-quiet">交易记录里还没有 roll 过的仓位.</div></section>`;
-  const rows = chains.map(L => { const last = L[L.length - 1], done = !last.open, pnl = L.reduce((s, u) => s + (u.open ? 0 : (u.pnl || 0)), 0), days = Math.round(((last.closeTs || Date.now()) - L[0].openTs) / 864e5);
-    const end = !done ? '进行中' : /assign/.test(last.method || '') ? '被行权' : /expire/.test(last.method || '') ? '到期作废' : '买回';
-    return { L, done, pnl, days, end, t: L[0].ticker, pc: L[0].putCall === 'PUT' ? 'P' : 'C' }; }).sort((a, b) => b.L[0].openTs - a.L[0].openTs);
-  const D = rows.filter(r => r.done), win = D.filter(r => r.pnl > 0).length, avg = (a, f) => a.length ? a.reduce((s, r) => s + f(r), 0) / a.length : null;
-  return `<section class="rk-block"><h3 class="rk-block-title">Roll 成绩单 ${_qBtn('roll_report', 'short')}</h3>
-    <div class="rk-figs"><div class="rk-fig"><span class="rk-fig-val rk-t-acc">${rows.length}</span><span class="rk-fig-label">roll 过的仓位 · ${D.length} 个已结束</span></div>
-      <div class="rk-fig"><span class="rk-fig-val ${D.length ? (win / D.length >= 0.5 ? 'rk-t-safe' : 'rk-t-danger') : ''}">${D.length ? (win / D.length * 100).toFixed(0) + '%' : '—'}</span><span class="rk-fig-label">最终赚钱的比例</span></div>
-      <div class="rk-fig"><span class="rk-fig-val rk-t-acc">${D.length ? avg(D, r => r.L.length - 1).toFixed(1) : '—'}</span><span class="rk-fig-label">平均 roll 次数</span></div>
-      <div class="rk-fig"><span class="rk-fig-val rk-t-acc">${D.length ? avg(D, r => r.days).toFixed(0) + ' 天' : '—'}</span><span class="rk-fig-label">平均持续</span></div>
-      <div class="rk-fig"><span class="rk-fig-val ${_thCls(D.reduce((s, r) => s + r.pnl, 0))}">${_fmtSigned(D.reduce((s, r) => s + r.pnl, 0))}</span><span class="rk-fig-label">已结束的合计盈亏</span></div></div>
-    <div class="rk-table-wrap"><table class="rk-table"><thead><tr><th>标的</th><th>路径</th><th>roll 次数</th><th>持续</th><th>结果</th><th>已实现盈亏</th></tr></thead><tbody>
-      ${rows.map(r => `<tr><td><b>${esc(r.t)}</b></td><td>${r.L.map(u => `${u.strike}${r.pc} ${_md(u.expiry)}`).join(' → ')}</td><td>${r.L.length - 1}</td><td>${r.days} 天</td><td>${r.end}</td><td class="${_thCls(r.pnl)}">${_fmtSigned(r.pnl)}</td></tr>`).join('')}</tbody></table></div></section>`;
+  const wrap = inner => `<section class="rk-block" id="rr-block"><h3 class="rk-block-title">Roll 成绩单 ${_qBtn('roll_report', 'short')}</h3>${inner}</section>`;
+  if (!U.length) return loadSchwabCfg() ? wrap('<div class="rk-quiet">读取 Schwab 交易记录后显示.</div>') : '';
+  const chains = U.filter(u => u.side === 'short' && u.rollTo && !u.rollFrom).map(h => _rvChain(U, h)).filter(L => L.length > 1);
+  if (!chains.length) return wrap('<div class="rk-quiet">交易记录里还没有 roll 过的仓位.</div>');
+  const ymd = ts => _tsDay(ts).slice(2).replace(/-/g, '/'), nm = u => `${u.strike}${u.putCall === 'PUT' ? 'P' : 'C'} ${_md(u.expiry)}`;
+  const rows = chains.map(L => {
+    const steps = L.slice(1).map((v, i) => { const u = L[i], buy = (u.openCash || 0) - (u.pnl || 0), sell = v.openCash || 0;
+      return { u, v, type: _rollType(u, v), net: sell - buy, ts: v.openTs, dk: (v.strike ?? 0) - (u.strike ?? 0), dd: Math.round((Date.parse(v.expiry) - Date.parse(u.expiry)) / 864e5) }; });
+    const last = L[L.length - 1], done = !last.open, pnl = L.reduce((s, u) => s + (u.open ? 0 : (u.pnl || 0)), 0), days = Math.round(((last.closeTs || Date.now()) - L[0].openTs) / 864e5);
+    const end = !done ? 'open' : /assign/.test(last.method || '') ? 'assigned' : /expire/.test(last.method || '') ? 'expired' : 'closed';
+    return { k: L[0].id, L, steps, done, pnl, days, end, t: L[0].ticker, put: L[0].putCall === 'PUT', credit: L.reduce((s, u) => s + (u.openCash || 0), 0) };
+  });
+  const D = rows.filter(r => r.done), win = D.filter(r => r.pnl > 0), allSteps = rows.flatMap(r => r.steps.map(s => ({ ...s, r })));
+  const avg = (a, f) => a.length ? a.reduce((s, x) => s + f(x), 0) / a.length : null, pc = v => v == null ? '—' : (v * 100).toFixed(0) + '%';
+  const fig = (val, lab, cls = 'rk-t-acc') => `<div class="rk-fig"><span class="rk-fig-val ${cls}">${val}</span><span class="rk-fig-label">${lab}</span></div>`;
+  const totD = D.reduce((s, r) => s + r.pnl, 0), creditShare = allSteps.length ? allSteps.filter(s => s.net >= 0).length / allSteps.length : null;
+  const figs = `<div class="rk-figs">${fig(rows.length, `roll 过的仓位 · ${D.length} 个已结束`)}${fig(D.length ? pc(win.length / D.length) : '—', '最终赚钱的比例', D.length ? (win.length / D.length >= 0.5 ? 'rk-t-safe' : 'rk-t-danger') : '')}
+    ${fig(_fmtSigned(totD), `已结束的合计 · 平均每个 ${D.length ? _fmtSigned(totD / D.length) : '—'}`, _thCls(totD))}${fig(allSteps.length, `次 roll · 平均每个仓位 ${avg(rows, r => r.steps.length).toFixed(1)} 次`)}
+    ${fig(creditShare != null ? pc(creditShare) : '—', '的 roll 收到净收入', creditShare == null ? '' : creditShare >= 0.7 ? 'rk-t-safe' : creditShare < 0.4 ? 'rk-t-danger' : 'rk-t-alert')}${fig(D.length ? avg(D, r => r.days).toFixed(0) + ' 天' : '—', '已结束的平均持续')}</div>`;
+  // by kind of roll
+  const types = {}; allSteps.forEach(s => { const k = s.type + (s.r.put ? '|P' : '|C'); (types[k] = types[k] || { k, type: s.type, put: s.r.put, steps: [], chains: new Set() }).steps.push(s); types[k].chains.add(s.r); });
+  const T = Object.values(types).map(x => { const ch = [...x.chains].filter(r => r.done); return { ...x, n: x.steps.length, share: x.steps.length / allSteps.length, credit: x.steps.filter(s => s.net >= 0).length / x.steps.length, avgNet: avg(x.steps, s => s.net), done: ch.length, succ: ch.length ? ch.filter(r => r.pnl > 0).length / ch.length : null }; }).sort((a, b) => b.n - a.n);
+  const most = T[0], best = T.filter(t => t.done >= 2).sort((a, b) => b.succ - a.succ || b.done - a.done)[0];
+  const typeHTML = `<div class="rk-sub-title">按 roll 方式 ${_qBtn('roll_types', 'short')}</div><div class="rk-table-wrap"><table class="rk-table rr-types"><thead><tr><th>方式</th><th>次数</th><th>收到净收入</th><th>平均每次</th><th>仓位最终赚钱</th></tr></thead><tbody>
+    ${T.map(x => `<tr><td><b>${_rrTypeName(x.type, x.put)}</b> <span class="rk-quiet">${x.put ? 'put' : 'call'}</span>${x === most ? ' <span class="rk-pill rr-tag">最常用</span>' : ''}${best && x === best ? ' <span class="rk-pill rr-tag good">最成功</span>' : ''}</td>
+      <td><span class="rr-bar"><i style="width:${(x.share * 100).toFixed(0)}%"></i></span> ${x.n} <span class="rk-quiet">${pc(x.share)}</span></td>
+      <td class="${x.credit >= 0.7 ? 'rk-t-safe' : x.credit < 0.4 ? 'rk-t-danger' : 'rk-t-alert'}">${pc(x.credit)}</td><td>${_sg(x.avgNet)}</td>
+      <td>${x.done ? `<span class="${x.succ >= 0.5 ? 'rk-t-safe' : 'rk-t-danger'}">${pc(x.succ)}</span> <span class="rk-quiet">${x.done} 个已结束</span>` : '<span class="rk-quiet">都还没结束</span>'}</td></tr>`).join('')}</tbody></table></div>
+    ${best ? '' : '<div class="rk-quiet rr-hint">「最成功」要等某种方式至少有 2 个仓位结束才评出来.</div>'}`;
+  // how they ended
+  const OUT = [['expired', '到期作废', 'good'], ['closed', '买回', 'mid'], ['assigned', '被行权', 'bad'], ['open', '进行中', 'muted']].map(([k, l, c]) => [l, c, rows.filter(r => r.end === k)]).filter(x => x[2].length);
+  const outHTML = `<div class="rk-sub-title">最后怎么结束的</div><div class="rr-stack">${OUT.map(([l, c, a]) => `<i class="rr-s-${c}" style="width:${(a.length / rows.length * 100).toFixed(1)}%" title="${l} ${a.length}"></i>`).join('')}</div>
+    <div class="rk-legend">${OUT.map(([l, c, a]) => `<span><i class="rk-sw rr-s-${c}"></i>${l} ${a.length} ${a.some(r => r.done) ? `· ${_sg(a.filter(r => r.done).reduce((s, r) => s + r.pnl, 0))}` : ''}</span>`).join('')}</div>`;
+  // the best and the worst
+  const top = arr => arr.map(r => `<button class="rr-top" onclick="rrToggle('${esc(r.k)}'); setTimeout(() => { const e = document.querySelector('[data-rr=\\'${esc(r.k)}\\']'); if (e) e.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 60)"><b>${esc(r.t)}</b> <span class="rk-quiet">${r.steps.length} 次 · ${r.days} 天</span> ${_sg(r.pnl)}</button>`).join('');
+  const bestR = D.slice().sort((a, b) => b.pnl - a.pnl).slice(0, 3).filter(r => r.pnl > 0), worstR = D.slice().sort((a, b) => a.pnl - b.pnl).slice(0, 3).filter(r => r.pnl < 0);
+  const topHTML = bestR.length || worstR.length ? `<div class="rr-tops">${bestR.length ? `<div><span class="rk-quiet">赚最多</span>${top(bestR)}</div>` : ''}${worstR.length ? `<div><span class="rk-quiet">亏最多</span>${top(worstR)}</div>` : ''}</div>` : '';
+  // the list: search, sort, every step on demand
+  const sorts = { new: ['最新', (a, b) => b.L[0].openTs - a.L[0].openTs], pnl: ['盈亏', (a, b) => (b.done ? b.pnl : -1e12) - (a.done ? a.pnl : -1e12)], rolls: ['roll 次数', (a, b) => b.steps.length - a.steps.length], days: ['持续', (a, b) => b.days - a.days] };
+  const list = rows.filter(r => !__rrQ || r.t.includes(__rrQ)).sort(sorts[__rrSort] ? sorts[__rrSort][1] : sorts.new[1]);
+  const endName = { expired: '到期作废', closed: '买回', assigned: '被行权', open: '进行中' };
+  const listHTML = `<div class="rk-sub-title rk-title-row rr-head"><span>每个仓位</span><span class="rr-ctl"><input id="rr-q" class="gl-num" placeholder="搜索代码" value="${esc(__rrQ)}" oninput="rrSearch(this.value)">
+      <span class="rk-presets">${Object.entries(sorts).map(([k, [l]]) => `<button class="rk-preset${__rrSort === k ? ' active' : ''}" onclick="rrSortBy('${k}')">${l}</button>`).join('')}</span></span></div>
+    <div class="rk-table-wrap"><table class="rk-table rr-list"><thead><tr><th>标的</th><th>路径</th><th>roll</th><th>持续</th><th>结果</th><th>已实现</th></tr></thead><tbody>
+    ${list.length ? list.map(r => { const open = !!__rrOpen[r.k], first = r.L[0], last = r.L[r.L.length - 1];
+      return `<tr class="gl-row" data-rr="${esc(r.k)}" role="button" tabindex="0" onclick="rrToggle('${esc(r.k)}')"><td><b>${esc(r.t)}</b></td>
+        <td>${open ? '▾' : '▸'} ${esc(nm(first))} → ${esc(nm(last))}${r.L.length > 2 ? ` <span class="rk-quiet">(中间 ${r.L.length - 2} 张)</span>` : ''}</td><td>${r.steps.length}</td><td>${r.days} 天</td>
+        <td class="${r.end === 'expired' ? 'rk-t-safe' : r.end === 'assigned' ? 'rk-t-danger' : ''}">${endName[r.end]}</td><td>${r.done ? _sg(r.pnl) : '<span class="rk-quiet">进行中</span>'}</td></tr>
+        ${open ? `<tr class="rr-detail"><td colspan="6"><div><table class="rk-table rr-steps"><thead><tr><th>日期</th><th>从</th><th>到</th><th>方式</th><th>这次净额</th><th>行权价</th><th>延长</th></tr></thead><tbody>
+          <tr><td>${ymd(first.openTs)}</td><td class="rk-quiet">开仓</td><td>${esc(nm(first))}</td><td></td><td>${_sg(first.openCash || 0)}</td><td></td><td></td></tr>
+          ${r.steps.map(s => `<tr><td>${ymd(s.ts)}</td><td>${esc(nm(s.u))}</td><td>${esc(nm(s.v))}</td><td>${_rrTypeName(s.type, r.put)}</td><td>${_sg(s.net)}</td>
+            <td>${Math.abs(s.dk) < 0.005 ? '<span class="rk-quiet">不变</span>' : `${s.dk > 0 ? '+' : '−'}${Math.abs(s.dk)}`}</td><td>${s.dd > 0 ? '+' + s.dd + ' 天' : s.dd === 0 ? '<span class="rk-quiet">同一天</span>' : s.dd + ' 天'}</td></tr>`).join('')}
+          <tr class="rk-total"><td colspan="4">${r.done ? `结束: ${endName[r.end]} (${ymd(last.closeTs)})` : '最后一张持有中'}</td><td>${r.done ? _sg(r.pnl) : ''}</td><td colspan="2" class="rk-quiet">共收权利金 ${_fmtUsd(r.credit)}</td></tr></tbody></table></div></td></tr>` : ''}`; }).join('')
+      : `<tr><td colspan="6" class="rk-quiet">没有符合「${esc(__rrQ)}」的仓位</td></tr>`}</tbody></table></div>`;
+  return wrap(figs + typeHTML + outHTML + topHTML + listHTML);
 }
 
 /* ═════════════ v97 · LEAPS 管理: take profit, roll up and out, stop, and when to add ═════════════ */
@@ -18294,11 +18363,24 @@ function _rvUnits() {
     try { localStorage.setItem('pretrade_pos_seen', JSON.stringify(seen)); if (first) localStorage.setItem('pretrade_pos_baseline', '1'); } catch (e) {}
   }
   list.forEach(u => { u.open = u.openQty > 0; u.days = Math.max(0, Math.round(((u.closeTs || Date.now()) - u.openTs) / 864e5)); u.capture = u.side === 'short' && u.openCash > 0 && !u.open ? u.pnl / u.openCash * 100 : null; });
-  // rolls: bought back and re-opened on the same ticker / side within a day
-  list.filter(u => !u.open && /close|trade/.test(u.method || '')).forEach(u => { const v = list.find(z => z !== u && z.ticker === u.ticker && z.putCall === u.putCall && z.side === u.side && Math.abs(z.openTs - u.closeTs) < 1.5 * 864e5);
-    if (v) { u.rollTo = v.id; v.rollFrom = u.id; } });
+  _rvLinkRolls(list);
   return list;
 }
+// rolls: bought back, then a different contract of the same ticker / type / side opened at or after the buy-back, within 1.5 days.
+// One-to-one, in time order, nearest first: a leg opened before the buy-back, or the same contract sold again, is not a roll (no loops)
+function _rvLinkRolls(list) {
+  list.forEach(u => { delete u.rollTo; delete u.rollFrom; });
+  const closes = list.filter(u => !u.open && u.closeTs && /close|trade/.test(u.method || '')).sort((a, b) => a.closeTs - b.closeTs);
+  closes.forEach(u => {
+    const v = list.filter(z => z !== u && !z.rollFrom && z.ticker === u.ticker && z.putCall === u.putCall && z.side === u.side && z.openTs > u.openTs
+        && z.openTs >= u.closeTs - 3600e3 && z.openTs - u.closeTs < 1.5 * 864e5 && !(Math.abs((z.strike ?? -1) - (u.strike ?? -2)) < 0.005 && z.expiry === u.expiry))
+      .sort((a, b) => Math.abs(a.openTs - u.closeTs) - Math.abs(b.openTs - u.closeTs))[0];
+    if (v) { u.rollTo = v.id; v.rollFrom = u.id; }
+  });
+  return list;
+}
+// walk a chain without ever revisiting a leg
+function _rvChain(U, head) { const legs = [head], seen = new Set([head.id]); let u = head; while (u.rollTo) { const v = U.find(z => z.id === u.rollTo); if (!v || seen.has(v.id)) break; seen.add(v.id); legs.push(v); u = v; } return legs; }
 function computeAutoReview() {
   const h = loadHist(), hist = getActiveHistory();
   const sc = loadSchwabCache(), key = (h ? h.at : 0) + '|' + hist.length + '|' + hist.reduce((s, e) => s + (e.updatedAt || 0), 0) + '|' + (sc ? sc.fetchedAt : 0);
