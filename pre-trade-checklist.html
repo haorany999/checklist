@@ -17948,7 +17948,7 @@ function renderPositionsPage() {
       be: x.strike - (x.avg || 0), ann: life ? credit / (x.exposure || 1) * 365 / Math.max(1, life) * 100 : null, rem: dte ? val / (x.exposure || 1) * 365 / Math.max(1, dte) * 100 : null,
       timePct: life ? held.days / life * 100 : null };
   });
-  const cT = { credit: sum(cspRows, r => r.credit), val: sum(cspRows, r => r.val), ext: sum(cspRows, r => r.ext), th: sum(cspRows, r => r.th), pnl: sum(cspRows, r => r.pnl) };
+  const cT = { credit: sum(cspRows, r => r.credit), val: sum(cspRows, r => r.val), ext: sum(cspRows, r => r.ext), th: sum(cspRows, r => r.th), pnl: cspRows.some(r => r.pnl != null) ? sum(cspRows, r => r.pnl) : null };
   const wDte = cspN ? sum(cspRows, r => (r.dte || 0) * (r.x.exposure || 0)) / cspN : null;
   const cspHTML = csp.length ? `
     <section class="rk-block">
@@ -17982,7 +17982,7 @@ function renderPositionsPage() {
     return { x, q, credit, val, cap: _captured(x), pnl: _posPnl(x), dte, held, dist: _distPct(x), th: theta(x), cover, room: w && w.adj ? (x.strike / w.adj - 1) * 100 : null, adj: w ? w.adj : null, timePct: life ? held.days / life * 100 : null,
       notional, ext: Math.max(0, val - intr), ann: life && notional ? credit / notional * 365 / Math.max(1, life) * 100 : null };
   });
-  const sT = { pnl: scRows.reduce((s, r) => s + (r.pnl || 0), 0), notional: scRows.reduce((s, r) => s + r.notional, 0), credit: scRows.reduce((s, r) => s + r.credit, 0), val: scRows.reduce((s, r) => s + r.val, 0), th: scRows.reduce((s, r) => s + (r.th || 0), 0), ext: scRows.reduce((s, r) => s + r.ext, 0) };
+  const sT = { pnl: scRows.some(r => r.pnl != null) ? scRows.reduce((s, r) => s + (r.pnl || 0), 0) : null, notional: scRows.reduce((s, r) => s + r.notional, 0), credit: scRows.reduce((s, r) => s + r.credit, 0), val: scRows.reduce((s, r) => s + r.val, 0), th: scRows.reduce((s, r) => s + (r.th || 0), 0), ext: scRows.reduce((s, r) => s + r.ext, 0) };
   const scHTML = sc.length ? `
     <section class="rk-block">
       <h3 class="rk-block-title" id="sec-sc">Short call · CC / PMCC · ${sc.length} 笔</h3>
