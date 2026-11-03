@@ -3681,6 +3681,10 @@
   .rr-s-warn { background: #E5793B !important; }
   .an-grid > * { min-width: 0; }
   .ed-card { border-left: 3px solid var(--pass); }
+  tr.an-best td { background: color-mix(in srgb, var(--pass) 8%, transparent); } tr.an-best td:first-child { box-shadow: inset 3px 0 0 var(--pass); }
+  .an-by { font-size: 11.5px; font-weight: 400; margin-left: 4px; } .rk-pill.rr-tag.bad { color: var(--fail); border-color: var(--fail); }
+  .an-curve svg { width: 100%; height: auto; max-height: 260px; } .an-curve .rl-zero { stroke: var(--border-hi); }
+  .an-common { margin: 6px 0 2px; padding: 8px 10px; font-size: 13px; border-radius: 4px; background: color-mix(in srgb, #E5793B 8%, var(--panel-2)); } .an-common b { font-family: var(--mono); }
 </style>
 </head>
 <body class="theme-slate">
@@ -5735,7 +5739,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.17-v115';
+const APP_BUILD = '2026.10.17-v117';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
@@ -14178,6 +14182,18 @@ const GREEK_HELP = {
   roll_score: { t: '分数', def: '先看能不能收到净收入: 能收到的永远排在倒贴的前面. 同一组里按 100 分打分: 时间 35 (延长越少越好, 想早点结束), 行权价改善 25 (降得越多越好, 但边际递减), 净收入 15 (收得越多越好, 有上限), Δ 15 (在合理区间就满分, 不是越低越好), 流动性 10 (OI 和买卖价差). 只 roll out 时行权价不变, 那 25 分归到时间.',
     read: '点一行可以看分数每一项是怎么来的. 权重和区间都能在页面底部的「规则和权重」里调.', note: '净收入优先, 再看谁最快结束、降得最有意义.' },
   assign_out: { t: '被行权的结果', def: 'CSP: 被行权接股后的有效成本 (行权价 − 收到的权利金), 和现价比. 比现价高 = 接股后马上是浮亏. Short call: 行权价和你这只股票的调整后成本 (Schwab 均价减去卖期权降低的部分) 比, 高 = 被 call 走也赚钱, 低 = 被 call 走会亏.', note: '两张表用同一组列, 这一列各自显示对这个策略最重要的那个结果.' },
+  an_curve: { t: '累计已实现', def: '按平仓日期把每个策略的已实现盈亏一笔一笔加起来. 线一直向上 = 这个策略在稳定赚钱; 一段时间横着或向下 = 那段时间这个策略在拖后腿. 「全部」不含短期 long call.', note: '' },
+  an_worst: { t: '最大的几笔亏损', def: '已结束的仓位里亏得最多的 5 笔 (roll 过的整条链算一笔), 列出开仓时的条件. 「共同点」把它们的平均值和其他所有已结束的同类仓位比, 差别明显的才列出来.', ex: '如果最大的 5 笔亏损开仓 Δ 平均 0.33, 而其他平均 0.21, 说明你的大亏主要来自 Δ 偏高的开仓; 以后把 Δ 上限压低, 往往比提高胜率更能改善长期结果.', note: '尾部亏损往往决定了卖方策略的长期结果: 赚 20 笔小钱, 一笔大亏就能吐回去.' },
+  an_near: { t: '持有期间离行权价最近有多近', def: '从开仓到平仓 (或到期), 正股离行权价最近的那一刻有多远: CSP 看最低价, CC / PMCC 看最高价. 负数 = 到过价内.', ex: '卖 280P 时正股 300, 持有期间最低到 272: 最近 −2.9%, 到过价内. 如果到过价内的大多数最后还是赚钱的, 说明你在那种时候扛住是对的; 如果大多亏钱, 下次到价内时更应该早点处理.', note: '' },
+  an_wheel: { t: '被行权之后', def: '每次 CSP 被行权接股: 有效成本 = 行权价 − 这一路收到的净权利金; 「回到成本」= 接股后正股第一次收盘回到有效成本以上用了几天; 「之后卖 CC」= 接股后 120 天内在同一只股票上卖出的 call 的结果; 「3 个月后整个轮子」= 3 个月后正股相对有效成本的盈亏 + 这段时间卖 CC 的收入.', ex: '280P 被行权, 一路净收 $9 / 股, 有效成本 271; 接股后 34 天收盘回到 271 以上; 这段时间卖了 2 次 CC 收 $320; 3 个月后正股 265: (265 − 271) × 100 + 320 = −$280.', note: '3 个月后的结果按那天的收盘价估算, 不代表你实际卖出的价格.' },
+  an_mny: { t: '开仓时的价内程度', def: '(开仓时正股价 − 行权价) ÷ 正股价. 正数 = 价内 (深度价内的 LEAPS 更像正股, Δ 高、时间价值少); 接近 0 = 平值; 负数 = 价外 (更便宜、杠杆更大, 但更依赖上涨).', note: '' },
+  an_off52: { t: '开仓时离 52 周高点', def: '开仓那天正股比过去一年的最高价低了多少. 用来找左侧进场「跌多少才买」的甜蜜区.', ex: '52 周高点 200, 你在 160 买: 离高点 −20%, 归到「15–30%」这一组.', note: '' },
+  an_dd: { t: '持有期间最大浮亏', def: '按正股每天的收盘价和开仓时成本隐含的 IV, 估算这张 LEAPS 每天的价值, 取持有期间相对成本最低的那一刻. 看最后赚钱的那些, 中途最多亏过多少.', ex: '赚钱的 LEAPS 里 90% 最大浮亏都没超过 −35%: 如果某一笔已经浮亏 −45%, 历史上这种深度大多没有回来, 可以把止损设在 −35% 到 −40% 附近.', note: '估算不含 IV 的变化; IV 下跌时实际浮亏会更深一些.' },
+  an_pmcc_why: { t: '判断为 PMCC 的依据', def: '一张 short call 算作 PMCC, 有两种依据: 和它对得上的 checklist 记录写的是 PMCC; 或者卖出时同一只股票上持有一张到期更远的 long call (作为底仓). checklist 写 CC 的一律算 CC.', note: '如果某一张判断错了, 多半是没走 checklist、而同一只股票上刚好有别的 long call.' },
+  an_eff_avg: { t: '平均拿到了最大涨幅的多少', def: '每一笔已平仓的 LEAPS: (平仓时正股价 − 开仓时正股价) ÷ (持有期间正股最高价 − 开仓时正股价), 再取平均. 100% = 卖在最高点; 0% = 涨上去又全部跌回来才卖; 负数 = 卖的时候比买的时候还低.', ex: '开仓时正股 100, 持有期间最高涨到 150, 你在 125 平仓: (125 − 100) ÷ (150 − 100) = 50%, 拿到了一半的涨幅, 另一半回吐了. 如果在 145 平仓就是 90%.', note: '持有期间最高价没有超过开仓价 1% 的不计入 (没有涨幅可拿). 用正股衡量, 不受期权时间价值影响.' },
+  an_eff_low: { t: '拿到不到 40% 的比例', def: '已平仓的 LEAPS 里, 有多少笔只拿到了持有期间最大涨幅的不到 40%, 也就是大部分涨幅又吐回去了才卖.', ex: '10 笔里有 4 笔是「从 100 涨到 150, 跌回 115 才卖」这种 (拿到 30%), 这里就是 40%. 比例高, 说明止盈梯度执行得偏晚, 可以考虑更早分批止盈.', note: '' },
+  an_eff_after: { t: '平仓后 1 个月正股又涨 / 跌', def: '平仓那天之后 21 个交易日, 正股相对平仓价的涨跌, 取平均. 用来看是不是卖得太早.', ex: '你在 125 平仓, 1 个月后正股到了 140: +12%. 如果平均都是 +10% 以上, 说明常常卖在半山腰; 平均在 0 附近或为负, 说明退出的时机不错.', note: '' },
+  an_pmcc_total_unused: { t: 'PMCC 整体已实现', def: 'PMCC 是两条腿: 卖出的 short call 和作为底仓的 LEAPS. 这里把两边已经实现的盈亏加在一起, 才是这个策略真正赚或亏了多少. 底仓 = 卖出 short call 时同一只股票上持有的 LEAPS.', ex: 'short call 一共赚了 $3,000, 但底仓 LEAPS 平仓亏了 $9,000, PMCC 整体就是 −$6,000.', note: '底仓 LEAPS 同时也计入 LEAPS 分页, 所以 PMCC 和 LEAPS 两页加起来会重复算这一部分.' },
   an_away: { t: '被 call 走之后', def: '每次 CC 被 call 走, 看到期日之后 1 个月 (21 个交易日) 正股相对行权价又走了多少. 平均还在大涨, 说明行权价可能离现价太近, 错过了上涨.', note: '「错过的上涨」= 1 个月后的价格高出行权价的部分 × 股数, 只算上涨.' },
   an_pmcc: { t: 'short call 赚回了多少 LEAPS 成本', def: '每个 LEAPS 底仓在持有期间, 你在同一只股票上卖出的 short call 已实现的合计, 占这张 LEAPS 成本的比例. 这是 PMCC 降低成本的速度.', note: 'short call 按开仓时是否持有同一只股票的 LEAPS (或 checklist 记录写了 PMCC) 判断是不是 PMCC.' },
   an_page: { t: '寻找 Edge', def: '用你自己的交易记录看每个策略长期的真实表现: roll 过的整条链算一个仓位; 开仓时的环境 (正股价、SPY、VIX、MJ2) 用当天的日线重算; 和 checklist 记录对得上的还会带上当时的结论和风格.', note: '每组少于 5 个已结束的仓位时写「样本不足」, 不下结论; 只有样本够多、差别够大时才标「明显更好」.' },
@@ -16271,10 +16287,17 @@ function _anData() {
     const iv0 = c.S0 ? _anIV(put, c.S0, h.strike, T0, prem) : null;
     let d0 = null, pA = null; if (iv0) { const s = iv0 * Math.sqrt(T0), d1 = (Math.log(c.S0 / h.strike) + (0.04 + iv0 * iv0 / 2) * T0) / s; d0 = put ? 1 - _ncdf(d1) : _ncdf(d1); pA = put ? _ncdf(-(d1 - s)) : _ncdf(d1 - s); }
     const e = entryOf[h.id], es = e ? String(e.strategy || '') : '';
-    const pmcc = !put && (es.startsWith('PMCC') || (!es.startsWith('CC') && U.some(z => z.side === 'long' && z.putCall === 'CALL' && z.ticker === h.ticker && z.expiry > h.expiry && z.openTs <= h.openTs + 864e5 && (!z.closeTs || z.closeTs >= h.openTs))));
+    const baseL = !put ? U.filter(z => z.side === 'long' && z.putCall === 'CALL' && z.ticker === h.ticker && z.expiry > h.expiry && z.openTs <= h.openTs + 864e5 && (!z.closeTs || z.closeTs >= h.openTs)).sort((a, b) => b.openTs - a.openTs)[0] : null;
+    const pmcc = !put && (es.startsWith('PMCC') || (!es.startsWith('CC') && !!baseL));
+    const why = !pmcc ? null : es.startsWith('PMCC') ? 'checklist' : 'leaps';
     rows.push({ k: h.id, strat: put ? 'csp' : pmcc ? 'pmcc' : 'cc', t: h.ticker, L, head: h, last, put, q, openTs: h.openTs, day, closeTs: done ? last.closeTs : null, done, end, pnl, credit, rolls: L.length - 1,
       K: h.strike, exp: h.expiry, dte0, prem, S0: c.S0, iv0, d0, pA, dist0: c.S0 ? (put ? (c.S0 - h.strike) / c.S0 : (h.strike - c.S0) / c.S0) * 100 : null,
-      held: Math.round(((done ? last.closeTs : Date.now()) - h.openTs) / 864e5), spyUp: c.spyUp, vix0: c.vix0, entry: e, verdict: verdictOf(e), live: !!h.live, collat: h.strike * 100 * q });
+      held: Math.round(((done ? last.closeTs : Date.now()) - h.openTs) / 864e5), spyUp: c.spyUp, vix0: c.vix0, entry: e, verdict: verdictOf(e), live: !!h.live, collat: h.strike * 100 * q,
+      why, base: baseL ? { K: baseL.strike, exp: baseL.expiry } : null, earn: (() => { const d = _earnOf(h.ticker); return d && d >= day && d <= h.expiry ? true : null; })() });
+    // how close it came: the nearest the stock got to the strike while you held it (negative = it went in the money)
+    const r = rows[rows.length - 1];
+    if (c.i != null) { const B = _anBars(h.ticker), ci = _anIdx(h.ticker, done ? _tsDay(last.closeTs) : today); if (ci != null && ci >= c.i) {
+      const seg = B.slice(c.i, ci + 1); r.near = put ? (Math.min(...seg.map(b => b.l)) / h.strike - 1) * 100 : (1 - Math.max(...seg.map(b => b.h)) / h.strike) * 100; r.touched = r.near < 0; } }
   });
   // long calls: LEAPS when ≥ 270 days to expiry at the open
   U.filter(u => u.side === 'long' && u.putCall === 'CALL').forEach(u => {
@@ -16283,8 +16306,12 @@ function _anData() {
     let eff = null, after = null, exitDte = null;
     if (done && c.i != null) { const ci = _anIdx(u.ticker, _tsDay(u.closeTs)); if (ci != null && ci > c.i) { const mx = Math.max(...B.slice(c.i, ci + 1).map(b => b.h)), Sx = B[ci].c; if (mx > c.S0 * 1.01) eff = Math.max(-1, Math.min(1, (Sx - c.S0) / (mx - c.S0)));
       if (B[ci + 21]) after = (B[ci + 21].c / Sx - 1) * 100; } exitDte = _anDays(_tsDay(u.closeTs), u.expiry); }
-    const nav0 = e && +e.nav > 0 ? +e.nav : nav || null;
-    rows.push({ k: u.id, strat: dte0 >= 270 ? 'leaps' : 'long', t: u.ticker, head: u, openTs: u.openTs, day, closeTs: done ? u.closeTs : null, done, end: done ? (u.pnl > 0 ? 'tp' : 'loss') : 'open', pnl: done ? (u.pnl || 0) : 0, cost, ret: done && cost ? (u.pnl || 0) / cost * 100 : null,
+    const nav0 = e && +e.nav > 0 ? +e.nav : nav || null, q = Math.abs(u.qty || u.openQty || 1) || 1, pps = cost / (100 * q), T0 = Math.max(1, dte0) / 365;
+    const iv0 = c.S0 ? _anIV(false, c.S0, u.strike, T0, pps) : null; let d0 = null; if (iv0) { const s = iv0 * Math.sqrt(T0); d0 = _ncdf((Math.log(c.S0 / u.strike) + (0.04 + iv0 * iv0 / 2) * T0) / s); }
+    const off52 = c.i != null && c.i >= 20 ? (c.S0 / Math.max(...B.slice(Math.max(0, c.i - 251), c.i + 1).map(b => b.h)) - 1) * 100 : null;
+    let dd = null; if (iv0 && c.i != null) { const ci = _anIdx(u.ticker, done ? _tsDay(u.closeTs) : today); if (ci != null && ci > c.i) { let mn = 0;
+      for (const b of B.slice(c.i + 1, ci + 1)) { const v = _anBS(false, b.c, u.strike, Math.max(0, _anDays(b.d, u.expiry)) / 365, iv0) / pps - 1; if (v < mn) mn = v; } dd = mn * 100; } }
+    rows.push({ k: u.id, strat: dte0 >= 270 ? 'leaps' : 'long', iv0, d0, mny: c.S0 ? (c.S0 - u.strike) / c.S0 * 100 : null, off52, dd, q, t: u.ticker, head: u, openTs: u.openTs, day, closeTs: done ? u.closeTs : null, done, end: done ? (u.pnl > 0 ? 'tp' : 'loss') : 'open', pnl: done ? (u.pnl || 0) : 0, cost, ret: done && cost ? (u.pnl || 0) / cost * 100 : null,
       K: u.strike, exp: u.expiry, dte0, S0: c.S0, w30: win(21), w60: win(42), w90: win(63), eff, after, exitDte, mj2: _anMjAt(u.ticker, c.i), size: nav0 ? cost / nav0 * 100 : null, navApprox: !(e && +e.nav > 0),
       style: e && e.fullState ? e.fullState.leapsStyle || null : null, held: Math.round(((done ? u.closeTs : Date.now()) - u.openTs) / 864e5), spyUp: c.spyUp, vix0: c.vix0, entry: e, verdict: verdictOf(e), live: !!u.live });
   });
@@ -16317,20 +16344,103 @@ function _anTpReplay(R, tps, strat = 'csp') {
 const _anPc = (v, d = 0) => v == null || !isFinite(v) ? '—' : (v * 100).toFixed(d) + '%';
 const _anSt = L => { const D = L.filter(r => r.done), w = D.filter(r => r.pnl > 0); return { n: L.length, d: D.length, win: D.length ? w.length / D.length : null, pnl: D.reduce((s, r) => s + r.pnl, 0), avg: D.length ? D.reduce((s, r) => s + r.pnl, 0) / D.length : null, held: D.length ? D.reduce((s, r) => s + r.held, 0) / D.length : null }; };
 // one comparison table: each group's closed count, win rate, average and total; small groups say so, a clear winner is marked
+// one comparison table. opts.cols = [[header, L => html]]; opts.metric = { name, f: g => number, closeAbs } says what "best" means here.
+// Only groups with enough closed positions compete; a small gap to the runner-up is said out loud.
 function _anCmp(title, groups, help, opts = {}) {
-  const G = groups.map(([l, L, sub]) => ({ l, sub, s: _anSt(L), extra: opts.extra ? opts.extra(L) : null })).filter(g => g.s.n);
+  const G = groups.map(([l, L, sub]) => ({ l, L, sub, s: _anSt(L) })).filter(g => g.s.n);
   if (!G.length) return '';
-  const ok = G.filter(g => g.s.d >= AN_MIN), all = _anSt(groups.flatMap(g => g[1])), best = ok.length >= 2 ? ok.slice().sort((a, b) => b.s.win - a.s.win)[0] : null;
-  const mark = best && ok.length >= 2 && best.s.d >= 8 && best.s.win - Math.min(...ok.map(g => g.s.win)) >= 0.1 ? best : null;
-  return `<div class="an-cmp"><div class="rk-sub-title">${title} ${help ? _qBtn(help, 'short') : ''}</div><div class="rk-table-wrap"><table class="rk-table"><thead><tr><th></th><th>已结束</th><th>胜率</th><th>平均每个</th><th>合计</th>${opts.extraH ? `<th>${opts.extraH}</th>` : ''}</tr></thead><tbody>
-    ${G.map(g => { const small = g.s.d < AN_MIN; return `<tr class="${small ? 'an-small' : ''}"><td><b>${g.l}</b>${g.sub ? ` <span class="rk-quiet">${g.sub}</span>` : ''}${g === mark ? ' <span class="rk-pill rr-tag good">明显更好</span>' : ''}</td>
+  const cols = opts.cols || [], metric = opts.metric || { name: '平均每个', f: g => g.s.avg, closeAbs: null };
+  const ok = G.filter(g => g.s.d >= AN_MIN).map(g => ({ g, v: metric.f(g) })).filter(x => x.v != null && isFinite(x.v)).sort((a, b) => b.v - a.v);
+  let best = null, close = false;
+  if (ok.length >= 2) { best = ok[0].g; const gap = ok[0].v - ok[1].v; close = metric.closeAbs != null ? gap < metric.closeAbs : gap < Math.max(Math.abs(ok[0].v), Math.abs(ok[1].v)) * 0.1; }
+  return `<div class="an-cmp"><div class="rk-sub-title">${title} ${help ? _qBtn(help, 'short') : ''}${best ? ` <span class="rk-quiet an-by">按${metric.name}评</span>` : ''}</div><div class="rk-table-wrap"><table class="rk-table"><thead><tr><th></th><th>已结束</th><th>胜率</th><th>平均每个</th><th>合计</th>${cols.map(c => `<th>${c[0]}</th>`).join('')}</tr></thead><tbody>
+    ${G.map(g => { const small = g.s.d < AN_MIN; return `<tr class="${small ? 'an-small' : ''}${g === best ? ' an-best' : ''}"><td><b>${g.l}</b>${g.sub ? ` <span class="rk-quiet">${g.sub}</span>` : ''}${g === best ? ` <span class="rk-pill rr-tag good">${close ? '最好 · 差别不大' : '最好'}</span>` : ''}</td>
       <td>${g.s.d}${g.s.n > g.s.d ? ` <span class="rk-quiet">+${g.s.n - g.s.d} 进行中</span>` : ''}</td>
       <td>${small ? `<span class="rk-quiet">样本不足</span>` : `<span class="${g.s.win >= 0.6 ? 'rk-t-safe' : g.s.win < 0.45 ? 'rk-t-danger' : ''}">${_anPc(g.s.win)}</span>`}</td>
-      <td>${small ? '<span class="rk-quiet">—</span>' : _sg(g.s.avg)}</td><td>${_sg(g.s.pnl)}</td>${opts.extraH ? `<td>${small ? '<span class="rk-quiet">—</span>' : g.extra}</td>` : ''}</tr>`; }).join('')}</tbody></table></div></div>`;
+      <td>${small ? '<span class="rk-quiet">—</span>' : _sg(g.s.avg)}</td><td>${_sg(g.s.pnl)}</td>${cols.map(c => `<td>${small ? '<span class="rk-quiet">—</span>' : c[1](g.L)}</td>`).join('')}</tr>`; }).join('')}</tbody></table></div></div>`;
 }
-const _anFig = (val, lab, cls = 'rk-t-acc', sub = '') => `<div class="rk-fig"><span class="rk-fig-val ${cls}">${val}</span><span class="rk-fig-label">${lab}</span>${sub ? `<span class="rk-fig-sub">${sub}</span>` : ''}</div>`;
+// realised return on the collateral, per year held: the same yardstick as the take-profit comparison
+const _anAnn = L => { const d = L.filter(r => r.done && r.collat); const cd = d.reduce((s, r) => s + r.collat * Math.max(1, r.held), 0); return cd ? d.reduce((s, r) => s + r.pnl, 0) / cd * 365 : null; };
+const _anKeep = L => { const d = L.filter(r => r.done), c = d.reduce((s, r) => s + r.credit, 0); return c ? d.reduce((s, r) => s + r.pnl, 0) / c : null; };
+const _anRet = L => { const v = L.filter(r => r.done && r.ret != null); return v.length ? v.reduce((s, r) => s + r.ret, 0) / v.length : null; };
+const _anFrom = L => { const t = Math.min(...L.map(r => r.openTs)); return isFinite(t) ? _tsDay(t).slice(0, 7).replace('-', '/') : '—'; };
+// PMCC: each short call belongs to one LEAPS, the latest one on that stock opened before it and still held
+function _anPmccOwners(D, C) { const longs = D.rows.filter(r => r.strat === 'leaps' || r.strat === 'long'), owner = new Map();
+  C.forEach(c => { const l = longs.filter(z => z.t === c.t && z.openTs <= c.openTs + 864e5 && (!z.closeTs || z.closeTs >= c.openTs)).sort((a, b) => b.openTs - a.openTs)[0]; if (l) owner.set(c, l); }); return owner; }
+
+const _anFig = (val, lab, cls = 'rk-t-acc', sub = '', help = '') => `<div class="rk-fig"><span class="rk-fig-val ${cls}">${val}</span><span class="rk-fig-label">${lab}${help ? ' ' + _qBtn(help, 'short') : ''}</span>${sub ? `<span class="rk-fig-sub">${sub}</span>` : ''}</div>`;
 const _anName = { csp: 'CSP', cc: 'CC', pmcc: 'PMCC (short call)', leaps: 'LEAPS', long: '短期 long call' };
 // ── tabs ──
+// ── v117 additions ──
+// cumulative realised P&L over time, one line per strategy
+function _anCurveSVG(D) {
+  const X = D.rows.filter(r => r.done && r.closeTs).sort((a, b) => a.closeTs - b.closeTs); if (X.length < 2) return '';
+  const S = [['all', '全部', 'var(--text)'], ['csp', 'CSP', '#3B82F6'], ['leaps', 'LEAPS', '#A855F7'], ['cc', 'CC', '#F59E0B'], ['pmcc', 'PMCC', '#14B8A6']].filter(([k]) => k === 'all' || X.some(r => r.strat === k));
+  const series = S.map(([k, l, c]) => { let s = 0; const pts = X.filter(r => k === 'all' ? r.strat !== 'long' : r.strat === k).map(r => [r.closeTs, (s += r.pnl)]); return { k, l, c, pts, end: s }; }).filter(x => x.pts.length);
+  const t0 = X[0].closeTs, t1 = X[X.length - 1].closeTs, vs = series.flatMap(x => x.pts.map(p => p[1])).concat([0]), lo = Math.min(...vs), hi = Math.max(...vs);
+  const W = 760, H = 230, L = 58, R = 10, T = 12, B = 26, x = t => L + (t - t0) / Math.max(1, t1 - t0) * (W - L - R), y = v => T + (hi - v) / Math.max(1, hi - lo) * (H - T - B);
+  const ticks = [0, 0.25, 0.5, 0.75, 1].map(f => t0 + (t1 - t0) * f).map(t => `<text x="${x(t).toFixed(1)}" y="${H - 8}" text-anchor="middle" class="rk-ch-lab">${_tsDay(t).slice(2, 7).replace('-', '/')}</text>`).join('');
+  const yt = [hi, 0, lo].filter((v, i, a) => a.indexOf(v) === i).map(v => `<text x="${L - 6}" y="${(y(v) + 3).toFixed(1)}" text-anchor="end" class="rk-ch-lab">${Math.abs(v) < 0.5 ? '0' : `${v > 0 ? '+' : '−'}$${(Math.abs(v) / 1000).toFixed(1)}k`}</text>`).join('');
+  const path = pts => pts.map((p, i) => `${i ? 'L' : 'M'}${x(p[0]).toFixed(1)},${y(p[1]).toFixed(1)}`).join('');
+  return `<div class="rk-sub-title">累计已实现 ${_qBtn('an_curve', 'short')}</div><div class="an-curve"><svg viewBox="0 0 ${W} ${H}" class="rk-chart" role="img" aria-label="累计已实现">
+    <line x1="${L}" x2="${W - R}" y1="${y(0).toFixed(1)}" y2="${y(0).toFixed(1)}" class="rl-zero"/>
+    ${series.map(s => `<path d="${path(s.pts)}" fill="none" stroke="${s.c}" stroke-width="${s.k === 'all' ? 2.6 : 1.8}"${s.k === 'all' ? '' : ' opacity="0.9"'}/>`).join('')}${yt}${ticks}</svg>
+    <div class="rk-legend">${series.map(s => `<span><i class="rk-sw" style="background:${s.c}"></i>${s.l} ${_sg(s.end)}</span>`).join('')}</div></div>`;
+}
+// the five biggest losses, and what they had in common compared with every other position of the same kind
+function _anWorstHTML(C, K0, NOUN) {
+  const X = C.filter(r => r.done), W = X.filter(r => r.pnl < 0).sort((a, b) => a.pnl - b.pnl).slice(0, 5); if (!W.length) return '';
+  const avg = (A, f) => { const v = A.map(f).filter(z => z != null && isFinite(z)); return v.length ? v.reduce((s, z) => s + z, 0) / v.length : null; };
+  const rest = X.filter(r => !W.includes(r)), L1 = K0 === 'csp' ? 'P' : 'C';
+  const traits = [['开仓 Δ', r => r.d0, v => v.toFixed(2), 0.03], ['DTE', r => r.dte0, v => v.toFixed(0) + ' 天', 5], ['离行权价', r => r.dist0, v => v.toFixed(1) + '%', 1.5], ['开仓 IV', r => r.iv0 != null ? r.iv0 * 100 : null, v => v.toFixed(0) + '%', 5], ['VIX', r => r.vix0, v => v.toFixed(1), 2]]
+    .map(([l, f, fmt, th]) => { const a = avg(W, f), b = avg(rest, f); return { l, a, b, fmt, diff: a != null && b != null && Math.abs(a - b) >= th }; }).filter(t => t.a != null);
+  const near = W.filter(r => r.touched).length, ern = W.filter(r => r.earn).length;
+  const common = traits.filter(t => t.diff).map(t => `${t.l} 平均 <b>${t.fmt(t.a)}</b> (其他 ${t.b != null ? t.fmt(t.b) : '—'})`);
+  if (near) common.push(`${near} / ${W.length} 笔持有期间到过价内`); if (ern) common.push(`${ern} 笔跨了财报`);
+  return `<div class="rk-sub-title">最大的 ${W.length} 笔亏损 ${_qBtn('an_worst', 'short')}</div><div class="rk-table-wrap"><table class="rk-table"><thead><tr><th>合约</th><th>开仓</th><th>亏损</th><th>开仓 Δ</th><th>DTE</th><th>离行权价</th><th>IV</th><th>VIX</th><th>跨财报</th><th>结局</th></tr></thead><tbody>
+    ${W.map(r => `<tr><td><b>${esc(r.t)} ${r.K}${L1} ${esc(_md(r.exp))}</b>${r.rolls ? ` <span class="rk-quiet">roll ${r.rolls} 次</span>` : ''}</td><td>${_tsDay(r.openTs).slice(2).replace(/-/g, '/')}</td><td>${_sg(r.pnl)}</td><td>${r.d0 != null ? r.d0.toFixed(2) : '—'}</td><td>${r.dte0}</td>
+      <td>${r.dist0 != null ? r.dist0.toFixed(1) + '%' : '—'}</td><td>${r.iv0 != null ? (r.iv0 * 100).toFixed(0) + '%' : '—'}</td><td>${r.vix0 != null ? r.vix0.toFixed(1) : '—'}</td><td>${r.earn ? '<span class="rk-t-alert">是</span>' : '<span class="rk-quiet">未知</span>'}</td>
+      <td>${{ expired: '到期作废', tp: '买回', loss: '买回止损', assigned: K0 === 'csp' ? '被行权' : '被 call 走', open: '进行中' }[r.end]}</td></tr>`).join('')}</tbody></table></div>
+    <div class="an-common">${common.length ? `<b>共同点</b> (和其他 ${rest.length} 个已结束的 ${NOUN} 比): ${common.join(' · ')}` : `<span class="rk-quiet">这 ${W.length} 笔和其他 ${NOUN} 在开仓条件上没有明显不同.</span>`}</div>
+    <div class="rk-note">「跨财报」只能判断你在 App 里填过财报日期的股票, 其余写「未知」.</div>`;
+}
+// how close it came to the strike while held, and whether holding on through it paid
+function _anNearHTML(C, K0) {
+  const X = C.filter(r => r.done && r.near != null); if (X.length < 2) return '';
+  const put = K0 === 'csp', G = [['始终离行权价 > 10%', X.filter(r => r.near >= 10)], ['最近 5–10%', X.filter(r => r.near >= 5 && r.near < 10)], ['最近 0–5%', X.filter(r => r.near >= 0 && r.near < 5)], ['到过价内', X.filter(r => r.near < 0)]];
+  const T = X.filter(r => r.touched), Tw = T.filter(r => r.pnl > 0);
+  return `<div class="rk-sub-title">持有期间离行权价最近有多近 ${_qBtn('an_near', 'short')}</div>
+    <div class="rk-figs">${_anFig(T.length, `个到过价内 (共 ${X.length} 个)`, T.length ? 'rk-t-alert' : 'rk-t-safe')}${_anFig(T.length ? _anPc(Tw.length / T.length) : '—', '到过价内但最后赚钱', T.length ? (Tw.length / T.length >= 0.5 ? 'rk-t-safe' : 'rk-t-danger') : '', T.length ? `${Tw.length} / ${T.length} · 合计 ${_fmtSigned(T.reduce((s, r) => s + r.pnl, 0))}` : '')}</div>`
+    + _anCmp('按离行权价最近的距离', G, '', { metric: { name: '平均每个', f: g => g.s.avg, closeAbs: null } });
+}
+// after assignment: effective cost, how long until the stock got back there, calls sold meanwhile, the wheel three months on
+function _anWheelHTML(D, C) {
+  const A = C.filter(r => r.end === 'assigned'); if (!A.length) return '';
+  const calls = D.rows.filter(r => r.strat === 'cc' || r.strat === 'pmcc'), today = _todayISO();
+  const rows = A.map(r => { const last = r.last, q = r.q, net = r.L.slice(0, -1).reduce((s, u) => s + (u.pnl || 0), 0) + (last.openCash || 0), eff = last.strike - net / (100 * q), day = _tsDay(last.closeTs || Date.parse(last.expiry + 'T21:00:00Z'));
+    const B = _anBars(r.t), i = _anIdx(r.t, day); let back = null, gap = null, w3 = null;
+    if (i != null) { const k = B.slice(i + 1).findIndex(b => b.c >= eff); back = k >= 0 ? _anDays(day, B[i + 1 + k].d) : null; if (k < 0) gap = (B[B.length - 1].c / eff - 1) * 100; }
+    const cc = calls.filter(c => c.t === r.t && c.openTs >= Date.parse(day + 'T00:00:00Z') && c.openTs <= Date.parse(day + 'T00:00:00Z') + 120 * 864e5), ccGot = cc.reduce((s, c) => s + (c.done ? c.pnl : (c.head.openCash || 0)), 0);
+    if (i != null && B[i + 63]) { const cc3 = cc.filter(c => c.openTs <= Date.parse(B[i + 63].d + 'T23:00:00Z')).reduce((s, c) => s + (c.done ? c.pnl : (c.head.openCash || 0)), 0); w3 = (B[i + 63].c - eff) * 100 * q + cc3; }
+    return { r, eff, day, back, gap, cc, ccGot, w3, K: last.strike };
+  }).sort((a, b) => b.day.localeCompare(a.day));
+  const got = rows.filter(x => x.back != null), med = got.length ? got.map(x => x.back).sort((a, b) => a - b)[Math.floor(got.length / 2)] : null;
+  return `<div class="rk-sub-title">被行权之后 ${_qBtn('an_wheel', 'short')}</div><div class="rk-figs">${_anFig(rows.length, '次被行权接股')}${_anFig(`${got.length} / ${rows.length}`, '已经回到有效成本', got.length === rows.length ? 'rk-t-safe' : 'rk-t-alert')}${_anFig(med != null ? med + ' 天' : '—', '回到成本的中位天数')}</div>
+    <div class="rk-table-wrap"><table class="rk-table"><thead><tr><th>接股</th><th>日期</th><th>有效成本</th><th>回到成本</th><th>之后卖 CC</th><th>3 个月后整个轮子</th></tr></thead><tbody>
+    ${rows.map(x => `<tr><td><b>${esc(x.r.t)} ${x.K}</b> <span class="rk-quiet">× ${x.r.q * 100} 股</span></td><td>${x.day.slice(2).replace(/-/g, '/')}</td><td>${x.eff.toFixed(2)}</td>
+      <td>${x.back != null ? `<span class="${x.back <= 30 ? 'rk-t-safe' : x.back > 90 ? 'rk-t-alert' : ''}">${x.back} 天</span>` : `<span class="rk-t-danger">还没回到</span> <span class="rk-quiet">现在差 ${x.gap != null ? Math.abs(x.gap).toFixed(1) + '%' : '—'}</span>`}</td>
+      <td>${x.cc.length ? `${x.cc.length} 次 · ${_sg(x.ccGot)}` : '<span class="rk-quiet">没有</span>'}</td><td>${x.w3 != null ? _sg(x.w3) : '<span class="rk-quiet">还不到 3 个月</span>'}</td></tr>`).join('')}</tbody></table></div>`;
+}
+// LEAPS: the deepest it went against you while held, for the ones that ended up winning
+function _anDdHTML(X) {
+  const W = X.filter(r => r.dd != null && r.pnl > 0).map(r => r.dd).sort((a, b) => b - a), Lz = X.filter(r => r.dd != null && r.pnl <= 0).map(r => r.dd);
+  if (W.length + Lz.length < 2) return '';
+  const pctl = (A, p) => A.length ? A[Math.min(A.length - 1, Math.floor(p * A.length))] : null, avg = A => A.length ? A.reduce((s, v) => s + v, 0) / A.length : null, f = v => v == null ? '—' : `−${Math.abs(v).toFixed(0)}%`;
+  const p90 = pctl(W, 0.9);
+  return `<div class="rk-sub-title">持有期间最大浮亏 ${_qBtn('an_dd', 'short')}</div><div class="rk-figs">
+    ${_anFig(f(avg(W)), `赚钱的 ${W.length} 笔: 平均最大浮亏`, 'rk-t-alert')}${_anFig(f(p90), '赚钱的里 90% 没超过', 'rk-t-alert', W.length >= AN_MIN ? `可以作为止损的参考: 比这更深, 历史上大多没回来` : '样本不足')}
+    ${_anFig(f(W.length ? W[W.length - 1] : null), '赚钱的里最深的一次', 'rk-t-danger')}${_anFig(f(avg(Lz)), `亏钱的 ${Lz.length} 笔: 平均最大浮亏`, 'rk-t-danger')}</div>`;
+}
 function _anOverviewHTML(D) {
   const R = D.rows, by = k => R.filter(r => r.strat === k);
   const rowsHTML = ['csp', 'leaps', 'cc', 'pmcc', 'long'].filter(k => by(k).length).map(k => { const s = _anSt(by(k)); return `<tr><td><b>${_anName[k]}</b></td><td>${s.n}</td><td>${s.d}</td><td>${s.d >= AN_MIN ? `<span class="${s.win >= 0.6 ? 'rk-t-safe' : s.win < 0.45 ? 'rk-t-danger' : ''}">${_anPc(s.win)}</span>` : '<span class="rk-quiet">样本不足</span>'}</td><td>${_sg(s.pnl)}</td><td>${_sg(s.avg)}</td><td>${s.held != null ? s.held.toFixed(0) + ' 天' : '—'}</td></tr>`; }).join('');
@@ -16341,14 +16451,18 @@ function _anOverviewHTML(D) {
   const heat = months.length ? `<div class="rk-sub-title">月度盈亏 (按平仓月份) ${_qBtn('an_heat', 'short')}</div><div class="rk-table-wrap"><table class="rk-table an-heat"><thead><tr><th></th>${months.map(m => `<th>${m.slice(2).replace('-', '/')}</th>`).join('')}<th>合计</th></tr></thead><tbody>
     ${strats.concat(['__all']).map(k => { const vals = months.map(m => k === '__all' ? strats.reduce((s, z) => s + (cell[z + '|' + m] || 0), 0) : cell[k + '|' + m]); const tot = vals.reduce((s, v) => s + (v || 0), 0);
       return `<tr class="${k === '__all' ? 'rk-total' : ''}"><td><b>${k === '__all' ? '全部' : _anName[k]}</b></td>${vals.map(v => v == null || Math.abs(v) < 0.5 ? '<td class="rk-quiet">·</td>' : `<td style="background:${v > 0 ? `rgba(16,185,129,${(0.12 + 0.5 * Math.abs(v) / mx).toFixed(2)})` : `rgba(239,68,68,${(0.12 + 0.5 * Math.abs(v) / mx).toFixed(2)})`}">${Math.abs(v) >= 1000 ? `${v > 0 ? '+' : '−'}${(Math.abs(v) / 1000).toFixed(1)}k` : _fmtSigned(v)}</td>`).join('')}<td>${_sg(tot)}</td></tr>`; }).join('')}</tbody></table></div>` : '';
-  return `<div class="rk-sub-title">各个策略</div><div class="rk-table-wrap"><table class="rk-table"><thead><tr><th>策略</th><th>仓位</th><th>已结束</th><th>胜率</th><th>已实现</th><th>平均每个</th><th>平均持有</th></tr></thead><tbody>${rowsHTML}</tbody></table></div>${heat}`;
+  return `<div class="rk-sub-title">各个策略</div><div class="rk-table-wrap"><table class="rk-table"><thead><tr><th>策略</th><th>仓位</th><th>已结束</th><th>胜率</th><th>已实现</th><th>平均每个</th><th>平均持有</th></tr></thead><tbody>${rowsHTML}</tbody></table></div>${_anCurveSVG(D)}${heat}`;
 }
 function _anShortHTML(D, K0 = 'csp') {
   const C = D.rows.filter(r => r.strat === K0), X = C.filter(r => r.done), put = K0 === 'csp', NOUN = { csp: 'CSP', cc: 'CC', pmcc: 'PMCC 的 short call' }[K0], L1 = put ? 'P' : 'C', ASG = put ? '被行权接股' : '被 call 走';
   if (!C.length) return `<div class="rk-quiet">交易记录里还没有 ${NOUN}.</div>`;
   const s = _anSt(C), credit = X.reduce((a, r) => a + r.credit, 0), keep = credit ? X.reduce((a, r) => a + r.pnl, 0) / credit : null, rolled = C.filter(r => r.rolls > 0);
-  const figs = `<div class="rk-figs">${_anFig(s.n, `个 ${NOUN} · ${s.d} 个已结束`)}${_anFig(s.d ? _anPc(s.win) : '—', '落袋为安 (最终赚钱)', s.win == null ? '' : s.win >= 0.7 ? 'rk-t-safe' : s.win < 0.5 ? 'rk-t-danger' : 'rk-t-alert')}
-    ${_anFig(_fmtUsd(credit), '已结束的收到权利金')}${_anFig(_anPc(keep), '权利金实际留下的比例', keep == null ? '' : keep >= 0.6 ? 'rk-t-safe' : keep < 0.3 ? 'rk-t-danger' : 'rk-t-alert', `留下 ${_sg(X.reduce((a, r) => a + r.pnl, 0))}`)}
+  const realized = X.reduce((a, r) => a + r.pnl, 0);
+  let realHTML = _anFig(_fmtSigned(realized), '已实现盈亏', _thCls(realized), `${_anFrom(C)} 至今 · ${s.d} 个已结束`);
+  const basisHTML = K0 !== 'pmcc' ? '' : (() => { const a = C.filter(r => r.why === 'checklist').length, b = C.filter(r => r.why === 'leaps').length;
+    return `<div class="an-line rk-quiet">判断为 PMCC 的依据 ${_qBtn('an_pmcc_why', 'short')}: checklist 记录写 PMCC 的 <b>${a}</b> 个 · 卖出时同一只股票持有更远期的 long call (底仓) 的 <b>${b}</b> 个. 每一个的底仓在下面「按 ticker」里能看到.</div>`; })();
+  const figs = `<div class="rk-figs">${realHTML}${_anFig(s.n, `个 ${NOUN} · ${s.d} 个已结束`)}${_anFig(s.d ? _anPc(s.win) : '—', '落袋为安 (最终赚钱)', s.win == null ? '' : s.win >= 0.7 ? 'rk-t-safe' : s.win < 0.5 ? 'rk-t-danger' : 'rk-t-alert')}
+    ${_anFig(_fmtUsd(credit), '已结束的收到权利金')}${_anFig(_anPc(keep), '权利金实际留下的比例', keep == null ? '' : keep >= 0.6 ? 'rk-t-safe' : keep < 0.3 ? 'rk-t-danger' : 'rk-t-alert', '已实现 ÷ 收到的权利金')}
     ${_anFig(s.held != null ? s.held.toFixed(0) + ' 天' : '—', '平均持有')}${_anFig(rolled.length, 'roll 过', 'rk-t-acc', `<button class="app-link" onclick="showPerformance(); setTimeout(() => { const e = document.getElementById('rr-block'); if (e) e.scrollIntoView({ behavior: 'smooth' }); }, 900)">看 Roll 成绩单 ▸</button>`)}</div>`;
   const OUT = [['expired', '到期作废', 'good', '权利金全部留下'], ['tp', '买回止盈', 'mid', ''], ['loss', '买回止损', 'warn', ''], ['assigned', ASG, 'bad', ''], ['open', '进行中', 'muted', '']].map(([k, l, c, sub]) => [l, c, C.filter(r => r.end === k), sub]).filter(x => x[2].length);
   const outHTML = `<div class="rk-sub-title">最后怎么结束的 ${_qBtn('an_csp_end', 'short')}</div><div class="rr-stack">${OUT.map(([l, c, a]) => `<i class="rr-s-${c}" style="width:${(a.length / C.length * 100).toFixed(1)}%" title="${l} ${a.length}"></i>`).join('')}</div>
@@ -16356,12 +16470,14 @@ function _anShortHTML(D, K0 = 'csp') {
     ${rolled.length ? `<div class="rk-quiet an-line">其中 roll 过的 ${rolled.length} 个: ${['expired', 'tp', 'loss', 'assigned', 'open'].map(k => [k, rolled.filter(r => r.end === k).length]).filter(x => x[1]).map(([k, n]) => `${{ expired: '到期作废', tp: '买回赚', loss: '买回亏', assigned: put ? '被行权' : '被 call 走', open: '进行中' }[k]} ${n}`).join(' · ')}</div>` : ''}`;
   // the sweet spot
   const bucket = (f, edges, fmt) => edges.slice(0, -1).map((lo, i) => [fmt(lo, edges[i + 1]), X.filter(r => { const v = f(r); return v != null && v >= lo && v < edges[i + 1]; }).concat(C.filter(r => !r.done && (v => v != null && v >= lo && v < edges[i + 1])(f(r))))]);
-  const keepX = L => { const d = L.filter(r => r.done), c = d.reduce((a, r) => a + r.credit, 0); return c ? `<span class="${d.reduce((a, r) => a + r.pnl, 0) / c >= 0.6 ? 'rk-t-safe' : ''}">${_anPc(d.reduce((a, r) => a + r.pnl, 0) / c)}</span>` : '—'; };
+  const keepC = ['权利金留下', L => { const k = _anKeep(L); return k == null ? '—' : `<span class="${k >= 0.6 ? 'rk-t-safe' : k < 0 ? 'rk-t-danger' : ''}">${_anPc(k)}</span>`; }];
+  const annC = ['担保资金年化', L => { const v = _anAnn(L); return v == null ? '—' : `<span class="${v >= 0.2 ? 'rk-t-safe' : v < 0 ? 'rk-t-danger' : ''}">${_anPc(v, 1)}</span>`; }];
+  const SW = { cols: [keepC, annC], metric: { name: '担保资金年化', f: g => _anAnn(g.L), closeAbs: 0.02 } };
   const sweet = `<div class="an-grid">${[
-      _anCmp('按开仓时的 Δ', bucket(r => r.d0, [0, 0.15, 0.25, 0.35, 1.01], (a, b) => b > 1 ? `≥ ${a.toFixed(2)}` : `${a.toFixed(2)}–${b.toFixed(2)}`), 'an_delta', { extraH: '权利金留下', extra: keepX }),
-      _anCmp('按开仓时的 DTE', bucket(r => r.dte0, [0, 15, 31, 46, 9999], (a, b) => b > 999 ? `≥ ${a} 天` : `${a}–${b - 1} 天`), '', { extraH: '权利金留下', extra: keepX }),
-      _anCmp('按离行权价的距离', bucket(r => r.dist0, [-99, 5, 10, 15, 999], (a, b) => a < -9 ? '< 5%' : b > 99 ? `≥ ${a}%` : `${a}–${b}%`), '', { extraH: '权利金留下', extra: keepX }),
-      _anCmp('按开仓时的 IV', bucket(r => r.iv0 != null ? r.iv0 * 100 : null, [0, 30, 50, 70, 999], (a, b) => b > 99 ? `≥ ${a}%` : `${a}–${b}%`), '', { extraH: '权利金留下', extra: keepX })].join('')}</div>`;
+      _anCmp('按开仓时的 Δ', bucket(r => r.d0, [0, 0.15, 0.25, 0.35, 1.01], (a, b) => b > 1 ? `≥ ${a.toFixed(2)}` : `${a.toFixed(2)}–${b.toFixed(2)}`), 'an_delta', SW),
+      _anCmp('按开仓时的 DTE', bucket(r => r.dte0, [0, 15, 31, 46, 9999], (a, b) => b > 999 ? `≥ ${a} 天` : `${a}–${b - 1} 天`), '', SW),
+      _anCmp('按离行权价的距离', bucket(r => r.dist0, [-99, 5, 10, 15, 999], (a, b) => a < -9 ? '< 5%' : b > 99 ? `≥ ${a}%` : `${a}–${b}%`), '', SW),
+      _anCmp('按开仓时的 IV', bucket(r => r.iv0 != null ? r.iv0 * 100 : null, [0, 30, 50, 70, 999], (a, b) => b > 99 ? `≥ ${a}%` : `${a}–${b}%`), '', SW)].join('')}</div>`;
   // take-profit lines replayed
   const tps = [50, 65, 80], cur = _tpLine(), rp = _anTpReplay(D.rows, [...new Set(tps.concat([cur]))].sort((a, b) => a - b).concat([null]), K0);
   const ann = o => o.capDays ? o.pnl / o.capDays * 365 : null;
@@ -16381,18 +16497,21 @@ function _anShortHTML(D, K0 = 'csp') {
   // by ticker
   const T = Object.values(C.reduce((m, r) => { (m[r.t] = m[r.t] || { t: r.t, L: [] }).L.push(r); return m; }, {})).map(g => ({ ...g, s: _anSt(g.L), credit: g.L.filter(r => r.done).reduce((a, r) => a + r.credit, 0), asg: g.L.filter(r => r.end === 'assigned').length, rolled: g.L.filter(r => r.rolls).length }))
     .filter(g => !__anQ || g.t.includes(__anQ)).sort((a, b) => b.s.n - a.s.n || b.s.pnl - a.s.pnl);
+  T.forEach(g => { g.ann = g.s.d >= AN_MIN ? _anAnn(g.L) : null; });
+  const tBest = T.filter(g => g.ann != null).sort((a, b) => b.ann - a.ann)[0], tWorst = T.filter(g => g.ann != null).sort((a, b) => a.ann - b.ann)[0];
   const endN = { expired: '到期作废', tp: '买回止盈', loss: '买回止损', assigned: ASG, open: '进行中' };
   const tkHTML = `<div class="rk-sub-title rk-title-row rr-head"><span>按 ticker</span><span class="rr-ctl"><input id="an-q" class="gl-num" placeholder="搜索代码" value="${esc(__anQ)}" oninput="anSearch(this.value)"></span></div>
-    <div class="rk-table-wrap"><table class="rk-table rr-list"><thead><tr><th>标的</th><th>个数</th><th>落袋为安</th><th>留下 / 收到</th><th>${put ? '被行权' : '被 call 走'}</th><th>roll 过</th></tr></thead><tbody>
+    <div class="rk-table-wrap"><table class="rk-table rr-list"><thead><tr><th>标的</th><th>个数</th><th>落袋为安</th><th>留下 / 收到</th><th>担保资金年化</th><th>${put ? '被行权' : '被 call 走'}</th><th>roll 过</th></tr></thead><tbody>
     ${T.length ? T.map(g => { const open = !!__anOpen[K0 + ':' + g.t];
-      return `<tr class="gl-row" role="button" tabindex="0" onclick="anToggle('${K0}:${esc(g.t)}')"><td><b>${open ? '▾' : '▸'} ${esc(g.t)}</b></td><td>${g.s.n}${g.s.n > g.s.d ? ` <span class="rk-quiet">(${g.s.n - g.s.d} 进行中)</span>` : ''}</td>
+      return `<tr class="gl-row${g === tBest && T.filter(z => z.ann != null).length >= 2 ? ' an-best' : ''}" role="button" tabindex="0" onclick="anToggle('${K0}:${esc(g.t)}')"><td><b>${open ? '▾' : '▸'} ${esc(g.t)}</b>${g === tBest && T.filter(z => z.ann != null).length >= 2 ? ' <span class="rk-pill rr-tag good">最好</span>' : ''}${g === tWorst && g !== tBest && T.filter(z => z.ann != null).length >= 3 ? ' <span class="rk-pill rr-tag bad">最差</span>' : ''}</td><td>${g.s.n}${g.s.n > g.s.d ? ` <span class="rk-quiet">(${g.s.n - g.s.d} 进行中)</span>` : ''}</td>
         <td>${g.s.d ? `<span class="${g.s.win >= 0.7 ? 'rk-t-safe' : g.s.win < 0.5 ? 'rk-t-danger' : ''}">${_anPc(g.s.win)}</span>` : '—'}</td><td>${_sg(g.s.pnl)} <span class="rk-quiet">/ ${_fmtUsd(g.credit)}${g.credit ? ` · ${_anPc(g.s.pnl / g.credit)}` : ''}</span></td>
+        <td>${g.ann == null ? `<span class="rk-quiet">${g.s.d ? '样本不足' : '—'}</span>` : `<span class="${g.ann >= 0.2 ? 'rk-t-safe' : g.ann < 0 ? 'rk-t-danger' : ''}">${_anPc(g.ann, 1)}</span>`}</td>
         <td class="${g.asg ? 'rk-t-danger' : ''}">${g.asg || '—'}</td><td>${g.rolled || '—'}</td></tr>
-        ${open ? `<tr class="rr-detail"><td colspan="6"><div><table class="rk-table rr-steps"><thead><tr><th>开仓</th><th>合约</th><th>权利金</th><th>开仓 Δ</th><th>离行权价</th><th>结局</th><th>持有</th><th>留下</th></tr></thead><tbody>
-          ${g.L.slice().sort((a, b) => b.openTs - a.openTs).map(r => `<tr><td>${_tsDay(r.openTs).slice(2).replace(/-/g, '/')}</td><td>${r.K}${L1} ${esc(_md(r.exp))}${r.rolls ? ` <span class="rk-quiet">→ roll ${r.rolls} 次</span>` : ''}</td><td>${_fmtUsd(r.head.openCash || 0)}</td>
+        ${open ? `<tr class="rr-detail"><td colspan="7"><div><table class="rk-table rr-steps"><thead><tr><th>开仓</th><th>合约</th><th>权利金</th><th>开仓 Δ</th><th>离行权价</th><th>结局</th><th>持有</th><th>留下</th></tr></thead><tbody>
+          ${g.L.slice().sort((a, b) => b.openTs - a.openTs).map(r => `<tr><td>${_tsDay(r.openTs).slice(2).replace(/-/g, '/')}</td><td>${r.K}${L1} ${esc(_md(r.exp))}${r.rolls ? ` <span class="rk-quiet">→ roll ${r.rolls} 次</span>` : ''}${K0 === 'pmcc' ? ` <span class="rk-quiet">· ${r.base ? `底仓 ${r.base.K}C ${esc(_md(r.base.exp))}` : 'checklist 写 PMCC'}</span>` : ''}</td><td>${_fmtUsd(r.head.openCash || 0)}</td>
             <td>${r.d0 != null ? r.d0.toFixed(2) : '—'}</td><td>${r.dist0 != null ? r.dist0.toFixed(1) + '%' : '—'}</td><td class="${r.end === 'assigned' || r.end === 'loss' ? 'rk-t-danger' : r.end === 'expired' || r.end === 'tp' ? 'rk-t-safe' : ''}">${endN[r.end]}</td><td>${r.held} 天</td><td>${r.done ? _sg(r.pnl) : '<span class="rk-quiet">进行中</span>'}</td></tr>`).join('')}
-          </tbody></table></div></td></tr>` : ''}`; }).join('') : `<tr><td colspan="6" class="rk-quiet">没有符合「${esc(__anQ)}」的 ${NOUN}</td></tr>`}</tbody></table></div>`;
-  return figs + outHTML + (K0 === 'cc' ? _anCcAwayHTML(C) : K0 === 'pmcc' ? _anPmccPairsHTML(D, C) : '') + tpHTML + `<div class="rk-sub-title">开仓甜蜜区 ${_qBtn('an_sweet', 'short')}</div>` + sweet + calHTML + tkHTML;
+          </tbody></table></div></td></tr>` : ''}`; }).join('') : `<tr><td colspan="7" class="rk-quiet">没有符合「${esc(__anQ)}」的 ${NOUN}</td></tr>`}</tbody></table></div>`;
+  return figs + basisHTML + outHTML + _anWorstHTML(C, K0, NOUN) + _anNearHTML(C, K0) + (K0 === 'csp' ? _anWheelHTML(D, C) : '') + (K0 === 'cc' ? _anCcAwayHTML(C) : K0 === 'pmcc' ? _anPmccPairsHTML(D, C) : '') + tpHTML + `<div class="rk-sub-title">开仓甜蜜区 ${_qBtn('an_sweet', 'short')}</div>` + sweet + calHTML + tkHTML;
 }
 // CC: after being called away, how much further did the stock go (the upside you gave up)
 function _anCcAwayHTML(C) {
@@ -16404,9 +16523,7 @@ function _anCcAwayHTML(C) {
 }
 // PMCC: for each LEAPS, how much of its cost the calls sold against it earned back
 function _anPmccPairsHTML(D, C) {
-  // each short call belongs to one LEAPS: the latest one on that stock opened before it and still held
-  const longs = D.rows.filter(r => r.strat === 'leaps' || r.strat === 'long'), owner = new Map();
-  C.forEach(c => { const l = longs.filter(z => z.t === c.t && z.openTs <= c.openTs + 864e5 && (!z.closeTs || z.closeTs >= c.openTs)).sort((a, b) => b.openTs - a.openTs)[0]; if (l) owner.set(c, l); });
+  const owner = _anPmccOwners(D, C);
   const LP = [...new Set(owner.values())];
   if (!LP.length) return '';
   const rows = LP.map(l => { const S = C.filter(c => owner.get(c) === l), got = S.filter(c => c.done).reduce((s, c) => s + c.pnl, 0);
@@ -16421,25 +16538,32 @@ function _anLeapsHTML(D) {
   const L = D.rows.filter(r => r.strat === 'leaps'), X = L.filter(r => r.done);
   if (!L.length) return '<div class="rk-quiet">交易记录里还没有 LEAPS (开仓时 ≥ 270 天的 long call).</div>';
   const s = _anSt(L), avgRet = X.length ? X.reduce((a, r) => a + (r.ret || 0), 0) / X.length : null;
-  const figs = `<div class="rk-figs">${_anFig(s.n, `笔 LEAPS · ${s.d} 笔已平仓`)}${_anFig(s.d >= AN_MIN ? _anPc(s.win) : s.d ? _anPc(s.win) : '—', '胜率', s.win == null ? '' : s.win >= 0.6 ? 'rk-t-safe' : s.win < 0.45 ? 'rk-t-danger' : '')}
-    ${_anFig(avgRet != null ? `${avgRet >= 0 ? '+' : '−'}${Math.abs(avgRet).toFixed(0)}%` : '—', '平均收益率', avgRet == null ? '' : avgRet >= 0 ? 'rk-t-safe' : 'rk-t-danger')}${_anFig(_sg(s.pnl), '已实现合计', _thCls(s.pnl))}${_anFig(s.held != null ? s.held.toFixed(0) + ' 天' : '—', '平均持有')}</div>`;
+  const figs = `<div class="rk-figs">${_anFig(_fmtSigned(s.pnl), '已实现盈亏', _thCls(s.pnl), `${_anFrom(L)} 至今 · ${s.d} 笔已平仓`)}${_anFig(s.n, `笔 LEAPS · ${s.d} 笔已平仓`)}${_anFig(s.d >= AN_MIN ? _anPc(s.win) : s.d ? _anPc(s.win) : '—', '胜率', s.win == null ? '' : s.win >= 0.6 ? 'rk-t-safe' : s.win < 0.45 ? 'rk-t-danger' : '')}
+    ${_anFig(avgRet != null ? `${avgRet >= 0 ? '+' : '−'}${Math.abs(avgRet).toFixed(0)}%` : '—', '平均收益率', avgRet == null ? '' : avgRet >= 0 ? 'rk-t-safe' : 'rk-t-danger')}${_anFig(s.held != null ? s.held.toFixed(0) + ' 天' : '—', '平均持有')}</div>`;
   // entry timing: how far it fell and rose after you bought
   const avg = (A, f) => { const v = A.map(f).filter(x => x != null); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; }, pct = v => v == null ? '—' : `${v >= 0 ? '+' : '−'}${Math.abs(v).toFixed(1)}%`;
   const tg = [['全部', L], ['MJ2 有买入信号', L.filter(r => r.mj2 === true)], ['MJ2 没有信号', L.filter(r => r.mj2 === false)], ['第一次开仓', L.filter(r => !r.add)], ['加仓', L.filter(r => r.add)]].filter(g => g[1].length);
-  const timing = `<div class="rk-sub-title">开仓点位 ${_qBtn('an_mae', 'short')}</div><div class="rk-table-wrap"><table class="rk-table"><thead><tr><th></th><th>笔数</th><th>30 天内最多跌 / 涨</th><th>60 天内</th><th>90 天内</th></tr></thead><tbody>
+  const tgOK = tg.filter(([l, A]) => l !== '全部' && A.filter(r => r.w30).length >= AN_MIN).map(([l, A]) => [l, avg(A, r => r.w30 && r.w30.mae)]).filter(x => x[1] != null).sort((a, b) => b[1] - a[1]);
+  const tgBest = tgOK.length >= 2 ? tgOK[0][0] : null;
+  const timing = `<div class="rk-sub-title">开仓点位 ${_qBtn('an_mae', 'short')}${tgBest ? ' <span class="rk-quiet an-by">按 30 天内回撤评</span>' : ''}</div><div class="rk-table-wrap"><table class="rk-table"><thead><tr><th></th><th>笔数</th><th>30 天内最多跌 / 涨</th><th>60 天内</th><th>90 天内</th></tr></thead><tbody>
     ${tg.map(([l, A]) => { const small = A.filter(r => r.w30).length < AN_MIN; const c = w => { const a = avg(A, r => r[w] && r[w].mae), b = avg(A, r => r[w] && r[w].mfe); return small ? '<span class="rk-quiet">样本不足</span>' : `<span class="${a <= -10 ? 'rk-t-danger' : a <= -5 ? 'rk-t-alert' : 'rk-t-safe'}">${pct(a)}</span> / <span class="rk-t-safe">${pct(b)}</span>`; };
-      return `<tr class="${small ? 'an-small' : ''}"><td><b>${l}</b></td><td>${A.length}</td><td>${c('w30')}</td><td>${c('w60')}</td><td>${c('w90')}</td></tr>`; }).join('')}</tbody></table></div>`;
+      return `<tr class="${small ? 'an-small' : ''}${l === tgBest ? ' an-best' : ''}"><td><b>${l}</b>${l === tgBest ? ' <span class="rk-pill rr-tag good">回撤最小</span>' : ''}</td><td>${A.length}</td><td>${c('w30')}</td><td>${c('w60')}</td><td>${c('w90')}</td></tr>`; }).join('')}</tbody></table></div>`;
   // exit efficiency
   const E = X.filter(r => r.eff != null), ae = avg(E, r => r.eff), aa = avg(X.filter(r => r.after != null), r => r.after);
-  const effHTML = `<div class="rk-sub-title">退出效率 ${_qBtn('an_eff', 'short')}</div>${E.length < AN_MIN ? `<div class="rk-quiet">可以计算的已平仓 LEAPS 只有 ${E.length} 笔, 样本不足.</div>` : `<div class="rk-figs">${_anFig(_anPc(ae), '平均拿到了持有期间最大涨幅的', ae >= 0.7 ? 'rk-t-safe' : ae < 0.4 ? 'rk-t-danger' : 'rk-t-alert')}
-      ${_anFig(_anPc(E.filter(r => r.eff < 0.4).length / E.length), '拿到不到 40% (回吐多)', 'rk-t-alert')}${_anFig(aa != null ? pct(aa) : '—', '平仓后 1 个月正股又涨 / 跌', aa == null ? '' : aa > 5 ? 'rk-t-alert' : 'rk-t-safe', aa != null && aa > 5 ? '平均还在涨: 可能卖得偏早' : '')}</div>`}`;
+  const effHTML = `<div class="rk-sub-title">退出效率 ${_qBtn('an_eff', 'short')}</div>${E.length < AN_MIN ? `<div class="rk-quiet">可以计算的已平仓 LEAPS 只有 ${E.length} 笔, 样本不足.</div>` : `<div class="rk-figs">${_anFig(_anPc(ae), '平均拿到了持有期间最大涨幅的', ae >= 0.7 ? 'rk-t-safe' : ae < 0.4 ? 'rk-t-danger' : 'rk-t-alert', '', 'an_eff_avg')}
+      ${_anFig(_anPc(E.filter(r => r.eff < 0.4).length / E.length), '的平仓拿到不到 40% (回吐多)', 'rk-t-alert', `${E.filter(r => r.eff < 0.4).length} / ${E.length} 笔`, 'an_eff_low')}${_anFig(aa != null ? pct(aa) : '—', '平仓后 1 个月正股又涨 / 跌', aa == null ? '' : aa > 5 ? 'rk-t-alert' : 'rk-t-safe', aa != null && aa > 5 ? '平均还在涨: 可能卖得偏早' : '', 'an_eff_after')}</div>`}`;
   const sizeG = [['< 3% NAV', X.filter(r => r.size != null && r.size < 3)], ['3–6% NAV', X.filter(r => r.size != null && r.size >= 3 && r.size < 6)], ['≥ 6% NAV', X.filter(r => r.size != null && r.size >= 6)]];
-  const retX = A => { const v = A.filter(r => r.ret != null); return v.length ? `<span class="${avg(v, r => r.ret) >= 0 ? 'rk-t-safe' : 'rk-t-danger'}">${pct(avg(v, r => r.ret))}</span>` : '—'; };
-  return figs + timing + effHTML + `<div class="an-grid">`
-    + _anCmp('纪律: 6 个月线', [['6 个月线之前退出', X.filter(r => r.exitDte != null && r.exitDte >= 180)], ['过了 6 个月线才退', X.filter(r => r.exitDte != null && r.exitDte < 180)]], 'an_disc', { extraH: '平均收益率', extra: retX })
-    + _anCmp('仓位大小', sizeG, 'an_size', { extraH: '平均收益率', extra: retX })
-    + _anCmp('第一次开仓 vs 加仓', [['第一次开仓', X.filter(r => !r.add)], ['加仓', X.filter(r => r.add)]], '', { extraH: '平均收益率', extra: retX })
-    + _anCmp('风格', [['替代正股', X.filter(r => r.style === 'stock_sub')], ['平衡', X.filter(r => r.style === 'balanced')], ['波段', X.filter(r => r.style === 'swing')], ['没有 checklist 记录', X.filter(r => !r.style)]], '', { extraH: '平均收益率', extra: retX }) + '</div>';
+  const RT = { cols: [['平均收益率', A => { const v = _anRet(A); return v == null ? '—' : `<span class="${v >= 0 ? 'rk-t-safe' : 'rk-t-danger'}">${pct(v)}</span>`; }]], metric: { name: '平均收益率', f: g => _anRet(g.L), closeAbs: 5 } };
+  const ctxHTML = `<div class="rk-sub-title">开仓条件</div><div class="an-grid">`
+    + _anCmp('开仓时的价内程度', [['深度价内 (> 15%)', X.filter(r => r.mny != null && r.mny > 15)], ['价内 5–15%', X.filter(r => r.mny != null && r.mny > 5 && r.mny <= 15)], ['接近平值 ±5%', X.filter(r => r.mny != null && Math.abs(r.mny) <= 5)], ['价外 (< −5%)', X.filter(r => r.mny != null && r.mny < -5)]], 'an_mny', RT)
+    + _anCmp('开仓时的 DTE', [['< 400 天', X.filter(r => r.dte0 < 400)], ['400–600 天', X.filter(r => r.dte0 >= 400 && r.dte0 < 600)], ['≥ 600 天', X.filter(r => r.dte0 >= 600)]], '', RT)
+    + _anCmp('开仓时离 52 周高点', [['< 5%', X.filter(r => r.off52 != null && r.off52 > -5)], ['5–15%', X.filter(r => r.off52 != null && r.off52 <= -5 && r.off52 > -15)], ['15–30%', X.filter(r => r.off52 != null && r.off52 <= -15 && r.off52 > -30)], ['> 30%', X.filter(r => r.off52 != null && r.off52 <= -30)]], 'an_off52', RT)
+    + _anCmp('持有时间', [['< 30 天', X.filter(r => r.held < 30)], ['30–90 天', X.filter(r => r.held >= 30 && r.held < 90)], ['90–180 天', X.filter(r => r.held >= 90 && r.held < 180)], ['≥ 180 天', X.filter(r => r.held >= 180)]], '', RT) + '</div>';
+  return figs + timing + _anDdHTML(X) + effHTML + ctxHTML + `<div class="rk-sub-title">纪律和仓位</div><div class="an-grid">`
+    + _anCmp('纪律: 6 个月线', [['6 个月线之前退出', X.filter(r => r.exitDte != null && r.exitDte >= 180)], ['过了 6 个月线才退', X.filter(r => r.exitDte != null && r.exitDte < 180)]], 'an_disc', RT)
+    + _anCmp('仓位大小', sizeG, 'an_size', RT)
+    + _anCmp('第一次开仓 vs 加仓', [['第一次开仓', X.filter(r => !r.add)], ['加仓', X.filter(r => r.add)]], '', RT)
+    + _anCmp('风格', [['替代正股', X.filter(r => r.style === 'stock_sub')], ['平衡', X.filter(r => r.style === 'balanced')], ['波段', X.filter(r => r.style === 'swing')], ['没有 checklist 记录', X.filter(r => !r.style)]], '', RT) + '</div>';
 }
 function _anBehaviorHTML(D) {
   const pick = __anStrat === 'all' ? D.rows.filter(r => r.strat !== 'long') : D.rows.filter(r => r.strat === __anStrat);
