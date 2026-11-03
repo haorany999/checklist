@@ -3705,6 +3705,8 @@
   .cv-legend { margin-top: 6px; align-items: center; } .cv-leg { background: none; border: 1px solid transparent; border-radius: 4px; padding: 3px 6px; color: var(--text); cursor: pointer; font-size: 12.5px; } .cv-leg:hover { border-color: var(--border); } .cv-leg.off { opacity: 0.4; text-decoration: line-through; }
   .cv-hint { font-size: 11.5px; margin-left: auto; } .cv-empty { padding: 30px 0; text-align: center; } .cv-note { font-size: 11.5px; margin-top: 4px; }
   @media (max-width: 640px) { .cv-mode { margin-left: 0; } .cv-legend .cv-hint { margin-left: 0; width: 100%; } .cv-figs { grid-template-columns: repeat(3, minmax(0, 1fr)); } .cv-fig b { font-size: 14px; } }
+  .cv-fig.cv-vs { grid-column: span 2; } .cv-vs-row { display: flex; align-items: baseline; gap: 12px; } .cv-vs-row > span { display: flex; flex-direction: column; } .cv-vs-row > i { font-style: normal; color: var(--text-faint); font-size: 12px; }
+  .cv-vs em { font-family: var(--sans); } @media (max-width: 640px) { .cv-fig.cv-vs { grid-column: span 3; } }
 </style>
 </head>
 <body class="theme-slate">
@@ -5759,7 +5761,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.17-v118';
+const APP_BUILD = '2026.10.17-v119';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
@@ -14202,6 +14204,7 @@ const GREEK_HELP = {
   roll_score: { t: '分数', def: '先看能不能收到净收入: 能收到的永远排在倒贴的前面. 同一组里按 100 分打分: 时间 35 (延长越少越好, 想早点结束), 行权价改善 25 (降得越多越好, 但边际递减), 净收入 15 (收得越多越好, 有上限), Δ 15 (在合理区间就满分, 不是越低越好), 流动性 10 (OI 和买卖价差). 只 roll out 时行权价不变, 那 25 分归到时间.',
     read: '点一行可以看分数每一项是怎么来的. 权重和区间都能在页面底部的「规则和权重」里调.', note: '净收入优先, 再看谁最快结束、降得最有意义.' },
   assign_out: { t: '被行权的结果', def: 'CSP: 被行权接股后的有效成本 (行权价 − 收到的权利金), 和现价比. 比现价高 = 接股后马上是浮亏. Short call: 行权价和你这只股票的调整后成本 (Schwab 均价减去卖期权降低的部分) 比, 高 = 被 call 走也赚钱, 低 = 被 call 走会亏.', note: '两张表用同一组列, 这一列各自显示对这个策略最重要的那个结果.' },
+  an_twr: { t: '你的账户 vs SPY', def: '你的账户这段时间的时间加权收益率 (TWR): 把每天收盘的 NAV 连起来, 每一天的收益 = (当天 NAV − 当天的入金出金) ÷ 前一天 NAV − 1, 再连乘. 入金出金不算赚的钱, 也不受金额大小的影响, 和 SPY 的涨跌可以直接比. 它包括已实现和未实现, 所以和上面的「区间已实现」不是同一个数.', ex: '1 月 1 日 NAV $100,000; 1 月 15 日入金 $20,000, 当天收盘 NAV $125,000: 这半个月的收益 = (125,000 − 20,000) ÷ 100,000 − 1 = +5%. 1 月 31 日 NAV $131,250: 后半个月 = 131,250 ÷ 125,000 − 1 = +5%. 合起来 = 1.05 × 1.05 − 1 = +10.25%, 而不是 (131,250 − 100,000) ÷ 100,000 = +31% (那里面有 2 万是你存进去的).', note: '每天的 NAV 来自 Worker 收盘时记下的快照, 只从开始记录的那天起有; 所选范围更早时, 从第一天有记录的开始算, SPY 也按同一段时间算. 图例里每个策略后面的 % 是占合计的比例, 不是收益率.' },
   an_ret: { t: 'LEAPS 的收益率', def: '每笔 = 这一笔已实现的盈亏 ÷ 这一笔的成本, 不管拿了多久; 「平均收益率」是这些数字的简单平均. 「资金年化」= 合计盈亏 ÷ (每笔成本 × 持有天数之和) × 365, 把时间算进去, 和 CSP 的「担保资金年化」是同一个口径.', ex: '一笔拿 30 天赚 20%, 一笔拿 365 天赚 20%: 平均收益率都是 20%; 资金年化分别约 243% 和 20%, 合在一起约 37%.', note: 'LEAPS 的「最好」按每笔的平均收益率评: 你关心的是每一笔赚多少, 拿得久的在年化上会显得吃亏.' },
   an_curve: { t: '累计已实现', def: '按平仓日期把每个策略的已实现盈亏一笔一笔加起来, 从所选时间范围的第一天从 0 开始. 线一直向上 = 这个策略在稳定赚钱; 一段横着或向下 = 那段时间在拖后腿. 浅红色区域 = 「全部」从最高点回落的部分 (回撤); 圆点 = 这段时间里金额最大的 5 笔. 「全部」不含短期 long call.', ex: '选 YTD: 今年 1 月 1 日从 0 开始. 鼠标放在图上看那一天每个策略累计到多少、当天结束了哪几笔. 在图上拖选 3 月到 5 月就只看这三个月, 双击回到全部.', note: '「最大回撤」= 这段时间里「全部」从某个高点到之后最低点回落了多少.' },
   an_worst: { t: '最大的几笔亏损', def: '已结束的仓位里亏得最多的 5 笔 (roll 过的整条链算一笔), 列出开仓时的条件. 「共同点」把它们的平均值和其他所有已结束的同类仓位比, 差别明显的才列出来.', ex: '如果最大的 5 笔亏损开仓 Δ 平均 0.33, 而其他平均 0.21, 说明你的大亏主要来自 Δ 偏高的开仓; 以后把 Δ 上限压低, 往往比提高胜率更能改善长期结果.', note: '尾部亏损往往决定了卖方策略的长期结果: 赚 20 笔小钱, 一笔大亏就能吐回去.' },
@@ -16480,6 +16483,20 @@ window.cvDate = (which, v) => { const t = Date.parse(v + 'T12:00:00Z'); if (!isF
   __cv.preset = 'custom'; __cv.from = which === 'from' ? t : (__cv.from || a); __cv.to = which === 'to' ? t : (__cv.to || b); if (__cv.from > __cv.to) [__cv.from, __cv.to] = [__cv.to, __cv.from]; _cvRedraw(); };
 function _cvRedraw() { const el = document.getElementById('an-cv'); if (el) el.outerHTML = _cvBlockHTML(__anMemo.v || _anData()); }
 // the chart's data for the chosen range
+// your account's time-weighted return over [t0, t1]: daily NAVs linked, deposits / withdrawals taken out; the same span is used for SPY
+let __cvFlows = { key: null, v: [] };
+function _cvTWR(t0, t1) {
+  const ymd = t => new Date(t).toISOString().slice(0, 10), a = ymd(t0), b = ymd(t1), today = _todayISO();
+  const pts = ((loadNavs() || {}).data || []).filter(x => x && x[0] && x[1] > 0).map(x => [String(x[0]).slice(0, 10), +x[1]]).sort((p, q) => p[0] < q[0] ? -1 : 1);
+  const ps = loadPerfStart(); Object.entries(ps).forEach(([y, v]) => { if (v > 0) pts.push([`${y}-01-01`, +v]); });
+  const nav = getPortfolio().nav; if (nav > 0 && b >= today) pts.push([today, nav]);
+  const S = [...new Map(pts.sort((p, q) => p[0] < q[0] ? -1 : 1).map(p => [p[0], p])).values()].filter(p => p[0] >= a && p[0] <= b);
+  if (S.length < 2) return null;
+  const h = loadHist(); if (h && __cvFlows.key !== h.at) { try { __cvFlows = { key: h.at, v: buildPerfLots(h.data).flows || [] }; } catch (e) { __cvFlows = { key: h.at, v: [] }; } }
+  const F = __cvFlows.v.map(f => [ymd(f.ts), f.amt || 0]);
+  let g = 1; for (let i = 1; i < S.length; i++) { const flow = F.filter(([d]) => d > S[i - 1][0] && d <= S[i][0]).reduce((s, [, v]) => s + v, 0); g *= (S[i][1] - flow) / S[i - 1][1]; }
+  return { pct: (g - 1) * 100, from: S[0][0], to: S[S.length - 1][0], n: S.length, flows: F.filter(([d]) => d > S[0][0] && d <= S[S.length - 1][0]).length };
+}
 function _cvBuild(D) {
   const X = D.rows.filter(r => r.done && r.closeTs && r.strat !== 'long').sort((a, b) => a.closeTs - b.closeTs), [t0, t1] = _cvRange(X);
   const R = X.filter(r => { const t = _cvDay(r.closeTs); return t >= t0 && t <= t1; });
@@ -16499,13 +16516,18 @@ function _cvBlockHTML(D) {
   const all = C.series.find(s => s.k === 'all'), tot = all ? all.end : 0, w = C.R.filter(r => r.pnl > 0).length;
   const mon = {}; C.R.forEach(r => { const m = _tsDay(r.closeTs).slice(0, 7); mon[m] = (mon[m] || 0) + r.pnl; }); const ms = Object.entries(mon).sort((a, b) => b[1] - a[1]);
   let peak = 0, mdd = 0, ddFrom = null, ddTo = null, pk = C.t0; (all ? all.v : []).forEach((v, i) => { if (v > peak) { peak = v; pk = C.days[i]; } if (peak - v > mdd) { mdd = peak - v; ddFrom = pk; ddTo = C.days[i]; } });
-  const spy = _anBars('SPY'), si0 = _anIdx('SPY', ymd(C.t0)), si1 = _anIdx('SPY', ymd(C.t1)), spyChg = si0 != null && si1 != null ? (spy[si1].c / spy[si0].c - 1) * 100 : null;
+  const tw = (() => { try { return _cvTWR(C.t0, C.t1); } catch (e) { return null; } })(), spy = _anBars('SPY');
+  const si0 = _anIdx('SPY', tw ? tw.from : ymd(C.t0)), si1 = _anIdx('SPY', tw ? tw.to : ymd(C.t1)), spyChg = si0 != null && si1 != null ? (spy[si1].c / spy[si0].c - 1) * 100 : null;
+  const pp = v => `${v >= 0 ? '+' : '−'}${Math.abs(v).toFixed(1)}%`;
+  const vsHTML = (() => { const d = tw && spyChg != null ? tw.pct - spyChg : null, cut = tw && tw.from > ymd(C.t0) + '';
+    return `<div class="cv-fig cv-vs"><div class="cv-vs-row"><span><b class="${tw ? _rCls(tw.pct / 100) : ''}">${tw ? pp(tw.pct) : '—'}</b><span>你的账户</span></span><i>vs</i><span><b class="${_rCls(spyChg != null ? spyChg / 100 : null)}">${spyChg != null ? pp(spyChg) : '—'}</b><span>SPY</span></span></div>
+      <em>${d == null ? (tw ? '没有 SPY 日线' : '这段时间没有每天的 NAV 记录') : `<span class="${d >= 0 ? 'rk-t-safe' : 'rk-t-danger'}">${d >= 0 ? '跑赢' : '跑输'} ${Math.abs(d).toFixed(1)} 个百分点</span>`}${tw ? ` · TWR ${tw.from.slice(2).replace(/-/g, '/')} → ${tw.to.slice(2).replace(/-/g, '/')}${cut ? ' (更早没有 NAV 记录)' : ''}` : ''} ${_qBtn('an_twr', 'short')}</em></div>`; })();
   const fig = (v, l, cls = '', sub = '') => `<div class="cv-fig"><b class="${cls}">${v}</b><span>${l}</span>${sub ? `<em>${sub}</em>` : ''}</div>`;
   const md = m => m.slice(2).replace('-', '/');
   const sum = `<div class="cv-figs">${fig(_fmtSigned(tot), '区间已实现', _thCls(tot), `${C.R.length} 个仓位结束`)}${fig(C.R.length ? _anPc(w / C.R.length) : '—', '胜率', C.R.length ? (w / C.R.length >= 0.6 ? 'rk-t-safe' : w / C.R.length < 0.45 ? 'rk-t-danger' : '') : '')}
     ${fig(ms.length ? _fmtSigned(ms[0][1]) : '—', '最好的月', ms.length && ms[0][1] > 0 ? 'rk-t-safe' : '', ms.length ? md(ms[0][0]) : '')}${fig(ms.length ? _fmtSigned(ms[ms.length - 1][1]) : '—', '最差的月', ms.length && ms[ms.length - 1][1] < 0 ? 'rk-t-danger' : '', ms.length ? md(ms[ms.length - 1][0]) : '')}
-    ${fig(mdd > 0.5 ? '−' + _fmtUsd(mdd) : '$0', '最大回撤', mdd > 0.5 ? 'rk-t-danger' : '', mdd > 0.5 ? `${ymd(ddFrom).slice(2).replace(/-/g, '/')} → ${ymd(ddTo).slice(2).replace(/-/g, '/')}` : '')}${fig(spyChg != null ? `${spyChg >= 0 ? '+' : '−'}${Math.abs(spyChg).toFixed(1)}%` : '—', '同期 SPY', _rCls(spyChg != null ? spyChg / 100 : null))}</div>`;
-  const legend = `<div class="rk-legend cv-legend">${C.series.map(s => `<button class="cv-leg${s.hidden ? ' off' : ''}" onclick="cvToggle('${s.k}')"><i class="rk-sw" style="background:${s.c}"></i>${s.l} ${_sg(s.end)}${s.k !== 'all' && tot && Math.abs(tot) > 0.5 ? ` <span class="rk-quiet">${Math.round(s.end / Math.abs(tot) * 100)}%</span>` : ''}</button>`).join('')}<span class="rk-quiet cv-hint">${narrow ? '点图例隐藏 / 显示 · 按住图左右滑动看每一天' : '点图例隐藏 / 显示 · 在图上拖选一段放大, 双击回到全部'}</span></div>`;
+    ${fig(mdd > 0.5 ? '−' + _fmtUsd(mdd) : '$0', '最大回撤', mdd > 0.5 ? 'rk-t-danger' : '', mdd > 0.5 ? `${ymd(ddFrom).slice(2).replace(/-/g, '/')} → ${ymd(ddTo).slice(2).replace(/-/g, '/')}` : '')}${vsHTML}</div>`;
+  const legend = `<div class="rk-legend cv-legend">${C.series.map(s => `<button class="cv-leg${s.hidden ? ' off' : ''}" onclick="cvToggle('${s.k}')"><i class="rk-sw" style="background:${s.c}"></i>${s.l} ${_sg(s.end)}${s.k !== 'all' && tot && Math.abs(tot) > 0.5 ? ` <span class="rk-quiet">占合计 ${Math.round(s.end / Math.abs(tot) * 100)}%</span>` : ''}</button>`).join('')}<span class="rk-quiet cv-hint">${narrow ? '点图例隐藏 / 显示 · 按住图左右滑动看每一天' : '点图例隐藏 / 显示 · 在图上拖选一段放大, 双击回到全部'}</span></div>`;
   const body = !C.R.length ? '<div class="rk-quiet cv-empty">这个时间范围里没有已结束的仓位.</div>' : __cv.mode === 'month' ? _cvMonthSVG(C) : _cvLineSVG(C, ddFrom, ddTo);
   return `<div id="an-cv" class="an-cv"><div class="rk-sub-title">累计已实现 ${_qBtn('an_curve', 'short')}</div>${ctl}${sum}<div class="cv-wrap">${body}<div class="cv-tip" id="cv-tip" hidden></div></div>${legend}</div>`;
 }
