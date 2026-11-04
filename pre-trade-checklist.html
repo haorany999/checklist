@@ -3707,6 +3707,7 @@
   @media (max-width: 640px) { .cv-mode { margin-left: 0; } .cv-legend .cv-hint { margin-left: 0; width: 100%; } .cv-figs { grid-template-columns: repeat(3, minmax(0, 1fr)); } .cv-fig b { font-size: 14px; } }
   .cv-fig.cv-vs { grid-column: span 2; } .cv-vs-row { display: flex; align-items: baseline; gap: 12px; } .cv-vs-row > span { display: flex; flex-direction: column; } .cv-vs-row > i { font-style: normal; color: var(--text-faint); font-size: 12px; }
   .cv-vs em { font-family: var(--sans); } @media (max-width: 640px) { .cv-fig.cv-vs { grid-column: span 3; } }
+  td.mk-cell { font-family: var(--mono); font-weight: 600; }
 </style>
 </head>
 <body class="theme-slate">
@@ -5761,7 +5762,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.17-v119';
+const APP_BUILD = '2026.10.17-v121';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
@@ -13055,6 +13056,7 @@ function _thCls(v) { return v == null || Math.abs(v) < 0.5 ? '' : v > 0 ? 'rk-t-
   const start = () => { fix(document.body); mo.observe(document.body, { childList: true, subtree: true, characterData: true }); };
   if (document.body) start(); else document.addEventListener('DOMContentLoaded', start);
 })();
+const _markTd = x => `<td class="mk-cell">${x && x.und > 0 ? x.und.toFixed(2) : '—'}</td>`;   // the underlying's last price
 const _rCls = v => v == null || !isFinite(v) ? '' : v > 0.0005 ? 'rk-t-safe' : v < -0.0005 ? 'rk-t-danger' : '';   // for ratios (0.05 = 5%)
 const _sg = v => v == null ? '—' : `<span class="${_thCls(v)}">${_fmtSigned(v)}</span>`;
 const _sgP = (v, d = 1) => v == null || !isFinite(v) ? '—' : `<span class="${Math.abs(v) < 0.05 ? '' : v > 0 ? 'rk-t-safe' : 'rk-t-danger'}">${v >= 0 ? '+' : '−'}${Math.abs(v).toFixed(d)}%</span>`;
@@ -14204,6 +14206,7 @@ const GREEK_HELP = {
   roll_score: { t: '分数', def: '先看能不能收到净收入: 能收到的永远排在倒贴的前面. 同一组里按 100 分打分: 时间 35 (延长越少越好, 想早点结束), 行权价改善 25 (降得越多越好, 但边际递减), 净收入 15 (收得越多越好, 有上限), Δ 15 (在合理区间就满分, 不是越低越好), 流动性 10 (OI 和买卖价差). 只 roll out 时行权价不变, 那 25 分归到时间.',
     read: '点一行可以看分数每一项是怎么来的. 权重和区间都能在页面底部的「规则和权重」里调.', note: '净收入优先, 再看谁最快结束、降得最有意义.' },
   assign_out: { t: '被行权的结果', def: 'CSP: 被行权接股后的有效成本 (行权价 − 收到的权利金), 和现价比. 比现价高 = 接股后马上是浮亏. Short call: 行权价和你这只股票的调整后成本 (Schwab 均价减去卖期权降低的部分) 比, 高 = 被 call 走也赚钱, 低 = 被 call 走会亏.', note: '两张表用同一组列, 这一列各自显示对这个策略最重要的那个结果.' },
+  mark_und: { t: 'Mark', def: '这只股票 (标的) 现在的价格, 不是期权本身的价格. 和「距行权价」放在一起, 不用点开就能看到现价离行权价多远.', note: '价格来自最近一次 Schwab 持仓刷新; 想要最新的就点右上角刷新.' },
   an_twr: { t: '你的账户 vs SPY', def: '你的账户这段时间的时间加权收益率 (TWR): 把每天收盘的 NAV 连起来, 每一天的收益 = (当天 NAV − 当天的入金出金) ÷ 前一天 NAV − 1, 再连乘. 入金出金不算赚的钱, 也不受金额大小的影响, 和 SPY 的涨跌可以直接比. 它包括已实现和未实现, 所以和上面的「区间已实现」不是同一个数.', ex: '1 月 1 日 NAV $100,000; 1 月 15 日入金 $20,000, 当天收盘 NAV $125,000: 这半个月的收益 = (125,000 − 20,000) ÷ 100,000 − 1 = +5%. 1 月 31 日 NAV $131,250: 后半个月 = 131,250 ÷ 125,000 − 1 = +5%. 合起来 = 1.05 × 1.05 − 1 = +10.25%, 而不是 (131,250 − 100,000) ÷ 100,000 = +31% (那里面有 2 万是你存进去的).', note: '每天的 NAV 来自 Worker 收盘时记下的快照, 只从开始记录的那天起有; 所选范围更早时, 从第一天有记录的开始算, SPY 也按同一段时间算. 图例里每个策略后面的 % 是占合计的比例, 不是收益率.' },
   an_ret: { t: 'LEAPS 的收益率', def: '每笔 = 这一笔已实现的盈亏 ÷ 这一笔的成本, 不管拿了多久; 「平均收益率」是这些数字的简单平均. 「资金年化」= 合计盈亏 ÷ (每笔成本 × 持有天数之和) × 365, 把时间算进去, 和 CSP 的「担保资金年化」是同一个口径.', ex: '一笔拿 30 天赚 20%, 一笔拿 365 天赚 20%: 平均收益率都是 20%; 资金年化分别约 243% 和 20%, 合在一起约 37%.', note: 'LEAPS 的「最好」按每笔的平均收益率评: 你关心的是每一笔赚多少, 拿得久的在年化上会显得吃亏.' },
   an_curve: { t: '累计已实现', def: '按平仓日期把每个策略的已实现盈亏一笔一笔加起来, 从所选时间范围的第一天从 0 开始. 线一直向上 = 这个策略在稳定赚钱; 一段横着或向下 = 那段时间在拖后腿. 浅红色区域 = 「全部」从最高点回落的部分 (回撤); 圆点 = 这段时间里金额最大的 5 笔. 「全部」不含短期 long call.', ex: '选 YTD: 今年 1 月 1 日从 0 开始. 鼠标放在图上看那一天每个策略累计到多少、当天结束了哪几笔. 在图上拖选 3 月到 5 月就只看这三个月, 双击回到全部.', note: '「最大回撤」= 这段时间里「全部」从某个高点到之后最低点回落了多少.' },
@@ -14246,7 +14249,7 @@ const GREEK_HELP = {
   roll_types: { t: '按 roll 方式', def: '每次 roll 按行权价和到期日的变化分类. Put: 降行权价 = roll down (防守), 升行权价 = roll up (更激进); Call 反过来. 「收到净收入」= 卖出新合约收到的比买回旧合约花的多. 「仓位最终赚钱」= 用过这种方式、已经结束的仓位里, 整条链最后赚钱的比例.', note: '「最成功」只在至少 2 个仓位结束后才评出来, 避免一两个样本误导.' },
   room_p: { t: '被行权概率', def: '联动模拟里, 到期时价格低于行权价的比例. 大盘下跌时多个 CSP 会一起价内, 所以模拟按到期日顺序、各标的一起动.', note: '用当前 IV 和 β 估计, 不是保证; 大约相当于 |Δ|, 但考虑了联动.' },
   leaps_room: { t: 'Option Buying Power', def: '还能花多少钱买期权, 而且最终不用借钱. CSP 被行权时要用现金接股票, 现金不够就开始借 margin. 所以: 不借钱还能花 = 现金 + SWVXX − 要留着接股票的钱, 再和 Schwab 的 Option Buying Power 取较小值. 第一张卡片是 Schwab 自己的 Option Buying Power: 它扣掉了 CSP 占用的保证金, 但不考虑被行权时现金够不够.',
-    read: '三张卡片: Option Buying Power = Schwab 现在允许你买期权的钱; 最坏情况 = 全部 CSP 被行权; 我的计划 = 按下表你选的「买回 / 放到期 / 接股 / roll」. 「需从 SWVXX 卖出 $X」= 现金账户里的余额不够接股票, 要先卖 SWVXX, 不是借钱; 「缺 $X」= 现金和 SWVXX 全部用上也不够, 会借这么多. 最上面一行看有没有在借钱: Margin Balance 为负或 Equity % 低于 100% 就是在借.',
+    read: '三张卡片: Option Buying Power = Schwab 现在允许你买期权的钱; 最坏情况 = 全部 CSP 被行权; 我的计划 = 按下表你选的「买回 / 放到期 / 接股 / roll」: 买回 = 现在花买回的钱; 放到期 = 价外的按到期作废、不用准备钱, 已价内的按现价会被行权、仍然要准备接股的钱; 接股 = 准备行权价 × 股数; roll = 准备新行权价的钱. 「需从 SWVXX 卖出 $X」= 现金账户里的余额不够接股票, 要先卖 SWVXX, 不是借钱; 「缺 $X」= 现金和 SWVXX 全部用上也不够, 会借这么多. 最上面一行看有没有在借钱: Margin Balance 为负或 Equity % 低于 100% 就是在借.',
     long: '表里的「被行权概率」怎么算: 用每个标的现在的 IV 和它跟大盘的联动 (β, 大盘波动取当前 VIX), 按到期日顺序模拟 4,000 次未来走势, 大盘冲击用厚尾分布 (比正态更容易出现大跌). 大盘一跌几个 CSP 往往一起价内, 所以它比单独看每个 CSP 的 Δ 更接近真实情况. 用它来决定「我打算」里每一笔选什么.',
     ex: 'WDC 350P 已经盈利、距行权价 9%: 在「我打算」里选「买回」, 现在花 $900 买回, 就不用再为它留 $35,000; 「我的计划」那张卡片立刻多出约 $34,100.' },
   expect: { t: '期望值', def: '这个策略平均每做一笔赚 (或亏) 多少钱 = 胜率 × 平均盈利 − 败率 × 平均亏损.',
@@ -17991,7 +17994,8 @@ function _roomCalc(spend = __roomSpend) {
     const def = (dist != null && dist < 0) || (d != null && d > 0.55) ? 'assign' : 'hold', plan = typeof _rollPlans === 'function' ? _rollPlans()[_posKey(x)] : null;
     let ch = cfg.choices[_cspKey(x)] || def; if (ch === 'roll' && !plan) ch = def;
     const rollNeed = plan ? plan.K * 100 * q : 0;                                  // after the roll the new strike's cash is what stays reserved
-    return { x, q, notional, dist, close, d, def, ch, plan, p: sim ? sim.pHit[i] : null, need: ch === 'assign' ? notional : ch === 'close' ? close : ch === 'roll' ? rollNeed : 0 }; })
+    const itm = dist != null && dist < 0;
+    return { x, q, notional, dist, close, d, def, ch, plan, itm, p: sim ? sim.pHit[i] : null, need: ch === 'assign' || (ch === 'hold' && itm) ? notional : ch === 'close' ? close : ch === 'roll' ? rollNeed : 0 }; })
     .sort((a, b) => a.x.expiry.localeCompare(b.x.expiry) || b.notional - a.notional);
   const sc = { worst: rows.reduce((s, r) => s + r.notional, 0), prob: sim ? sim.p95 : 0, custom: rows.reduce((s, r) => s + r.need, 0) };
   const can = k => { const v = base.cash - cushion - sc[k]; return base.bp != null ? Math.min(v, base.bp) : v; };
@@ -18044,8 +18048,8 @@ function _roomBlockHTML() {
   const status = B.borrowing == null ? '' : `<div class="room-borrow ${B.borrowing || B.inCall ? 'bad' : 'ok'}">${B.inCall ? `<b>⚠ 追保中${B.call > 0 ? ` ${_fmtUsd(B.call)}` : ''}</b> · ` : ''}${B.borrowing ? `正在借 <b>${_fmtUsd(B.loan)}</b>` : '没有借钱'}${B.eqp != null ? ` · Equity ${B.eqp.toFixed(1)}%` : ''}${B.borrowing && B.interest ? ` · 已累计利息 ${_fmtUsd(B.interest)}` : ''}</div>`;
   const distCls = v => v == null ? '' : v < 3 ? 'rk-t-danger' : v < 8 ? 'rk-t-alert' : 'rk-t-safe';
   const opt = (row, k, l) => `<button class="rk-preset${row.ch === k ? ' active' : ''}${row.def === k ? ' room-def' : ''}" onclick="roomSet('${esc(_cspKey(row.x))}', '${k}')">${l}</button>`;
-  const table = r.rows.length ? `<div class="rk-table-wrap"><table class="rk-table room-t"><thead><tr><th>合约</th><th>被行权要付</th><th>距行权价</th><th>Δ</th><th>到期</th><th>被行权概率 ${_qBtn('room_p', 'short')}</th><th>现在买回</th><th>我打算</th></tr></thead><tbody>
-      ${r.rows.map(w => `<tr><td><b>${esc(_posLabel(w.x))}</b>${w.def === 'assign' ? `<div class="room-why">${w.dist != null && w.dist < 0 ? '已价内' : `Δ ${w.d.toFixed(2)} > 0.55`}, 默认接股</div>` : ''}</td><td>${_fmtUsd(w.notional)}</td><td class="${distCls(w.dist)}">${w.dist == null ? '—' : (w.dist < 0 ? '价内 ' : '') + Math.abs(w.dist).toFixed(1) + '%'}</td><td class="${_cspDeltaCls(w.d)}">${w.d == null ? '—' : w.d.toFixed(2)}</td>
+  const table = r.rows.length ? `<div class="rk-table-wrap"><table class="rk-table room-t"><thead><tr><th>合约</th><th>被行权要付</th><th>Mark ${_qBtn('mark_und', 'short')}</th><th>距行权价</th><th>Δ</th><th>到期</th><th>被行权概率 ${_qBtn('room_p', 'short')}</th><th>现在买回</th><th>我打算</th></tr></thead><tbody>
+      ${r.rows.map(w => `<tr><td><b>${esc(_posLabel(w.x))}</b>${w.ch === 'hold' && w.itm ? '<div class="room-why">已价内: 放到期按现价会被行权, 仍然算接股的钱</div>' : w.def === 'assign' && w.ch === 'assign' ? `<div class="room-why">${w.itm ? '已价内' : `Δ ${w.d.toFixed(2)} > 0.55`}, 默认接股</div>` : ''}</td><td>${_fmtUsd(w.notional)}</td>${_markTd(w.x)}<td class="${distCls(w.dist)}">${w.dist == null ? '—' : (w.dist < 0 ? '价内 ' : '') + Math.abs(w.dist).toFixed(1) + '%'}</td><td class="${_cspDeltaCls(w.d)}">${w.d == null ? '—' : w.d.toFixed(2)}</td>
         <td>${esc(_md(w.x.expiry))}</td><td>${pc(w.p)}</td><td>${_fmtUsd(w.close)}</td>
         <td><span class="rk-presets room-ch">${opt(w, 'close', '买回')}${opt(w, 'hold', '放到期')}${opt(w, 'assign', '接股')}${w.plan ? opt(w, 'roll', `roll → ${w.plan.K}P`) : ''}</span></td></tr>`).join('')}</tbody></table></div>
     <div class="rk-quiet room-hint">虚线框 = 默认 · <button class="app-link" onclick="roomReset()">恢复默认</button></div>` : '<div class="rk-quiet">现在没有 CSP.</div>';
@@ -18264,10 +18268,10 @@ function renderPositionsPage() {
         ${fig(`Theta/天 ${_qBtn('theta_day', 'short')}`, sgn(cT.th), '', _thCls(cT.th))}
       </div>
       <div class="rk-table-wrap"><table class="rk-table">
-        <thead><tr><th>合约</th><th>距行权价</th><th>状态</th><th>浮盈</th><th>被行权的结果 ${_qBtn('assign_out', 'short')}</th><th>名义</th><th>% NAV</th><th>开仓权利金</th><th>当前价值</th><th>Delta</th><th>DTE</th><th>持有</th><th>开仓年化</th><th>Theta/天</th><th>止盈进度 (赚 ${_tpLine()}%)</th><th>剩余时间价值</th></tr></thead>
-        <tbody>${cspRows.map(r => row(r.x, `<td><b>${esc(_posLabel(r.x))}</b>${r.x.strategy ? ` <span class="rk-quiet">${esc(r.x.strategy)}</span>` : ''}</td><td class="${r.dist == null ? '' : r.dist < 3 ? 'rk-t-danger' : r.dist < 8 ? 'rk-t-alert' : 'rk-t-safe'}">${_pct(r.dist)}${_distBar(r.dist)}</td><td>${tag(r.x)}${_rollBtn(r.x)}</td><td class="${_thCls(r.pnl)}">${sgn(r.pnl)}${r.pnl != null && r.credit ? ` ${_sgP(r.pnl / r.credit * 100)}` : ''}</td>${(() => { const S = r.x.und, eff = r.x.strike - (r.x.avg || 0), g = S ? (eff / S - 1) * 100 : null;
+        <thead><tr><th>合约</th><th>Mark ${_qBtn('mark_und', 'short')}</th><th>距行权价</th><th>状态</th><th>浮盈</th><th>被行权的结果 ${_qBtn('assign_out', 'short')}</th><th>名义</th><th>% NAV</th><th>开仓权利金</th><th>当前价值</th><th>Delta</th><th>DTE</th><th>持有</th><th>开仓年化</th><th>Theta/天</th><th>止盈进度 (赚 ${_tpLine()}%)</th><th>剩余时间价值</th></tr></thead>
+        <tbody>${cspRows.map(r => row(r.x, `<td><b>${esc(_posLabel(r.x))}</b>${r.x.strategy ? ` <span class="rk-quiet">${esc(r.x.strategy)}</span>` : ''}</td>${_markTd(r.x)}<td class="${r.dist == null ? '' : r.dist < 3 ? 'rk-t-danger' : r.dist < 8 ? 'rk-t-alert' : 'rk-t-safe'}">${_pct(r.dist)}${_distBar(r.dist)}</td><td>${tag(r.x)}${_rollBtn(r.x)}</td><td class="${_thCls(r.pnl)}">${sgn(r.pnl)}${r.pnl != null && r.credit ? ` ${_sgP(r.pnl / r.credit * 100)}` : ''}</td>${(() => { const S = r.x.und, eff = r.x.strike - (r.x.avg || 0), g = S ? (eff / S - 1) * 100 : null;
             return `<td class="${g == null ? '' : g > 10 ? 'rk-t-danger' : g > 0 ? 'rk-t-alert' : 'rk-t-safe'}">${eff.toFixed(2)}${g != null ? ` <span class="rk-quiet">比现价${g >= 0 ? '高' : '低'} ${Math.abs(g).toFixed(1)}%</span>` : ''}</td>`; })()}<td>${money(r.x.exposure)}</td><td>${_pct(pn(r.x.exposure))}</td><td>${money(r.credit)}</td><td>${money(r.val)}</td><td class="${_cspDeltaCls(r.x.delta)}">${r.x.delta != null ? _num2(r.x.delta) : '—'}</td><td>${_days(r.dte)}</td><td>${r.held ? r.held.days + ' 天' : '—'}</td><td>${r.ann != null ? r.ann.toFixed(0) + '%' : '—'}</td><td class="${_thCls(r.th)}">${sgn(r.th)}</td><td class="pc-cell">${r.cap != null ? _progBarHTML(r.cap / _tpLine() * 100, r.timePct, `已赚 ${r.cap.toFixed(0)}%`) : '—'}</td><td>${money(r.ext)}</td>`)).join('')}
-          <tr class="rk-total"><td>合计</td><td></td><td></td><td class="${_thCls(cT.pnl)}">${sgn(cT.pnl)}${cT.pnl != null && cT.credit ? ` ${_sgP(cT.pnl / cT.credit * 100)}` : ''}</td><td></td><td>${money(cspN)}</td><td>${_pct(pn(cspN))}</td><td>${money(cT.credit)}</td><td>${money(cT.val)}</td><td></td><td></td><td></td><td></td><td class="${_thCls(cT.th)}">${sgn(cT.th)}</td><td></td><td>${money(cT.ext)}</td></tr></tbody>
+          <tr class="rk-total"><td>合计</td><td></td><td></td><td></td><td class="${_thCls(cT.pnl)}">${sgn(cT.pnl)}${cT.pnl != null && cT.credit ? ` ${_sgP(cT.pnl / cT.credit * 100)}` : ''}</td><td></td><td>${money(cspN)}</td><td>${_pct(pn(cspN))}</td><td>${money(cT.credit)}</td><td>${money(cT.val)}</td><td></td><td></td><td></td><td></td><td class="${_thCls(cT.th)}">${sgn(cT.th)}</td><td></td><td>${money(cT.ext)}</td></tr></tbody>
       </table></div>
       <div class="rk-note">名义 = 行权价 × 100 × 张数. 开仓年化按开仓到到期的天数折算. 点一行打开合约面板.</div>
     </section>` : '';
@@ -18289,13 +18293,13 @@ function renderPositionsPage() {
     <section class="rk-block">
       <h3 class="rk-block-title" id="sec-sc">Short call · CC / PMCC · ${sc.length} 笔</h3>
       <div class="rk-table-wrap"><table class="rk-table">
-        <thead><tr><th>合约</th><th>距行权价</th><th>状态</th><th>浮盈</th><th>被行权的结果 ${_qBtn('assign_out', 'short')}</th><th>名义</th><th>% NAV</th><th>开仓权利金</th><th>当前价值</th><th>Delta</th><th>DTE</th><th>持有</th><th>开仓年化</th><th>Theta/天</th><th>止盈进度 (赚 ${_tpLine()}%)</th><th>剩余时间价值</th></tr></thead>
-        <tbody>${scRows.map(r => row(r.x, `<td><b>${esc(_posLabel(r.x))}</b> <span class="${r.cover === '裸卖' ? 'rk-t-danger' : 'rk-quiet'}">${esc(r.cover)}</span></td><td class="${r.dist == null ? '' : r.dist < 3 ? 'rk-t-danger' : r.dist < 8 ? 'rk-t-alert' : 'rk-t-safe'}">${_pct(r.dist)}${_distBar(r.dist)}</td><td>${tag(r.x)}${_rollBtn(r.x)}</td>
+        <thead><tr><th>合约</th><th>Mark ${_qBtn('mark_und', 'short')}</th><th>距行权价</th><th>状态</th><th>浮盈</th><th>被行权的结果 ${_qBtn('assign_out', 'short')}</th><th>名义</th><th>% NAV</th><th>开仓权利金</th><th>当前价值</th><th>Delta</th><th>DTE</th><th>持有</th><th>开仓年化</th><th>Theta/天</th><th>止盈进度 (赚 ${_tpLine()}%)</th><th>剩余时间价值</th></tr></thead>
+        <tbody>${scRows.map(r => row(r.x, `<td><b>${esc(_posLabel(r.x))}</b> <span class="${r.cover === '裸卖' ? 'rk-t-danger' : 'rk-quiet'}">${esc(r.cover)}</span></td>${_markTd(r.x)}<td class="${r.dist == null ? '' : r.dist < 3 ? 'rk-t-danger' : r.dist < 8 ? 'rk-t-alert' : 'rk-t-safe'}">${_pct(r.dist)}${_distBar(r.dist)}</td><td>${tag(r.x)}${_rollBtn(r.x)}</td>
           <td class="${_thCls(r.pnl)}">${sgn(r.pnl)}${r.pnl != null && r.credit ? ` ${_sgP(r.pnl / r.credit * 100)}` : ''}</td><td class="${r.room == null ? '' : r.room >= 0 ? 'rk-t-safe' : 'rk-t-danger'}">${r.room != null ? `行权价比成本${r.room >= 0 ? '高' : '低'} ${Math.abs(r.room).toFixed(1)}% <span class="rk-quiet">(成本 ${r.adj.toFixed(2)})</span>` : '—'}</td><td>${money(r.notional)}</td><td>${_pct(pn(r.notional))}</td><td>${money(r.credit)}</td>
           <td>${money(r.val)}</td><td class="${_cspDeltaCls(r.x.delta)}">${r.x.delta != null ? _num2(r.x.delta) : '—'}</td><td>${_days(r.dte)}</td>
           <td>${r.held ? r.held.days + ' 天' : '—'}</td><td>${r.ann != null ? r.ann.toFixed(0) + '%' : '—'}</td>
           <td class="${_thCls(r.th)}">${sgn(r.th)}</td><td class="pc-cell">${r.cap != null ? _progBarHTML(r.cap / _tpLine() * 100, r.timePct, `已赚 ${r.cap.toFixed(0)}%`) : '—'}</td><td>${money(r.ext)}</td>`)).join('')}
-          ${scRows.length > 1 ? `<tr class="rk-total"><td>合计</td><td></td><td></td><td class="${_thCls(sT.pnl)}">${sgn(sT.pnl)}${sT.pnl != null && sT.credit ? ` ${_sgP(sT.pnl / sT.credit * 100)}` : ''}</td><td></td><td>${money(sT.notional)}</td><td>${_pct(pn(sT.notional))}</td><td>${money(sT.credit)}</td><td>${money(sT.val)}</td><td></td><td></td><td></td><td></td><td class="${_thCls(sT.th)}">${sgn(sT.th)}</td><td></td><td>${money(sT.ext)}</td></tr>` : ''}</tbody>
+          ${scRows.length > 1 ? `<tr class="rk-total"><td>合计</td><td></td><td></td><td></td><td class="${_thCls(sT.pnl)}">${sgn(sT.pnl)}${sT.pnl != null && sT.credit ? ` ${_sgP(sT.pnl / sT.credit * 100)}` : ''}</td><td></td><td>${money(sT.notional)}</td><td>${_pct(pn(sT.notional))}</td><td>${money(sT.credit)}</td><td>${money(sT.val)}</td><td></td><td></td><td></td><td></td><td class="${_thCls(sT.th)}">${sgn(sT.th)}</td><td></td><td>${money(sT.ext)}</td></tr>` : ''}</tbody>
       </table></div>
       <div class="rk-note">行权价 vs 调整后成本: 为正时即使被 call 走也是盈利的; 为负说明这张 CC 的行权价低于本轮 wheel 的真实成本.</div>
     </section>` : '';
@@ -18318,8 +18322,8 @@ function renderPositionsPage() {
         ${fig('平均持有', avgHeld != null ? avgHeld.toFixed(0) + ' 天' : '—', '仍持有的 LEAPS')}
       </div>
       <div class="rk-table-wrap"><table class="rk-table">
-        <thead><tr><th>合约</th><th>浮盈 %</th><th>浮盈</th><th>期权止盈进度</th><th>正股止盈位</th><th>需涨</th><th>正股止损位</th><th>需跌</th><th>正股价格位置</th><th>距退出</th><th>Δ</th><th>DTE</th><th>市值</th><th>市值 % NAV</th><th>成本</th><th>投入 % NAV</th><th>持有</th><th>正股等值</th><th>λ ${_qBtn('lambda', 'long')}</th></tr></thead>
-        <tbody>${lpRows.map(r => row(r.x, `<td><b>${esc(_posLabel(r.x))}</b>${_lmBtn(r.x)}</td><td class="${_thCls(r.pnl)}">${_pct(r.pnlPct)}</td><td class="${_thCls(r.pnl)}">${sgn(r.pnl)}</td><td class="pc-cell">${r.prog != null ? _progBarHTML(r.prog, null, `/ +${r.tg.pct}% ${r.tg.style ? '' : '(默认)'}`) : '—'}</td>${(() => { const S = r.x.und, k = esc(_ltKey(r.x));
+        <thead><tr><th>合约</th><th>Mark ${_qBtn('mark_und', 'short')}</th><th>浮盈 %</th><th>浮盈</th><th>期权止盈进度</th><th>正股止盈位</th><th>需涨</th><th>正股止损位</th><th>需跌</th><th>正股价格位置</th><th>距退出</th><th>Δ</th><th>DTE</th><th>市值</th><th>市值 % NAV</th><th>成本</th><th>投入 % NAV</th><th>持有</th><th>正股等值</th><th>λ ${_qBtn('lambda', 'long')}</th></tr></thead>
+        <tbody>${lpRows.map(r => row(r.x, `<td><b>${esc(_posLabel(r.x))}</b>${_lmBtn(r.x)}</td>${_markTd(r.x)}<td class="${_thCls(r.pnl)}">${_pct(r.pnlPct)}</td><td class="${_thCls(r.pnl)}">${sgn(r.pnl)}</td><td class="pc-cell">${r.prog != null ? _progBarHTML(r.prog, null, `/ +${r.tg.pct}% ${r.tg.style ? '' : '(默认)'}`) : '—'}</td>${(() => { const S = r.x.und, k = esc(_ltKey(r.x));
           const cell = (kind, L, label) => `<td class="lt-cell" onclick="event.stopPropagation()"><input type="number" step="0.5" class="gl-num lt-in${L ? '' : ' lt-miss'}" value="${L ? L.px : ''}" placeholder="填写" onchange="setLeapsLevel('${kind}', '${k}', this.value)" onkeydown="if (event.key === 'Enter') this.blur()" aria-label="${label}">${L && L.src === 'checklist' ? '<span class="rk-quiet lt-src">来自 checklist</span>' : ''}</td>`;
           const T = _leapsTgt(r.x), up = T && S > 0 ? (T.px / S - 1) * 100 : null;        // farther from the target = redder
           const P = _leapsStop(r.x), dn = P && S > 0 ? (1 - P.px / S) * 100 : null;      // closer to the stop = redder
@@ -18361,8 +18365,8 @@ function renderPositionsPage() {
     <section class="rk-block">
       <h3 class="rk-block-title" id="sec-oth">其他期权 · ${oth.length} 笔</h3>
       <div class="rk-table-wrap"><table class="rk-table">
-        <thead><tr><th>合约</th><th>类型</th><th>成本</th><th>市值</th><th>浮盈</th><th>DTE</th><th>持有</th><th>美元 Delta</th></tr></thead>
-        <tbody>${oth.map(x => { const h = _heldSince(x); return row(x, `<td><b>${esc(_posLabel(x))}</b></td><td>${esc(x.strategy || _KIND_LABEL[x.kind] || x.kind)}</td><td>${money(x.cost)}</td><td>${money(mv(x))}</td>
+        <thead><tr><th>合约</th><th>Mark ${_qBtn('mark_und', 'short')}</th><th>类型</th><th>成本</th><th>市值</th><th>浮盈</th><th>DTE</th><th>持有</th><th>美元 Delta</th></tr></thead>
+        <tbody>${oth.map(x => { const h = _heldSince(x); return row(x, `<td><b>${esc(_posLabel(x))}</b></td>${_markTd(x)}<td>${esc(x.strategy || _KIND_LABEL[x.kind] || x.kind)}</td><td>${money(x.cost)}</td><td>${money(mv(x))}</td>
           <td class="${_thCls(_posPnl(x))}">${sgn(_posPnl(x))}</td><td>${_days(_dteOf(x))}</td><td>${h ? h.days + ' 天' : '—'}</td><td>${sgn(_dollarDelta(x))}</td>`); }).join('')}</tbody>
       </table></div>
     </section>` : '';
@@ -20117,9 +20121,9 @@ window.showExpDetail = key => {
   const m = document.createElement('div'); m.id = 'exp-modal'; m.className = 'snap-confirm';
   m.innerHTML = `<div class="snap-card wh-card"><div class="snap-head" style="display:flex;align-items:baseline;gap:10px"><b>${esc(title)}</b><span class="rk-quiet">${cspL.length ? `CSP ${cspL.length} 笔 · 名义 ${_fmtUsd(tot)} · ${(tot / (c.nav || 1) * 100).toFixed(1)}% NAV` : '没有 CSP'}${ccN ? ` · CC / PMCC ${ccN} 笔 (不计入 NAV %)` : ''}</span>
       <button class="gl-x" style="margin-left:auto" onclick="document.getElementById('exp-modal').remove()" aria-label="关闭">×</button></div>
-    <div class="rk-table-wrap"><table class="rk-table"><thead><tr><th>合约</th><th>策略</th><th>距行权价</th><th>已赚</th><th>浮盈</th><th>DTE</th><th>名义</th><th>% NAV</th></tr></thead><tbody>
+    <div class="rk-table-wrap"><table class="rk-table"><thead><tr><th>合约</th><th>策略</th><th>Mark</th><th>距行权价</th><th>已赚</th><th>浮盈</th><th>DTE</th><th>名义</th><th>% NAV</th></tr></thead><tbody>
       ${list.map(i => { const cap = _captured(i.x), dist = _distPct(i.x), pl = _posPnl(i.x) || 0;
-        return `<tr class="gl-row" role="button" onclick="document.getElementById('exp-modal').remove(); openOptionLab(${c.pos.indexOf(i.x)})"><td><b>${esc(_posLabel(i.x))}</b></td><td><span class="ec-chip" style="--c:${EXP_STRAT[i.strat][1]}">${EXP_STRAT[i.strat][0]}</span></td>
+        return `<tr class="gl-row" role="button" onclick="document.getElementById('exp-modal').remove(); openOptionLab(${c.pos.indexOf(i.x)})"><td><b>${esc(_posLabel(i.x))}</b></td><td><span class="ec-chip" style="--c:${EXP_STRAT[i.strat][1]}">${EXP_STRAT[i.strat][0]}</span></td>${_markTd(i.x)}
           <td class="${dist != null && dist < 3 ? 'rk-t-danger' : dist != null && dist < 8 ? 'rk-t-alert' : ''}">${_pct(dist)}</td><td>${cap != null ? cap.toFixed(0) + '%' : '—'}</td><td class="${_thCls(pl)}">${_fmtSigned(pl)}</td><td>${_dteOf(i.x) ?? '—'}</td><td>${_fmtUsd(i.n)}</td><td>${i.strat === 'csp' ? i.pct.toFixed(1) + '%' : '<span class="rk-quiet">不计入</span>'}</td></tr>`; }).join('')}</tbody></table></div>
     <div class="rk-note">点一行打开合约面板.</div></div>`;
   m.addEventListener('click', e => { if (e.target === m) m.remove(); });
