@@ -5250,6 +5250,7 @@ function render() {
   if (state._view === 'analytics') { _safe('策略分析', renderAnalyticsPage, null); _postRender(); return; }
   if (state._view === 'leapsviz') { _safe('LEAPS 监控台', renderLeapsVizPage, null); _postRender(); return; }
   if (TL_VIEWS[state._view]) { renderToolPage(); _postRender(); return; }
+  if (!render._archT) { render._archT = setTimeout(() => { _archFlush(); }, 8000); }
   if (state._view === 'performance') { _safe('Performance', renderPerformancePage, null); _postRender(); return; }
   if (!state.strategy) { renderPicker(); _postRender(); return; }
   if (state.strategy === 'leaps') {
@@ -5894,7 +5895,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.17-v125';
+const APP_BUILD = '2026.10.17-v126';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
@@ -8550,10 +8551,12 @@ function saveToHistory() {
       const rk = computeRisk().composite;
       if (rk != null) { entry.riskScore = Math.round(rk); entry.inputs = (entry.inputs ? entry.inputs + '; ' : '') + `risk=${entry.riskScore}`; }
     } catch (e) {}
+    try { entry.ctx = _archCtx(entry); } catch (e) {}
     history.unshift(entry);
     if (history.length > HISTORY_MAX) history.length = HISTORY_MAX;
     safeSetItem(HISTORY_KEY, JSON.stringify(history));
     scheduleAutoPushToGist();
+    try { _archivePush(entry); } catch (e) {}
   } catch (e) {}
 }
 function deleteHistoryEntry(id) {
@@ -11831,7 +11834,7 @@ const QUOTES = [
   ['Plan your trade and trade your plan.', '计划你的交易, 交易你的计划.', '交易格言'] ];
 let __qIdx = null, __qTimer = null;
 // the App expects this Worker; an older one keeps running but misses these fixes
-const WORKER_NEED = 23, WORKER_FIXES = [[15, '每日快照只在收盘后记录 (盈亏归因的「今天」准确)'], [16, '早报 / 周报按触发时间识别 (星期写法不会再错)'], [17, '日线缓存修正 (J 等指标不会停在旧数据)'], [18, '借钱 / 追保提醒和早报里的借钱状态'], [19, '盘中报价时间和是否实时'], [20, '邮件里的 Equity % 按账户计算 (多个账户时不再被减半)'], [21, 'Roll 提醒: 提前行权风险、执行 roll 计划、到提醒价'], [22, '提醒邮件里「21 天」的写法和 App 一致'], [23, '止盈提醒按你设的止盈线']];
+const WORKER_NEED = 24, WORKER_FIXES = [[15, '每日快照只在收盘后记录 (盈亏归因的「今天」准确)'], [16, '早报 / 周报按触发时间识别 (星期写法不会再错)'], [17, '日线缓存修正 (J 等指标不会停在旧数据)'], [18, '借钱 / 追保提醒和早报里的借钱状态'], [19, '盘中报价时间和是否实时'], [20, '邮件里的 Equity % 按账户计算 (多个账户时不再被减半)'], [21, 'Roll 提醒: 提前行权风险、执行 roll 计划、到提醒价'], [22, '提醒邮件里「21 天」的写法和 App 一致'], [23, '止盈提醒按你设的止盈线']];
 function _workerAgeHTML() {
   const p = getPortfolio(); if (p.source !== 'schwab' || !p.workerVersion || p.workerVersion >= WORKER_NEED) return '';
   const miss = WORKER_FIXES.filter(([v]) => v > p.workerVersion);
@@ -14344,6 +14347,7 @@ const GREEK_HELP = {
   assign_out: { t: '被行权的结果', def: 'CSP: 被行权接股后的有效成本 (行权价 − 收到的权利金), 和现价比. 比现价高 = 接股后马上是浮亏. Short call: 行权价和你这只股票的调整后成本 (Schwab 均价减去卖期权降低的部分) 比, 高 = 被 call 走也赚钱, 低 = 被 call 走会亏.', note: '两张表用同一组列, 这一列各自显示对这个策略最重要的那个结果.' },
   lv_alerts: { t: '需要注意', def: '每次打开都会把每张 LEAPS 过一遍: 止损 (已跌破或只差 5% 以内)、时间 (6 个月必退 / 进入 9 个月 roll 窗口)、止盈 (到了梯度、到了正股止盈位、MJ2 出现卖出信号)、加仓 (左侧加仓条件都满足或只差一条, 和 checklist 同一套判断), 以及表面上看不到的: Δ 掉到 0.5 以下、每月时间价值消耗占市值超过 6%、正股 20 天跌了 10% 以上 (还在创新低时特别标出)、同一只股票的 LEAPS 占 NAV 超过 15%.', note: '红 = 现在就要处理, 橙 = 这几天要留意, 灰 = 了解一下. 点一条打开那张 LEAPS 的管理页.' },
   mark_und: { t: 'Mark', def: '这只股票 (标的) 现在的价格, 不是期权本身的价格. 和「距行权价」放在一起, 不用点开就能看到现价离行权价多远.', note: '价格来自最近一次 Schwab 持仓刷新; 想要最新的就点右上角刷新.' },
+  archive: { t: '云端档案', def: '你的交易资料永久存在 Cloudflare D1 (一个免费的云端 SQLite 数据库) 里, 每周再复制一份到你的 GitHub 私有仓库. 存了: Schwab 的每一笔交易 (原样, 只追加, 从不修改)、每个交易日收盘时的每个仓位 (价格、Greeks、IV、市值)、每天的 NAV 和余额、每次 checklist 的完整快照 (每一条的结果、AVWAP、当时的技术面、期权的买卖价和 Greeks、组合状态).', ex: '设置 (只做一次): 1) Cloudflare 控制台 → Storage & Databases → D1 → Create, 名字写 trading-archive. 2) Workers & Pages → 你的 Worker → Settings → Bindings → Add → D1 database, 变量名写 ARCHIVE, 选 trading-archive, 保存. 3) 把 Worker 代码换成 v24 并 Deploy. 4) 回到 App 的「设置 → 自检」, 点「上传本机的 checklist 记录」和「补全历史交易」. GitHub (可选): 建一个 Private 仓库, 生成只能写这个仓库的 fine-grained token (Contents: Read and write), 在 Worker 的 Settings → Variables and Secrets 里加 GITHUB_TOKEN (Secret) 和 GITHUB_REPO (例如 yourname/trading-archive).', note: '免费额度 5GB, 你的数据大约每年 10MB. 档案是 SQLite 和 JSON, 不需要这个 App 也能打开.' },
   an_twr: { t: '你的账户 vs SPY', def: '你的账户这段时间的时间加权收益率 (TWR): 把每天收盘的 NAV 连起来, 每一天的收益 = (当天 NAV − 当天的入金出金) ÷ 前一天 NAV − 1, 再连乘. 入金出金不算赚的钱, 也不受金额大小的影响, 和 SPY 的涨跌可以直接比. 它包括已实现和未实现, 所以和上面的「区间已实现」不是同一个数.', ex: '1 月 1 日 NAV $100,000; 1 月 15 日入金 $20,000, 当天收盘 NAV $125,000: 这半个月的收益 = (125,000 − 20,000) ÷ 100,000 − 1 = +5%. 1 月 31 日 NAV $131,250: 后半个月 = 131,250 ÷ 125,000 − 1 = +5%. 合起来 = 1.05 × 1.05 − 1 = +10.25%, 而不是 (131,250 − 100,000) ÷ 100,000 = +31% (那里面有 2 万是你存进去的).', note: '每天的 NAV 来自 Worker 收盘时记下的快照, 只从开始记录的那天起有; 所选范围更早时, 从第一天有记录的开始算, SPY 也按同一段时间算. 图例里每个策略后面的 % 是占合计的比例, 不是收益率.' },
   an_av_held: { t: 'AVWAP 线守住的比例', def: '开仓时在现价下方的那条线 (也就是当时的支撑), 从开仓到平仓 (或到今天), 正股最低价有没有跌破它超过 1%. 守住的比例越高, 说明这一级支撑越可靠.', ex: '开仓时现价 200, A 线 192: 持有期间最低到 191 (只低了 0.5%) 算守住; 最低到 186 算被跌破. 10 笔里 8 笔守住, 就是 80%.', note: '用的是开仓当天你填的价格; AVWAP 每天会移动一点, 所以这是近似的检验.' },
   an_av_zone: { t: '开仓时现价相对三条线', def: '开仓那天现价在几条 AVWAP 线的上方: 三条都在下方 = 三层支撑都还在; 跌破 1 条 / 2 条 / 全部 = 已经有几层支撑丢了. 比较这几组的结果, 看「在支撑上方开仓」到底有没有更好.', note: '' },
@@ -17071,11 +17075,75 @@ function renderCkEditPage() {
       <label>标题 <input class="gl-num" id="cke-nt" placeholder="例如: 财报后两天内不开新仓"></label><label>说明 <textarea class="gl-num" id="cke-nd" rows="2" placeholder="怎样算通过 (可以不填)"></textarea></label>
       <label class="cke-hard"><input type="checkbox" id="cke-nh"> Hard (不通过就 BLOCKED)</label><button class="btn" onclick="ckeAdd()">加上</button></div></section></div>`;
 }
+/* ═════════════ v126 · the permanent archive: every checklist with what the market and the account looked like at that moment ═════════════ */
+const ARCH_Q_KEY = 'pretrade_archive_queue', ARCH_UP_KEY = 'pretrade_archive_uploaded';
+const _r4 = v => v == null || !isFinite(v) ? null : Math.round(v * 10000) / 10000;
+function _archCtx(entry) {
+  const o = { at: Date.now(), build: APP_BUILD }, t = _normTicker((entry && entry.ticker) || state.ticker), safe = (k, f) => { try { const v = f(); if (v != null) o[k] = v; } catch (e) {} };
+  safe('stock', () => { const P = __px[t]; if (!P || !P.bars || P.bars.length < 30) return null; const B = P.bars, n = B.length, T = techOf(B, P.live) || {};
+    const pick = ['px', 'rsi', 'K', 'D', 'J', 'J3', 'pctB', 'sma20', 'sma50', 'sma200', 'ema21', 'dif', 'dea', 'hv', 'hi52', 'lo52', 'pos52'].reduce((a, k) => (a[k] = _r4(T[k]), a), {});
+    const chg = k => n > k ? _r4((B[n - 1].c / B[n - 1 - k].c - 1) * 100) : null;
+    let mj = null; try { const M = mj2Series(B); mj = M.slice(-5).map((m, i) => ({ d: B[n - 5 + i].d, J: _r4(m.J), rsi: _r4(m.rsi), B0: !!m.B0final, B1: !!m.B1, S0: !!m.S0, S1: !!m.S1 })); } catch (e) {}
+    return { ticker: t, day: B[n - 1].d, ...pick, chg5: chg(5), chg20: chg(20), chg60: chg(60), vol: B[n - 1].v || null, mj2: mj }; });
+  safe('market', () => { const S = __px['SPY'], V = __px['$VIX'], m = {}; if (S && S.bars && S.bars.length > 200) { const c = S.bars.map(b => b.c), n = c.length, ma = c.slice(-200).reduce((a, b) => a + b, 0) / 200; Object.assign(m, { spy: c[n - 1], spy200: _r4(ma), spyAbove200: c[n - 1] > ma, spyChg20: _r4((c[n - 1] / c[n - 21] - 1) * 100) }); }
+    if (V && V.bars && V.bars.length) m.vix = V.bars[V.bars.length - 1].c; return Object.keys(m).length ? m : null; });
+  safe('option', () => { const sp = _tradeSpec(), ch = __ckChain[_ckKey()]; if (!sp || !ch || !ch.b) return null; const K = parseFloat(state[sp.strikeKey]), e = state.tradeExpiry;
+    const c = ch.b.contracts.find(z => z.expiry === e && Math.abs(z.strike - K) < 1e-6); if (!c) return { underlying: ch.b.underlying, picked: false };
+    return { underlying: ch.b.underlying, symbol: c.symbol, strike: c.strike, expiry: c.expiry, dte: c.dte, bid: c.bid, ask: c.ask, mark: c.mark, iv: c.iv, delta: c.delta, gamma: c.gamma, theta: c.theta, vega: c.vega, oi: c.oi ?? c.openInterest ?? null, volume: c.volume ?? c.totalVolume ?? null }; });
+  safe('avwap', () => { const v = _avVals(), S = _avPx(); return AV_K.some(k => v[k] != null) ? { ...v, px: S, dist: AV_K.reduce((a, k) => (a[k] = v[k] && S ? _r4((S / v[k] - 1) * 100) : null, a), {}) } : null; });
+  safe('account', () => { const R = computeRisk(), c = R.c; return { nav: c.nav, risk: R.composite != null ? Math.round(R.composite) : null, positions: c.pos.length,
+    byKind: c.pos.reduce((a, x) => (a[x.kind] = (a[x.kind] || 0) + 1, a), {}), canSpend: (() => { try { return Math.round(_roomCalc(0).can('custom')); } catch (e) { return null; } })() }; });
+  return o;
+}
+function _archQueue() { try { return JSON.parse(localStorage.getItem(ARCH_Q_KEY) || '[]') || []; } catch (e) { return []; } }
+function _archSetQueue(L) { try { localStorage.setItem(ARCH_Q_KEY, JSON.stringify([...new Set(L)])); } catch (e) {} }
+async function _archSend(entries) {
+  for (let i = 0; i < entries.length; i += 40) { const r = await _wfetch('/archive/checklist', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ entries: entries.slice(i, i + 40) }) });
+    if (!r.ok) { let m = ''; try { m = (await r.json()).message || ''; } catch (e) {} throw new Error(`${r.status}${m ? ' ' + m : ''}`); } }
+  return entries.length;
+}
+function _archivePush(entry) { if (!loadSchwabCfg()) return; _archSend([entry]).then(() => _archFlush()).catch(() => _archSetQueue(_archQueue().concat([entry.id]))); }
+let __archFlushing = false;
+async function _archFlush() { const Q = _archQueue(); if (!Q.length || __archFlushing || !loadSchwabCfg()) return 0; __archFlushing = true;
+  try { const H = loadHistory(), E = Q.map(id => H.find(e => e.id === id)).filter(Boolean); if (E.length) await _archSend(E); _archSetQueue(_archQueue().filter(id => !Q.includes(id))); return E.length; }
+  catch (e) { return 0; } finally { __archFlushing = false; } }
+window.archUploadAll = async btn => { const E = getActiveHistory(); if (!E.length) { showToast('本机没有 checklist 记录', 'info'); return; }
+  if (btn) { btn.disabled = true; btn.textContent = `上传中… (${E.length} 条)`; }
+  try { const n = await _archSend(E); localStorage.setItem(ARCH_UP_KEY, String(Date.now())); _archSetQueue([]); showToast(`已上传 ${n} 条 checklist 记录`, 'success', '以后每次保存都会自动上传'); __archStatus = null; render(); }
+  catch (e) { showToast('上传失败', 'error', e.message); if (btn) { btn.disabled = false; btn.textContent = '重试上传'; } } };
+let __archStatus = null, __archBusy = '';
+async function _archLoadStatus() { try { const r = await _wfetch('/archive/status'); __archStatus = r.ok ? await r.json() : { error: r.status }; } catch (e) { __archStatus = { error: String(e.message || e) }; } if (TL_VIEWS[state._view]) render(); }
+window.archAct = async (what, label) => { if (__archBusy) return; __archBusy = what; render();
+  try { const r = await _wfetch('/archive/' + what, { method: 'POST' }); const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.message || r.status);
+    showToast(`${label}完成`, 'success', what === 'backfill' ? `新加 ${j.addedTx} 笔交易 · 回到 ${(j.years || []).slice(-1)[0] ? j.years.slice(-1)[0].y : '—'} 年` : what === 'github' ? (j.skipped ? '还没设置 GitHub' : `写了 ${j.wrote} 个文件`) : ''); }
+  catch (e) { showToast(`${label}失败`, 'error', String(e.message || e)); } __archBusy = ''; __archStatus = null; _archLoadStatus(); };
+window.archDownload = async btn => { if (btn) { btn.disabled = true; btn.textContent = '下载中…'; } const out = {};
+  try { for (const t of ['tx', 'pos', 'nav', 'checklist']) { out[t] = []; for (let off = 0; ; off += 2000) { const r = await _wfetch(`/archive/export?table=${t}&limit=2000&offset=${off}`); if (!r.ok) throw new Error(r.status); const j = await r.json(); out[t].push(...j.rows); if (!j.more) break; } }
+    _dl(`trading-archive-${_todayISO()}.json`, JSON.stringify({ app: 'pre-trade-checklist', kind: 'cloud-archive', at: new Date().toISOString(), ...out })); showToast('已下载云端档案', 'success', `交易 ${out.tx.length} · 仓位快照 ${out.pos.length} · NAV ${out.nav.length} · checklist ${out.checklist.length}`); }
+  catch (e) { showToast('下载失败', 'error', String(e.message || e)); } if (btn) { btn.disabled = false; btn.textContent = '下载整个云端档案'; } };
+function _archDiagHTML(H) {
+  const A = H && H.archive, line = (s, l, v, h = '') => `<div class="dg-row ${s}"><span class="dg-dot"></span><b>${l}</b><span>${v}</span>${h ? `<em>${h}</em>` : ''}</div>`, ago = t => t ? formatTimeAgo(t) + '前' : '从没有';
+  if (!H || H.busy) return '';
+  if (!A) return `<section class="rk-block"><h3 class="rk-block-title">云端档案</h3><div class="rk-notice">需要把 Worker 更新到 v24 才有云端档案. 步骤在「说明书」里搜「云端档案」.</div></section>`;
+  if (!A.configured) return `<section class="rk-block"><h3 class="rk-block-title">云端档案 <span class="rk-pill rr-tag bad">还没设置</span></h3><div class="rk-notice">Worker 已经是 v24, 但还没有绑定 D1 数据库. 在 Cloudflare 里建一个 D1 数据库, 绑定到 Worker, 变量名写 <b>ARCHIVE</b>. 详细步骤在「说明书」里搜「云端档案」.</div></section>`;
+  if (!__archStatus) { setTimeout(_archLoadStatus, 0); return `<section class="rk-block"><h3 class="rk-block-title">云端档案</h3><div class="rk-quiet">读取中…</div></section>`; }
+  const S = __archStatus; if (S.error) return `<section class="rk-block"><h3 class="rk-block-title">云端档案</h3>${line('bad', '档案', `读不到: ${esc(String(S.error))}`)}</section>`;
+  const dd = t => t ? new Date(t).toISOString().slice(0, 10) : '—', days = t => t ? (Date.now() - t) / 864e5 : Infinity, Q = _archQueue().length, up = localStorage.getItem(ARCH_UP_KEY), nLocal = getActiveHistory().length;
+  const b = (w, l) => `<button class="btn ghost small" ${__archBusy ? 'disabled' : ''} onclick="archAct('${w}', '${l}')">${__archBusy === w ? '进行中…' : l}</button>`;
+  return `<section class="rk-block"><h3 class="rk-block-title">云端档案 <span class="rk-pill rr-tag good">已开启</span> ${_qBtn('archive', 'short')}</h3><div class="dg">
+    ${line(S.tx.n ? 'ok' : 'warn', '交易记录', S.tx.n ? `${S.tx.n} 笔 · ${dd(S.tx.a)} → ${dd(S.tx.b)}` : '还没有', S.backfill ? `补全历史: ${ago(S.backfill.at)}, 往回到 ${(S.backfill.years || []).slice(-1)[0] ? S.backfill.years.slice(-1)[0].y : '—'} 年` : '<b>还没补全历史</b>: 点下面的「补全历史交易」')}
+    ${line(S.daily && days(S.daily.at) < 4 ? 'ok' : S.daily ? 'warn' : 'bad', '每天收盘的仓位快照', S.pos.days ? `${S.pos.days} 天 · ${S.pos.a} → ${S.pos.b}` : '还没有', S.daily ? `上次 ${ago(S.daily.at)}${S.daily.txError ? ` · 交易读取失败: ${esc(S.daily.txError)}` : ''}` : '每个交易日收盘后由 Worker 自动存')}
+    ${line(S.nav.n ? 'ok' : 'warn', '每天的 NAV 和余额', S.nav.n ? `${S.nav.n} 天 · ${S.nav.a} → ${S.nav.b}` : '还没有')}
+    ${line(S.checklist.n >= nLocal ? 'ok' : 'warn', 'checklist 快照', `${S.checklist.n} 条 (本机 ${nLocal} 条)${Q ? ` · ${Q} 条待上传` : ''}`, !up && nLocal ? '<b>第一次: 把本机已有的记录上传上去</b>' : '以后每次保存都会自动上传')}
+    ${line(!S.github ? 'warn' : S.githubLast && !S.githubLast.error && days(S.githubLast.at) < 9 ? 'ok' : S.githubLast && S.githubLast.error ? 'bad' : 'warn', 'GitHub 第二份', !S.github ? '还没设置 (可选)' : S.githubLast ? (S.githubLast.error ? `上次失败: ${esc(S.githubLast.error)}` : `上次 ${ago(S.githubLast.at)} · ${S.githubLast.files} 个文件`) : '还没备份过', '每周五由 Worker 自动写入私有仓库')}
+    </div><div class="bk-btns">${!up && nLocal ? `<button class="btn" onclick="archUploadAll(this)">上传本机的 ${nLocal} 条 checklist 记录</button>` : `<button class="btn ghost small" onclick="archUploadAll(this)">重新上传本机记录</button>`}${b('backfill', '补全历史交易')}${b('run', '立即存档')}${S.github ? b('github', '立即备份到 GitHub') : ''}</div></section>`;
+}
 // ── self check: is everything the App depends on still working? ──
 const ERR_LOG_KEY = 'pretrade_err_log';
 function _errLog() { try { return JSON.parse(localStorage.getItem(ERR_LOG_KEY) || '[]') || []; } catch (e) { return []; } }
 let __diagHealth = null, __diagAt = 0;
-window.diagCheck = async () => { const cfg = loadSchwabCfg(); __diagHealth = { busy: true }; render();
+window.diagCheck = async () => { const cfg = loadSchwabCfg(); __diagHealth = { busy: true }; __archStatus = null; render();
   if (!cfg) { __diagHealth = { none: true }; render(); return; }
   try { const r = await fetch(cfg.url.replace(/\/+$/, '') + '/health', { cache: 'no-store' }); __diagHealth = await r.json(); } catch (e) { __diagHealth = { error: String(e.message || e) }; }
   __diagAt = Date.now(); render(); };
@@ -17091,13 +17159,14 @@ function renderDiagPage() {
   const days = t => t ? (Date.now() - t) / 864e5 : Infinity;
   const auth = H.busy ? line('', 'Schwab 授权', '检查中…') : H.none ? line('bad', 'Schwab 授权', '还没连接 Worker') : H.error ? line('bad', 'Worker', `连不上: ${esc(H.error)}`, '检查网络, 或者 Worker 是否还在运行')
     : line(st(H.authorized && H.reauthInDays > 2, H.authorized), 'Schwab 授权', H.authorized ? `还有 ${H.reauthInDays} 天过期` : '已过期, 需要重新连接', `Schwab 每 7 天要重新授权一次. ${cfg ? `<a href="${esc(cfg.url.replace(/\/+$/, ''))}/connect" target="_blank" rel="noopener">打开重新连接页面 ▸</a>` : ''}`);
-  const wv = (typeof __workerVer !== 'undefined' && __workerVer) || (pos && pos.data && (pos.data.workerVersion || pos.data.version)) || null;
+  const wv = (H && H.version) || (typeof __workerVer !== 'undefined' && __workerVer) || (pos && pos.data && (pos.data.workerVersion || pos.data.version)) || null;
   const errs = _errLog().slice().reverse();
   return `<div class="rk-page tl-page"><section class="rk-block"><h3 class="rk-block-title rk-title-row"><span>自检</span><button class="btn ghost small" onclick="diagCheck()">重新检查</button></h3>
     <div class="dg">${auth}
       ${H.alerts ? line(st(H.alerts.lastRunAt && days(Date.parse(H.alerts.lastRunAt)) < 2, true), 'Worker 定时提醒', H.alerts.lastRunAt ? `上次运行 ${ago(Date.parse(H.alerts.lastRunAt))}` : '没有记录', 'Cloudflare 的 cron 触发器还在运行吗') : ''}
       ${line(st(!wv || wv >= WORKER_NEED, true), '版本', `App ${APP_BUILD} · Worker ${wv ? 'v' + wv : '未知'} (需要 v${WORKER_NEED})`)}
     </div></section>
+    ${_archDiagHTML(H)}
     <section class="rk-block"><h3 class="rk-block-title">数据最后更新</h3><div class="dg">
       ${line(st(pos && days(pos.fetchedAt) < 1, pos && days(pos.fetchedAt) < 4), 'Schwab 持仓', ago(pos && pos.fetchedAt))}
       ${line(st(hist && days(hist.at) < 3, hist && days(hist.at) < 14), 'Schwab 交易记录', ago(hist && hist.at), 'Performance、寻找 Edge、纪律分都用它')}
@@ -17140,6 +17209,8 @@ function renderBackupPage() {
       <div class="rk-note">把这台设备上的全部数据 (${n} 项: checklist 记录、规则、设置、止盈 / 止损位、AVWAP、Roll 计划…) 存成一个文件. Gist 同步之外再留一份, 放到云盘或电脑里. 建议每月一次.</div>
       <div class="bk-btns"><button class="btn" onclick="bkExport(false)">导出备份</button><button class="btn ghost" onclick="bkExport(true)">导出 (含连接设置和 token)</button></div>
       <div class="rk-note">默认不包括 Gist token 和 Worker 的连接设置, 这样文件被别人看到也安全. 换新设备时如果想连这些一起恢复, 用第二个按钮, 并妥善保管那个文件.</div></section>
+    <section class="rk-block"><h3 class="rk-block-title">云端档案</h3><div class="rk-note">Cloudflare 里的永久档案: 每一笔 Schwab 交易、每天收盘的每个仓位、每天的 NAV、每次 checklist 的完整快照. 下载下来就是一个 JSON 文件, 不需要这个 App 也能读.</div>
+      <div class="bk-btns"><button class="btn ghost" onclick="archDownload(this)">下载整个云端档案</button></div></section>
     <section class="rk-block"><h3 class="rk-block-title">从备份恢复</h3><input type="file" accept=".json,application/json" onchange="bkPick(this)">
       ${j ? `<div class="bk-pre"><b>备份时间 ${esc(String(j.at).slice(0, 16).replace('T', ' '))}</b> · 版本 ${esc(j.build || '')} · ${Object.keys(j.data).length} 项${j.withSecrets ? ' · 含连接设置' : ''}
         <div class="bk-btns"><button class="btn" onclick="bkRestore('merge')">合并 (只补上没有的)</button><button class="btn ghost" onclick="bkRestore('replace')">完全替换</button></div></div>` : ''}</section>
