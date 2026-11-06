@@ -3721,6 +3721,31 @@
   body .item.avwap-item.pass { border-color: var(--pass) !important; background: color-mix(in srgb, var(--pass) 7%, var(--panel)) !important; box-shadow: none !important; }
   body[class*="light"] .av-badge { background: #C2410C; }
   .an-tabs { display: flex; flex-wrap: wrap; gap: 4px 0; } .an-chips { display: flex; flex-wrap: wrap; gap: 4px 0; }
+  /* v123 · LEAPS 高级图 */
+  .lv-btn { margin-left: auto; } .lv-modal { position: fixed; inset: 0; z-index: 900; background: rgba(0,0,0,0.55); display: flex; align-items: flex-start; justify-content: center; overflow-y: auto; padding: 24px 12px; }
+  .lv-card { width: min(980px, 100%); background: var(--panel); border: 1px solid var(--border-hi); border-radius: 8px; padding: 14px 16px 16px; box-shadow: 0 12px 40px rgba(0,0,0,0.35); }
+  .lv-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; } .lv-head .modal-close { margin-left: auto; } .lv-tabs { display: flex; flex-wrap: wrap; gap: 4px 0; margin-bottom: 12px; }
+  .lv-svg { width: 100%; height: auto; display: block; } .lv-z-exit { fill: color-mix(in srgb, var(--fail) 10%, transparent); } .lv-z-roll { fill: color-mix(in srgb, #E5793B 10%, transparent); } .lv-zl { font-size: 11px; fill: var(--text-faint); }
+  .lv-tier { stroke: var(--pass); stroke-dasharray: 4 4; opacity: 0.55; } .lv-b { cursor: pointer; } .lv-bub { stroke: var(--panel); stroke-width: 1.5; } .lv-bub.up { fill: rgba(16,185,129,0.75); } .lv-bub.dn { fill: rgba(239,68,68,0.75); } .lv-b:hover .lv-bub { stroke: var(--text); stroke-width: 2; }
+  .lv-ring { fill: none; stroke: var(--pass); stroke-width: 2.5; stroke-dasharray: 3 2; } .lv-bt { font: 700 11px var(--mono); fill: #fff; pointer-events: none; }
+  .lv-run { padding: 8px 4px 22px; border-bottom: 1px solid var(--border); cursor: pointer; } .lv-run:hover { background: var(--panel-2); } .lv-run-h { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; font-size: 13px; margin-bottom: 8px; }
+  .lv-track { position: relative; height: 10px; margin: 0 40px; border-radius: 5px; background: var(--panel-2); border: 1px solid var(--border); }
+  .lv-seg { position: absolute; top: 0; bottom: 0; background: linear-gradient(90deg, color-mix(in srgb, var(--fail) 35%, transparent), color-mix(in srgb, var(--pass) 35%, transparent)); }
+  .lv-mk { position: absolute; top: -4px; } .lv-mk i { position: absolute; left: -1.5px; width: 3px; height: 18px; } .lv-mk em { position: absolute; top: 18px; transform: translateX(-50%); white-space: nowrap; font: 10.5px var(--mono); font-style: normal; color: var(--text-dim); }
+  .lv-mk.stop i { background: var(--fail); } .lv-mk.k i { background: var(--text-faint); } .lv-mk.be i { background: var(--accent); } .lv-mk.tgt i { background: var(--pass); } .lv-mk.k em, .lv-mk.be em { top: -16px; }
+  .lv-now { position: absolute; top: 50%; width: 13px; height: 13px; margin: -6.5px 0 0 -6.5px; border-radius: 50%; background: var(--text); border: 2px solid var(--panel); box-shadow: 0 0 0 1px var(--text); }
+  .lv-tg { fill: none; stroke: var(--border-hi); } .lv-tgl { font: 700 12px var(--sans); fill: var(--text); } .lv-tc { cursor: pointer; } .lv-tc:hover rect { stroke: var(--text); stroke-width: 1.5; } .lv-tt { font: 11px var(--mono); fill: var(--text); pointer-events: none; } .lv-tt.b { font-weight: 700; }
+  .lv-legend { display: flex; align-items: center; gap: 8px; margin: 6px 0; font-size: 11.5px; color: var(--text-dim); } .lv-grad { display: inline-block; width: 160px; height: 8px; border-radius: 4px; background: linear-gradient(90deg, rgba(239,68,68,0.85), var(--panel-2), rgba(16,185,129,0.85)); }
+  .lv-sliders { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--panel-2); }
+  .lv-sl-row { display: grid; grid-template-columns: 6.5em 1fr 6em; gap: 10px; align-items: center; font-size: 13px; } .lv-sl-row b { font-family: var(--mono); text-align: right; } .lv-sliders .btn { align-self: flex-start; }
+  .lv-sh { display: flex; justify-content: space-between; font-size: 11.5px; color: var(--text-faint); margin: 6px 0 2px; }
+  .lv-sr { display: grid; grid-template-columns: minmax(9em, 1.3fr) 2fr 6.5em 4.5em; gap: 8px; align-items: center; padding: 4px 0; font-size: 12.5px; cursor: pointer; border-bottom: 1px solid var(--border); } .lv-sr:hover { background: var(--panel-2); }
+  .lv-sl { font-family: var(--mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .lv-sbar { position: relative; height: 10px; background: var(--panel-2); border-radius: 3px; } .lv-sbar::after { content: ''; position: absolute; left: 50%; top: -2px; bottom: -2px; width: 1px; background: var(--text-faint); }
+  .lv-sbar i { position: absolute; top: 0; bottom: 0; border-radius: 3px; } .lv-sbar i.up { background: rgba(16,185,129,0.8); } .lv-sbar i.dn { background: rgba(239,68,68,0.8); } .lv-sv { font-family: var(--mono); text-align: right; }
+  .lv-heat td, .lv-heat th { text-align: center; font-family: var(--mono); font-size: 12px; } .lv-heat td:first-child { text-align: left; }
+  @media (max-width: 640px) { .lv-modal { padding: 0; } .lv-card { border-radius: 0; min-height: 100%; } .lv-track { margin: 0 26px; } .lv-sr { grid-template-columns: 1fr 5.5em 4em; } .lv-sr .lv-sbar { grid-column: 1 / -1; order: 4; } .lv-sl-row { grid-template-columns: 5.5em 1fr 5em; } }
+  .lv-run-h { margin-bottom: 24px !important; }
+  body svg tspan.rk-t-safe { fill: var(--pass); } body svg tspan.rk-t-danger { fill: var(--fail); }
 </style>
 </head>
 <body class="theme-slate">
@@ -5809,7 +5834,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.17-v122';
+const APP_BUILD = '2026.10.17-v123';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
@@ -15963,9 +15988,19 @@ const _rlC = {
   gap: g => g <= 0 ? 'rk-t-safe' : g <= 10 ? 'rk-t-alert' : 'rk-t-danger',          // how far above today's price the break-even sits
   score: s => s >= 75 ? 'rl-sc hi' : s >= 60 ? 'rl-sc mid' : 'rl-sc lo',
   n: n => n <= 3 ? 'rk-t-safe' : n <= 8 ? 'rk-t-alert' : 'rk-t-danger' };
+// the call you'd sell after taking the shares: ~30 days, at or above the assignment price (and the cost), within your CC mode's Δ cap
+function _rollCcPick(R) {
+  const nb = __rollNext[__rollKey]; if (!nb || !nb.b) return null; const eff = R.K - R.creditPS, M = CC_MODES[(loadScanCfg() || {}).ccMode] || CC_MODES.balanced, cap = M[2] / 100;
+  const C = nb.b.contracts.filter(o => o.mark > 0 && o.dte >= 5), exps = [...new Set(C.map(o => o.expiry))], dte = e => (C.find(o => o.expiry === e) || {}).dte;
+  const e30 = exps.sort((a, b) => Math.abs(dte(a) - 30) - Math.abs(dte(b) - 30))[0]; if (!e30) return null;
+  const min = Math.max(eff, R.K), L = C.filter(o => o.expiry === e30 && o.strike >= min - 1e-9).sort((a, b) => a.strike - b.strike);
+  return L.find(o => o.delta != null && Math.abs(o.delta) <= cap + 1e-9) || L[0] || null;
+}
 function _rollPayoffSVG(x, R, r) {
   const q = R.q, S = R.S, K = R.K, Kn = r.o.strike, cum = R.creditPS + r.net, eff = K - R.creditPS, lo = S * 0.75, hi = S * 1.25, N = 60;
-  const roll = P => (cum - Math.max(0, Kn - P)) * 100 * q, take = P => (P - eff) * 100 * q, back = () => (R.creditPS - R.cMid) * 100 * q;
+  // taking the shares now, and selling calls on them until the roll's expiry (called away at the call's strike caps the upside)
+  const cc = _rollCcPick(R), nCc = cc ? Math.max(0, Math.floor(r.o.dte / Math.max(1, cc.dte))) : 0, ccInc = cc ? cc.mark * nCc : 0;
+  const roll = P => (cum - Math.max(0, Kn - P)) * 100 * q, take = P => ((cc && nCc ? Math.min(P, cc.strike) : P) - eff + ccInc) * 100 * q, back = () => (R.creditPS - R.cMid) * 100 * q;
   const xs = Array.from({ length: N + 1 }, (_, i) => lo + (hi - lo) * i / N), all = xs.flatMap(P => [roll(P), take(P), back()]);
   const ymin = Math.min(...all, 0), ymax = Math.max(...all, 0), W = 560, H = 190, L = 54, Rr = 10, T = 14, B = 26, X = P => L + (P - lo) / (hi - lo) * (W - L - Rr), Y = v => T + (ymax - v) / (ymax - ymin || 1) * (H - T - B);
   const path = f => xs.map((P, i) => `${i ? 'L' : 'M'}${X(P).toFixed(1)},${Y(f(P)).toFixed(1)}`).join('');
@@ -15979,7 +16014,7 @@ function _rollPayoffSVG(x, R, r) {
       <path d="${path(back)}" class="rl-l-back"/><path d="${path(take)}" class="rl-l-take"/><path d="${path(roll)}" class="rl-l-roll"/>
       ${beR > lo && beR < hi ? `<circle cx="${X(beR).toFixed(1)}" cy="${Y(0).toFixed(1)}" r="3.2" class="rl-be"/>` : ''}
       <text x="${W - Rr}" y="${(Y(back()) - 4).toFixed(1)}" text-anchor="end" class="rk-ch-lab ${back() >= 0 ? 'rk-t-safe' : 'rk-t-danger'}">认亏 ${back() >= 0 ? '+' : '−'}$${Math.abs(back() / 1000).toFixed(1)}k</text>${yt}${ticks}</svg>
-    <div class="rk-legend rl-pay-leg"><span><i class="rk-sw rl-sw-roll"></i>roll 到 ${Kn}${_pcL(x)} (盈亏平衡 ${beR.toFixed(2)})</span><span><i class="rk-sw rl-sw-take"></i>现在接股, 拿到同一天 (成本 ${eff.toFixed(2)})</span><span><i class="rk-sw rl-sw-back"></i>现在认亏买回</span></div></div>`;
+    <div class="rk-legend rl-pay-leg"><span><i class="rk-sw rl-sw-roll"></i>roll 到 ${Kn}${_pcL(x)} (盈亏平衡 ${beR.toFixed(2)})</span><span><i class="rk-sw rl-sw-take"></i>现在接股, 拿到同一天 (成本 ${eff.toFixed(2)})${cc && nCc ? `, 期间卖 ${nCc} 次 ${cc.strike}C, 每次约 $${cc.mark.toFixed(2)} (合计 ${_fmtUsd(ccInc * 100 * q)}; 被 call 走封顶在 ${cc.strike})` : cc ? ', 到期前不够卖一次 CC' : ' (读取 call 期权链后会算上卖 CC 的收入)'}</span><span><i class="rk-sw rl-sw-back"></i>现在认亏买回</span></div></div>`;
 }
 function _rollStops(R, cfg) {
   const out = [], cum = R.H.start ? Math.round((Date.now() - R.H.start) / 864e5) : null;
@@ -16706,6 +16741,108 @@ function _anAvwapHTML(D) {
       ${AV_K.map(k => { const d = (r.S0 / r.av[k] - 1) * 100, h = r.avHeld[k]; return `<td>${r.av[k].toFixed(2)} <span class="${d >= 0 ? 'rk-t-safe' : 'rk-t-danger'}">${pc(d)}</span>${h == null ? '' : h ? ' <span class="rk-t-safe" title="守住了">✓</span>' : ' <span class="rk-t-danger" title="被跌破">✗</span>'}</td>`; }).join('')}
       <td>${r.done ? _sg(r.pnl) : '<span class="rk-quiet">进行中</span>'}</td></tr>`).join('')}</tbody></table></div>`;
   return figs + intro + grid + list;
+}
+// ═════════════ v123 · LEAPS 高级图: four independent views, pick the one to keep ═════════════
+let __lv = { v: 'bubble', m: 0, d: 0, iv: 0 };
+const LV_V = [['bubble', 'V1 · 气泡时间轴'], ['runway', 'V2 · 价格跑道'], ['tree', 'V3 · 树状图'], ['sim', 'V4 · 情景模拟']];
+function _lvData() {
+  const c = computeRisk().c;
+  return c.pos.filter(x => x.kind === 'leaps').map(x => { const q = Math.abs(Number(x.qty)) || 1, cost = x.cost || 0, val = x.marketValue != null ? Math.abs(x.marketValue) : (x.mark || 0) * 100 * q;
+    const pnl = val - cost, pct = cost ? pnl / cost * 100 : null, dte = _dteOf(x), S = x.und, T = _leapsTgt(x), P = _leapsStop(x), th = (typeof LM_TH !== 'undefined' && LM_TH[_leapsStyleFor(x)]) || 100;
+    const iv = x.iv > 0 ? x.iv / 100 : (S && x.mark ? _anIV(false, S, x.strike, Math.max(1, dte) / 365, x.mark) : null);
+    return { x, q, cost, val, pnl, pct, dte, S, T: T && T.px, P: P && P.px, th, tiers: [...new Set([th, Math.max(th + 50, 150), 200])].sort((a, b) => a - b), be: x.strike + cost / (100 * q), iv, key: _posKey(x), lab: `${x.ticker} ${x.strike}C ${_md(x.expiry)}` }; });
+}
+window.showLeapsViz = () => { let m = document.getElementById('lv-modal'); if (!m) { m = document.createElement('div'); m.id = 'lv-modal'; m.className = 'lv-modal'; document.body.appendChild(m);
+  m.addEventListener('click', e => { if (e.target === m) lvClose(); }); document.addEventListener('keydown', _lvEsc); } _lvRender(); };
+const _lvEsc = e => { if (e.key === 'Escape') lvClose(); };
+window.lvClose = () => { const m = document.getElementById('lv-modal'); if (m) m.remove(); document.removeEventListener('keydown', _lvEsc); };
+window.lvTab = v => { __lv.v = v; _lvRender(); };
+window.lvOpen = key => { lvClose(); showLeapsMgmt(key); };
+window.lvSim = (k, v) => { __lv[k] = +v; const b = document.getElementById('lv-sim-body'); if (b) b.innerHTML = _lvSimBody(_lvData()); const o = document.getElementById('lv-' + k + '-v'); if (o) o.textContent = _lvSimLab(k); };
+function _lvRender() {
+  const m = document.getElementById('lv-modal'); if (!m) return; const D = _lvData();
+  const body = !D.length ? '<div class="rk-quiet">没有 LEAPS 持仓.</div>' : __lv.v === 'runway' ? _lvRunway(D) : __lv.v === 'tree' ? _lvTree(D) : __lv.v === 'sim' ? _lvSim(D) : _lvBubble(D);
+  m.innerHTML = `<div class="lv-card" role="dialog" aria-label="LEAPS 高级图"><div class="lv-head"><b>LEAPS 高级图</b> <span class="rk-quiet">${D.length} 张 · 市值 ${_fmtUsd(D.reduce((s, r) => s + r.val, 0))}</span><button class="modal-close" onclick="lvClose()" aria-label="关闭">×</button></div>
+    <div class="rk-presets lv-tabs">${LV_V.map(([k, l]) => `<button class="rk-preset${__lv.v === k ? ' active' : ''}" onclick="lvTab('${k}')">${l}</button>`).join('')}</div><div class="lv-body">${body}</div></div>`;
+}
+const _lvNarrow = () => (window.innerWidth || 1200) < 640;
+const _lvPc = v => v == null ? '—' : `${v >= 0 ? '+' : '−'}${Math.abs(v).toFixed(0)}%`;
+// ── V1 · bubbles: time left × profit, size = market value ──
+function _lvBubble(D) {
+  const n = _lvNarrow(), W = n ? 380 : 900, H = n ? 360 : 460, L = n ? 40 : 56, R = 14, T = 16, B = 34;
+  const maxD = Math.max(400, ...D.map(r => r.dte || 0)) * 1.08 + 20, ps = D.map(r => r.pct || 0), lo = Math.min(-50, ...ps) - 10, hi = Math.max(220, ...ps) + 15;
+  const x = d => L + (d / maxD) * (W - L - R), y = v => T + (hi - v) / (hi - lo) * (H - T - B), mv = Math.max(...D.map(r => r.val), 1), rad = v => Math.max(7, Math.sqrt(v / mv) * (n ? 30 : 42));
+  const zones = `<rect x="${x(0)}" y="${T}" width="${x(180) - x(0)}" height="${H - T - B}" class="lv-z-exit"/><rect x="${x(180)}" y="${T}" width="${x(270) - x(180)}" height="${H - T - B}" class="lv-z-roll"/>
+    <text x="${(x(0) + x(180)) / 2}" y="${T + 14}" text-anchor="middle" class="lv-zl">6 个月内 · 必退</text><text x="${(x(180) + x(270)) / 2}" y="${T + 14}" text-anchor="middle" class="lv-zl">roll 窗口</text>`;
+  const tiers = [...new Set(D.flatMap(r => r.tiers))].sort((a, b) => a - b).filter(t => t < hi);
+  const grid = [0, ...tiers].map(v => `<line x1="${L}" x2="${W - R}" y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}" class="${v === 0 ? 'cv-zero' : 'lv-tier'}"/><text x="${L - 6}" y="${(y(v) + 4).toFixed(1)}" text-anchor="end" class="rk-ch-lab">${v === 0 ? '0' : '+' + v + '%'}</text>`).join('')
+    + [-50].filter(v => v > lo).map(v => `<text x="${L - 6}" y="${(y(v) + 4).toFixed(1)}" text-anchor="end" class="rk-ch-lab">${v}%</text>`).join('');
+  const xt = [0, 90, 180, 270, 365, 540, 730].filter(d => d <= maxD).map(d => `<text x="${x(d).toFixed(1)}" y="${H - 12}" text-anchor="middle" class="rk-ch-lab">${d} 天</text>`).join('');
+  const bub = D.slice().sort((a, b) => b.val - a.val).map(r => { const cx = x(Math.max(0, r.dte || 0)), cy = y(r.pct || 0), rr = rad(r.val), hit = r.pct != null && r.pct >= r.tiers[0];
+    return `<g class="lv-b" onclick="lvOpen('${esc(r.key)}')"><title>${esc(r.lab)} · 浮盈 ${_lvPc(r.pct)} (${_fmtSigned(r.pnl)}) · 市值 ${_fmtUsd(r.val)} · ${r.dte} 天${hit ? ' · 已到止盈档' : ''}</title>
+      ${hit ? `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${(rr + 5).toFixed(1)}" class="lv-ring"/>` : ''}<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${rr.toFixed(1)}" class="lv-bub ${r.pnl >= 0 ? 'up' : 'dn'}"/>
+      <text x="${cx.toFixed(1)}" y="${(cy + 4).toFixed(1)}" text-anchor="middle" class="lv-bt">${esc(r.x.ticker)}</text></g>`; }).join('');
+  return `<svg viewBox="0 0 ${W} ${H}" class="lv-svg">${zones}${grid}${xt}<text x="${W - R}" y="${H - 12}" text-anchor="end" class="rk-ch-lab">← 离到期越近</text>${bub}</svg>
+    <div class="rk-note">横轴 = 离到期还有几天 (红区 6 个月内必退, 黄区进入 9 个月 roll 窗口); 纵轴 = 浮盈 %, 虚线是你的止盈梯度; 气泡大小 = 市值; 外圈 = 已到止盈档. 点气泡打开 LEAPS 管理.</div>`;
+}
+// ── V2 · runway: stop · strike · breakeven · price · target, most urgent first ──
+function _lvRunway(D) {
+  const urg = r => { const a = r.P && r.S ? (r.S / r.P - 1) * 100 : 99, b = r.T && r.S ? (r.T / r.S - 1) * 100 : 99, c = r.dte != null ? (r.dte - 180) / 10 : 99; return Math.min(a, b, c); };
+  const rows = D.slice().sort((a, b) => urg(a) - urg(b)).map(r => {
+    const pts = [r.P, r.x.strike, r.be, r.S, r.T].filter(v => v > 0), lo = Math.min(...pts) * 0.96, hi = Math.max(...pts) * 1.04, X = v => ((v - lo) / (hi - lo) * 100).toFixed(2) + '%';
+    const mk = (v, cls, lab) => v > 0 ? `<span class="lv-mk ${cls}" style="left:${X(v)}"><i></i><em>${lab} ${v.toFixed(v >= 100 ? 0 : 1)}</em></span>` : '';
+    const dn = r.P && r.S ? (r.S / r.P - 1) * 100 : null, up = r.T && r.S ? (r.T / r.S - 1) * 100 : null;
+    return `<div class="lv-run" onclick="lvOpen('${esc(r.key)}')" role="button" tabindex="0"><div class="lv-run-h"><b>${esc(r.lab)}</b> <span class="${_thCls(r.pnl)}">${_lvPc(r.pct)}</span>
+        <span class="rk-quiet">${dn != null ? `离止损 <span class="${dn < 5 ? 'rk-t-danger' : dn < 12 ? 'rk-t-alert' : ''}">−${dn.toFixed(1)}%</span>` : '未设止损'} · ${up != null ? (up <= 0 ? '<span class="rk-t-safe">已到止盈位</span>' : `离止盈 +${up.toFixed(1)}%`) : '未设止盈'} · ${r.dte} 天${r.dte != null && r.dte < 270 ? ' <span class="rk-t-alert">roll 窗口</span>' : ''}</span></div>
+      <div class="lv-track">${r.P && r.T ? `<span class="lv-seg" style="left:${X(r.P)};width:calc(${X(r.T)} - ${X(r.P)})"></span>` : ''}${mk(r.P, 'stop', '止损')}${mk(r.x.strike, 'k', 'K')}${mk(r.be, 'be', '盈亏平衡')}${mk(r.T, 'tgt', '止盈')}${r.S ? `<span class="lv-now" style="left:${X(r.S)}" title="现价 ${r.S.toFixed(2)}"></span>` : ''}</div></div>`; }).join('');
+  return `${rows}<div class="rk-note">每条跑道: 红 = 正股止损位, 灰 = 行权价, 蓝 = 盈亏平衡 (行权价 + 每股成本), 绿 = 正股止盈位, 圆点 = 现价. 按「离止损 / 止盈 / 退出线最近」排序, 最需要处理的在最上面. 点一行打开 LEAPS 管理.</div>`;
+}
+// ── V3 · treemap: area = market value, colour = profit %, grouped by stock ──
+function _lvSquarify(items, x, y, w, h) {   // items: [{v, ...}] sorted desc → [{...item, rx, ry, rw, rh}]
+  const out = [], tot = items.reduce((s, i) => s + i.v, 0); if (!tot) return out; const sc = w * h / tot; let rest = items.map(i => ({ ...i, a: i.v * sc }));
+  while (rest.length) { const short = Math.min(w, h); let row = [rest[0]], best = Infinity;
+    const worst = r => { const s = r.reduce((a, i) => a + i.a, 0), mx = Math.max(...r.map(i => i.a)), mn = Math.min(...r.map(i => i.a)); return Math.max(short * short * mx / (s * s), s * s / (short * short * mn)); };
+    for (let k = 1; k <= rest.length; k++) { const wv = worst(rest.slice(0, k)); if (wv <= best) { best = wv; row = rest.slice(0, k); } else break; }
+    const s = row.reduce((a, i) => a + i.a, 0), along = s / short; let off = 0;
+    row.forEach(i => { const len = i.a / along; if (w >= h) out.push({ ...i, rx: x, ry: y + off, rw: along, rh: len }); else out.push({ ...i, rx: x + off, ry: y, rw: len, rh: along }); off += len; });
+    if (w >= h) { x += along; w -= along; } else { y += along; h -= along; } rest = rest.slice(row.length); }
+  return out;
+}
+function _lvTree(D) {
+  const n = _lvNarrow(), W = n ? 380 : 900, H = n ? 420 : 480, col = p => { if (p == null) return 'var(--panel-2)'; const t = Math.max(-1, Math.min(1, p >= 0 ? p / 150 : p / 50)); return t >= 0 ? `rgba(16,185,129,${(0.25 + 0.6 * t).toFixed(2)})` : `rgba(239,68,68,${(0.25 + 0.6 * -t).toFixed(2)})`; };
+  const by = {}; D.forEach(r => { (by[r.x.ticker] = by[r.x.ticker] || []).push(r); });
+  const groups = Object.entries(by).map(([t, L]) => ({ t, L, v: L.reduce((s, r) => s + r.val, 0) })).sort((a, b) => b.v - a.v);
+  const G = _lvSquarify(groups, 0, 0, W, H);
+  const cells = G.map(g => { const pad = 3, inner = _lvSquarify(g.L.slice().sort((a, b) => b.val - a.val).map(r => ({ ...r, v: r.val })), g.rx + pad, g.ry + 18, Math.max(1, g.rw - pad * 2), Math.max(1, g.rh - 18 - pad));
+    const gp = g.L.reduce((s, r) => s + r.pnl, 0), gc = g.L.reduce((s, r) => s + r.cost, 0);
+    return `<rect x="${g.rx}" y="${g.ry}" width="${g.rw}" height="${g.rh}" class="lv-tg"/><text x="${g.rx + 6}" y="${g.ry + 13}" class="lv-tgl">${esc(g.t)} <tspan class="${_thCls(gp)}">${gc ? _lvPc(gp / gc * 100) : ''}</tspan> · ${_fmtUsd(g.v)}</text>`
+      + inner.map(c => `<g class="lv-tc" onclick="lvOpen('${esc(c.key)}')"><title>${esc(c.lab)} · 浮盈 ${_lvPc(c.pct)} (${_fmtSigned(c.pnl)}) · 市值 ${_fmtUsd(c.val)}</title><rect x="${c.rx.toFixed(1)}" y="${c.ry.toFixed(1)}" width="${Math.max(0, c.rw - 2).toFixed(1)}" height="${Math.max(0, c.rh - 2).toFixed(1)}" fill="${col(c.pct)}" rx="3"/>
+        ${c.rw > 56 && c.rh > 30 ? `<text x="${(c.rx + 6).toFixed(1)}" y="${(c.ry + 16).toFixed(1)}" class="lv-tt">${c.x.strike}C ${esc(_md(c.x.expiry))}</text><text x="${(c.rx + 6).toFixed(1)}" y="${(c.ry + 31).toFixed(1)}" class="lv-tt b">${_lvPc(c.pct)}</text>` : ''}</g>`).join(''); }).join('');
+  return `<svg viewBox="0 0 ${W} ${H}" class="lv-svg">${cells}</svg><div class="lv-legend"><span>亏 −50%</span><i class="lv-grad"></i><span>赚 +150%</span></div>
+    <div class="rk-note">方块面积 = 市值 (资金集中在哪), 颜色 = 浮盈 % (越绿赚得越多, 越红亏得越多), 按股票分组, 组标题写这只股票合计的浮盈和市值. 点方块打开 LEAPS 管理.</div>`;
+}
+// ── V4 · what if: stock move, time passing, IV change ──
+const _lvSimLab = k => k === 'm' ? `${__lv.m >= 0 ? '+' : '−'}${Math.abs(__lv.m)}%` : k === 'd' ? `${__lv.d} 天后` : `${__lv.iv >= 0 ? '+' : '−'}${Math.abs(__lv.iv)} 点`;
+function _lvVal(r, m, d, iv) { if (!r.S || !r.iv) return null; const S = r.S * (1 + m / 100), T = Math.max(0, (r.dte || 0) - d) / 365, s = Math.max(0.05, r.iv + iv / 100); return _anBS(false, S, r.x.strike, T, s) * 100 * r.q; }
+function _lvSimBody(D) {
+  // the model gives the change; it is applied to today's actual market value, so all the numbers share one starting point
+  const rows = D.map(r => { const v = _lvVal(r, __lv.m, __lv.d, __lv.iv), base = _lvVal(r, 0, 0, 0), chg = v != null && base != null ? v - base : null; return { r, chg, pnl: chg != null ? r.val + chg - r.cost : null }; });
+  const mx = Math.max(1, ...rows.map(z => Math.abs(z.chg || 0))), tot = rows.reduce((s, z) => s + (z.chg || 0), 0), now = rows.reduce((s, z) => s + z.r.val, 0), costs = rows.reduce((s, z) => s + z.r.cost, 0), after = now + tot;
+  const bars = rows.sort((a, b) => (a.chg || 0) - (b.chg || 0)).map(z => `<div class="lv-sr" onclick="lvOpen('${esc(z.r.key)}')"><span class="lv-sl">${esc(z.r.lab)}</span><span class="lv-sbar"><i class="${(z.chg || 0) >= 0 ? 'up' : 'dn'}" style="${(z.chg || 0) >= 0 ? 'left:50%' : `right:50%`};width:${(Math.abs(z.chg || 0) / mx * 50).toFixed(1)}%"></i></span>
+      <span class="lv-sv ${_thCls(z.chg)}">${z.chg != null ? _fmtSigned(z.chg) : '—'}</span><span class="lv-sv ${_thCls(z.pnl)}">${z.pnl != null && z.r.cost ? _lvPc(z.pnl / z.r.cost * 100) : '—'}</span></div>`).join('');
+  // stocks × moves heat map at the chosen time and IV
+  const tk = [...new Set(D.map(r => r.x.ticker))], moves = [-30, -20, -10, 0, 10, 20, 30];
+  const cell = (t, m) => D.filter(r => r.x.ticker === t).reduce((s, r) => { const v = _lvVal(r, m, __lv.d, __lv.iv), b = _lvVal(r, 0, 0, 0); return s + (v != null && b != null ? v - b : 0); }, 0);
+  const all = tk.flatMap(t => moves.map(m => Math.abs(cell(t, m)))), hm = Math.max(1, ...all);
+  const heat = `<div class="rk-table-wrap"><table class="rk-table lv-heat"><thead><tr><th>正股涨跌 →</th>${moves.map(m => `<th>${m > 0 ? '+' : m < 0 ? '−' : ''}${Math.abs(m)}%</th>`).join('')}</tr></thead><tbody>${tk.map(t => `<tr><td><b>${esc(t)}</b></td>${moves.map(m => { const v = cell(t, m), a = (0.12 + 0.6 * Math.abs(v) / hm).toFixed(2);
+    return `<td style="background:${v >= 0 ? `rgba(16,185,129,${a})` : `rgba(239,68,68,${a})`}">${Math.abs(v) >= 1000 ? `${v >= 0 ? '+' : '−'}${(Math.abs(v) / 1000).toFixed(1)}k` : _fmtSigned(v)}</td>`; }).join('')}</tr>`).join('')}</tbody></table></div>`;
+  return `<div class="cv-figs"><div class="cv-fig"><b>${_fmtUsd(now)}</b><span>现在的市值</span></div><div class="cv-fig"><b>${_fmtUsd(after)}</b><span>情景下的市值</span></div><div class="cv-fig"><b class="${_thCls(tot)}">${_fmtSigned(tot)}</b><span>变化</span><em>${now ? _lvPc(tot / now * 100) : ''}</em></div><div class="cv-fig"><b class="${_thCls(after - costs)}">${_fmtSigned(after - costs)}</b><span>情景下的浮盈</span><em>${costs ? _lvPc((after - costs) / costs * 100) : ''}</em></div></div>
+    <div class="lv-sh"><span>每一张的变化</span><span>变化 · 情景下浮盈</span></div>${bars}<div class="rk-sub-title">每只股票 × 正股涨跌 (按上面的时间和 IV)</div>${heat}`;
+}
+function _lvSim(D) {
+  const sl = (k, lab, min, max, step) => `<label class="lv-sl-row"><span>${lab}</span><input type="range" min="${min}" max="${max}" step="${step}" value="${__lv[k]}" oninput="lvSim('${k}', this.value)"><b id="lv-${k}-v">${_lvSimLab(k)}</b></label>`;
+  return `<div class="lv-sliders">${sl('m', '正股涨跌', -30, 30, 1)}${sl('d', '时间往前推', 0, 180, 5)}${sl('iv', 'IV 变化', -20, 20, 1)}<button class="btn ghost small" onclick="__lv.m = __lv.d = __lv.iv = 0; _lvRender()">归零</button></div>
+    <div id="lv-sim-body">${_lvSimBody(D)}</div><div class="rk-note">用 Black-Scholes 按每张 LEAPS 现在的 IV 重新估价; 所有股票按同一个幅度涨跌 (没有按 β 区分). 估算值, 不含买卖价差.</div>`;
 }
 function _anOverviewHTML(D) {
   const R = D.rows, by = k => R.filter(r => r.strat === k);
@@ -18398,18 +18535,19 @@ function renderPositionsPage() {
   const avgHeld = (() => { const h = lpRows.filter(r => r.held); return h.length ? h.reduce((s, r) => s + r.held.days, 0) / h.length : null; })();
   const lpHTML = lp.length ? `
     <section class="rk-block">
-      <h3 class="rk-block-title" id="sec-leaps">LEAPS · ${lp.length} 笔${(() => { const mT = lp.filter(x => !_leapsTgt(x)).length, mS = lp.filter(x => !_leapsStop(x)).length, a = [];
-          if (mT) a.push(`${mT} 个未设置正股止盈位`); if (mS) a.push(`${mS} 个未设置正股止损位`); return a.length ? ` <span class="lt-warn">${a.join(' · ')}</span>` : ''; })()}</h3>
+      <h3 class="rk-block-title rk-title-row" id="sec-leaps"><span>LEAPS · ${lp.length} 笔${(() => { const mT = lp.filter(x => !_leapsTgt(x)).length, mS = lp.filter(x => !_leapsStop(x)).length, a = [];
+          if (mT) a.push(`${mT} 个未设置正股止盈位`); if (mS) a.push(`${mS} 个未设置正股止损位`); return a.length ? ` <span class="lt-warn">${a.join(' · ')}</span>` : ''; })()}</span><button class="btn ghost small lv-btn" onclick="showLeapsViz()">高级图 ▸</button></h3>
       <div class="rk-figs">
         ${fig('成本', _fmtUsd(lT.cost), `${_pct(pn(lT.cost))} NAV`)}
         ${fig('市值', _fmtUsd(lT.val), `浮盈 ${_sg(lT.val - lT.cost)} · ${lT.cost ? _sgP((lT.val - lT.cost) / lT.cost * 100) : '—'}`, _thCls(lT.val - lT.cost))}
         ${(() => { const usd = sum(lpRows, r => r.s ? r.s.shares * r.s.m.S : 0); return fig('正股等值市值', _fmtUsd(usd), `${_pct(pn(usd))} NAV · 每 $1 LEAPS 控制 $${lT.val > 0 ? (usd / lT.val).toFixed(1) : '—'}`); })()}
         ${fig(`时间价值 ${_qBtn('carry', 'long')}`, _fmtUsd(lT.ext), `每月 Theta ${_sg(lT.th * 30)}`, 'rk-t-watch')}
+        ${(() => { const usd = sum(lpRows, r => r.s ? r.s.shares * r.s.m.S : 0); return fig(`杠杆 λ ${_qBtn('lambda', 'long')}`, lT.val > 0 ? (usd / lT.val).toFixed(2) + '×' : '—', lT.val > 0 ? `每 $1 LEAPS 控制 $${(usd / lT.val).toFixed(1)} 正股 · 和 Greeks 页一样` : ''); })()}
         ${fig('平均持有', avgHeld != null ? avgHeld.toFixed(0) + ' 天' : '—', '仍持有的 LEAPS')}
       </div>
       <div class="rk-table-wrap"><table class="rk-table">
-        <thead><tr><th>合约</th><th>Mark ${_qBtn('mark_und', 'short')}</th><th>浮盈 %</th><th>浮盈</th><th>期权止盈进度</th><th>正股止盈位</th><th>需涨</th><th>正股止损位</th><th>需跌</th><th>正股价格位置</th><th>距退出</th><th>Δ</th><th>DTE</th><th>市值</th><th>市值 % NAV</th><th>成本</th><th>投入 % NAV</th><th>持有</th><th>正股等值</th><th>λ ${_qBtn('lambda', 'long')}</th></tr></thead>
-        <tbody>${lpRows.map(r => row(r.x, `<td><b>${esc(_posLabel(r.x))}</b>${_lmBtn(r.x)}</td>${_markTd(r.x)}<td class="${_thCls(r.pnl)}">${_pct(r.pnlPct)}</td><td class="${_thCls(r.pnl)}">${sgn(r.pnl)}</td><td class="pc-cell">${r.prog != null ? _progBarHTML(r.prog, null, `/ +${r.tg.pct}% ${r.tg.style ? '' : '(默认)'}`) : '—'}</td>${(() => { const S = r.x.und, k = esc(_ltKey(r.x));
+        <thead><tr><th>合约</th><th>Mark ${_qBtn('mark_und', 'short')}</th><th>成本</th><th>市值</th><th>浮盈 %</th><th>浮盈</th><th>期权止盈进度</th><th>正股止盈位</th><th>需涨</th><th>正股止损位</th><th>需跌</th><th>正股价格位置</th><th>距退出</th><th>Δ</th><th>DTE</th><th>市值 % NAV</th><th>投入 % NAV</th><th>持有</th><th>正股等值</th><th>λ ${_qBtn('lambda', 'long')}</th></tr></thead>
+        <tbody>${lpRows.map(r => row(r.x, `<td><b>${esc(_posLabel(r.x))}</b>${_lmBtn(r.x)}</td>${_markTd(r.x)}<td>${money(r.cost)}</td><td>${money(r.val)}</td><td class="${_thCls(r.pnl)}">${_pct(r.pnlPct)}</td><td class="${_thCls(r.pnl)}">${sgn(r.pnl)}</td><td class="pc-cell">${r.prog != null ? _progBarHTML(r.prog, null, `/ +${r.tg.pct}% ${r.tg.style ? '' : '(默认)'}`) : '—'}</td>${(() => { const S = r.x.und, k = esc(_ltKey(r.x));
           const cell = (kind, L, label) => `<td class="lt-cell" onclick="event.stopPropagation()"><input type="number" step="0.5" class="gl-num lt-in${L ? '' : ' lt-miss'}" value="${L ? L.px : ''}" placeholder="填写" onchange="setLeapsLevel('${kind}', '${k}', this.value)" onkeydown="if (event.key === 'Enter') this.blur()" aria-label="${label}">${L && L.src === 'checklist' ? '<span class="rk-quiet lt-src">来自 checklist</span>' : ''}</td>`;
           const T = _leapsTgt(r.x), up = T && S > 0 ? (T.px / S - 1) * 100 : null;        // farther from the target = redder
           const P = _leapsStop(r.x), dn = P && S > 0 ? (1 - P.px / S) * 100 : null;      // closer to the stop = redder
@@ -18417,8 +18555,7 @@ function renderPositionsPage() {
           const dnCls = dn == null ? 'rk-quiet' : dn <= 0 ? 'rk-t-danger' : dn < 5 ? 'rk-t-danger' : dn < 12 ? 'rk-t-alert' : 'rk-t-safe';
           return cell('tgt', T, '正股止盈位') + `<td class="${upCls}">${up == null ? (T ? '—' : '未设置') : up <= 0 ? '已到止盈位' : '+' + up.toFixed(1) + '%'}</td>`
             + cell('stop', P, '正股止损位') + `<td class="${dnCls}">${dn == null ? (P ? '—' : '未设置') : dn <= 0 ? '已到止损位' : '−' + dn.toFixed(1) + '%'}</td><td>${_lvlBarHTML(S, P && P.px, T && T.px)}</td>`; })()}<td class="${r.toExit != null && r.toExit <= 0 ? 'rk-t-danger' : r.toExit != null && r.toExit < 90 ? 'rk-t-alert' : ''}">${r.toExit != null ? (r.toExit <= 0 ? '已到退出线' : r.toExit + ' 天') : '—'}</td><td>${r.s ? _num2(r.s.delta) : '—'}</td><td>${_days(r.dte)}</td>
-          <td>${money(r.val)}</td>
-          <td>${_pct(pn(r.val))}</td><td>${money(r.cost)}</td>
+          <td>${_pct(pn(r.val))}</td>
           <td>${_pct(pn(r.cost))}</td>
           <td>${r.held ? r.held.days + ' 天' + (r.held.approx ? '*' : '') : '—'}</td><td>${r.s ? Math.round(r.s.shares) + ' 股' : '—'}</td><td>${r.s && r.s.lambda != null ? r.s.lambda.toFixed(1) : '—'}</td>`)).join('')}</tbody>
       </table></div>
