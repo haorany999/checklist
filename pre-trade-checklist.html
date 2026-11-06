@@ -3708,6 +3708,19 @@
   .cv-fig.cv-vs { grid-column: span 2; } .cv-vs-row { display: flex; align-items: baseline; gap: 12px; } .cv-vs-row > span { display: flex; flex-direction: column; } .cv-vs-row > i { font-style: normal; color: var(--text-faint); font-size: 12px; }
   .cv-vs em { font-family: var(--sans); } @media (max-width: 640px) { .cv-fig.cv-vs { grid-column: span 3; } }
   td.mk-cell { font-family: var(--mono); font-weight: 600; }
+  /* v122 · Anchored VWAP item: hard to scroll past */
+  .item.avwap-item { border: 2px solid #E5793B; border-left-width: 6px; background: color-mix(in srgb, #E5793B 7%, var(--panel)); }
+  .item.avwap-item.pass { border-color: var(--pass); background: color-mix(in srgb, var(--pass) 6%, var(--panel)); }
+  .av-badge { display: inline-block; margin-left: 6px; padding: 1px 7px; border-radius: 3px; font-size: 11px; font-weight: 700; color: #fff; background: #E5793B; }
+  .av-in { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) auto; gap: 8px 10px; align-items: end; margin: 8px 0 6px; }
+  .av-f { display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: var(--text-dim); } .av-f input { width: 100%; }
+  .av-copy { white-space: nowrap; } .av-t { margin-top: 4px; font-size: 12.5px; } .av-sum { margin-top: 4px; font-size: 12.5px; } .av-sum b { font-family: var(--mono); } .av-empty { font-size: 12.5px; color: var(--fail); margin-top: 2px; }
+  @media (max-width: 640px) { .av-in { grid-template-columns: 1fr; } }
+  .av-list td { white-space: nowrap; }
+  body .item.avwap-item { border: 2px solid #E5793B !important; border-left-width: 6px !important; background: color-mix(in srgb, #E5793B 8%, var(--panel)) !important; box-shadow: 0 0 0 3px color-mix(in srgb, #E5793B 14%, transparent) !important; }
+  body .item.avwap-item.pass { border-color: var(--pass) !important; background: color-mix(in srgb, var(--pass) 7%, var(--panel)) !important; box-shadow: none !important; }
+  body[class*="light"] .av-badge { background: #C2410C; }
+  .an-tabs { display: flex; flex-wrap: wrap; gap: 4px 0; } .an-chips { display: flex; flex-wrap: wrap; gap: 4px 0; }
 </style>
 </head>
 <body class="theme-slate">
@@ -4057,8 +4070,44 @@ const state = {
 /* ==========================================================
  * CHECKLIST · LEAPS OPEN
  * ========================================================== */
+// ═════════════ v122 · Anchored VWAP: three lines you read off thinkorswim, a hard block until they're filled ═════════════
+const AVWAP_KEY = 'pretrade_avwap_lines', AV_K = ['A', 'B', 'C'];
+const AV_L = { A: 'A · 最近 (最轻, 最容易跌破)', B: 'B · 中间', C: 'C · 最早一次大跌 (最强)' };
+const _avwapItem = () => ({ group: 'Anchored VWAP · 必须打开 TOS 查看', id: 'avwap_abc', title: 'Anchored VWAP · A / B / C 三条线', desc: '打开 thinkorswim, 输入代码, 把你设好的三条 AVWAP 线现在的价格填进来. 三条都填了才通过; 位置好不好由你判断, 下面会算出现价离每条线多远.', hard: true, avwap: true });
+function _avLines() { try { return JSON.parse(localStorage.getItem(AVWAP_KEY) || '{}') || {}; } catch (e) { return {}; } }
+function _avVals() { const o = {}; AV_K.forEach(k => { const v = parseFloat(state.items['avwap_' + k]); o[k] = v > 0 ? v : null; }); return o; }
+function _avPx() { const t = _normTicker(state.ticker), p = t && __px[t]; if (p && p.bars && p.bars.length) return p.bars[p.bars.length - 1].c; const x = t && computeRisk().c.pos.find(z => z.ticker === t && z.und > 0); return x ? x.und : null; }
+function _avSave() { const t = _normTicker(state.ticker), v = _avVals(); if (!t || AV_K.some(k => v[k] == null)) return; const m = _avLines(); m[t] = { ...v, at: _todayISO() };
+  try { localStorage.setItem(AVWAP_KEY, JSON.stringify(m)); } catch (e) {} if (typeof scheduleAutoPushToGist === 'function') scheduleAutoPushToGist(); }
+// where the price (and the CSP strike) sits against the three lines
+function _avCalcHTML() {
+  const v = _avVals(), S = _avPx(), K = state.strategy === 'csp' ? parseFloat(state.cspStrike) : null, pc = x => `${x >= 0 ? '+' : '−'}${Math.abs(x).toFixed(1)}%`;
+  if (AV_K.every(k => v[k] == null)) return `<div class="av-empty">还没填. 三条都填了这一条才通过.</div>`;
+  const rows = AV_K.map(k => { if (v[k] == null) return `<tr><td><b>${k}</b></td><td colspan="${K > 0 ? 3 : 2}" class="rk-t-danger">还没填</td></tr>`;
+    const d = S ? (S / v[k] - 1) * 100 : null, ks = K > 0 ? (K / v[k] - 1) * 100 : null;
+    return `<tr><td><b>${k}</b></td><td>${v[k].toFixed(2)}</td><td class="${d == null ? '' : d >= 0 ? 'rk-t-safe' : 'rk-t-danger'}">${d == null ? '—' : d >= 0 ? `现价在上方 ${pc(d)}` : `已跌破 ${pc(d)}`}</td>${K > 0 ? `<td class="${ks <= 0 ? 'rk-t-safe' : 'rk-t-alert'}">${ks <= 0 ? `行权价在线下方 ${pc(ks)}` : `行权价在线上方 ${pc(ks)}`}</td>` : ''}</tr>`; }).join('');
+  const below = S ? AV_K.filter(k => v[k] != null && v[k] <= S).sort((a, b) => v[b] - v[a]) : [];
+  const sum = !S ? '<span class="rk-quiet">还没有现价, 读取行情后会算出位置</span>' : AV_K.every(k => v[k] == null || v[k] > S) && AV_K.some(k => v[k] != null) ? `<span class="rk-t-danger">现价 ${S.toFixed(2)} 已经跌破所有填了的线</span>`
+    : below.length ? `现价 ${S.toFixed(2)} · 下方最近的支撑是 <b>${below[0]}</b> (${v[below[0]].toFixed(2)}, 距离 ${pc((S / v[below[0]] - 1) * 100)})${AV_K.filter(k => v[k] != null && v[k] > S).length ? ` · 已跌破 ${AV_K.filter(k => v[k] != null && v[k] > S).join('、')}` : ''}` : '';
+  return `<div class="rk-table-wrap"><table class="rk-table av-t"><thead><tr><th>线</th><th>价格</th><th>现价</th>${K > 0 ? `<th>行权价 ${K}</th>` : ''}</tr></thead><tbody>${rows}</tbody></table></div><div class="av-sum">${sum}</div>`;
+}
+function _avItemHTML(it, v) {
+  const t = _normTicker(state.ticker), last = t ? _avLines()[t] : null, hardClass = v === 'fail' ? 'hard-fail' : '';
+  return `<div class="item ${v} ${hardClass} avwap-item" id="item-${esc(it.id)}"><div class="item-head"><div class="item-text">
+      <div class="item-title">${esc(it.title)} <span class="hard-badge">Hard block</span> <span class="av-badge">必须打开 TOS 查看</span></div><div class="item-desc">${esc(it.desc)}</div></div>
+      <span class="item-numeric-verdict ${v === 'pass' ? 'pass' : 'fail'}" id="badge-${esc(it.id)}">${v === 'pass' ? 'PASS' : 'BLOCK'}</span></div>
+    <div class="av-in">${AV_K.map(k => `<label class="av-f"><span>${AV_L[k]}</span><input class="item-numeric-input" id="avwap-${k}" type="text" inputmode="decimal" autocomplete="off" value="${esc(state.items['avwap_' + k] || '')}" placeholder="${last && last[k] ? `上次 ${last.at.slice(5).replace('-', '/')}: ${last[k]}` : '例如 182.40'}"></label>`).join('')}
+      ${t ? `<button class="btn ghost small av-copy" onclick="navigator.clipboard && navigator.clipboard.writeText('${esc(t)}'); showToast('已复制 ${esc(t)}', 'success', '到 thinkorswim 里粘贴')">复制 ${esc(t)}</button>` : ''}</div>
+    <div id="avwap-calc">${_avCalcHTML()}</div></div>`;
+}
+function _avBind() {
+  AV_K.forEach(k => { const el = document.getElementById('avwap-' + k); if (!el) return;
+    el.addEventListener('focus', () => { if (typeof pushUndo === 'function') pushUndo(); if (typeof cancelFullRender === 'function') cancelFullRender(); });
+    el.addEventListener('input', e => { state.items['avwap_' + k] = e.target.value.trim(); const c = document.getElementById('avwap-calc'); if (c) c.innerHTML = _avCalcHTML(); updateVerdictsInPlace(); if (typeof scheduleSaveDraft === 'function') scheduleSaveDraft(); });
+    el.addEventListener('blur', () => _avSave()); });
+}
 function leapsOpenItems() {
-  const base = [];
+  const base = [_avwapItem()];
   base.push({ group: 'Discipline · 交易前提', id: 'discipline',
     title: '本笔非临时起意 · 前一天已计划',
     desc: '前一日已计划, 非临时反应. 排除报复 / FOMO / 回本 / 无聊性动机.' });
@@ -4084,9 +4133,6 @@ function leapsOpenItems() {
   base.push({ group: 'Underlying & technicals · 标的与技术面', id: 'volprofile',
     title: '价格位于 1Y 与 180D Volume Profile 的 HVN 或 VAL 附近',
     desc: '' });
-  base.push({ group: 'Underlying & technicals · 标的与技术面', id: 'avwap',
-    title: '价格受重要波段低点的 Anchored VWAP 支撑',
-    desc: '锚点合适, 价格在其之上或刚触及。' });
   base.push({ group: 'Underlying & technicals · 标的与技术面', id: 'earnings',
     title: '距下次财报 ≥ 45 天',
     desc: '给 LEAPS 留足时间空间. 距离 < 45 天 → pending, 需评估财报事件风险.',
@@ -4414,7 +4460,7 @@ function leapsCloseItems() {
  * ========================================================== */
 function cspItems() {
   if (state.cspIntent === 'sniper') return cspSniperItems();
-  const base = [];
+  const base = [_avwapItem()];
   base.push({ group: 'Discipline · 交易前提', id: 'discipline',
     title: '本笔非临时起意 · 前一天已计划',
     desc: '前一日已计划, 非临时反应. 排除报复 / FOMO / 回本 / 无聊性动机.' });
@@ -4515,7 +4561,7 @@ function cspItems() {
  * 与常规 CSP cap 隔离 (不算入 csp_total_check / csp_ticker_check)
  * ========================================================== */
 function cspSniperItems() {
-  const base = [];
+  const base = [_avwapItem()];
 
   // === Discipline ===
   base.push({ group: 'Discipline · 交易前提', id: 'discipline',
@@ -4835,6 +4881,7 @@ function rrCheckDesc() {
  * VERDICT
  * ========================================================== */
 function itemVerdict(item) {
+  if (item.avwap) { const v = _avVals(); return AV_K.every(k => v[k] != null) ? 'pass' : 'fail'; }
   // R:R computed item
   if (item.id === 'rr_check') return rrCheckVerdict();
   // Market regime (VTV/QQQ ROC) — global signal, not a per-trade checkbox
@@ -5762,7 +5809,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.17-v121';
+const APP_BUILD = '2026.10.17-v122';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
@@ -7627,6 +7674,7 @@ function renderChecklist() {
 
   items.forEach(it => {
     if (it.positionCheck || it.regimeCheck) return;
+    if (it.avwap) { _avBind(); return; }
     if (it.numeric) {
       const el = document.getElementById(`num-${it.id}`);
       if (el) {
@@ -7772,7 +7820,8 @@ function updateVerdictsInPlace() {
     if (!$item) return;  // Item isn't in DOM yet (conditional, waiting for full re-render)
     const newV = itemVerdict(it);
     const hardCls = it.hard && newV === 'fail' ? ' hard-fail' : '';
-    $item.className = 'item ' + newV + hardCls;
+    $item.className = 'item ' + newV + hardCls + (it.avwap ? ' avwap-item' : '');
+    if (it.avwap) { const $b = document.getElementById(`badge-${it.id}`); if ($b) { $b.className = 'item-numeric-verdict ' + (newV === 'pass' ? 'pass' : 'fail'); $b.textContent = newV === 'pass' ? 'PASS' : 'BLOCK'; } }
 
     if (it.numeric) {
       const $badge = document.getElementById(`badge-${it.id}`);
@@ -7859,6 +7908,7 @@ function updateVerdictsInPlace() {
 
 function itemHTML(it) {
   const v = itemVerdict(it);
+  if (it.avwap) return _avItemHTML(it, v);
   // Special OR-pair compensation: no_earnings HARD is soft-downgraded when earnings_exit_plan passes (CSP only)
   const isCompensated = state.strategy === 'csp'
     && it.id === 'no_earnings'
@@ -10462,7 +10512,7 @@ function buildSyncPayload() {
   return payload;
 }
 // settings that change verdicts or plans: the same on every device
-const SYNC_EXTRA = () => [['newLowWin', NEWLOW_KEY], ['discStart', DISC_START_KEY], ['discReset', 'pretrade_disc_reset'], ['room', ROOM_KEY], ['goal', GOAL_KEY], ['rollPlans', ROLL_PLAN_KEY], ['earnings', EARN_KEY], ['rollCfg', ROLL_CFG_KEY], ['discExcl', DISC_EXCL_KEY], ['scanLog', SCAN_LOG_KEY], ['shortTP', SHORT_TP_KEY]];
+const SYNC_EXTRA = () => [['newLowWin', NEWLOW_KEY], ['discStart', DISC_START_KEY], ['discReset', 'pretrade_disc_reset'], ['room', ROOM_KEY], ['goal', GOAL_KEY], ['rollPlans', ROLL_PLAN_KEY], ['earnings', EARN_KEY], ['rollCfg', ROLL_CFG_KEY], ['discExcl', DISC_EXCL_KEY], ['scanLog', SCAN_LOG_KEY], ['shortTP', SHORT_TP_KEY], ['avwapLines', AVWAP_KEY]];
 // three-way merge: what each setting looked like at the last sync is the base. Changed only here → keep it; changed only in the cloud → take it.
 const SYNC_BASE_KEY = 'pretrade_sync_base';
 const SYNC_PLAIN = () => [['nav', NAV_KEY], ['cash', CASH_KEY], ['swvxx', SWVXX_KEY], ['riskWeights', RISK_WEIGHTS_KEY], ['betaOverrides', BETA_OVR_KEY], ['betaMode', BETA_MODE_KEY], ['scanCfg', SCAN_CFG_KEY],
@@ -10489,7 +10539,7 @@ function applyRemotePayload(remote, mode) {
   const isJSON = v => { try { JSON.parse(v); return true; } catch (e) { return false; } };
   if (mode === 'merge') {
     try {
-      SYNC_PLAIN().forEach(([n, k]) => _take3(n, k, s[n], ['riskWeights', 'betaOverrides', 'scanCfg', 'room', 'goal', 'rollPlans', 'earnings', 'rollCfg', 'discExcl', 'scanLog'].includes(n) ? isJSON : n === 'betaMode' ? v => v === 'beta' || v === 'flat' : () => true));
+      SYNC_PLAIN().forEach(([n, k]) => _take3(n, k, s[n], ['riskWeights', 'betaOverrides', 'scanCfg', 'room', 'goal', 'rollPlans', 'earnings', 'rollCfg', 'discExcl', 'scanLog', 'avwapLines'].includes(n) ? isJSON : n === 'betaMode' ? v => v === 'beta' || v === 'flat' : () => true));
       if (typeof s.rocPhase === 'string' && s.rocPhase) _mergeRemoteRocPhase(s.rocPhase);
       if (typeof s.leapsTargets === 'string' && s.leapsTargets) _ltMerge(s.leapsTargets);
       if (typeof s.leapsStops === 'string' && s.leapsStops) _ltMerge(s.leapsStops, 'stop');
@@ -14208,6 +14258,8 @@ const GREEK_HELP = {
   assign_out: { t: '被行权的结果', def: 'CSP: 被行权接股后的有效成本 (行权价 − 收到的权利金), 和现价比. 比现价高 = 接股后马上是浮亏. Short call: 行权价和你这只股票的调整后成本 (Schwab 均价减去卖期权降低的部分) 比, 高 = 被 call 走也赚钱, 低 = 被 call 走会亏.', note: '两张表用同一组列, 这一列各自显示对这个策略最重要的那个结果.' },
   mark_und: { t: 'Mark', def: '这只股票 (标的) 现在的价格, 不是期权本身的价格. 和「距行权价」放在一起, 不用点开就能看到现价离行权价多远.', note: '价格来自最近一次 Schwab 持仓刷新; 想要最新的就点右上角刷新.' },
   an_twr: { t: '你的账户 vs SPY', def: '你的账户这段时间的时间加权收益率 (TWR): 把每天收盘的 NAV 连起来, 每一天的收益 = (当天 NAV − 当天的入金出金) ÷ 前一天 NAV − 1, 再连乘. 入金出金不算赚的钱, 也不受金额大小的影响, 和 SPY 的涨跌可以直接比. 它包括已实现和未实现, 所以和上面的「区间已实现」不是同一个数.', ex: '1 月 1 日 NAV $100,000; 1 月 15 日入金 $20,000, 当天收盘 NAV $125,000: 这半个月的收益 = (125,000 − 20,000) ÷ 100,000 − 1 = +5%. 1 月 31 日 NAV $131,250: 后半个月 = 131,250 ÷ 125,000 − 1 = +5%. 合起来 = 1.05 × 1.05 − 1 = +10.25%, 而不是 (131,250 − 100,000) ÷ 100,000 = +31% (那里面有 2 万是你存进去的).', note: '每天的 NAV 来自 Worker 收盘时记下的快照, 只从开始记录的那天起有; 所选范围更早时, 从第一天有记录的开始算, SPY 也按同一段时间算. 图例里每个策略后面的 % 是占合计的比例, 不是收益率.' },
+  an_av_held: { t: 'AVWAP 线守住的比例', def: '开仓时在现价下方的那条线 (也就是当时的支撑), 从开仓到平仓 (或到今天), 正股最低价有没有跌破它超过 1%. 守住的比例越高, 说明这一级支撑越可靠.', ex: '开仓时现价 200, A 线 192: 持有期间最低到 191 (只低了 0.5%) 算守住; 最低到 186 算被跌破. 10 笔里 8 笔守住, 就是 80%.', note: '用的是开仓当天你填的价格; AVWAP 每天会移动一点, 所以这是近似的检验.' },
+  an_av_zone: { t: '开仓时现价相对三条线', def: '开仓那天现价在几条 AVWAP 线的上方: 三条都在下方 = 三层支撑都还在; 跌破 1 条 / 2 条 / 全部 = 已经有几层支撑丢了. 比较这几组的结果, 看「在支撑上方开仓」到底有没有更好.', note: '' },
   an_ret: { t: 'LEAPS 的收益率', def: '每笔 = 这一笔已实现的盈亏 ÷ 这一笔的成本, 不管拿了多久; 「平均收益率」是这些数字的简单平均. 「资金年化」= 合计盈亏 ÷ (每笔成本 × 持有天数之和) × 365, 把时间算进去, 和 CSP 的「担保资金年化」是同一个口径.', ex: '一笔拿 30 天赚 20%, 一笔拿 365 天赚 20%: 平均收益率都是 20%; 资金年化分别约 243% 和 20%, 合在一起约 37%.', note: 'LEAPS 的「最好」按每笔的平均收益率评: 你关心的是每一笔赚多少, 拿得久的在年化上会显得吃亏.' },
   an_curve: { t: '累计已实现', def: '按平仓日期把每个策略的已实现盈亏一笔一笔加起来, 从所选时间范围的第一天从 0 开始. 线一直向上 = 这个策略在稳定赚钱; 一段横着或向下 = 那段时间在拖后腿. 浅红色区域 = 「全部」从最高点回落的部分 (回撤); 圆点 = 这段时间里金额最大的 5 笔. 「全部」不含短期 long call.', ex: '选 YTD: 今年 1 月 1 日从 0 开始. 鼠标放在图上看那一天每个策略累计到多少、当天结束了哪几笔. 在图上拖选 3 月到 5 月就只看这三个月, 双击回到全部.', note: '「最大回撤」= 这段时间里「全部」从某个高点到之后最低点回落了多少.' },
   an_worst: { t: '最大的几笔亏损', def: '已结束的仓位里亏得最多的 5 笔 (roll 过的整条链算一笔), 列出开仓时的条件. 「共同点」把它们的平均值和其他所有已结束的同类仓位比, 差别明显的才列出来.', ex: '如果最大的 5 笔亏损开仓 Δ 平均 0.33, 而其他平均 0.21, 说明你的大亏主要来自 Δ 偏高的开仓; 以后把 Δ 上限压低, 往往比提高胜率更能改善长期结果.', note: '尾部亏损往往决定了卖方策略的长期结果: 赚 20 笔小钱, 一笔大亏就能吐回去.' },
@@ -16305,6 +16357,7 @@ function _anData() {
     const si = _anIdx('SPY', day); let spyUp = null; if (si != null && si >= 199) { const ma = spy.slice(si - 199, si + 1).reduce((s, b) => s + b.c, 0) / 200; spyUp = spy[si].c >= ma; }
     const vi = _anIdx('$VIX', day); return { i, S0, spyUp, vix0: vi != null ? vix[vi].c : null }; };
   const verdictOf = e => !e ? 'none' : (e.hardFails || []).length ? 'hard' : (e.failed || []).length ? 'soft' : 'clear';
+  const avOf = e => { const it = e && e.fullState && e.fullState.items; if (!it) return null; const o = {}; for (const k of ['A', 'B', 'C']) { const v = parseFloat(it['avwap_' + k]); if (!(v > 0)) return null; o[k] = v; } return o; };
   // short options: the whole roll chain is one position
   U.filter(u => u.side === 'short' && !u.rollFrom).forEach(h => {
     const L = _rvChain(U, h), last = L[L.length - 1], put = h.putCall === 'PUT', q = Math.abs(h.qty || h.openQty || 1) || 1, day = _tsDay(h.openTs);
@@ -16320,7 +16373,7 @@ function _anData() {
     rows.push({ k: h.id, strat: put ? 'csp' : pmcc ? 'pmcc' : 'cc', t: h.ticker, L, head: h, last, put, q, openTs: h.openTs, day, closeTs: done ? last.closeTs : null, done, end, pnl, credit, rolls: L.length - 1,
       K: h.strike, exp: h.expiry, dte0, prem, S0: c.S0, iv0, d0, pA, dist0: c.S0 ? (put ? (c.S0 - h.strike) / c.S0 : (h.strike - c.S0) / c.S0) * 100 : null,
       held: Math.round(((done ? last.closeTs : Date.now()) - h.openTs) / 864e5), spyUp: c.spyUp, vix0: c.vix0, entry: e, verdict: verdictOf(e), live: !!h.live, collat: h.strike * 100 * q,
-      why, base: baseL ? { K: baseL.strike, exp: baseL.expiry } : null, earn: (() => { const d = _earnOf(h.ticker); return d && d >= day && d <= h.expiry ? true : null; })() });
+      why, av: avOf(e), base: baseL ? { K: baseL.strike, exp: baseL.expiry } : null, earn: (() => { const d = _earnOf(h.ticker); return d && d >= day && d <= h.expiry ? true : null; })() });
     // how close it came: the nearest the stock got to the strike while you held it (negative = it went in the money)
     const r = rows[rows.length - 1];
     if (c.i != null) { const B = _anBars(h.ticker), ci = _anIdx(h.ticker, done ? _tsDay(last.closeTs) : today); if (ci != null && ci >= c.i) {
@@ -16338,7 +16391,7 @@ function _anData() {
     const off52 = c.i != null && c.i >= 20 ? (c.S0 / Math.max(...B.slice(Math.max(0, c.i - 251), c.i + 1).map(b => b.h)) - 1) * 100 : null;
     let dd = null; if (iv0 && c.i != null) { const ci = _anIdx(u.ticker, done ? _tsDay(u.closeTs) : today); if (ci != null && ci > c.i) { let mn = 0;
       for (const b of B.slice(c.i + 1, ci + 1)) { const v = _anBS(false, b.c, u.strike, Math.max(0, _anDays(b.d, u.expiry)) / 365, iv0) / pps - 1; if (v < mn) mn = v; } dd = mn * 100; } }
-    rows.push({ k: u.id, strat: dte0 >= 270 ? 'leaps' : 'long', iv0, d0, mny: c.S0 ? (c.S0 - u.strike) / c.S0 * 100 : null, off52, dd, q, t: u.ticker, head: u, openTs: u.openTs, day, closeTs: done ? u.closeTs : null, done, end: done ? (u.pnl > 0 ? 'tp' : 'loss') : 'open', pnl: done ? (u.pnl || 0) : 0, cost, ret: done && cost ? (u.pnl || 0) / cost * 100 : null,
+    rows.push({ k: u.id, strat: dte0 >= 270 ? 'leaps' : 'long', av: avOf(e), iv0, d0, mny: c.S0 ? (c.S0 - u.strike) / c.S0 * 100 : null, off52, dd, q, t: u.ticker, head: u, openTs: u.openTs, day, closeTs: done ? u.closeTs : null, done, end: done ? (u.pnl > 0 ? 'tp' : 'loss') : 'open', pnl: done ? (u.pnl || 0) : 0, cost, ret: done && cost ? (u.pnl || 0) / cost * 100 : null,
       K: u.strike, exp: u.expiry, dte0, S0: c.S0, w30: win(21), w60: win(42), w90: win(63), eff, after, exitDte, mj2: _anMjAt(u.ticker, c.i), size: nav0 ? cost / nav0 * 100 : null, navApprox: !(e && +e.nav > 0),
       style: e && e.fullState ? e.fullState.leapsStyle || null : null, held: Math.round(((done ? u.closeTs : Date.now()) - u.openTs) / 864e5), spyUp: c.spyUp, vix0: c.vix0, entry: e, verdict: verdictOf(e), live: !!u.live });
   });
@@ -16621,6 +16674,39 @@ window.cvDown = ev => { if (ev.pointerType !== 'mouse' || ev.button !== 0) retur
 window.cvUp = ev => { if (__cvDrag == null) return; const a = __cvDrag, b = _cvSvgX(ev); __cvDrag = null; if (Math.abs(b - a) < 8) { const br = document.getElementById('cv-brush'); if (br) br.setAttribute('visibility', 'hidden'); return; }
   const C = __cv.ctx, tt = v => C.t0 + (Math.min(Math.max(v, CV_L), CV_W - CV_R) - CV_L) / (CV_W - CV_L - CV_R) * (C.t1 - C.t0);
   __cv.preset = 'custom'; __cv.from = Date.parse(new Date(tt(Math.min(a, b))).toISOString().slice(0, 10) + 'T12:00:00Z'); __cv.to = Date.parse(new Date(tt(Math.max(a, b))).toISOString().slice(0, 10) + 'T12:00:00Z'); _cvRedraw(); };
+// ── 寻找 Edge · AVWAP: does the support you read off thinkorswim actually hold, and does it pay ──
+function _anAvwapHTML(D) {
+  const R = D.rows.filter(r => (r.strat === 'csp' || r.strat === 'leaps') && r.av && r.S0);
+  const recorded = getActiveHistory().filter(h => h.fullState && h.fullState.items && AV_K.every(k => parseFloat(h.fullState.items['avwap_' + k]) > 0)).length;
+  const intro = `<div class="rk-note">只用开仓时在 CSP / LEAPS checklist 里填了 A / B / C 三条线的仓位. 每条线用的是开仓当天你填的价格 (AVWAP 每天都会移动一点). 「守住」= 开仓时在现价下方的那条线, 持有期间正股最低价没有跌破它超过 1%.</div>`;
+  if (!R.length) return `<div class="rk-quiet">${recorded ? `checklist 里已经有 ${recorded} 条填了 AVWAP 的记录, 等这些仓位在交易记录里对上、并且有日线后就会显示.` : '还没有数据. 从现在起, 每次在 CSP 或 LEAPS 的 checklist 里填了三条线, 开仓之后这里就会开始积累.'}</div>${intro}`;
+  const pc = x => `${x >= 0 ? '+' : '−'}${Math.abs(x).toFixed(1)}%`, today = _todayISO();
+  R.forEach(r => { const v = r.av, S = r.S0, B = _anBars(r.t), i0 = _anIdx(r.t, r.day), i1 = _anIdx(r.t, r.done ? _tsDay(r.closeTs) : today);
+    const lo = i0 != null && i1 != null && i1 >= i0 ? Math.min(...B.slice(i0, i1 + 1).map(b => b.l)) : null;
+    r.avBelow = AV_K.filter(k => v[k] <= S).length;
+    r.avNear = AV_K.filter(k => v[k] <= S).map(k => (S / v[k] - 1) * 100).sort((a, b) => a - b)[0] ?? null;
+    r.avHeld = {}; AV_K.forEach(k => { if (v[k] <= S && lo != null) r.avHeld[k] = lo >= v[k] * 0.99; });
+    const nk = AV_K.filter(k => v[k] <= S).sort((a, b) => v[b] - v[a])[0]; r.avNearHeld = nk ? r.avHeld[nk] : null;
+    if (r.strat === 'csp') r.avStrike = AV_K.filter(k => r.K <= v[k]).length; });
+  const C = R.filter(r => r.strat === 'csp'), L = R.filter(r => r.strat === 'leaps');
+  const held = k => { const A = R.filter(r => r.avHeld[k] != null); return { n: A.length, h: A.filter(r => r.avHeld[k]).length }; };
+  const figs = `<div class="rk-figs">${_anFig(R.length, `个仓位有 AVWAP 记录`, 'rk-t-acc', `CSP ${C.length} · LEAPS ${L.length}`)}${AV_K.map(k => { const s = held(k);
+    return _anFig(s.n ? _anPc(s.h / s.n) : '—', `${k} 线守住的比例`, !s.n ? '' : s.n < AN_MIN ? '' : s.h / s.n >= 0.7 ? 'rk-t-safe' : s.h / s.n < 0.5 ? 'rk-t-danger' : 'rk-t-alert', s.n ? `${s.h} / ${s.n}${s.n < AN_MIN ? ' · 样本不足' : ''}` : '开仓时都不在下方', k === 'A' ? 'an_av_held' : ''); }).join('')}</div>`;
+  const SW = { cols: [['担保资金年化', A => { const v = _anAnn(A); return v == null ? '—' : `<span class="${v >= 0.2 ? 'rk-t-safe' : v < 0 ? 'rk-t-danger' : ''}">${_anPc(v, 1)}</span>`; }]], metric: { name: '担保资金年化', f: g => _anAnn(g.L), closeAbs: 0.02 } };
+  const RT = { cols: [['平均收益率 (每笔)', A => { const v = _anRet(A); return v == null ? '—' : `<span class="${v >= 0 ? 'rk-t-safe' : 'rk-t-danger'}">${pc(v)}</span>`; }]], metric: { name: '平均收益率', f: g => _anRet(g.L), closeAbs: 5 } };
+  const zone = A => [['三条都在下方', A.filter(r => r.avBelow === 3)], ['跌破 1 条', A.filter(r => r.avBelow === 2)], ['跌破 2 条', A.filter(r => r.avBelow === 1)], ['跌破全部', A.filter(r => r.avBelow === 0)]];
+  const near = A => [['离支撑 0–3%', A.filter(r => r.avNear != null && r.avNear < 3)], ['3–8%', A.filter(r => r.avNear != null && r.avNear >= 3 && r.avNear < 8)], ['> 8%', A.filter(r => r.avNear != null && r.avNear >= 8)], ['下方没有支撑', A.filter(r => r.avNear == null)]];
+  const hold = A => [['下方最近的支撑守住了', A.filter(r => r.avNearHeld === true)], ['被跌破了', A.filter(r => r.avNearHeld === false)]];
+  const grid = `<div class="an-grid">`
+    + (C.length ? _anCmp('CSP · 开仓时现价相对三条线', zone(C), 'an_av_zone', SW) + _anCmp('CSP · 行权价相对三条线', [['行权价在三条线下方', C.filter(r => r.avStrike === 3)], ['在两条下方', C.filter(r => r.avStrike === 2)], ['在一条下方', C.filter(r => r.avStrike === 1)], ['在三条线上方', C.filter(r => r.avStrike === 0)]], '', SW)
+      + _anCmp('CSP · 离下方最近的支撑', near(C), '', SW) + _anCmp('CSP · 持有期间支撑守住了吗', hold(C), '', SW) : '')
+    + (L.length ? _anCmp('LEAPS · 开仓时现价相对三条线', zone(L), 'an_av_zone', RT) + _anCmp('LEAPS · 离下方最近的支撑', near(L), '', RT) + _anCmp('LEAPS · 持有期间支撑守住了吗', hold(L), '', RT) : '') + '</div>';
+  const list = `<div class="rk-sub-title">每一笔</div><div class="rk-table-wrap"><table class="rk-table av-list"><thead><tr><th>开仓</th><th>合约</th><th>现价</th>${AV_K.map(k => `<th>${k}</th>`).join('')}<th>结果</th></tr></thead><tbody>
+    ${R.slice().sort((a, b) => b.openTs - a.openTs).map(r => `<tr><td>${_tsDay(r.openTs).slice(2).replace(/-/g, '/')}</td><td><b>${esc(r.t)} ${r.K}${r.strat === 'csp' ? 'P' : 'C'} ${esc(_md(r.exp))}</b> <span class="rk-quiet">${r.strat === 'csp' ? 'CSP' : 'LEAPS'}</span></td><td>${r.S0.toFixed(2)}</td>
+      ${AV_K.map(k => { const d = (r.S0 / r.av[k] - 1) * 100, h = r.avHeld[k]; return `<td>${r.av[k].toFixed(2)} <span class="${d >= 0 ? 'rk-t-safe' : 'rk-t-danger'}">${pc(d)}</span>${h == null ? '' : h ? ' <span class="rk-t-safe" title="守住了">✓</span>' : ' <span class="rk-t-danger" title="被跌破">✗</span>'}</td>`; }).join('')}
+      <td>${r.done ? _sg(r.pnl) : '<span class="rk-quiet">进行中</span>'}</td></tr>`).join('')}</tbody></table></div>`;
+  return figs + intro + grid + list;
+}
 function _anOverviewHTML(D) {
   const R = D.rows, by = k => R.filter(r => r.strat === k);
   const rowsHTML = ['csp', 'leaps', 'cc', 'pmcc', 'long'].filter(k => by(k).length).map(k => { const s = _anSt(by(k)); return `<tr><td><b>${_anName[k]}</b></td><td>${s.n}</td><td>${s.d}</td><td>${s.d >= AN_MIN ? `<span class="${s.win >= 0.6 ? 'rk-t-safe' : s.win < 0.45 ? 'rk-t-danger' : ''}">${_anPc(s.win)}</span>` : '<span class="rk-quiet">样本不足</span>'}</td><td>${_sg(s.pnl)}</td><td>${_sg(s.avg)}</td><td>${s.held != null ? s.held.toFixed(0) + ' 天' : '—'}</td></tr>`; }).join('');
@@ -16762,9 +16848,9 @@ function renderAnalyticsPage() {
   if (!loadSchwabCfg()) { $app.innerHTML = head + '<div class="rk-page"><div class="rk-notice">需要连接 Schwab.</div></div>'; return; }
   const D = _anData(), tk = [...new Set(D.rows.map(r => r.t))], have = tk.filter(t => _anBars(t).length).length;
   const status = __anBusy === 1 ? '读取交易记录…' : __anBusy === 2 ? `读取日线 ${have} / ${tk.length}…` : `${D.rows.length} 个仓位 · 日线 ${have} / ${tk.length} 只${have < tk.length ? ' (缺日线的不计入需要价格的统计)' : ''}`;
-  const tabs = [['overview', '概览'], ['csp', 'CSP'], ['leaps', 'LEAPS'], ['cc', 'CC'], ['pmcc', 'PMCC'], ['behavior', '行为与环境']];
+  const tabs = [['overview', '概览'], ['csp', 'CSP'], ['leaps', 'LEAPS'], ['cc', 'CC'], ['pmcc', 'PMCC'], ['avwap', 'AVWAP'], ['behavior', '行为与环境']];
   const body = !D.rows.length ? `<div class="rk-quiet">${__anBusy ? '读取中…' : '交易记录里还没有期权仓位.'}</div>`
-    : __anTab === 'csp' ? _safe('CSP', () => _anShortHTML(D, 'csp'), '') : __anTab === 'cc' ? _safe('CC', () => _anShortHTML(D, 'cc'), '') : __anTab === 'pmcc' ? _safe('PMCC', () => _anShortHTML(D, 'pmcc'), '') : __anTab === 'leaps' ? _safe('LEAPS', () => _anLeapsHTML(D), '') : __anTab === 'behavior' ? _safe('行为', () => _anBehaviorHTML(D), '') : _safe('概览', () => _anOverviewHTML(D), '');
+    : __anTab === 'avwap' ? _safe('AVWAP', () => _anAvwapHTML(D), '') : __anTab === 'csp' ? _safe('CSP', () => _anShortHTML(D, 'csp'), '') : __anTab === 'cc' ? _safe('CC', () => _anShortHTML(D, 'cc'), '') : __anTab === 'pmcc' ? _safe('PMCC', () => _anShortHTML(D, 'pmcc'), '') : __anTab === 'leaps' ? _safe('LEAPS', () => _anLeapsHTML(D), '') : __anTab === 'behavior' ? _safe('行为', () => _anBehaviorHTML(D), '') : _safe('概览', () => _anOverviewHTML(D), '');
   $app.innerHTML = head + `<div class="rk-page an-page"><section class="rk-block"><h3 class="rk-block-title">寻找 Edge ${_qBtn('an_page', 'short')}</h3><div class="rk-quiet an-status">${status}</div>
     <div class="rk-presets an-tabs">${tabs.map(([k, l]) => `<button class="rk-preset${__anTab === k ? ' active' : ''}" onclick="anTab('${k}')">${l}</button>`).join('')}</div>${body}</section></div>`;
 }
