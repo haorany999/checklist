@@ -3856,6 +3856,31 @@
   body.theme-terminal .cv-line.cv-all, body.theme-terminal .ck-spark .l { filter: drop-shadow(0 0 3px var(--accent)); }
   body.theme-terminal::after { background: repeating-linear-gradient(0deg, rgba(0,255,102,0.035) 0 1px, transparent 1px 3px), radial-gradient(circle, rgba(0, 255, 102, 0.04) 0%, transparent 55%) !important; }
   #app:has(.ckp) { max-width: none !important; width: 100% !important; } .ckp { max-width: 1500px; margin: 0 auto; } .ck-tile.reuse { padding: 6px 8px; } .ck-tile.reuse > .gk-card, .ck-tile.reuse > div { border: 0 !important; background: none !important; box-shadow: none !important; margin: 0 !important; }
+  /* v129 · income with net and average; calendar details and full screen */
+  .inc-b { cursor: pointer; } .inc-hit { fill: transparent; } .inc-b:hover .inc-hit, .inc-b.sel .inc-hit { fill: color-mix(in srgb, var(--accent) 9%, transparent); }
+  .inc-gross { fill: color-mix(in srgb, var(--text-faint) 18%, transparent); stroke: var(--text-faint); stroke-width: 1; stroke-dasharray: 2 2; } .inc-net.up { fill: var(--pass); } .inc-net.dn { fill: var(--fail); }
+  .inc-avg { stroke: var(--accent); stroke-width: 1.5; stroke-dasharray: 2 3; } .inc-avg-l { font: 11px var(--mono); fill: var(--accent); } .inc-goal-l { font: 11px var(--mono); fill: var(--pass); }
+  .inc-sw-g { background: color-mix(in srgb, var(--text-faint) 25%, transparent) !important; border: 1px dashed var(--text-faint); } .inc-avg-sw, .inc-goal-sw { display: inline-block; width: 16px; border-top: 2px dashed var(--accent); vertical-align: middle; margin-right: 4px; } .inc-goal-sw { border-top-color: var(--pass); }
+  .inc-tip { font-size: 12px; margin-top: 6px; } .inc-det, .dc-det { margin-top: 10px; padding: 10px 12px; border: 1px solid var(--accent); border-radius: 8px; background: var(--panel-2); animation: pt-in .2s ease-out both; }
+  .inc-det-h, .dc-det-h { display: flex; align-items: baseline; gap: 8px; margin-bottom: 6px; font-family: var(--mono); } .inc-det-h .app-link, .dc-det-h .app-link { margin-left: auto; }
+  .inc-det-g, .dc-det-g { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px 14px; font-size: 12.5px; color: var(--text-dim); }
+  .inc-det-g span, .dc-det-g span { display: flex; flex-direction: column; gap: 2px; } .inc-det-g b, .dc-det-g b { font: 700 15px var(--mono); color: var(--text); } .inc-det-g b.rk-t-danger, .dc-det-g b.rk-t-danger { color: var(--fail); } .inc-det-g b.rk-t-safe, .dc-det-g b.rk-t-safe { color: var(--pass); }
+  .inc-det-g em, .dc-det-g em, .dc-det-l em { font-style: normal; font-size: 11.5px; color: var(--text-faint); }
+  .inc-det-l, .dc-det-l { margin-top: 8px; border-top: 1px solid var(--border); padding-top: 6px; font-size: 12.5px; } .inc-det-l div, .dc-det-l div { display: flex; justify-content: space-between; gap: 8px; padding: 3px 0; } .inc-det-l b, .dc-det-l b { font-family: var(--mono); }
+  .dc-c { cursor: pointer; } .dc-c.sel { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .dc-grid.big { width: 100%; min-width: calc(22px + var(--w) * 14px); grid-template-columns: 22px repeat(var(--w), minmax(0, 1fr)); gap: 0 3px; } .dc-grid.big .dc-ml { grid-template-columns: 22px repeat(var(--w), minmax(0, 1fr)); gap: 0 3px; }
+  .dc-grid.big .dc-w { grid-template-rows: repeat(5, auto) 8px; gap: 3px; } .dc-grid.big .dc-dl { grid-template-rows: repeat(5, 1fr) 8px; gap: 3px; align-items: center; }
+  .dc-grid.big .dc-c { width: 100%; height: auto; aspect-ratio: 1; border-radius: 3px; } .dc-wb { display: block; height: 6px; margin-top: 2px; border-radius: 2px; background: var(--panel-2); }
+  .dc-ws { font: 9px var(--mono); font-style: normal; text-align: center; white-space: nowrap; transform: rotate(-50deg); transform-origin: center; height: 16px; line-height: 16px; } .dc-ws.rk-t-safe { color: var(--pass); } .dc-ws.rk-t-danger { color: var(--fail); }
+  .dc-full { position: fixed; inset: 0; z-index: 950; background: var(--bg); overflow: auto; padding: 14px 18px 30px; } .dc-full-h { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; } .dc-full-h .modal-close { margin-left: auto; }
+  .dc-full-b { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; align-items: start; } .dc-full-side { position: sticky; top: 10px; }
+  .dc-year { padding: 12px 14px; margin-bottom: 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--panel); } .dc-year-h { font: 800 18px var(--mono); margin-bottom: 8px; }
+  @media (max-width: 900px) { .dc-full-b { grid-template-columns: 1fr; } .dc-full-side { position: static; order: -1; } }
+  @media (max-width: 640px) { .dc-grid:not(.big) { grid-template-columns: 22px repeat(var(--w), 15px); } .dc-grid:not(.big) .dc-ml { grid-template-columns: 22px repeat(var(--w), 15px); } .dc-grid:not(.big) .dc-w, .dc-grid:not(.big) .dc-dl { grid-template-rows: repeat(5, 15px); } .dc-grid:not(.big) .dc-c { width: 15px; height: 15px; } }
+  .dc-block .dc-grid.big { min-width: calc(22px + var(--w) * 8px); gap: 0 2px; } .dc-block .dc-grid.big .dc-ml { gap: 0 2px; } .dc-block .dc-grid.big .dc-w { gap: 2px; } .dc-block .dc-grid.big .dc-dl { gap: 2px; } .dc-block .dc-grid.big .dc-c { border-radius: 2px; }
+  .dc-grid.big .dc-ml { overflow: hidden; } .dc-grid.big .dc-ml span { overflow: visible; }
+  .dc-grid.big .dc-w { align-self: start; align-content: start; } .dc-grid.big .dc-c { align-self: start; justify-self: stretch; min-width: 0; } .dc-grid.big .dc-dl { align-self: stretch; }
+  .dc-grid.big, .dc-grid.big .dc-ml { grid-template-columns: 0 repeat(var(--w), minmax(0, 1fr)) !important; } .dc-grid.big .dc-dl { visibility: hidden; overflow: hidden; width: 0; }
 </style>
 </head>
 <body class="theme-slate">
@@ -5953,7 +5978,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.17-v128';
+const APP_BUILD = '2026.10.17-v130';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
@@ -11894,7 +11919,7 @@ const QUOTES = [
   ['Plan your trade and trade your plan.', '计划你的交易, 交易你的计划.', '交易格言'] ];
 let __qIdx = null, __qTimer = null;
 // the App expects this Worker; an older one keeps running but misses these fixes
-const WORKER_NEED = 25, WORKER_FIXES = [[15, '每日快照只在收盘后记录 (盈亏归因的「今天」准确)'], [16, '早报 / 周报按触发时间识别 (星期写法不会再错)'], [17, '日线缓存修正 (J 等指标不会停在旧数据)'], [18, '借钱 / 追保提醒和早报里的借钱状态'], [19, '盘中报价时间和是否实时'], [20, '邮件里的 Equity % 按账户计算 (多个账户时不再被减半)'], [21, 'Roll 提醒: 提前行权风险、执行 roll 计划、到提醒价'], [22, '提醒邮件里「21 天」的写法和 App 一致'], [23, '止盈提醒按你设的止盈线']];
+const WORKER_NEED = 26, WORKER_FIXES = [[15, '每日快照只在收盘后记录 (盈亏归因的「今天」准确)'], [16, '早报 / 周报按触发时间识别 (星期写法不会再错)'], [17, '日线缓存修正 (J 等指标不会停在旧数据)'], [18, '借钱 / 追保提醒和早报里的借钱状态'], [19, '盘中报价时间和是否实时'], [20, '邮件里的 Equity % 按账户计算 (多个账户时不再被减半)'], [21, 'Roll 提醒: 提前行权风险、执行 roll 计划、到提醒价'], [22, '提醒邮件里「21 天」的写法和 App 一致'], [23, '止盈提醒按你设的止盈线']];
 function _workerAgeHTML() {
   const p = getPortfolio(); if (p.source !== 'schwab' || !p.workerVersion || p.workerVersion >= WORKER_NEED) return '';
   const miss = WORKER_FIXES.filter(([v]) => v > p.workerVersion);
@@ -14408,7 +14433,7 @@ const GREEK_HELP = {
   lv_alerts: { t: '需要注意', def: '每次打开都会把每张 LEAPS 过一遍: 止损 (已跌破或只差 5% 以内)、时间 (6 个月必退 / 进入 9 个月 roll 窗口)、止盈 (到了梯度、到了正股止盈位、MJ2 出现卖出信号)、加仓 (左侧加仓条件都满足或只差一条, 和 checklist 同一套判断), 以及表面上看不到的: Δ 掉到 0.5 以下、每月时间价值消耗占市值超过 6%、正股 20 天跌了 10% 以上 (还在创新低时特别标出)、同一只股票的 LEAPS 占 NAV 超过 15%.', note: '红 = 现在就要处理, 橙 = 这几天要留意, 灰 = 了解一下. 点一条打开那张 LEAPS 的管理页.' },
   mark_und: { t: 'Mark', def: '这只股票 (标的) 现在的价格, 不是期权本身的价格. 和「距行权价」放在一起, 不用点开就能看到现价离行权价多远.', note: '价格来自最近一次 Schwab 持仓刷新; 想要最新的就点右上角刷新.' },
   archive: { t: '云端档案', def: '你的交易资料永久存在 Cloudflare D1 (一个免费的云端 SQLite 数据库) 里 (设置了 GitHub 的话每周再复制一份). 存了: Schwab 的每一笔交易 (原样, 只追加, 从不修改)、每个交易日收盘时的每个仓位 (价格、Greeks、IV、市值)、每天的 NAV 和余额、每次 checklist 的完整快照 (每一条的结果、AVWAP、当时的技术面、期权的买卖价和 Greeks、组合状态)、仓位总表 (一行一个仓位: 每一条腿、开仓那天的条件、结果和持有期间的走势; 开仓条件第一次存好后不再改写)、规则版本 (每次改设置都存一份带日期的完整规则, 包括当时每个 checklist 有哪些条目).', ex: '设置 (只做一次): 1) Cloudflare 控制台 → Storage & Databases → D1 → Create, 名字写 trading-archive. 2) Workers & Pages → 你的 Worker → Settings → Bindings → Add → D1 database, 变量名写 ARCHIVE, 选 trading-archive, 保存. 3) 把 Worker 代码换成 v24 并 Deploy. 4) 回到 App 的「设置 → 自检」, 点「上传本机的 checklist 记录」和「补全历史交易」. GitHub (可选): 建一个 Private 仓库, 生成只能写这个仓库的 fine-grained token (Contents: Read and write), 在 Worker 的 Settings → Variables and Secrets 里加 GITHUB_TOKEN (Secret) 和 GITHUB_REPO (例如 yourname/trading-archive).', note: '免费额度 5GB, 你的数据大约每年 10MB. 档案是 SQLite 和 JSON, 不需要这个 App 也能打开.' },
-  income: { t: '权利金收入', def: '每个月卖出期权 (CSP、CC、PMCC 的 short call) 收到的权利金, 按开仓的月份算, 和你的每月目标比. 圆点是那个月的已实现盈亏 (买回、到期、行权结算之后真正留下的).', ex: '本月卖了 3 张 CSP 收 $1,800, 2 张 CC 收 $600: 本月收到 $2,400, 目标 $3,000 完成 80%. 「全年约」= 今年已经收到的 + 最近 3 个完整月份的平均 × 剩下的月份.', note: '收到 ≠ 赚到: 收到的权利金之后可能要买回或被行权. 两者一起看.' },
+  income: { t: '权利金收入', def: '收到 ≠ 赚到, 所以分三层看: 收到 = 卖出期权收的权利金 (按开仓月份); 净权利金 = 收到的减去买回花掉的, 按仓位结束的月份算 (到期作废、买回、被行权都算结束); 扣除接股的正股盈亏后 = 净权利金再加上被行权接股之后正股赚的或亏的 (卖掉的按实际, 还拿着的按现价). 目标、月平均和柱子都用净权利金.', ex: '这个月卖 CSP 收 $1,000, 其中一张收 $300 后来花 $500 买回: 收到 $1,000, 买回花掉 $500, 净 $500. 另一张被行权接股后正股现在浮亏 $800: 扣除后是 −$300, 说明这个轮子还没赚到钱.', note: '还没结束的仓位不算进净权利金 (结果未定). 月平均按最近 12 个月里有交易的完整月份算.' },
   wheel_cycle: { t: '轮子 · 完整周期', def: '每一次被行权接股算一个周期: 从卖出那张 CSP (包括之前 roll 的) 开始, 接股, 持股期间卖 CC, 一直到这批股票全部卖出或被 call 走. 周期盈亏 = CSP 权利金 (含 roll) + 卖 CC 的盈亏 + 正股的盈亏 (已卖出的按实际卖价, 还持有的按现价).', ex: '卖 280P 收 $900 (roll 过一次又收 $200), 被行权接 100 股; 持股期间卖了 3 次 CC 共 $750; 最后 300 被 call 走, 正股赚 (300 − 280) × 100 = $2,000. 周期合计 $3,850, 按接股资金 $28,000 算 +13.8%.', note: '年化按接股需要的资金 (行权价 × 股数) 和整个周期的天数算. 正股的盈亏和 Performance 页「被行权」表用的是同一套计算.' },
   daily_cal: { t: '每日盈亏日历', def: '每个交易日一格: 当天收盘 NAV − 前一天收盘 NAV − 当天的入金出金. 包括已实现和未实现, 是账户真实的每日变化.', note: '需要 Worker 每天收盘记下的 NAV; 某一天没有记录就是灰色.' },
   an_twr: { t: '你的账户 vs SPY', def: '你的账户这段时间的时间加权收益率 (TWR): 把每天收盘的 NAV 连起来, 每一天的收益 = (当天 NAV − 当天的入金出金) ÷ 前一天 NAV − 1, 再连乘. 入金出金不算赚的钱, 也不受金额大小的影响, 和 SPY 的涨跌可以直接比. 它包括已实现和未实现, 所以和上面的「区间已实现」不是同一个数.', ex: '1 月 1 日 NAV $100,000; 1 月 15 日入金 $20,000, 当天收盘 NAV $125,000: 这半个月的收益 = (125,000 − 20,000) ÷ 100,000 − 1 = +5%. 1 月 31 日 NAV $131,250: 后半个月 = 131,250 ÷ 125,000 − 1 = +5%. 合起来 = 1.05 × 1.05 − 1 = +10.25%, 而不是 (131,250 − 100,000) ÷ 100,000 = +31% (那里面有 2 万是你存进去的).', note: '每天的 NAV 来自 Worker 收盘时记下的快照, 只从开始记录的那天起有; 所选范围更早时, 从第一天有记录的开始算, SPY 也按同一段时间算. 图例里每个策略后面的 % 是占合计的比例, 不是收益率.' },
@@ -16352,7 +16377,7 @@ function _lmRedraw() { if (state._view === 'leapsmgmt') { const y = window.scrol
 window.showLeapsMgmt = key => { __lmBack = state._view && state._view !== 'leapsmgmt' ? state._view : (__lmBack || 'positions'); __lmKey = key; __lmPick = null;
   state._view = 'leapsmgmt'; render(); window.scrollTo(0, 0); _lmFetch(); };
 window.showLeapsMgmtIdx = i => { const x = computeRisk().c.pos[i]; if (x) { if (typeof closeOptionLab === 'function') closeOptionLab(); showLeapsMgmt(_posKey(x)); } };
-window.lmBack = () => { state._view = __lmBack === 'leapsmgmt' ? 'positions' : __lmBack; render(); window.scrollTo(0, 0); };
+window.lmBack = () => { state._view = __lmBack === 'leapsmgmt' ? 'positions' : __lmBack; render(); window.scrollTo(0, state._view === 'leapsviz' && __lv.scrollY != null ? __lv.scrollY : 0); };
 window.lmPick = i => { __lmPick = __lmPick === i ? null : i; _lmRedraw(); };
 async function _lmFetch(force) {
   const x = _lmPos(); if (!x) return; const k = __lmKey, c = __lmChain[k];
@@ -16877,7 +16902,7 @@ window.showLeapsViz = () => { __lv.back = state._view && state._view !== 'leapsv
   const t = _lvData().map(r => r.x.ticker); if (t.length) fetchPrices([...new Set(t)], { maxAge: 6 * 3600e3 }).then(() => { if (state._view === 'leapsviz') _lvRedraw(); }).catch(() => {}); };
 window.lvBack = () => { _lvStop(); _glStop(); state._view = __lv.back || 'positions'; render(); window.scrollTo(0, 0); };
 window.lvTab = t => { __lv.tab = t; _lvRedraw(); };
-window.lvOpen = key => { if (Date.now() - __lvDragEnd < 250) return; _lvStop(); _glStop(); __lmBack = 'leapsviz'; showLeapsMgmt(key); };   // a drag that ends on a bubble isn't a click
+window.lvOpen = key => { if (Date.now() - __lvDragEnd < 250) return; __lv.scrollY = window.scrollY; _lvStop(); _glStop(); __lmBack = 'leapsviz'; showLeapsMgmt(key); };   // a drag that ends on a bubble isn't a click
 function _lvRedraw() { if (state._view !== 'leapsviz') return; const y = window.scrollY; render(); window.scrollTo(0, y); }
 function _lvData() {
   const c = computeRisk().c, nav = c.nav || 0;
@@ -17373,36 +17398,119 @@ function renderToolPage() { const [title, fn] = TL_VIEWS[state._view];
 /* ═════════════ v128 · premium income, the full wheel, a daily P&L calendar, the cockpit ═════════════ */
 const _mKey = ts => _tsDay(ts).slice(0, 7);
 const _sgn$ = v => v == null ? '—' : _fmtSigned(v);
-// ── premium income: what you collected each month against your goal ──
+// ── premium income: collected, spent buying back, and what was really kept ──
+let __incSel = null;
+window.incPick = m => { __incSel = __incSel === m ? null : m; const y = window.scrollY; render(); window.scrollTo(0, y); };
 function _incomeData() {
-  const U = (() => { try { return _rvUnits() || []; } catch (e) { return []; } })(), p = computePerf(); if (!U.length && !p) return null;
+  const U = (() => { try { return _rvUnits() || []; } catch (e) { return []; } })(); if (!U.length) return null;
   const pm = new Set(); try { _anData().rows.filter(r => r.strat === 'pmcc').forEach(r => (r.L || [r.head]).forEach(u => u && pm.add(u.id))); } catch (e) {}
-  const kind = u => u.putCall === 'PUT' ? 'CSP' : pm.has(u.id) ? 'PMCC' : 'CC';
-  const col = {}, real = {};
-  U.filter(u => u.side === 'short' && u.openTs && (u.openCash || 0) > 0).forEach(u => { const m = _mKey(u.openTs), k = kind(u); (col[m] = col[m] || { CSP: 0, CC: 0, PMCC: 0 })[k] += u.openCash; });
-  ((p && p.all) || []).filter(l => l.kind === 'option' && l.side === 'short' && l.closeTs).forEach(l => { const m = _mKey(l.closeTs); real[m] = (real[m] || 0) + l.pnl; });
-  return { col, real };
+  const kind = u => u.putCall === 'PUT' ? 'CSP' : pm.has(u.id) ? 'PMCC' : 'CC', M = {}, at = m => M[m] = M[m] || { gross: { CSP: 0, CC: 0, PMCC: 0 }, paid: 0, net: 0, exp: 0, asg: 0, bought: 0, items: [] };
+  U.filter(u => u.side === 'short' && u.openTs && (u.openCash || 0) > 0).forEach(u => { at(_mKey(u.openTs)).gross[kind(u)] += u.openCash;
+    if (u.open || !u.closeTs) return; const m = at(_mKey(u.closeTs)), pnl = u.pnl || 0, how = /assign|exercis/i.test(u.method || '') ? 'asg' : /expir/i.test(u.method || '') ? 'exp' : 'bought';
+    m.net += pnl; m.paid += Math.max(0, (u.openCash || 0) - pnl - (how === 'asg' ? 0 : 0)) * (how === 'bought' ? 1 : 0); m[how]++; m.items.push({ u, pnl, how, k: kind(u) }); });
+  // the stock you were put: what it has made or lost so far, so a wheel still under water isn't counted as income
+  let stock = { real: 0, unreal: 0, open: 0 }; try { const p = computePerf(), y = _todayISO().slice(0, 4); (p.assigns || []).forEach(a => { if (_tsDay(a.ts).startsWith(y) || a.held > 0) { stock.real += a.realized || 0; stock.unreal += a.unreal || 0; if (a.held > 0) stock.open++; } }); } catch (e) {}
+  return { M, stock };
 }
 function _incomeHTML() {
   const D = _incomeData(); if (!D) return '';
-  const now = _todayISO().slice(0, 7), y = now.slice(0, 4), goal = _rule('premium_goal_month'), months = [];
+  const now = _todayISO().slice(0, 7), y = now.slice(0, 4), goal = _rule('premium_goal_month'), months = [], M = D.M, g = m => M[m] ? M[m].gross.CSP + M[m].gross.CC + M[m].gross.PMCC : 0, n = m => M[m] ? M[m].net : 0;
   for (let i = 11; i >= 0; i--) { const d = new Date(now + '-15T12:00:00Z'); d.setUTCMonth(d.getUTCMonth() - i); months.push(d.toISOString().slice(0, 7)); }
-  const tot = m => D.col[m] ? D.col[m].CSP + D.col[m].CC + D.col[m].PMCC : 0, cur = tot(now), ytd = Object.keys(D.col).filter(m => m.startsWith(y)).reduce((s, m) => s + tot(m), 0);
-  const ytdReal = Object.keys(D.real).filter(m => m.startsWith(y)).reduce((s, m) => s + D.real[m], 0), last3 = months.slice(-4, -1).reduce((s, m) => s + tot(m), 0) / 3;
-  const mIdx = Number(now.slice(5, 7)), pace = ytd + last3 * (12 - mIdx + (1 - Math.min(1, Number(_todayISO().slice(8, 10)) / 30)));
-  const ring = (v, g) => { const f = g ? Math.max(0, Math.min(1, v / g)) : 0, C = 2 * Math.PI * 46; return `<svg viewBox="0 0 120 120" class="inc-ring"><circle cx="60" cy="60" r="46" class="bg"/>${f > 0 ? `<circle cx="60" cy="60" r="46" class="fg${v >= g ? ' done' : ''}" stroke-dasharray="${(f * C).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 60 60)"/>` : ''}<text x="60" y="56" text-anchor="middle" class="v">${g ? Math.round(v / g * 100) + '%' : '—'}</text><text x="60" y="76" text-anchor="middle" class="l">本月目标</text></svg>`; };
-  const W = 640, H = 170, L = 46, B = 22, mx = Math.max(goal * 1.15, ...months.map(tot), ...months.map(m => D.real[m] || 0), 1), bw = (W - L - 8) / 12, yv = v => 8 + (1 - v / mx) * (H - 8 - B);
-  const C3 = { CSP: '#3B82F6', CC: '#F59E0B', PMCC: '#14B8A6' };
-  const bars = months.map((m, i) => { let acc = 0; const x = L + i * bw + bw * 0.18, w = bw * 0.64, c = D.col[m] || { CSP: 0, CC: 0, PMCC: 0 };
-    const seg = ['CSP', 'CC', 'PMCC'].map(k => { if (!c[k]) return ''; const y0 = yv(acc), y1 = yv(acc + c[k]); acc += c[k]; return `<rect x="${x.toFixed(1)}" y="${y1.toFixed(1)}" width="${w.toFixed(1)}" height="${Math.max(0.5, y0 - y1).toFixed(1)}" fill="${C3[k]}" opacity="${m === now ? 1 : 0.8}"><title>${m} ${k} 收到 ${_fmtUsd(c[k])}</title></rect>`; }).join('');
-    const r = D.real[m]; return seg + (r != null ? `<circle cx="${(x + w / 2).toFixed(1)}" cy="${yv(Math.max(0, r)).toFixed(1)}" r="3.2" class="inc-real"><title>${m} 已实现 ${_fmtSigned(r)}</title></circle>` : '') + `<text x="${(x + w / 2).toFixed(1)}" y="${H - 6}" text-anchor="middle" class="rk-ch-lab">${m.slice(2).replace('-', '/')}</text>`; }).join('');
-  const chart = `<svg viewBox="0 0 ${W} ${H}" class="inc-chart">${[0, 0.5, 1].map(f => `<line x1="${L}" x2="${W - 8}" y1="${yv(mx * f).toFixed(1)}" y2="${yv(mx * f).toFixed(1)}" class="cv-grid"/><text x="${L - 6}" y="${(yv(mx * f) + 3).toFixed(1)}" text-anchor="end" class="rk-ch-lab">${_cvK(mx * f).replace('+', '')}</text>`).join('')}
-    ${goal ? `<line x1="${L}" x2="${W - 8}" y1="${yv(goal).toFixed(1)}" y2="${yv(goal).toFixed(1)}" class="inc-goal"/><text x="${W - 10}" y="${(yv(goal) - 4).toFixed(1)}" text-anchor="end" class="inc-goal-l">目标 ${_fmtUsd(goal)}</text>` : ''}${bars}</svg>`;
+  const done12 = months.slice(0, -1).filter(m => M[m]), avg = done12.length ? done12.reduce((s, m) => s + n(m), 0) / done12.length : null;
+  const ys = Object.keys(M).filter(m => m.startsWith(y)), ytdNet = ys.reduce((s, m) => s + n(m), 0), ytdGross = ys.reduce((s, m) => s + g(m), 0), ytdPaid = ys.reduce((s, m) => s + M[m].paid, 0);
+  const cur = n(now), mIdx = Number(now.slice(5, 7)), pace = ytdNet + (avg || 0) * (12 - mIdx), stockPnl = D.stock.real + D.stock.unreal, trueNet = ytdNet + stockPnl;
+  const ring = (v, gl) => { const f = gl ? Math.max(0, Math.min(1, v / gl)) : 0, C = 2 * Math.PI * 46; return `<svg viewBox="0 0 120 120" class="inc-ring"><circle cx="60" cy="60" r="46" class="bg"/>${f > 0 ? `<circle cx="60" cy="60" r="46" class="fg${v >= gl ? ' done' : ''}" stroke-dasharray="${(f * C).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 60 60)"/>` : ''}<text x="60" y="56" text-anchor="middle" class="v">${gl ? Math.round(v / gl * 100) + '%' : '—'}</text><text x="60" y="76" text-anchor="middle" class="l">本月目标</text></svg>`; };
+  // the chart: net bars (green / red), the gross collected behind them, the goal and the average
+  const W = 680, H = 200, L = 50, B = 24, top = Math.max(goal * 1.12, ...months.map(g), ...months.map(n), 1), bot = Math.min(0, ...months.map(n)), bw = (W - L - 8) / 12, yv = v => 10 + (top - v) / (top - bot) * (H - 10 - B);
+  const bars = months.map((m, i) => { const x = L + i * bw, w = bw * 0.62, x0 = x + (bw - w) / 2, v = n(m), gr = g(m), sel = __incSel === m;
+    return `<g class="inc-b${sel ? ' sel' : ''}" role="button" tabindex="0" onclick="incPick('${m}')" onkeydown="if(event.key==='Enter')incPick('${m}')"><rect x="${x.toFixed(1)}" y="10" width="${bw.toFixed(1)}" height="${H - 10 - B}" class="inc-hit"/>
+      ${gr ? `<rect x="${x0.toFixed(1)}" y="${yv(gr).toFixed(1)}" width="${w.toFixed(1)}" height="${(yv(0) - yv(gr)).toFixed(1)}" class="inc-gross"/>` : ''}
+      ${v ? `<rect x="${(x0 + w * 0.18).toFixed(1)}" y="${yv(Math.max(0, v)).toFixed(1)}" width="${(w * 0.64).toFixed(1)}" height="${Math.max(1, Math.abs(yv(v) - yv(0))).toFixed(1)}" class="inc-net ${v >= 0 ? 'up' : 'dn'}"/>` : ''}
+      <text x="${(x + bw / 2).toFixed(1)}" y="${H - 7}" text-anchor="middle" class="rk-ch-lab">${m.slice(2).replace('-', '/')}</text></g>`; }).join('');
+  const hl = (v, cls, lab) => `<line x1="${L}" x2="${W - 8}" y1="${yv(v).toFixed(1)}" y2="${yv(v).toFixed(1)}" class="${cls}"/><text x="${W - 10}" y="${(yv(v) - 4).toFixed(1)}" text-anchor="end" class="${cls}-l">${lab}</text>`;
+  const chart = `<svg viewBox="0 0 ${W} ${H}" class="inc-chart">${[bot, 0, top / 2, top].filter((v, i, a) => a.indexOf(v) === i).map(v => `<line x1="${L}" x2="${W - 8}" y1="${yv(v).toFixed(1)}" y2="${yv(v).toFixed(1)}" class="${v === 0 ? 'cv-zero' : 'cv-grid'}"/><text x="${L - 6}" y="${(yv(v) + 3).toFixed(1)}" text-anchor="end" class="rk-ch-lab">${_cvK(v)}</text>`).join('')}
+    ${bars}${goal ? hl(goal, 'inc-goal', `目标 ${_fmtUsd(goal)}`) : ''}${avg != null ? hl(avg, 'inc-avg', `月平均 ${_fmtSigned(avg)}`) : ''}</svg>`;
+  // the chosen month, in detail
+  const sel = __incSel && M[__incSel] ? (() => { const s = M[__incSel], top3 = s.items.slice().sort((a, b) => Math.abs(b.pnl) - Math.abs(a.pnl)).slice(0, 5);
+    return `<div class="inc-det"><div class="inc-det-h"><b>${__incSel}</b><button class="app-link" onclick="incPick('${__incSel}')">关闭</button></div>
+      <div class="inc-det-g"><span>收到 <b>${_fmtUsd(g(__incSel))}</b><em>CSP ${_fmtUsd(s.gross.CSP)} · CC ${_fmtUsd(s.gross.CC)} · PMCC ${_fmtUsd(s.gross.PMCC)}</em></span><span>买回花掉 <b class="rk-t-danger">${s.paid ? '−' + _fmtUsd(s.paid) : '$0'}</b></span><span>净权利金 <b class="${_thCls(s.net)}">${_fmtSigned(s.net)}</b><em>这个月结束的 ${s.items.length} 笔</em></span>
+        <span>结局 <b>${s.exp} 到期 · ${s.bought} 买回 · ${s.asg} 被行权</b></span></div>
+      ${top3.length ? `<div class="inc-det-l">${top3.map(t => `<div><span>${esc(t.u.ticker)} ${t.u.strike}${t.u.putCall === 'PUT' ? 'P' : 'C'} ${esc(_md(t.u.expiry))} <em>${t.k} · ${{ exp: '到期', bought: '买回', asg: '被行权' }[t.how]}</em></span><b class="${_thCls(t.pnl)}">${_fmtSigned(t.pnl)}</b></div>`).join('')}</div>` : ''}</div>`; })() : `<div class="rk-quiet inc-tip">点 (或按) 任意一个月份的柱子看那个月的明细.</div>`;
   const f = (v, l, c = '', s = '') => `<div class="cv-fig"><b class="${c}">${v}</b><span>${l}</span>${s ? `<em>${s}</em>` : ''}</div>`;
   return `<section class="rk-block inc"><h3 class="rk-block-title rk-title-row"><span>权利金收入 ${_qBtn('income', 'short')}</span><button class="app-link" onclick="tlGo('rules')">目标 ${_fmtUsd(goal)} / 月 ▸</button></h3>
-    <div class="inc-top">${ring(cur, goal)}<div class="cv-figs inc-figs">${f(_fmtUsd(cur), '本月收到', cur >= goal ? 'rk-t-safe' : '', `还差 ${_fmtUsd(Math.max(0, goal - cur))}`)}${f(_sgn$(D.real[now] ?? 0), '本月已实现', _thCls(D.real[now] ?? 0))}
-      ${f(_fmtUsd(ytd), `${y} 年收到`, '', `已实现 ${_fmtSigned(ytdReal)}`)}${f(_fmtUsd(pace), '按最近 3 个月的节奏, 全年约', pace >= goal * 12 ? 'rk-t-safe' : 'rk-t-alert', `全年目标 ${_fmtUsd(goal * 12)}`)}</div></div>
-    ${chart}<div class="rk-legend"><span><i class="rk-sw" style="background:#3B82F6"></i>CSP</span><span><i class="rk-sw" style="background:#F59E0B"></i>CC</span><span><i class="rk-sw" style="background:#14B8A6"></i>PMCC</span><span><i class="inc-dot"></i>当月已实现 (买回、到期、行权结算后的盈亏)</span></div></section>`;
+    <div class="inc-top">${ring(cur, goal)}<div class="cv-figs inc-figs">${f(_fmtSigned(cur), '本月净权利金', _thCls(cur), `收到 ${_fmtUsd(g(now))} · 目标还差 ${_fmtUsd(Math.max(0, goal - cur))}`)}
+      ${f(avg != null ? _fmtSigned(avg) : '—', '月平均净权利金', avg != null && avg >= goal ? 'rk-t-safe' : '', `最近 ${done12.length} 个完整月份`)}
+      ${f(_fmtSigned(ytdNet), `${y} 年净权利金`, _thCls(ytdNet), `收到 ${_fmtUsd(ytdGross)} · 买回花掉 ${_fmtUsd(ytdPaid)}`)}
+      ${f(_fmtSigned(trueNet), '扣除接股的正股盈亏后', _thCls(trueNet), `正股 ${_fmtSigned(stockPnl)}${D.stock.open ? ` (${D.stock.open} 个轮子还在持股)` : ''}`)}
+      ${f(_fmtSigned(pace), '按月平均, 全年约', pace >= goal * 12 ? 'rk-t-safe' : 'rk-t-alert', `全年目标 ${_fmtUsd(goal * 12)}`)}</div></div>
+    ${chart}<div class="rk-legend"><span><i class="rk-sw inc-sw-g"></i>收到 (按开仓月份)</span><span><i class="rk-sw" style="background:var(--pass)"></i><i class="rk-sw" style="background:var(--fail)"></i>净权利金 (按结束月份, 已扣除买回)</span><span><i class="inc-avg-sw"></i>月平均</span><span><i class="inc-goal-sw"></i>目标</span></div>${sel}</section>`;
+}
+// ── the daily calendar: local NAVs merged with the cloud archive; every day can be opened; full screen ──
+let __navArch = null, __navArchP = null, __dcSel = null, __dcFull = false;
+function _navArchLoad() { if (__navArchP) return __navArchP; if (!loadSchwabCfg()) return Promise.resolve(null);
+  __navArchP = _archReady().then(ok => ok ? (async () => { const out = []; for (let off = 0; ; off += 2000) { const r = await _wfetch(`/archive/export?table=nav&limit=2000&offset=${off}`); if (!r.ok) break; const j = await r.json(); j.rows.forEach(x => { if (x.d && x.nav > 0) out.push([x.d, +x.nav]); }); if (!j.more) break; } __navArch = out; if (out.length && ['performance', 'cockpit'].includes(state._view)) { const y = window.scrollY; render(); window.scrollTo(0, y); } return out; })() : null).catch(() => null);
+  return __navArchP; }
+function _navAll() { const m = new Map(); ((loadNavs() || {}).data || []).forEach(x => { if (Array.isArray(x) && x[0] && +x[1] > 0) m.set(String(x[0]).slice(0, 10), +x[1]); }); (__navArch || []).forEach(([d, v]) => m.set(d, v)); return [...m.entries()].sort((a, b) => a[0] < b[0] ? -1 : 1); }
+function _dailyPnl() {
+  if (!__navArchP) setTimeout(_navArchLoad, 0);
+  const N = _navAll(); if (N.length < 2) return null; const h = loadHist();
+  let F = []; try { F = h ? buildPerfLots(h.data).flows.map(f => [_tsDay(f.ts), +f.amt || 0]) : []; } catch (e) {}
+  const out = {}; for (let i = 1; i < N.length; i++) { const [d, v] = N[i], prev = N[i - 1][1], fl = F.filter(([x]) => x > N[i - 1][0] && x <= d).reduce((s, [, a]) => s + a, 0), pnl = v - prev - fl; if (prev > 0 && isFinite(pnl)) out[d] = { pnl, pct: (v - fl) / prev - 1, nav: v, prev, flow: fl }; }
+  out.__n = N.length; out.__a = N[0][0]; out.__b = N[N.length - 1][0]; return out;
+}
+window.dcPick = d => { __dcSel = __dcSel === d ? null : d; if (__dcFull) _dcFullRender(); else { const y = window.scrollY; render(); window.scrollTo(0, y); } };
+window.dcFull = on => { __dcFull = on; if (on) { _dcFullRender(); try { document.documentElement.requestFullscreen && !/iPhone|iPad/.test(navigator.userAgent) && document.documentElement.requestFullscreen().catch(() => {}); } catch (e) {} } else { const el = document.getElementById('dc-full'); if (el) el.remove(); try { document.fullscreenElement && document.exitFullscreen(); } catch (e) {} } };
+function _dcDayDetail(P, d) {
+  const v = P[d]; if (!v) return `<div class="dc-det"><div class="dc-det-h"><b>${d}</b><button class="app-link" onclick="dcPick('${d}')">关闭</button></div><div class="rk-quiet">这一天没有 NAV 记录.</div></div>`;
+  const U = (() => { try { return _rvUnits() || []; } catch (e) { return []; } })(), closed = U.filter(u => u.closeTs && _tsDay(u.closeTs) === d), opened = U.filter(u => u.openTs && _tsDay(u.openTs) === d);
+  const spy = (() => { const B = (__px.SPY || {}).bars; if (!B) return null; const i = B.findIndex(b => b.d === d); return i > 0 ? (B[i].c / B[i - 1].c - 1) * 100 : null; })();
+  const ck = getActiveHistory().filter(e => e.timestampSort && _tsDay(e.timestampSort) === d), lab = u => `${esc(u.ticker)} ${u.strike}${u.putCall === 'PUT' ? 'P' : 'C'} ${esc(_md(u.expiry))}`;
+  return `<div class="dc-det"><div class="dc-det-h"><b>${d}</b> <span class="rk-quiet">周${['日', '一', '二', '三', '四', '五', '六'][new Date(d + 'T12:00:00Z').getUTCDay()]}</span><button class="app-link" onclick="dcPick('${d}')">关闭</button></div>
+    <div class="dc-det-g"><span>当日盈亏 <b class="${_thCls(v.pnl)}">${_fmtSigned(v.pnl)}</b><em>${v.pct >= 0 ? '+' : '−'}${Math.abs(v.pct * 100).toFixed(2)}%</em></span><span>收盘 NAV <b>${_fmtUsd(v.nav)}</b><em>前一天 ${_fmtUsd(v.prev)}</em></span>
+      ${(() => { const m = new Date(d + 'T12:00:00Z'); m.setUTCDate(m.getUTCDate() - ((m.getUTCDay() + 6) % 7)); let s = 0, k = 0; for (let i = 0; i < 5; i++) { const x = new Date(m); x.setUTCDate(x.getUTCDate() + i); const q = P[x.toISOString().slice(0, 10)]; if (q) { s += q.pnl; k++; } } return k > 1 ? `<span>这一周合计 <b class="${_thCls(s)}">${_fmtSigned(s)}</b><em>${k} 个交易日</em></span>` : ''; })()}
+      ${v.flow ? `<span>入金出金 <b>${_fmtSigned(v.flow)}</b><em>已从盈亏里扣除</em></span>` : ''}${spy != null ? `<span>SPY 当天 <b class="${spy >= 0 ? 'rk-t-safe' : 'rk-t-danger'}">${spy >= 0 ? '+' : '−'}${Math.abs(spy).toFixed(2)}%</b><em>你 ${v.pct >= 0 ? '+' : '−'}${Math.abs(v.pct * 100).toFixed(2)}%</em></span>` : ''}</div>
+    ${closed.length ? `<div class="dc-det-l"><em>当天结束的仓位</em>${closed.map(u => `<div><span>${lab(u)} <em>${u.side === 'short' ? '卖方' : '买方'} · ${esc(u.method || '平仓')}</em></span><b class="${_thCls(u.pnl)}">${_fmtSigned(u.pnl || 0)}</b></div>`).join('')}</div>` : ''}
+    ${opened.length ? `<div class="dc-det-l"><em>当天开的仓位</em>${opened.map(u => `<div><span>${lab(u)} <em>${u.side === 'short' ? '卖出' : '买入'}</em></span><b>${_fmtUsd(Math.abs(u.openCash || 0))}</b></div>`).join('')}</div>` : ''}
+    ${ck.length ? `<div class="dc-det-l"><em>当天的 checklist</em>${ck.map(e => `<div><span>${esc(e.strategy || '')} ${esc(e.ticker || '')}</span><b class="${e.verdict === 'BLOCKED' ? 'rk-t-danger' : e.verdict === 'CLEAR' ? 'rk-t-safe' : 'rk-t-alert'}">${esc(e.verdict || '')}</b></div>`).join('')}</div>` : ''}
+    ${!closed.length && !opened.length && !ck.length ? '<div class="rk-quiet">这一天没有开仓、平仓或 checklist, 盈亏来自持仓的价格变化.</div>' : ''}</div>`;
+}
+function _dcGrid(P, a, b, big) {
+  a = new Date(a); a.setUTCDate(a.getUTCDate() - ((a.getUTCDay() + 6) % 7));
+  const vals = Object.keys(P).filter(k => !k.startsWith('__')).map(d => Math.abs(P[d].pnl)).sort((x, y) => x - y), p90 = vals.length ? vals[Math.floor(vals.length * 0.9)] || 1 : 1;
+  const cell = d => { const v = P[d], sel = __dcSel === d ? ' sel' : ''; if (!v) return `<i class="dc-c none${sel}" onclick="dcPick('${d}')" title="${d}"></i>`; const t = Math.min(1, Math.abs(v.pnl) / p90), al = (0.2 + 0.8 * t).toFixed(2);
+    return `<i class="dc-c${sel}" role="button" tabindex="0" onclick="dcPick('${d}')" onkeydown="if(event.key==='Enter')dcPick('${d}')" style="background:${v.pnl >= 0 ? `rgba(16,185,129,${al})` : `rgba(239,68,68,${al})`}" title="${d} · ${_fmtSigned(v.pnl)}"></i>`; };
+  const weeks = [], ml = []; for (let w = new Date(a); w <= b; w.setUTCDate(w.getUTCDate() + 7)) { const col = []; for (let k = 0; k < 5; k++) { const d = new Date(w); d.setUTCDate(d.getUTCDate() + k); col.push(d.toISOString().slice(0, 10)); }
+    const m = col[4].slice(5, 7); if (!ml.length || ml[ml.length - 1].m !== m) { if (ml.length && weeks.length - ml[ml.length - 1].i < 3) ml.pop(); ml.push({ m, i: weeks.length }); } weeks.push(col); }
+  const wsum = col => col.reduce((s, d) => s + (P[d] ? P[d].pnl : 0), 0);
+  return `<div class="dc-wrap"><div class="dc-grid${big ? ' big' : ''}" style="--w:${weeks.length}"><div class="dc-ml">${ml.map(x => `<span style="grid-column:${x.i + 2}">${Number(x.m)} 月</span>`).join('')}</div>
+    <div class="dc-dl"><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span></div>${weeks.map(col => `<div class="dc-w">${col.map(cell).join('')}${big ? (() => { const s = wsum(col), has = col.some(d => P[d]); return `<i class="dc-wb" title="${has ? `这一周 ${_fmtSigned(s)}` : ''}" style="${has ? `background:${s >= 0 ? `rgba(16,185,129,${(0.25 + 0.75 * Math.min(1, Math.abs(s) / (p90 * 3))).toFixed(2)})` : `rgba(239,68,68,${(0.25 + 0.75 * Math.min(1, Math.abs(s) / (p90 * 3))).toFixed(2)})`}` : ''}"></i>`; })() : ''}</div>`).join('')}</div></div>`;
+}
+function _dcStats(P, year) {
+  const Y = Object.keys(P).filter(d => !d.startsWith('__') && d.startsWith(String(year))).sort(); if (!Y.length) return '<div class="rk-quiet">这一年没有记录.</div>';
+  let best = Y[0], worst = Y[0], run = 0, rw = 0, rl = 0; Y.forEach(d => { const v = P[d].pnl; if (v > P[best].pnl) best = d; if (v < P[worst].pnl) worst = d; run = v > 0 ? Math.max(1, run + 1) : v < 0 ? Math.min(-1, run - 1) : 0; rw = Math.max(rw, run); rl = Math.min(rl, run); });
+  const up = Y.filter(d => P[d].pnl > 0).length, tot = Y.reduce((s, d) => s + P[d].pnl, 0), f = (v, l, c = '', s = '') => `<div class="cv-fig"><b class="${c}">${v}</b><span>${l}</span>${s ? `<em>${s}</em>` : ''}</div>`;
+  return `<div class="cv-figs">${f(_fmtSigned(tot), `${year} 年合计`, _thCls(tot), `${Y.length} 个交易日`)}${f(Math.round(up / Y.length * 100) + '%', '赚钱的天数', up / Y.length >= 0.5 ? 'rk-t-safe' : 'rk-t-alert', `${up} / ${Y.length}`)}${f(_fmtSigned(P[best].pnl), '最好的一天', 'rk-t-safe', best.slice(5).replace('-', '/'))}${f(_fmtSigned(P[worst].pnl), '最差的一天', 'rk-t-danger', worst.slice(5).replace('-', '/'))}
+    ${f(rw + ' 天', '最长连赚')}${f(-rl + ' 天', '最长连亏')}${f(_fmtSigned(tot / Y.length), '平均每天')}</div>`;
+}
+function _dailyCalHTML(mini) {
+  const P = _dailyPnl();
+  if (!P) return mini ? '' : `<section class="rk-block"><h3 class="rk-block-title">每日盈亏日历</h3><div class="rk-notice">还没有每天的 NAV 记录. Worker 每个交易日收盘后会记一次 (Worker v26 起, 没设置邮件提醒也会记). 有两天以上就会显示.</div></section>`;
+  if (mini) { const b = new Date(_todayISO() + 'T12:00:00Z'), a = new Date(b); a.setUTCDate(a.getUTCDate() - 7 * 13); return _dcGrid(P, a, b, false); }
+  const year = __dcYear || Number(_todayISO().slice(0, 4)), Y = Object.keys(P).filter(d => !d.startsWith('__') && d.startsWith(String(year)));
+  const mon = {}; Y.forEach(d => { const m = d.slice(0, 7); mon[m] = (mon[m] || 0) + P[d].pnl; });
+  return `<section class="rk-block dc-block"><h3 class="rk-block-title rk-title-row"><span>每日盈亏日历 ${_qBtn('daily_cal', 'short')}</span><span class="dc-nav"><button class="btn ghost small" onclick="dcYear(-1)" ${String(year) <= P.__a.slice(0, 4) ? 'disabled' : ''}>‹</button><b>${year}</b><button class="btn ghost small" onclick="dcYear(1)" ${year >= Number(_todayISO().slice(0, 4)) ? 'disabled' : ''}>›</button><button class="btn ghost small" onclick="dcFull(true)">全屏 ⤢</button></span></h3>
+    ${_dcStats(P, year)}${_dcGrid(P, new Date(`${year}-01-01T12:00:00Z`), new Date(`${year}-12-31T12:00:00Z`), true)}
+    <div class="dc-months">${Object.entries(mon).map(([m, v]) => `<span><em>${Number(m.slice(5))} 月</em><b class="${_thCls(v)}">${_cvK(v)}</b></span>`).join('')}</div>
+    ${__dcSel && __dcSel.startsWith(String(year)) ? _dcDayDetail(P, __dcSel) : '<div class="rk-quiet inc-tip">点 (或按) 任意一格看那一天的明细.</div>'}
+    <div class="rk-note">数据: ${P.__n} 天 NAV, ${P.__a} → ${P.__b}${__navArch ? ' (包括云端档案)' : ''}. 绿 = 赚, 红 = 亏, 颜色越深金额越大. 盈亏 = 当天收盘 NAV − 前一天 − 当天的入金出金.</div></section>`;
+}
+function _dcFullRender() {
+  const P = _dailyPnl(); let el = document.getElementById('dc-full'); if (!P) return;
+  if (!el) { el = document.createElement('div'); el.id = 'dc-full'; el.className = 'dc-full'; document.body.appendChild(el); document.addEventListener('keydown', function esc(e) { if (e.key === 'Escape') { dcFull(false); document.removeEventListener('keydown', esc); } }); }
+  const ys = []; for (let y = Number(P.__b.slice(0, 4)); y >= Number(P.__a.slice(0, 4)); y--) ys.push(y);
+  el.innerHTML = `<div class="dc-full-h"><b>每日盈亏日历</b><span class="rk-quiet">${P.__n} 天 · ${P.__a} → ${P.__b}</span><button class="modal-close" onclick="dcFull(false)" aria-label="关闭">×</button></div>
+    <div class="dc-full-b"><div class="dc-full-years">${ys.map(y => `<div class="dc-year"><div class="dc-year-h">${y}</div>${_dcStats(P, y)}${_dcGrid(P, new Date(`${y}-01-01T12:00:00Z`), new Date(Math.min(Date.parse(`${y}-12-31T12:00:00Z`), Date.parse(_todayISO() + 'T12:00:00Z'))), true)}</div>`).join('')}</div>
+      <div class="dc-full-side">${__dcSel ? _dcDayDetail(P, __dcSel) : '<div class="rk-quiet">点任意一格, 这里显示那一天的明细. 每一列最下面是那一周的合计.</div>'}</div></div>`;
 }
 // ── the wheel, cycle by cycle: CSP (and its rolls) → shares → calls → shares gone ──
 function _wheelCycles() {
@@ -17441,38 +17549,8 @@ function _wheelCyclesHTML() {
     <div class="wc-list">${C.map(row).join('')}</div>
     <div class="rk-legend"><span><i class="rk-sw" style="background:#3B82F6"></i>卖 CSP (含 roll) 到接股</span><span><i class="rk-sw" style="background:var(--border-hi)"></i>持有正股</span><span><i class="rk-sw" style="background:#F59E0B"></i>卖出的 CC (绿 / 红边 = 赚 / 亏)</span><span>◆ 接股 · ● 正股全部卖出 / 被 call 走</span></div></section>`;
 }
-// ── every trading day's P&L, GitHub-style ──
 let __dcYear = null;
-window.dcYear = d => { __dcYear = (__dcYear || Number(_todayISO().slice(0, 4))) + d; const y = window.scrollY; render(); window.scrollTo(0, y); };
-function _dailyPnl() {
-  const N = (loadNavs() || {}).data || []; if (N.length < 2) return null; const h = loadHist();
-  let F = []; try { F = h ? buildPerfLots(h.data).flows.map(f => [_tsDay(f.ts), f.amt || 0]) : []; } catch (e) {}
-  const out = {}; for (let i = 1; i < N.length; i++) { const [d, v] = N[i], prev = N[i - 1][1], fl = F.filter(([x]) => x > N[i - 1][0] && x <= d).reduce((s, [, a]) => s + a, 0); if (prev > 0) out[d] = { pnl: v - prev - fl, pct: (v - fl) / prev - 1, nav: v }; }
-  return out;
-}
-function _dailyCalHTML(mini) {
-  const P = _dailyPnl(); if (!P) return mini ? '' : `<section class="rk-block"><h3 class="rk-block-title">每日盈亏日历</h3><div class="rk-quiet">需要每天的 NAV 记录 (Worker 每天收盘时会存), 有两天以上就会显示.</div></section>`;
-  const days = Object.keys(P).sort(), year = __dcYear || Number(_todayISO().slice(0, 4));
-  let a, b; if (mini) { b = new Date(_todayISO() + 'T12:00:00Z'); a = new Date(b); a.setUTCDate(a.getUTCDate() - 7 * 13); } else { a = new Date(`${year}-01-01T12:00:00Z`); b = new Date(`${year}-12-31T12:00:00Z`); }
-  a.setUTCDate(a.getUTCDate() - ((a.getUTCDay() + 6) % 7));
-  const vals = days.filter(d => d >= a.toISOString().slice(0, 10) && d <= b.toISOString().slice(0, 10)).map(d => Math.abs(P[d].pnl)).sort((x, y) => x - y), p90 = vals.length ? vals[Math.floor(vals.length * 0.9)] || 1 : 1;
-  const cell = d => { const v = P[d]; if (!v) return `<i class="dc-c none" title="${d}"></i>`; const t = Math.min(1, Math.abs(v.pnl) / p90), al = (0.18 + 0.82 * t).toFixed(2);
-    return `<i class="dc-c" style="background:${v.pnl >= 0 ? `rgba(16,185,129,${al})` : `rgba(239,68,68,${al})`}" title="${d} · ${_fmtSigned(v.pnl)} (${v.pct >= 0 ? '+' : '−'}${Math.abs(v.pct * 100).toFixed(2)}%)"></i>`; };
-  const weeks = [], monthsLab = []; for (let w = new Date(a); w <= b; w.setUTCDate(w.getUTCDate() + 7)) { const col = []; for (let k = 0; k < 5; k++) { const d = new Date(w); d.setUTCDate(d.getUTCDate() + k); col.push(d.toISOString().slice(0, 10)); }
-    const m = col[4].slice(5, 7); if (!monthsLab.length || monthsLab[monthsLab.length - 1].m !== m) { if (monthsLab.length && weeks.length - monthsLab[monthsLab.length - 1].i < 3) monthsLab.pop(); monthsLab.push({ m, i: weeks.length }); } weeks.push(col); }
-  const grid = `<div class="dc-wrap"><div class="dc-grid" style="--w:${weeks.length}"><div class="dc-ml">${monthsLab.map(x => `<span style="grid-column:${x.i + 2}">${Number(x.m)} 月</span>`).join('')}</div>
-    <div class="dc-dl"><span>一</span><span></span><span>三</span><span></span><span>五</span></div>${weeks.map(col => `<div class="dc-w">${col.map(cell).join('')}</div>`).join('')}</div></div>`;
-  if (mini) return grid;
-  const Y = days.filter(d => d.startsWith(String(year))); let best = null, worst = null, run = 0, rw = 0, rl = 0;
-  Y.forEach(d => { const v = P[d].pnl; if (!best || v > P[best].pnl) best = d; if (!worst || v < P[worst].pnl) worst = d; run = v > 0 ? Math.max(1, run + 1) : v < 0 ? Math.min(-1, run - 1) : 0; rw = Math.max(rw, run); rl = Math.min(rl, run); });
-  const mon = {}; Y.forEach(d => { const m = d.slice(0, 7); mon[m] = (mon[m] || 0) + P[d].pnl; }); const up = Y.filter(d => P[d].pnl > 0).length;
-  const f = (v, l, c = '', s = '') => `<div class="cv-fig"><b class="${c}">${v}</b><span>${l}</span>${s ? `<em>${s}</em>` : ''}</div>`;
-  return `<section class="rk-block"><h3 class="rk-block-title rk-title-row"><span>每日盈亏日历 ${_qBtn('daily_cal', 'short')}</span><span class="dc-nav"><button class="btn ghost small" onclick="dcYear(-1)">‹</button><b>${year}</b><button class="btn ghost small" onclick="dcYear(1)" ${year >= Number(_todayISO().slice(0, 4)) ? 'disabled' : ''}>›</button></span></h3>
-    ${Y.length ? `<div class="cv-figs">${f(Math.round(up / Y.length * 100) + '%', '赚钱的天数', up / Y.length >= 0.5 ? 'rk-t-safe' : 'rk-t-alert', `${up} / ${Y.length} 天`)}${f(_fmtSigned(P[best].pnl), '最好的一天', 'rk-t-safe', best.slice(5).replace('-', '/'))}${f(_fmtSigned(P[worst].pnl), '最差的一天', 'rk-t-danger', worst.slice(5).replace('-', '/'))}
-      ${f(rw + ' 天', '最长连赚')}${f(-rl + ' 天', '最长连亏')}${f(_fmtSigned(Y.reduce((s, d) => s + P[d].pnl, 0) / Y.length), '平均每天')}</div>` : '<div class="rk-quiet">这一年没有记录.</div>'}
-    ${grid}<div class="dc-months">${Object.entries(mon).map(([m, v]) => `<span><em>${Number(m.slice(5))} 月</em><b class="${_thCls(v)}">${_cvK(v)}</b></span>`).join('')}</div>
-    <div class="rk-note">每一格是一个交易日: 绿 = 赚, 红 = 亏, 颜色越深金额越大 (按这一年 90% 的天数为最深). 盈亏 = 当天收盘 NAV − 前一天 − 当天的入金出金, 包括已实现和未实现. 鼠标放在格子上看金额.</div></section>`;
-}
+window.dcYear = d => { __dcYear = (__dcYear || Number(_todayISO().slice(0, 4))) + d; __dcSel = null; const y = window.scrollY; render(); window.scrollTo(0, y); };
 // ── the cockpit: everything on one screen ──
 let __ckpT = null;
 window.showCockpit = () => { state._view = 'cockpit'; render(); window.scrollTo(0, 0); };
@@ -17483,7 +17561,7 @@ function renderCockpitPage() {
   const spark = N.length > 2 ? (() => { const v = N.map(x => x[1]), lo = Math.min(...v), hi = Math.max(...v), X = i => (i / (v.length - 1) * 300).toFixed(1), Y = x => (54 - (x - lo) / Math.max(1, hi - lo) * 50).toFixed(1);
     return `<svg viewBox="0 0 300 58" class="ck-spark"><path d="M0,58 ${v.map((x, i) => `L${X(i)},${Y(x)}`).join(' ')} L300,58Z" class="a"/><path d="${v.map((x, i) => `${i ? 'L' : 'M'}${X(i)},${Y(x)}`).join(' ')}" class="l"/></svg>`; })() : '';
   const lv = (() => { try { const D = _lvData(); if (!D.length) return null; const A = _lvAlerts(D), G = []; A.forEach(a => { let g = G.find(z => z.r === a.r); if (!g) G.push(g = { r: a.r, lvl: 0, k: [] }); g.lvl = Math.max(g.lvl, a.lvl); if (!g.k.includes(a.kind)) g.k.push(a.kind); }); G.sort((a, b) => b.lvl - a.lvl); return { n: D.length, A, G }; } catch (e) { return null; } })(), wc = (() => { try { return (_wheelCycles() || []).filter(x => !x.done); } catch (e) { return []; } })();
-  const inc = (() => { try { return _incomeData(); } catch (e) { return null; } })(), m = _todayISO().slice(0, 7), got = inc && inc.col[m] ? inc.col[m].CSP + inc.col[m].CC + inc.col[m].PMCC : 0, goal = _rule('premium_goal_month');
+  const inc = (() => { try { return _incomeData(); } catch (e) { return null; } })(), m = _todayISO().slice(0, 7), got = inc && inc.M[m] ? inc.M[m].net : 0, goal = _rule('premium_goal_month');
   const tile = (cls, h, body) => `<div class="ck-tile ${cls}${h ? '' : ' reuse'}">${h ? `<div class="ck-th">${h}</div>` : ''}${body}</div>`;
   $app.innerHTML = `<div class="ckp"><div class="ckp-top"><div class="ckp-brand">PRE-TRADE · 驾驶舱</div><div class="ckp-clock"><span class="ckp-dot${open ? ' on' : ''}"></span>${open ? '美股交易中' : '休市'} · 美东 <span class="ckp-time">${esc(et)}</span></div>
       <div class="ckp-act"><button class="btn ghost small" onclick="refreshAll(this)">全部刷新</button><button class="btn ghost small" onclick="state._view = null; render()">← 首页</button></div></div>
@@ -17491,7 +17569,7 @@ function renderCockpitPage() {
       <div class="ckp-q">${_safe('行情', _quoteHTML, '')}</div></div>
     <div class="ckp-grid">
       ${tile('t-risk', '', _safe('综合风险', riskCardHTML, ''))}${tile('t-pos', '', _safe('持仓', positionsCardHTML, ''))}${tile('t-gk', '', _safe('Greeks', greeksCardHTML, ''))}
-      ${tile('t-inc', '本月权利金', `<div class="ck-big ${got >= goal ? 'rk-t-safe' : ''}">${_fmtUsd(got)}</div><div class="ck-bar"><i style="width:${goal ? Math.min(100, got / goal * 100).toFixed(1) : 0}%"></i></div><div class="ck-sm">目标 ${_fmtUsd(goal)} · ${goal ? Math.round(got / goal * 100) : 0}%</div>`)}
+      ${tile('t-inc', '本月净权利金', `<div class="ck-big ${got >= goal ? 'rk-t-safe' : ''}">${_fmtUsd(got)}</div><div class="ck-bar"><i style="width:${goal ? Math.min(100, got / goal * 100).toFixed(1) : 0}%"></i></div><div class="ck-sm">目标 ${_fmtUsd(goal)} · ${goal ? Math.round(got / goal * 100) : 0}%</div>`)}
       ${tile('t-lv', 'LEAPS 监控台', lv ? `<div class="ck-big ${lv.G.some(g => g.lvl === 3) ? 'rk-t-danger' : lv.G.length ? 'rk-t-alert' : 'rk-t-safe'}">${lv.G.length ? `${lv.G.length} / ${lv.n} 张` : '一切正常'}</div><div class="ck-sm">${lv.G.slice(0, 3).map(g => `<b>${esc(g.r.lab)}</b> · ${g.k.map(esc).join('、')}`).join('<br>') || `${lv.n} 张 LEAPS`}</div><button class="app-link" onclick="showLeapsViz()">打开 ▸</button>` : '<div class="ck-sm">没有 LEAPS</div>')}
       ${tile('t-wc', '轮子 · 进行中', wc.length ? wc.slice(0, 4).map(x => `<div class="ck-wc"><b>${esc(x.ticker)}</b> <span>成本 ${x.effCost.toFixed(2)}</span>${x.px ? `<em class="${x.px >= x.effCost ? 'rk-t-safe' : 'rk-t-danger'}">${x.px.toFixed(2)}</em>` : ''}</div>`).join('') : '<div class="ck-sm">没有进行中的周期</div>')}
       ${tile('t-pf', '', _safe('Performance', perfCardHTML, ''))}${tile('t-ed', '', _safe('寻找 Edge', edgeCardHTML, ''))}
@@ -17508,9 +17586,14 @@ const GLM = {   // tiny column-major 4×4 math
   sub: (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]], dot: (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2], cross: (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]],
   norm(a) { const l = Math.hypot(a[0], a[1], a[2]) || 1; return [a[0] / l, a[1] / l, a[2] / l]; } };
 let __gl = null;   // { gl, prog, … } while the 3D view is on screen
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape' || e.defaultPrevented) return; const t = e.target; if (t && /INPUT|TEXTAREA|SELECT/.test(t.tagName)) return;
+  if (document.querySelector('#dc-full, .modal-overlay, #lv-modal') || (document.getElementById('gh-pop') && !document.getElementById('gh-pop').hidden)) return;
+  if (state._view === 'leapsmgmt') { e.preventDefault(); lmBack(); } else if (state._view === 'leapsviz') { e.preventDefault(); lvBack(); }
+});
 function _glSupported() { try { const c = document.createElement('canvas'); return !!(c.getContext('webgl') || c.getContext('experimental-webgl')); } catch (e) { return false; } }
 function _glColor(v, fb) { try { const s = getComputedStyle(document.body).getPropertyValue(v).trim(), c = document.createElement('canvas').getContext('2d'); c.fillStyle = s || fb; const h = c.fillStyle; if (h[0] === '#') return [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16) / 255); const m = h.match(/[\d.]+/g); return m ? m.slice(0, 3).map(x => x / 255) : [0.5, 0.5, 0.5]; } catch (e) { return [0.5, 0.5, 0.5]; } }
-function _glStop() { if (__gl) { cancelAnimationFrame(__gl.raf); try { __gl.ro && __gl.ro.disconnect(); } catch (e) {} __gl = null; } }
+function _glStop() { if (__gl) { __lv.yaw = __gl.yaw; __lv.pitch = __gl.pitch; __lv.dist = __gl.dist; __lv.spin = __gl.spin; cancelAnimationFrame(__gl.raf); try { __gl.ro && __gl.ro.disconnect(); } catch (e) {} __gl = null; } }
 function _glMount() {
   const host = document.getElementById('lv-gl'); if (!host) return; _glStop();
   const cv = host.querySelector('canvas'), gl = cv.getContext('webgl', { antialias: true, alpha: true, premultipliedAlpha: false }) || cv.getContext('experimental-webgl'); if (!gl) return;
@@ -17527,7 +17610,7 @@ function _glMount() {
     for (let i = 0; i < R; i++) for (let j = 0; j < S; j++) { const a = i * (S + 1) + j, b = a + S + 1; ix.push(a, b, a + 1, b, b + 1, a + 1); }
     const vb = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, vb); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(v), gl.STATIC_DRAW); const ib = gl.createBuffer(); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ib); gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(ix), gl.STATIC_DRAW); return { vb, ib, n: ix.length }; })();
   const buf = a => { const b = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, b); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(a), gl.DYNAMIC_DRAW); return { b, n: a.length / 3 }; };
-  __gl = { gl, cv, host, P1, P2, sphere, buf, yaw: __lv.yaw, pitch: Math.max(0.12, __lv.pitch), dist: 5.3 / __lv.zoom, hover: null, raf: 0, spin: __lv.spin, drag: null, pinch: null, last: performance.now() };
+  __gl = { gl, cv, host, P1, P2, sphere, buf, yaw: __lv.yaw, pitch: Math.max(0.05, __lv.pitch), dist: __lv.dist || 5.3 / __lv.zoom, hover: null, raf: 0, spin: __lv.spin, drag: null, pinch: null, last: performance.now() };
   const ro = new ResizeObserver(() => _glFrame(true)); ro.observe(host); __gl.ro = ro;
   // input: drag to orbit, wheel / pinch to zoom, hover to inspect, click to open
   const pts = new Map();
@@ -17535,7 +17618,7 @@ function _glMount() {
     if (pts.size === 2) { const [a, b] = [...pts.values()]; __gl.pinch = { d: Math.hypot(a[0] - b[0], a[1] - b[1]), dist: __gl.dist }; } });
   cv.addEventListener('pointermove', e => { if (pts.has(e.pointerId)) pts.set(e.pointerId, [e.clientX, e.clientY]);
     if (__gl.pinch && pts.size === 2) { const [a, b] = [...pts.values()]; __gl.dist = Math.max(2.2, Math.min(9, __gl.pinch.dist * __gl.pinch.d / Math.max(10, Math.hypot(a[0] - b[0], a[1] - b[1])))); __gl.drag && (__gl.drag.moved = true); return; }
-    if (__gl.drag && pts.size === 1) { const dx = e.clientX - __gl.drag.x, dy = e.clientY - __gl.drag.y; if (Math.abs(dx) + Math.abs(dy) > 3) __gl.drag.moved = true; __gl.yaw = __gl.drag.yaw + dx / 160; __gl.pitch = Math.max(0.05, Math.min(1.45, __gl.drag.pitch + dy / 200)); }
+    if (__gl.drag && pts.size === 1) { const dx = e.clientX - __gl.drag.x, dy = e.clientY - __gl.drag.y; if (Math.abs(dx) + Math.abs(dy) > 3) __gl.drag.moved = true; __gl.yaw = __gl.drag.yaw - dx / 160; __gl.pitch = Math.max(0.05, Math.min(1.45, __gl.drag.pitch + dy / 200)); }
     else _glPick(e); });
   const up = e => { const moved = __gl && __gl.drag && __gl.drag.moved; pts.delete(e.pointerId); if (pts.size < 2 && __gl) __gl.pinch = null; if (pts.size === 0 && __gl) { __gl.drag = null; if (!moved && e.type === 'pointerup') { const k = _glPick(e); if (k) lvOpen(k); } } };
   cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up); cv.addEventListener('pointerleave', () => { if (__gl && !__gl.drag) { __gl.hover = null; _glTip(null); } });
@@ -17546,7 +17629,20 @@ function _glMount() {
 function _glScene() {
   const D = _lvData(), maxD = Math.max(400, ...D.map(r => r.dte || 0)) * 1.05, ps = D.map(r => r.pct || 0), lo = Math.min(-50, ...ps) - 10, hi = Math.max(210, ...ps) + 10, N = (v, a, b) => (v - a) / (b - a) * 2 - 1, mv = Math.max(...D.map(r => r.val), 1);
   return { D, maxD, lo, hi, X: d => N(d, 0, maxD), Y: v => N(v, lo, hi), tiers: [0, ...new Set(D.flatMap(r => r.tiers))].filter(v => v < hi),
-    B: D.map(r => ({ r, c: [N(Math.max(0, r.dte || 0), 0, maxD), N(r.pct || 0, lo, hi), r.pos == null ? 0 : Math.max(-1.1, Math.min(1.1, r.pos * 2 - 1))], rad: Math.max(0.05, Math.sqrt(r.val / mv) * 0.2) })) };
+    B: _glSpread(D.map(r => ({ r, c: [N(Math.max(0, r.dte || 0), 0, maxD), N(r.pct || 0, lo, hi), r.pos == null ? 0 : Math.max(-1.1, Math.min(1.1, r.pos * 2 - 1))], rad: Math.max(0.045, Math.sqrt(r.val / mv) * 0.16) }))) };
+}
+// push overlapping bubbles apart, sideways only (time to expiry and price position); the height, profit, stays exact
+function _glSpread(B) {
+  B.forEach(b => { b.c0 = b.c.slice(); });
+  for (let it = 0; it < 80; it++) { let moved = false;
+    for (let i = 0; i < B.length; i++) for (let j = i + 1; j < B.length; j++) {
+      const a = B[i].c, b = B[j].c, dy = b[1] - a[1], need = (B[i].rad + B[j].rad) * 1.08; if (Math.abs(dy) >= need) continue;
+      let hx = b[0] - a[0], hz = b[2] - a[2], h = Math.hypot(hx, hz); const want = Math.sqrt(need * need - dy * dy); if (h >= want) continue;
+      if (h < 1e-4) { const q = (i * 7 + j * 3) * 0.9; hx = Math.cos(q); hz = Math.sin(q); h = 1; }
+      const push = (want - h) / 2 + 1e-3; a[0] -= hx / h * push; a[2] -= hz / h * push; b[0] += hx / h * push; b[2] += hz / h * push; moved = true; }
+    B.forEach(b => { b.c[0] = Math.max(-1.12, Math.min(1.12, b.c[0])); b.c[2] = Math.max(-1.12, Math.min(1.12, b.c[2])); });
+    if (!moved) break; }
+  B.forEach(b => { b.moved = Math.hypot(b.c[0] - b.c0[0], b.c[2] - b.c0[2]) > 0.02; }); return B;
 }
 function _glFrame(resize) {
   const G = __gl; if (!G) return; const { gl, cv, host } = G, dpr = Math.min(2, window.devicePixelRatio || 1), w = host.clientWidth, h = host.clientHeight;
@@ -17569,6 +17665,7 @@ function _glFrame(resize) {
   const E = [[-1, -1, -1, -1, 1, -1], [-1, -1, 1, -1, 1, 1], [1, -1, -1, 1, 1, -1], [-1, 1, -1, 1, 1, -1], [-1, 1, -1, -1, 1, 1], [-1, -1, -1, 1, -1, -1], [-1, -1, 1, 1, -1, 1], [1, -1, -1, 1, -1, 1], [-1, -1, -1, -1, -1, 1]].flat(); draw(E, gl.LINES, [...border, 0.9]);
   const T = []; S.tiers.forEach(v => { const y = S.Y(v); T.push(-1, y, -1, 1, y, -1, -1, y, -1, -1, y, 1); }); draw(T, gl.LINES, [...pass, 0.55]);
   draw(S.B.flatMap(b => [b.c[0], b.c[1], b.c[2], b.c[0], -1, b.c[2]]), gl.LINES, [...dim, 0.7]);
+  const mv = S.B.filter(b => b.moved); if (mv.length) draw(mv.flatMap(b => [b.c[0], b.c[1], b.c[2], b.c0[0], b.c0[1], b.c0[2]]), gl.LINES, [...txt, 0.35]);
   // take-profit rings around bubbles that reached a tier
   S.B.filter(b => b.r.pct != null && b.r.pct >= b.r.tiers[0]).forEach(b => { const a = [], n = 40, rr = b.rad * 1.45; for (let i = 0; i < n; i++) { const q0 = i / n * 2 * Math.PI, q1 = (i + 1) / n * 2 * Math.PI; a.push(b.c[0] + Math.cos(q0) * rr, b.c[1], b.c[2] + Math.sin(q0) * rr, b.c[0] + Math.cos(q1) * rr, b.c[1], b.c[2] + Math.sin(q1) * rr); } draw(a, gl.LINES, [...pass, 1]); });
   // spheres
@@ -17605,7 +17702,7 @@ function _lvGLHTML() {
   return `<div class="lv3-ctl"><span class="rk-presets">${[['front', '正面 · 时间 × 浮盈'], ['top', '俯视 · 时间 × 价格位置'], ['side', '侧面 · 价格位置 × 浮盈'], ['reset', '默认']].map(([k, l]) => `<button class="rk-preset" onclick="lvGLView('${k}')">${l}</button>`).join('')}</span>
       <button class="btn ghost small" id="lv-gl-spin" onclick="lvGLSpin()">${__lv.spin ? '停止旋转' : '自动旋转'}</button></div>
     <div class="lv-gl" id="lv-gl"><canvas aria-label="LEAPS 3D 气泡图"></canvas><div class="lv-gl-lab" id="lv-gl-lab"></div><div class="lv3-tip" id="lv3-tip" hidden></div></div>
-    <div class="rk-note">WebGL 实时渲染: 拖动旋转, 滚轮或两指缩放. 三个轴: 离到期天数 (地面红区 = 6 个月内必退, 橙区 = roll 窗口)、浮盈 % (后墙的绿线是你的止盈梯度)、价格位置 (止损 → 止盈). 球的大小 = 市值, 绿 = 赚, 红 = 亏, 绿环 = 已到止盈档; 竖线和地上的影子帮你看前后位置. 点球打开管理.</div>`;
+    <div class="rk-note">WebGL 实时渲染: 拖动旋转, 滚轮或两指缩放; 球太近时会自动沿时间 / 价格位置方向稍微错开 (浮盈高度不变, 细线连回真实位置). 三个轴: 离到期天数 (地面红区 = 6 个月内必退, 橙区 = roll 窗口)、浮盈 % (后墙的绿线是你的止盈梯度)、价格位置 (止损 → 止盈). 球的大小 = 市值, 绿 = 赚, 红 = 亏, 绿环 = 已到止盈档; 竖线和地上的影子帮你看前后位置. 点球打开管理.</div>`;
 }
 function _anOverviewHTML(D) {
   const R = D.rows, by = k => R.filter(r => r.strat === k);
