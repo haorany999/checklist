@@ -3995,6 +3995,21 @@
     table.ux-freeze:not(.ux-freeze2) td:first-child > .ux-fc, table.ux-freeze:not(.ux-freeze2) th:first-child > .ux-fc,
     table.ux-freeze2 td:nth-child(2) > .ux-fc, table.ux-freeze2 th:nth-child(2) > .ux-fc { max-width: 118px; }
   }
+  .rl-keep { margin: 4px 0 2px; } .rl-keep summary { cursor: pointer; color: var(--accent); font-size: 12.5px; min-height: 30px; display: inline-flex; align-items: center; } .rl-keep-t td { font-size: 12.5px; padding: 4px 8px; font-family: var(--mono); } .rl-keep-t tr.rl-n td { font-weight: 700; background: color-mix(in srgb, var(--accent) 8%, transparent); }
+  /* v138 · the wheel ahead */
+  .rl-tabs { position: sticky; top: 52px; z-index: 50; } .wv-hl { font-size: 14.5px; line-height: 1.6; margin-bottom: 4px; } .wv-sub { font-size: 13px; color: var(--text-dim); margin-bottom: 8px; } .wv-sub b, .wv-hl b { font-family: var(--mono); }
+  .wv-svg { width: 100%; height: auto; display: block; } .wv-csp { fill: color-mix(in srgb, #3B82F6 10%, transparent); } .wv-tag { font: 600 11px var(--mono); fill: #3B82F6; }
+  .wv-cost { fill: none; stroke: var(--accent); stroke-width: 2.5; } .wv-cost-l { font: 600 11.5px var(--mono); fill: var(--accent); } .wv-s { stroke: var(--text-dim); stroke-width: 1.5; stroke-dasharray: 5 4; } .wv-s-l { font: 11px var(--mono); fill: var(--text-dim); }
+  .wv-k { stroke: var(--pass); stroke-width: 1.5; stroke-dasharray: 2 3; } .wv-k-l { font: 11px var(--mono); fill: var(--pass); } .wv-cross { fill: none; stroke: var(--pass); stroke-width: 2.5; }
+  .wv-pt { cursor: pointer; } .wv-pt circle { fill: var(--panel); stroke: var(--accent); stroke-width: 2; } .wv-pt .wv-hit { fill: transparent; } .wv-pt:hover circle, .wv-pt.on circle { fill: var(--accent); }
+  .wv-det { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; margin-top: 8px; padding: 9px 12px; border: 1px solid var(--accent); border-radius: 8px; background: var(--panel-2); font-size: 13px; animation: pt-in .18s ease-out; } .wv-det .app-link { margin-left: auto; } .wv-det b { font-family: var(--mono); } .wv-tip { font-size: 12px; margin-top: 4px; }
+  .wv-sw-c { background: var(--accent) !important; } .wv-sw-s { background: var(--text-dim) !important; } .wv-sw-k { background: var(--pass) !important; } .wv-sw-x { background: none !important; border: 2px solid var(--pass); border-radius: 50%; }
+  .wv-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; } .wv-card { position: relative; padding: 12px 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--panel-2); } .wv-card.best { border-color: var(--pass); box-shadow: 0 0 0 1px var(--pass); }
+  .wv-badge { position: absolute; top: -9px; right: 10px; padding: 1px 8px; border-radius: 9px; background: var(--pass); color: #fff; font-size: 11px; font-weight: 700; } .wv-ch { font-weight: 700; font-size: 14px; } .wv-cs { font: 12px var(--mono); color: var(--text-dim); margin: 2px 0 8px; }
+  .wv-big { font: 800 24px var(--mono); margin-bottom: 6px; } .wv-row { display: flex; justify-content: space-between; font-size: 12.5px; padding: 3px 0; border-top: 1px solid var(--border); } .wv-row b { font-family: var(--mono); } .wv-n { font-size: 11.5px; color: var(--text-faint); margin-top: 6px; }
+  .wv-mini { margin-top: 4px; font-size: 12.5px; color: var(--text-dim); } .wv-mini b { font-family: var(--mono); }
+  @media (max-width: 700px) { .wv-cards { grid-auto-flow: column; grid-template-columns: none; grid-auto-columns: 82%; overflow-x: auto; scroll-snap-type: x mandatory; padding: 10px 2px 4px; } .wv-card { scroll-snap-align: start; } }
+  .wv-cond { font-size: 11.5px; color: var(--text-faint); } .wv-warn { font-size: 12px; color: var(--fail); margin: -2px 0 6px; }
 </style>
 </head>
 <body class="theme-slate">
@@ -5625,7 +5640,7 @@ function _uxFreeze() {
   });
 }
 document.addEventListener('scroll', e => { const d = e.target; if (d && d.classList && d.classList.contains('ux-fc')) d.classList.toggle('end', d.scrollLeft + d.clientWidth >= d.scrollWidth - 2); }, true);
-function _uxAfterRender() { try { _uxLoadingMarks(); } catch (e) {} try { _uxNavTrack(); } catch (e) {} try { _uxFreeze(); } catch (e) {} try { _uxJumpBar(); } catch (e) {} try { _uxTabbar(); } catch (e) {} try { _uxChecklistAids(); } catch (e) {} }
+function _uxAfterRender() { try { const t = document.querySelector('.rl-tabs'), hd = document.querySelector('.header-sticky, .header'); if (t && hd) t.style.top = Math.round(hd.getBoundingClientRect().height) + 'px'; } catch (e) {} try { _uxLoadingMarks(); } catch (e) {} try { _uxNavTrack(); } catch (e) {} try { _uxFreeze(); } catch (e) {} try { _uxJumpBar(); } catch (e) {} try { _uxTabbar(); } catch (e) {} try { _uxChecklistAids(); } catch (e) {} }
 window.addEventListener('resize', () => { try { _uxTabbar(); } catch (e) {} try { _uxFreeze(); } catch (e) {} });
 function _postRender() {
   requestAnimationFrame(() => {
@@ -6251,7 +6266,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.17-v136';
+const APP_BUILD = '2026.10.17-v138';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
@@ -13671,7 +13686,7 @@ function _mgmtMiniHTML() {
     <div class="rk-mg gl-row" role="button" tabindex="0" onclick="openOptionLab(${i})" onkeydown="if(event.key==='Enter')openOptionLab(${i})">
       <div class="rk-mg-top"><span class="rk-pill rk-c-${it.level}">${esc(it.tag)}</span><b class="rk-mg-pos">${esc(_posLabel(it.x))}</b>
         ${pnl != null ? `<span class="rk-mg-pnl ${_thCls(pnl)}">${_fmtSigned(pnl)}</span>` : ''}</div>
-      <div class="rk-mg-sub">${esc(it.facts)} · <span class="rk-mg-act">${esc(it.act)}</span>${_rollBtn(it.x)}${_lmBtn(it.x)}</div></div>`; };
+      <div class="rk-mg-sub">${esc(it.facts)} · <span class="rk-mg-act">${esc(it.act)}</span>${_rollBtn(it.x)}${_lmBtn(it.x)}</div>${_safe('轮子估算', () => _wvMini(it.x), '')}</div>`; };
   return `
     <section class="rk-block rk-mgmt pd-mg">
       <h3 class="rk-block-title rk-title-row"><span>待处理仓位${items.length ? ` <span class="rk-count">${items.length}</span>` : ''}</span><button class="app-link" onclick="showRiskDashboard()">风险页 ▸</button></h3>
@@ -14711,6 +14726,8 @@ const GREEK_HELP = {
   wheel_cycle: { t: '轮子 · 完整周期', def: '每一次被行权接股算一个周期: 从卖出那张 CSP (包括之前 roll 的) 开始, 接股, 持股期间卖 CC, 一直到这批股票全部卖出或被 call 走. 周期盈亏 = CSP 权利金 (含 roll) + 卖 CC 的盈亏 + 正股的盈亏 (已卖出的按实际卖价, 还持有的按现价).', ex: '卖 280P 收 $900 (roll 过一次又收 $200), 被行权接 100 股; 持股期间卖了 3 次 CC 共 $750; 最后 300 被 call 走, 正股赚 (300 − 280) × 100 = $2,000. 周期合计 $3,850, 按接股资金 $28,000 算 +13.8%.', note: '年化按接股需要的资金 (行权价 × 股数) 和整个周期的天数算. 正股的盈亏和 Performance 页「被行权」表用的是同一套计算.' },
   daily_cal: { t: '每日盈亏日历', def: '每个交易日一格: 当天收盘 NAV − 前一天收盘 NAV − 当天的入金出金. 包括已实现和未实现, 是账户真实的每日变化.', note: '需要 Worker 每天收盘记下的 NAV; 某一天没有记录就是灰色.' },
   lp_count: { t: '笔和张', def: '笔 = 有几张不同的合约 (同一个标的、行权价、到期日算一笔); 张 = 合约的总数. 同一张合约加过仓, 笔数不变, 张数增加.', ex: 'AVGO 400C 1/21/28 买了 3 张, 后来又加 1 张: 1 笔 4 张.', note: '' },
+  wv: { t: '轮子全貌', def: '如果这张 CSP 到期被行权, 接股之后一直按真实成本卖 ~30 天的 CC (和下面详细步骤里的 B 一样: 第一个不低于真实成本、Δ 不超过当前 CC 模式上限的行权价), 每卖一次真实成本降低一次权利金. 阶梯线就是真实成本, 降到股价以下的点会圈出来. 第 n 次被 call 走时, 这一轮总共 = 行权价 − 那时的真实成本.', ex: '接股真实成本 357.90, 每次卖 340C 收 $7.90: 卖到第 7 次, 真实成本约 302.60, 被 call 走总共约 (340 − 302.60) × 100 = $3,740.', note: '按每次同样的权利金、股价不变来算, 只能做参考. 被行权的概率按这张 put 的 IV 算的到期价内概率. 按概率加权的期望 = 不被行权的概率 × 留下的权利金 + 被行权的概率 × 走完轮子的总共.' },
+  wv_cmp: { t: '方案对比', def: '把三条路放在一起看: 现在 roll (按候选合约里排第一的, 假设到期不被行权), 接股 + 按真实成本卖 CC (B), 接股 + 按接股价卖 CC (C). 每张写大约总共赚多少、要几个月、占用资金 (行权价 × 股数)、年化、股价再跌 20% 时的情况. 总共为正的里面年化最高的会标出来.', note: '都是参考值, 不是推荐. 实际还要看规则检查和详细步骤里的分析.' },
   an_twr: { t: '你的账户 vs SPY', def: '你的账户这段时间的时间加权收益率 (TWR): 把每天收盘的 NAV 连起来, 每一天的收益 = (当天 NAV − 当天的入金出金) ÷ 前一天 NAV − 1, 再连乘. 入金出金不算赚的钱, 也不受金额大小的影响, 和 SPY 的涨跌可以直接比. 它包括已实现和未实现, 所以和上面的「区间已实现」不是同一个数.', ex: '1 月 1 日 NAV $100,000; 1 月 15 日入金 $20,000, 当天收盘 NAV $125,000: 这半个月的收益 = (125,000 − 20,000) ÷ 100,000 − 1 = +5%. 1 月 31 日 NAV $131,250: 后半个月 = 131,250 ÷ 125,000 − 1 = +5%. 合起来 = 1.05 × 1.05 − 1 = +10.25%, 而不是 (131,250 − 100,000) ÷ 100,000 = +31% (那里面有 2 万是你存进去的).', note: '每天的 NAV 来自 Worker 收盘时记下的快照, 只从开始记录的那天起有; 所选范围更早时, 从第一天有记录的开始算, SPY 也按同一段时间算. 图例里每个策略后面的 % 是占合计的比例, 不是收益率.' },
   an_av_held: { t: 'AVWAP 线守住的比例', def: '开仓时在现价下方的那条线 (也就是当时的支撑), 从开仓到平仓 (或到今天), 正股最低价有没有跌破它超过 1%. 守住的比例越高, 说明这一级支撑越可靠.', ex: '开仓时现价 200, A 线 192: 持有期间最低到 191 (只低了 0.5%) 算守住; 最低到 186 算被跌破. 10 笔里 8 笔守住, 就是 80%.', note: '用的是开仓当天你填的价格; AVWAP 每天会移动一点, 所以这是近似的检验.' },
   an_av_zone: { t: '开仓时现价相对三条线', def: '开仓那天现价在几条 AVWAP 线的上方: 三条都在下方 = 三层支撑都还在; 跌破 1 条 / 2 条 / 全部 = 已经有几层支撑丢了. 比较这几组的结果, 看「在支撑上方开仓」到底有没有更好.', note: '' },
@@ -16350,7 +16367,15 @@ function _rollAdviceHTML(x, ch, cfg) {
     const md = (loadScanCfg() || {}).ccMode, M = CC_MODES[md] || CC_MODES.balanced, cap = M[2] / 100;
     const gap = Math.max(0, eff - S), nDn = o => gap <= 0 ? 0 : Math.ceil(gap / o.mark - 1e-9), mo = o => nDn(o) * o.dte / 30, dl = o => o.delta != null ? Math.abs(o.delta) : null;
     const res = o => (o.strike - eff + o.mark) * 100 * q;
-    const line = (tag, o) => o ? `${tag} ${o.strike}C ${esc(_md(o.expiry))}: 每次 $${f2(o.mark)} · Δ ${dl(o) != null ? dl(o).toFixed(2) : '—'} · 被 call 走<span class="${res(o) >= 0 ? 'rk-t-safe' : 'rk-t-danger'}">${res(o) >= 0 ? '赚' : '亏'} ${usd(Math.abs(res(o)))}</span> · 降到现价 ${gap <= 0 ? '已经低于现价' : `${nDn(o)} 次, 约 ${mo(o).toFixed(1)} 个月`}` : `${tag}: 这个到期日没有 Δ ≤ ${cap.toFixed(2)} 的合约`;
+    // if it isn't called away this time: keep selling the same call; called away on the nth time, the whole wheel made (strike − cost) + n premiums
+    const tot = (o, n) => (o.strike - eff + n * o.mark) * 100 * q, nMax = o => Math.min(12, Math.max(3, nDn(o)));
+    const keepOn = o => { const N = nDn(o), each = o.mark * 100 * q;
+      const head = gap > 0 ? ` · 一直没被 call 走、卖满 ${N} 次 (成本降到现价): 权利金共 <b>${usd(N * each)}</b>, 那时被 call 走总共约 <b class="${tot(o, N) >= 0 ? 'rk-t-safe' : 'rk-t-danger'}">${usd(tot(o, N))}</b>` : ` · 每多卖一次多 ${usd(each)}`;
+      const ns = Array.from({ length: nMax(o) }, (_, i) => i + 1); if (N > ns.length) ns.push(0, N);   // 0 = the gap row
+      const rows = ns.map(n => n === 0 ? '<tr><td colspan="4">…</td></tr>' : `<tr${n === N ? ' class="rl-n"' : ''}><td>第 ${n} 次</td><td>约 ${Math.max(1, Math.round(n * o.dte / 30))} 个月</td><td>权利金共 ${usd(n * each)}</td><td class="${tot(o, n) >= 0 ? 'rk-t-safe' : 'rk-t-danger'}">总共 ${tot(o, n) >= 0 ? '' : '−'}${usd(Math.abs(tot(o, n)))}</td></tr>`).join('');
+      return head + `<details class="rl-keep"><summary>每一次被 call 走时总共赚多少 ▸</summary><table class="rk-table rl-keep-t"><tbody>${rows}</tbody></table>
+        <div class="rk-note">假设每次都卖同一个行权价、收差不多的权利金, 而且正股一直在行权价以下, 直到第 n 次才被 call 走. 实际每次的权利金会变; 如果正股继续下跌, 浮亏也会抵掉一部分. 总共 = (行权价 − 有效成本) × 股数 + n × 每次权利金 × 股数.</div></details>`; };
+    const line = (tag, o) => o ? `${tag} ${o.strike}C ${esc(_md(o.expiry))}: 每次 $${f2(o.mark)} · Δ ${dl(o) != null ? dl(o).toFixed(2) : '—'} · 这一次就被 call 走<span class="${res(o) >= 0 ? 'rk-t-safe' : 'rk-t-danger'}">${res(o) >= 0 ? '赚' : '亏'} ${usd(Math.abs(res(o)))}</span> · 降到现价 ${gap <= 0 ? '已经低于现价' : `${nDn(o)} 次, 约 ${mo(o).toFixed(1)} 个月`}${keepOn(o)}` : `${tag}: 这个到期日没有 Δ ≤ ${cap.toFixed(2)} 的合约`;
     // the mode's Δ cap applies to both: say which first strikes were too close
     const skipped = [rawB, rawC].filter((o, k, a) => o && a.findIndex(z => z && z.strike === o.strike) === k && dl(o) != null && dl(o) > cap);
     const firstOK = [ccB, ccC].filter(Boolean).sort((a, z) => a.strike - z.strike)[0];
@@ -16466,6 +16491,90 @@ window.clearRollPlan = () => { _rollPlanSet(__rollKey, null); _rollRedraw(); };
 window.setRollAlert = v => { const p = _rollPlans()[__rollKey]; if (!p) return; const n = parseFloat(v); p.alertPx = n > 0 ? n : null; _rollPlanSet(__rollKey, p); _rollRedraw(); };
 window.rollChecklist = i => { const x = _rollPos(), ch = __rollChain[__rollKey]; if (!x || !ch || !ch.b) return; const r = _rollCands(x, ch.b, __rollMode, _rollCfg()).rows[i]; if (!r) return;
   openScanChecklist(x.ticker, r.o.strike, r.o.expiry, x.kind === 'short_put' ? 'csp' : 'cc'); state.rollFrom = _posLabel(x); };
+/* ═════════════ v138 · the whole wheel ahead, before you decide: 轮子全貌 + 方案对比 ═════════════ */
+// the same choices the steps below make: a ~30-day call, the first strike at or above the cost, under the CC mode's Δ cap
+function _wvPicks(nb, eff, K) {
+  if (!nb || !nb.b) return null; const C = nb.b.contracts.filter(o => o.mark > 0 && o.dte >= 5), exps = [...new Set(C.map(o => o.expiry))].sort(), dte = e => (C.find(o => o.expiry === e) || {}).dte;
+  const e30 = exps.slice().sort((a, b) => Math.abs(dte(a) - 30) - Math.abs(dte(b) - 30))[0]; if (!e30) return null;
+  const cap = (CC_MODES[(loadScanCfg() || {}).ccMode] || CC_MODES.balanced)[2] / 100;
+  const first = min => C.filter(o => o.expiry === e30 && o.strike >= min - 1e-9 && (o.delta == null || Math.abs(o.delta) <= cap + 1e-9)).sort((a, b) => a.strike - b.strike)[0] || null;
+  return { B: first(eff), C: first(K), cap };
+}
+function _wvCalc(x, ch) {
+  if (!x || x.kind !== 'short_put') return null; const key = _posKey(x), q = Math.abs(Number(x.qty)) || 1, K = x.strike, H = _rollHistory(x), creditPS = (x.avg || 0) + H.realized / (100 * q);
+  const S = (ch && ch.b && ch.b.underlying) || x.und, eff = K - creditPS, dte = Math.max(0, _dteOf(x) || 0); if (!S) return null;
+  const pA = (() => { const sig = x.iv > 0 ? x.iv / 100 : null, T = Math.max(1, dte) / 365; if (sig) { const d2 = (Math.log(S / K) - 0.5 * sig * sig * T) / (sig * Math.sqrt(T)); return _ncdf(-d2); } return x.delta != null ? Math.abs(x.delta) : null; })();
+  const P = _wvPicks(__rollNext[key], eff, K); if (!P) return { key, q, K, S, eff, dte, creditPS, pA, wait: true };
+  const path = o => { if (!o) return null; const each = o.mark * 100 * q, gap = Math.max(0, eff - S), N = Math.max(1, Math.min(36, gap <= 0 ? 1 : Math.ceil(gap / o.mark - 1e-9)));
+    const tot = n => (o.strike - eff + n * o.mark) * 100 * q, days = n => dte + n * o.dte, cost = n => eff - n * o.mark;
+    return { o, each, N, tot, days, cost, months: n => days(n) / 30, ann: n => tot(n) / (K * 100 * q) * 365 / Math.max(1, days(n)), worst: n => (S * 0.8 - cost(n)) * 100 * q, reached: gap <= 0 || N * o.mark >= gap }; };
+  return { key, q, K, S, eff, dte, creditPS, pA, B: path(P.B), C: path(P.C), cap: P.cap };
+}
+let __wvSel = null;
+window.wvPick = n => { __wvSel = __wvSel === n ? null : n; const el = document.getElementById('wv-sec'); const x = _rollPos(); if (el && x) el.outerHTML = _wvHTML(x, __rollChain[__rollKey]); };
+function _wvHTML(x, ch) {
+  const W = _wvCalc(x, ch); if (!W) return ''; const d0 = _distPct(x); if (d0 != null && d0 > 5) return '';   // only when it's in the money or close
+  if (W.wait) { if (!__rollNext[W.key]) setTimeout(() => _rollNextFetch(), 0); return `<section class="rk-block wv" id="wv-sec"><h3 class="rk-block-title">轮子全貌</h3><div class="rk-quiet">读取 call 期权链, 估算接股之后的路…</div></section>`; }
+  const P = W.B || W.C; if (!P) return `<section class="rk-block wv" id="wv-sec"><h3 class="rk-block-title">轮子全貌</h3><div class="rk-quiet">30 天左右的 call 里找不到 Δ ≤ ${W.cap.toFixed(2)} 的合约, 估算不了.</div></section>`;
+  const o = P.o, N = P.N, keep = W.creditPS * 100 * W.q, ev = W.pA != null ? (1 - W.pA) * keep + W.pA * P.tot(N) : null, mo = n => Math.max(1, Math.round(P.months(n)));
+  // the picture: months across; the cost steps down with every call sold, the price and the strike stay flat (the assumption)
+  const Wd = 680, Ht = 230, L = 52, R = 14, T = 18, B = 34, tEnd = P.days(N) / 30 * 1.06, X = t => L + t / tEnd * (Wd - L - R);
+  const vals = [W.S, o.strike, W.eff, P.cost(N), W.K], lo = Math.min(...vals) * 0.97, hi = Math.max(...vals) * 1.02, Y = v => T + (hi - v) / (hi - lo) * (Ht - T - B);
+  const ta = W.dte / 30, steps = Array.from({ length: N }, (_, i) => i + 1), step = n => P.days(n) / 30;
+  let path = `M${X(0)},${Y(W.eff)} L${X(ta)},${Y(W.eff)}`; steps.forEach(n => { path += ` L${X(step(n))},${Y(P.cost(n - 1))} L${X(step(n))},${Y(P.cost(n))}`; });
+  const cross = steps.find(n => P.cost(n) <= W.S);
+  const dots = steps.map(n => `<g class="wv-pt${__wvSel === n ? ' on' : ''}" role="button" tabindex="0" onclick="wvPick(${n})" onkeydown="if(event.key==='Enter')wvPick(${n})"><circle cx="${X(step(n))}" cy="${Y(P.cost(n))}" r="${N > 18 ? 4 : 6}"/><rect x="${X(step(n)) - 12}" y="${T}" width="24" height="${Ht - T - B}" class="wv-hit"/></g>`).join('');
+  const ticks = []; for (let m = 0; m <= tEnd; m += tEnd > 18 ? 3 : tEnd > 8 ? 2 : 1) ticks.push(m);
+  const svg = `<svg viewBox="0 0 ${Wd} ${Ht}" class="wv-svg">
+    ${ticks.map(m => `<line x1="${X(m)}" x2="${X(m)}" y1="${T}" y2="${Ht - B}" class="cv-grid"/><text x="${X(m)}" y="${Ht - B + 16}" text-anchor="middle" class="rk-ch-lab">${m === 0 ? '现在' : m + ' 月'}</text>`).join('')}
+    <rect x="${X(0)}" y="${T}" width="${X(ta) - X(0)}" height="${Ht - T - B}" class="wv-csp"/><text x="${(X(0) + X(ta)) / 2}" y="${T + 12}" text-anchor="middle" class="wv-tag">CSP</text>
+    <line x1="${L}" x2="${Wd - R}" y1="${Y(o.strike)}" y2="${Y(o.strike)}" class="wv-k"/><text x="${Wd - R}" y="${Y(o.strike) - 4}" text-anchor="end" class="wv-k-l">卖 CC 的行权价 ${o.strike}</text>
+    <line x1="${L}" x2="${Wd - R}" y1="${Y(W.S)}" y2="${Y(W.S)}" class="wv-s"/><text x="${X(ta) + 6}" y="${Y(W.S) + 14}" class="wv-s-l">假设股价不变 ${W.S.toFixed(2)}</text>
+    <path d="${path}" class="wv-cost"/>${cross ? `<circle cx="${X(step(cross))}" cy="${Y(P.cost(cross))}" r="9" class="wv-cross"/>` : ''}${dots}
+    ${[lo, (lo + hi) / 2, hi].map(v => `<text x="${L - 6}" y="${Y(v) + 3}" text-anchor="end" class="rk-ch-lab">${v.toFixed(0)}</text>`).join('')}
+    <text x="${X(ta) + 4}" y="${Y(W.eff) - 6}" class="wv-cost-l">真实成本 ${W.eff.toFixed(2)}</text></svg>`;
+  const sel = __wvSel && __wvSel <= N ? __wvSel : null;
+  const det = sel ? `<div class="wv-det"><b>第 ${sel} 次 CC 被 call 走</b> (约 ${mo(sel)} 个月后): 这一轮总共 <b class="${_thCls(P.tot(sel))}">${_fmtSigned(P.tot(sel))}</b> · 那时真实成本 ${P.cost(sel).toFixed(2)} · 收到的 CC 权利金共 ${_fmtUsd(sel * P.each)} · 年化约 ${(P.ann(sel) * 100).toFixed(0)}%<button class="app-link" onclick="wvPick(${sel})">关闭</button></div>`
+    : `<div class="rk-quiet wv-tip">点 (或按) 阶梯上任意一个点, 看在那一次被 call 走时这一轮总共赚多少.</div>`;
+  return `<section class="rk-block wv" id="wv-sec"><h3 class="rk-block-title">轮子全貌 ${_qBtn('wv', 'short')}</h3>
+    <div class="wv-hl">如果到期被行权, 按真实成本卖 <b>${o.strike}C</b> (每次约 ${_fmtUsd(P.each)}): 约 <b>${mo(N)} 个月</b>、第 <b>${N}</b> 次被 call 走时这一轮总共赚约 <b class="${_thCls(P.tot(N))}">${_fmtSigned(P.tot(N))}</b>${cross ? '' : ' (按这个权利金, 真实成本还降不到现价)'}.
+      如果不被行权, 这张 CSP ${H_word(W)} <b class="${_thCls(keep)}">${_fmtSigned(keep)}</b>.</div>
+    <div class="wv-sub">现在被行权的概率约 <b>${W.pA != null ? Math.round(W.pA * 100) + '%' : '—'}</b>${ev != null ? ` · 按概率加权的期望约 <b class="${_thCls(ev)}">${_fmtSigned(ev)}</b>` : ''}</div>
+    ${svg}${det}
+    <div class="rk-legend"><span><i class="rk-sw wv-sw-c"></i>真实成本 (每卖一次 CC 往下一阶)</span><span><i class="rk-sw wv-sw-s"></i>假设的股价</span><span><i class="rk-sw wv-sw-k"></i>卖 CC 的行权价</span>${cross ? '<span><i class="rk-sw wv-sw-x"></i>真实成本降到股价以下</span>' : ''}</div>
+    <div class="rk-note">参考: 按每次同样的权利金、股价不变来算; 实际每次的权利金会变, 股价大跌时同一个行权价的 call 会便宜很多, 要的次数和时间会更长.</div></section>`;
+}
+const H_word = W => W.creditPS >= 0 ? '留下' : '亏';
+function _wvCmpHTML(x, ch, cfg) {
+  const W = _wvCalc(x, ch); if (!W || W.wait || (!W.B && !W.C)) return ''; const d0 = _distPct(x); if (d0 != null && d0 > 5) return '';
+  const cap = W.K * 100 * W.q, pc = v => v == null || !isFinite(v) ? '—' : `${v >= 0 ? '+' : '−'}${Math.abs(v * 100).toFixed(0)}%`;
+  const cards = [];
+  try { const R = ch && ch.b ? _rollCands(x, ch.b, 'both', cfg) : null, r = R && !R.err ? (R.rows.find(z => z.credit) || R.rows[0]) : null;
+    if (r) { const tot = (W.creditPS + r.net) * 100 * W.q, days = r.o.dte, effN = r.o.strike - (W.creditPS + r.net);
+      cards.push({ k: 'roll', h: '现在 roll', sub: `${r.o.strike}P ${_md(r.o.expiry)} · ${r.net >= 0 ? '净收' : '净付'} ${_fmtUsd(Math.abs(r.net) * 100 * W.q)}`, tot, mo: days / 30, ann: tot / cap * 365 / Math.max(1, days), cond: '到期不被行权时',
+        likely: r.pNo == null || r.pNo >= 0.5, warn: r.pNo != null && r.pNo < 0.5 ? `${Math.round((1 - r.pNo) * 100)}% 的可能仍会被行权, 那时真实成本 ${effN.toFixed(2)}` : '',
+        worst: (W.S * 0.8 - effN) * 100 * W.q, note: `不被行权的概率 ${r.pNo != null ? Math.round(r.pNo * 100) + '%' : '—'} · 被行权的话真实成本 ${effN.toFixed(2)}` }); } } catch (e) {}
+  [['B', '接股 + 按真实成本卖 CC'], ['C', '接股 + 按接股价卖 CC']].forEach(([k, h]) => { const P = W[k]; if (!P) return; const N = P.N;
+    cards.push({ k, h, sub: `${P.o.strike}C · 每次 ${_fmtUsd(P.each)} · 第 ${N} 次被 call 走`, tot: P.tot(N), mo: P.months(N), ann: P.ann(N), worst: P.worst(N), note: `那时真实成本 ${P.cost(N).toFixed(2)}${P.reached ? '' : ' (还没降到现价)'}` }); });
+  if (!cards.length) return '';
+  const best = cards.filter(c => c.tot > 0 && c.likely !== false).sort((a, b) => b.ann - a.ann)[0];   // a roll that will most likely still be assigned doesn't compete on its best case
+  return `<section class="rk-block" id="wv-cmp"><h3 class="rk-block-title">方案对比 ${_qBtn('wv_cmp', 'short')}</h3><div class="wv-cards">${cards.map(c => `<div class="wv-card${best === c ? ' best' : ''}">${best === c ? '<span class="wv-badge">年化最高</span>' : ''}<div class="wv-ch">${c.h}</div><div class="wv-cs">${esc(c.sub)}</div>
+      ${c.cond ? `<div class="wv-cond">${c.cond}</div>` : ''}<div class="wv-big ${_thCls(c.tot)}">${_fmtSigned(c.tot)}</div>${c.warn ? `<div class="wv-warn">${esc(c.warn)}</div>` : ''}<div class="wv-row"><span>大约需要</span><b>${c.mo < 1 ? '不到 1' : Math.round(c.mo)} 个月</b></div><div class="wv-row"><span>占用资金</span><b>${_fmtUsd(cap)}</b></div>
+      <div class="wv-row"><span>年化</span><b class="${_rCls(c.ann)}">${pc(c.ann)}</b></div><div class="wv-row"><span>股价再跌 20% 时</span><b class="${_thCls(c.worst)}">${_fmtSigned(c.worst)}</b></div><div class="wv-n">${esc(c.note)}</div></div>`).join('')}</div>
+    <div class="rk-note">都是参考值: roll 按排第一的候选合约、到期不被行权来算; 接股的两种按每次同样的权利金、股价不变来算. "股价再跌 20%" = 到那时股价比现在低 20% 且还没被 call 走, 按那时的真实成本算的浮动盈亏.</div></section>`;
+}
+// the 待处理 line: fetch the call chain quietly for puts in or near the money, then one sentence
+const __wvBg = {};
+function _wvBgFetch(x) { const k = _posKey(x), c = __rollNext[k]; if ((c && (c.busy || Date.now() - (c.at || 0) < 5 * 60000)) || __wvBg[k]) return; __wvBg[k] = 1;
+  __rollNext[k] = { ...(c || {}), busy: true }; const today = _todayISO();
+  _wfetch(`/chain?ticker=${encodeURIComponent(x.ticker)}&type=C&from=${_addDays(today, 5)}&to=${_addDays(today, 120)}&strikeCount=60`).then(r => r.json().then(b => ({ r, b })).catch(() => ({ r, b: null })))
+    .then(({ r, b }) => { __rollNext[k] = r.ok && b && Array.isArray(b.contracts) ? { at: Date.now(), b } : { at: Date.now(), err: 'HTTP ' + r.status }; }).catch(() => { __rollNext[k] = { at: Date.now(), err: '网络错误' }; })
+    .finally(() => { __wvBg[k] = 0; if (!state._view || ['risk', 'positions'].includes(state._view)) { const y = window.scrollY; render(); window.scrollTo(0, y); } }); }
+function _wvMini(x) {
+  if (!x || x.kind !== 'short_put') return ''; const d0 = _distPct(x); if (d0 == null || d0 > 5) return ''; const W = _wvCalc(x, null);
+  if (!W) return ''; if (W.wait) { _wvBgFetch(x); return ''; } const P = W.B || W.C; if (!P) return '';
+  return `<div class="wv-mini">如果被行权: 约 ${Math.max(1, Math.round(P.months(P.N)))} 个月、第 ${P.N} 次被 call 走时总共约 <b class="${_thCls(P.tot(P.N))}">${_fmtSigned(P.tot(P.N))}</b></div>`;
+}
 function renderRollPage() {
   const head = `<div class="header header-sticky"><div class="brand">Pre-Trade Checklist</div><div class="header-actions"><button class="btn ghost" onclick="rollBack()">← 返回</button><button class="btn ghost" onclick="rollRefresh()">刷新期权链</button></div></div>`;
   const x = _rollPos();
@@ -16550,7 +16659,9 @@ function renderRollPage() {
     <button class="app-link" onclick="resetRollCfg()">恢复默认</button></div></details>`;
   const wheel = R && !R.err && S ? _rollWheelHTML(x, R) : '';
   const advice = ch && ch.b ? _safe('建议', () => _rollAdviceHTML(x, ch, cfg), '') : '';
-  $app.innerHTML = head + `<div class="rk-page roll-page">${status}${stops}${advice}${modeHTML}<section class="rk-block"><h3 class="rk-block-title">候选合约</h3>${body}</section>${alt}${wheel}${legs}${rules}</div>`;
+  const outlook = _safe('轮子全貌', () => _wvHTML(x, ch), ''), compare = ch && ch.b ? _safe('方案对比', () => _wvCmpHTML(x, ch, cfg), '') : '';
+  const tabs = outlook || compare ? `<div class="ux-jump rl-tabs">${[['wv-sec', '全貌'], ['wv-cmp', '方案对比'], ['rl-cands', '候选合约'], ['rl-steps', '详细步骤']].filter(([id]) => id === 'rl-cands' || id === 'rl-steps' ? true : id === 'wv-sec' ? outlook : compare).map(([id, l]) => `<button type="button" onclick="uxGo('${id}')">${l}</button>`).join('')}</div>` : '';
+  $app.innerHTML = head + `<div class="rk-page roll-page">${tabs}${status}${outlook}${compare}${stops}<div id="rl-steps">${advice}</div>${modeHTML}<section class="rk-block" id="rl-cands"><h3 class="rk-block-title">候选合约</h3>${body}</section>${alt}${wheel}${legs}${rules}</div>`;
   if (ch && ch.b && !__rollNext[__rollKey]) setTimeout(() => _rollNextFetch(), 0);
   if (!ch) _rollFetch();
 }
@@ -19554,6 +19665,8 @@ window.setLeapsLevel = (kind, k, v) => { const m = _ltLoad(kind), n = parseFloat
 window.setLeapsTgt = (k, v) => setLeapsLevel('tgt', k, v);
 /* ═════════════ v133 · LEAPS share by ticker and expiry; drilling into the portfolio composition ═════════════ */
 // jump from a chart to that position's row in the tables below, and make it flash
+window.uxGo = id => { const el = document.getElementById(id); if (!el) return; const bar = document.querySelector('.rl-tabs, .ux-jump'), hd = document.querySelector('.header-sticky, .header');
+  const off = (hd ? hd.getBoundingClientRect().height : 0) + (bar ? bar.getBoundingClientRect().height : 0) + 8; window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - off, behavior: 'smooth' }); };
 window.uxJumpRow = label => { const rows = [...document.querySelectorAll('.pos-page table.rk-table tbody tr')].filter(r => r.offsetParent && r.cells[0] && r.cells[0].textContent.trim().startsWith(label));
   const r = rows.filter(z => !z.closest('.pc-dd')).pop() || rows.pop(); if (!r) return; r.scrollIntoView({ behavior: 'smooth', block: 'center' }); r.classList.add('ux-flash-row'); setTimeout(() => r.classList.remove('ux-flash-row'), 1600); };
 // ── LEAPS: one bar per ticker, cut by contract in expiry order, coloured by time left ──
