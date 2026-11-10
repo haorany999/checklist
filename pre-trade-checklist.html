@@ -3977,6 +3977,13 @@
   tr.ux-flash-row td { animation: ux-row-flash 1.6s ease-out; } @keyframes ux-row-flash { 0%, 40% { background: color-mix(in srgb, var(--accent) 22%, transparent); } 100% { background: transparent; } }
   @media (max-width: 700px) { .pcd-pos { padding-left: 0; } .pcd-pos div { grid-template-columns: 1fr auto auto; } .pcd-pos div .app-link { grid-column: 1 / -1; justify-self: start; } .pcd-b { grid-template-columns: 4em 1fr auto; } }
   .ux-jump { width: 100%; max-width: 100%; min-width: 0; box-sizing: border-box; } .pos-page { min-width: 0; max-width: 100%; }
+  /* v134 · tables scroll sideways; the first column stays */
+  table.rk-table.ux-freeze th:first-child, table.rk-table.ux-freeze td:first-child { position: sticky; left: 0; z-index: 2; background: var(--panel); }
+  table.rk-table.ux-freeze thead th:first-child { z-index: 3; } table.rk-table.ux-freeze tr:hover td:first-child { background: var(--panel-2); }
+  table.rk-table.ux-freeze2 th:nth-child(2), table.rk-table.ux-freeze2 td:nth-child(2) { position: sticky; left: var(--fz1, 28px); z-index: 2; background: var(--panel); }
+  .rk-table-wrap.ux-scrolled table.ux-freeze:not(.ux-freeze2) td:first-child, .rk-table-wrap.ux-scrolled table.ux-freeze:not(.ux-freeze2) th:first-child,
+  .rk-table-wrap.ux-scrolled table.ux-freeze2 td:nth-child(2), .rk-table-wrap.ux-scrolled table.ux-freeze2 th:nth-child(2) { box-shadow: 6px 0 8px -6px rgba(0,0,0,.35); }
+  table.rk-table.ux-freeze tr.rk-total td:first-child { background: var(--panel-2); } table.rk-table.ux-freeze tr.on td:first-child, table.rk-table.ux-freeze tr.sel td:first-child { background: color-mix(in srgb, var(--accent) 10%, var(--panel)); }
 </style>
 </head>
 <body class="theme-slate">
@@ -5592,8 +5599,19 @@ function _uxJumpBar() {
   page.insertBefore(bar, page.firstChild);
 }
 function _uxLoadingMarks() { document.querySelectorAll('#app .rk-quiet, #app .rk-notice, #app .ck-sm').forEach(e => { if (!e.dataset.uxl && /^(读取中|加载中|正在读取|正在加载|检查中)/.test(e.textContent.trim())) { e.dataset.uxl = '1'; e.classList.add('ux-loading'); } }); }
-function _uxAfterRender() { try { _uxLoadingMarks(); } catch (e) {} try { _uxNavTrack(); } catch (e) {} try { _uxCardify(); } catch (e) {} try { _uxJumpBar(); } catch (e) {} try { _uxTabbar(); } catch (e) {} try { _uxChecklistAids(); } catch (e) {} }
-window.addEventListener('resize', () => { try { _uxTabbar(); } catch (e) {} });
+// wide tables scroll sideways as before, with the first column pinned (the rank and the contract when the first column is a rank)
+function _uxFreeze() {
+  document.querySelectorAll('#app .rk-table-wrap > table.rk-table').forEach(t => {
+    if (!t.tHead || !t.tHead.rows[0] || t.closest('.dc-wrap')) return; const wrap = t.parentElement;
+    if (wrap.scrollWidth - wrap.clientWidth <= 4) { t.classList.remove('ux-freeze', 'ux-freeze2'); return; }
+    const h0 = (t.tHead.rows[0].cells[0] || {}).textContent || '', two = !h0.trim() || /^(#|排名|序号|名次)$/.test(h0.trim());
+    t.classList.add('ux-freeze'); t.classList.toggle('ux-freeze2', two);
+    if (two) { const w = t.tHead.rows[0].cells[0].getBoundingClientRect().width; t.style.setProperty('--fz1', Math.round(w) + 'px'); }
+    if (!wrap.dataset.fzs) { wrap.dataset.fzs = '1'; wrap.addEventListener('scroll', () => wrap.classList.toggle('ux-scrolled', wrap.scrollLeft > 2), { passive: true }); }
+  });
+}
+function _uxAfterRender() { try { _uxLoadingMarks(); } catch (e) {} try { _uxNavTrack(); } catch (e) {} try { _uxFreeze(); } catch (e) {} try { _uxJumpBar(); } catch (e) {} try { _uxTabbar(); } catch (e) {} try { _uxChecklistAids(); } catch (e) {} }
+window.addEventListener('resize', () => { try { _uxTabbar(); } catch (e) {} try { _uxFreeze(); } catch (e) {} });
 function _postRender() {
   requestAnimationFrame(() => {
     try { _uxAfterRender(); } catch (e) {}
@@ -6218,7 +6236,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.17-v133';
+const APP_BUILD = '2026.10.17-v134';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
