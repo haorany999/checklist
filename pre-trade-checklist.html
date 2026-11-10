@@ -3984,6 +3984,17 @@
   .rk-table-wrap.ux-scrolled table.ux-freeze:not(.ux-freeze2) td:first-child, .rk-table-wrap.ux-scrolled table.ux-freeze:not(.ux-freeze2) th:first-child,
   .rk-table-wrap.ux-scrolled table.ux-freeze2 td:nth-child(2), .rk-table-wrap.ux-scrolled table.ux-freeze2 th:nth-child(2) { box-shadow: 6px 0 8px -6px rgba(0,0,0,.35); }
   table.rk-table.ux-freeze tr.rk-total td:first-child { background: var(--panel-2); } table.rk-table.ux-freeze tr.on td:first-child, table.rk-table.ux-freeze tr.sel td:first-child { background: color-mix(in srgb, var(--accent) 10%, var(--panel)); }
+  /* v136 · a narrow pinned column whose own content scrolls sideways */
+  .ux-fc { white-space: nowrap; }
+  @media (max-width: 1000px) {
+    table.ux-freeze:not(.ux-freeze2) td:first-child > .ux-fc, table.ux-freeze:not(.ux-freeze2) th:first-child > .ux-fc,
+    table.ux-freeze2 td:nth-child(2) > .ux-fc, table.ux-freeze2 th:nth-child(2) > .ux-fc { max-width: 160px; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+    .ux-fc::-webkit-scrollbar { display: none; } .ux-fc.ovf:not(.end) { -webkit-mask-image: linear-gradient(90deg, #000 72%, transparent); mask-image: linear-gradient(90deg, #000 72%, transparent); }
+  }
+  @media (max-width: 700px) {
+    table.ux-freeze:not(.ux-freeze2) td:first-child > .ux-fc, table.ux-freeze:not(.ux-freeze2) th:first-child > .ux-fc,
+    table.ux-freeze2 td:nth-child(2) > .ux-fc, table.ux-freeze2 th:nth-child(2) > .ux-fc { max-width: 118px; }
+  }
 </style>
 </head>
 <body class="theme-slate">
@@ -5606,10 +5617,14 @@ function _uxFreeze() {
     if (wrap.scrollWidth - wrap.clientWidth <= 4) { t.classList.remove('ux-freeze', 'ux-freeze2'); return; }
     const h0 = (t.tHead.rows[0].cells[0] || {}).textContent || '', two = !h0.trim() || /^(#|排名|序号|名次)$/.test(h0.trim());
     t.classList.add('ux-freeze'); t.classList.toggle('ux-freeze2', two);
+    const ci = two ? 1 : 0;
+    [...t.rows].forEach(r => { const c = r.cells[ci]; if (!c || c.colSpan > 1 || c.querySelector(':scope > .ux-fc')) return; const d = document.createElement('div'); d.className = 'ux-fc'; while (c.firstChild) d.appendChild(c.firstChild); c.appendChild(d); });
+    t.querySelectorAll('.ux-fc').forEach(d => d.classList.toggle('ovf', d.scrollWidth - d.clientWidth > 2));
     if (two) { const w = t.tHead.rows[0].cells[0].getBoundingClientRect().width; t.style.setProperty('--fz1', Math.round(w) + 'px'); }
     if (!wrap.dataset.fzs) { wrap.dataset.fzs = '1'; wrap.addEventListener('scroll', () => wrap.classList.toggle('ux-scrolled', wrap.scrollLeft > 2), { passive: true }); }
   });
 }
+document.addEventListener('scroll', e => { const d = e.target; if (d && d.classList && d.classList.contains('ux-fc')) d.classList.toggle('end', d.scrollLeft + d.clientWidth >= d.scrollWidth - 2); }, true);
 function _uxAfterRender() { try { _uxLoadingMarks(); } catch (e) {} try { _uxNavTrack(); } catch (e) {} try { _uxFreeze(); } catch (e) {} try { _uxJumpBar(); } catch (e) {} try { _uxTabbar(); } catch (e) {} try { _uxChecklistAids(); } catch (e) {} }
 window.addEventListener('resize', () => { try { _uxTabbar(); } catch (e) {} try { _uxFreeze(); } catch (e) {} });
 function _postRender() {
@@ -6236,7 +6251,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.17-v134';
+const APP_BUILD = '2026.10.17-v136';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
