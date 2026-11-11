@@ -4012,6 +4012,8 @@
   .wv-cond { font-size: 11.5px; color: var(--text-faint); } .wv-warn { font-size: 12px; color: var(--fail); margin: -2px 0 6px; }
   .wv-lead { font-size: 12.5px; margin-bottom: 6px; } .wv-rel { font-size: 13px; padding: 8px 10px; margin-bottom: 10px; border-radius: 8px; border: 1px solid var(--warn, #E5793B); background: color-mix(in srgb, #E5793B 8%, transparent); } .wv-rel.ok { border-color: var(--pass); background: color-mix(in srgb, var(--pass) 8%, transparent); }
   .wv-row em { font-style: normal; font-family: var(--mono); color: var(--text-faint); margin-left: 4px; }
+  .rl-spread { margin-top: 8px; padding: 8px 10px; border-left: 3px solid #E5793B; background: color-mix(in srgb, #E5793B 7%, transparent); border-radius: 4px; font-size: 13px; line-height: 1.6; } .rl-spread b { font-family: var(--mono); }
+  .wc-mk.buy { background: var(--accent); } .hc-flag { color: var(--pass); font-weight: 600; } .hc-note { font-size: 11.5px; font-weight: 400; color: var(--text-faint); margin-top: 2px; } .hc-note a { color: var(--accent); text-decoration: none; } .hc-note b { font-family: var(--mono); }
 </style>
 </head>
 <body class="theme-slate">
@@ -6268,7 +6270,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.17-v139';
+const APP_BUILD = '2026.10.17-v141';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
@@ -14725,10 +14727,11 @@ const GREEK_HELP = {
   mark_und: { t: 'Mark', def: '这只股票 (标的) 现在的价格, 不是期权本身的价格. 和「距行权价」放在一起, 不用点开就能看到现价离行权价多远.', note: '价格来自最近一次 Schwab 持仓刷新; 想要最新的就点右上角刷新.' },
   archive: { t: '云端档案', def: '你的交易资料永久存在 Cloudflare D1 (一个免费的云端 SQLite 数据库) 里 (设置了 GitHub 的话每周再复制一份). 存了: Schwab 的每一笔交易 (原样, 只追加, 从不修改)、每个交易日收盘时的每个仓位 (价格、Greeks、IV、市值)、每天的 NAV 和余额、每次 checklist 的完整快照 (每一条的结果、AVWAP、当时的技术面、期权的买卖价和 Greeks、组合状态)、仓位总表 (一行一个仓位: 每一条腿、开仓那天的条件、结果和持有期间的走势; 开仓条件第一次存好后不再改写)、规则版本 (每次改设置都存一份带日期的完整规则, 包括当时每个 checklist 有哪些条目).', ex: '设置 (只做一次): 1) Cloudflare 控制台 → Storage & Databases → D1 → Create, 名字写 trading-archive. 2) Workers & Pages → 你的 Worker → Settings → Bindings → Add → D1 database, 变量名写 ARCHIVE, 选 trading-archive, 保存. 3) 把 Worker 代码换成 v24 并 Deploy. 4) 回到 App 的「设置 → 自检」, 点「上传本机的 checklist 记录」和「补全历史交易」. GitHub (可选): 建一个 Private 仓库, 生成只能写这个仓库的 fine-grained token (Contents: Read and write), 在 Worker 的 Settings → Variables and Secrets 里加 GITHUB_TOKEN (Secret) 和 GITHUB_REPO (例如 yourname/trading-archive).', note: '免费额度 5GB, 你的数据大约每年 10MB. 档案是 SQLite 和 JSON, 不需要这个 App 也能打开.' },
   income: { t: '权利金收入', def: '收到 ≠ 赚到, 所以分三层看: 收到 = 卖出期权收的权利金 (按开仓月份); 净权利金 = 收到的减去买回花掉的, 按仓位结束的月份算 (到期作废、买回、被行权都算结束); 扣除接股的正股盈亏后 = 净权利金再加上被行权接股之后正股赚的或亏的 (卖掉的按实际, 还拿着的按现价). 目标、月平均和柱子都用净权利金.', ex: '这个月卖 CSP 收 $1,000, 其中一张收 $300 后来花 $500 买回: 收到 $1,000, 买回花掉 $500, 净 $500. 另一张被行权接股后正股现在浮亏 $800: 扣除后是 −$300, 说明这个轮子还没赚到钱.', note: '还没结束的仓位不算进净权利金 (结果未定). 月平均按最近 12 个月里有交易的完整月份算.' },
+  hold_cycle: { t: '持股周期', def: '每一段持有这只股票的时间算一轮: 从持股从 0 变成正数 (买入或 CSP 被行权接股) 开始, 到全部卖出或被 call 走为止. 一轮的总数 = 正股的盈亏 (实际买入、卖出价, 和 Schwab 交易记录一样) + 这期间卖的所有 CC 的权利金 (+ 如果是接股来的, 那张 CSP 和它之前 roll 的权利金).', ex: '买 AVGO 100 股 @ 400, 先后卖 3 张 CC 收 $2,400, 最后 390C 被 call 走: 正股 −$1,000 (Schwab 显示亏), 整轮 +$1,400.', note: '报税仍以 Schwab 为准 (正股亏损和期权权利金分开算). 同时持有正股和 LEAPS 时, 卖 call 那一刻正股够 100 股 × 张数, 就算正股的 CC; checklist 明确写 PMCC 的才算 LEAPS 的. Performance 的胜率、盈亏比把这样的一轮合成一笔算.' },
   wheel_cycle: { t: '轮子 · 完整周期', def: '每一次被行权接股算一个周期: 从卖出那张 CSP (包括之前 roll 的) 开始, 接股, 持股期间卖 CC, 一直到这批股票全部卖出或被 call 走. 周期盈亏 = CSP 权利金 (含 roll) + 卖 CC 的盈亏 + 正股的盈亏 (已卖出的按实际卖价, 还持有的按现价).', ex: '卖 280P 收 $900 (roll 过一次又收 $200), 被行权接 100 股; 持股期间卖了 3 次 CC 共 $750; 最后 300 被 call 走, 正股赚 (300 − 280) × 100 = $2,000. 周期合计 $3,850, 按接股资金 $28,000 算 +13.8%.', note: '年化按接股需要的资金 (行权价 × 股数) 和整个周期的天数算. 正股的盈亏和 Performance 页「被行权」表用的是同一套计算.' },
   daily_cal: { t: '每日盈亏日历', def: '每个交易日一格: 当天收盘 NAV − 前一天收盘 NAV − 当天的入金出金. 包括已实现和未实现, 是账户真实的每日变化.', note: '需要 Worker 每天收盘记下的 NAV; 某一天没有记录就是灰色.' },
   lp_count: { t: '笔和张', def: '笔 = 有几张不同的合约 (同一个标的、行权价、到期日算一笔); 张 = 合约的总数. 同一张合约加过仓, 笔数不变, 张数增加.', ex: 'AVGO 400C 1/21/28 买了 3 张, 后来又加 1 张: 1 笔 4 张.', note: '' },
-  wv: { t: '轮子全貌', def: '(CC 按 bid 成交、每张每次扣 $0.65 手续费.) 如果这张 CSP 到期被行权, 接股之后一直按真实成本卖 ~30 天的 CC (和下面详细步骤里的 B 一样: 第一个不低于真实成本、Δ 不超过当前 CC 模式上限的行权价), 每卖一次真实成本降低一次权利金. 阶梯线就是真实成本, 降到股价以下的点会圈出来. 第 n 次被 call 走时, 这一轮总共 = 行权价 − 那时的真实成本.', ex: '接股真实成本 357.90, 每次卖 340C 收 $7.90: 卖到第 7 次, 真实成本约 302.60, 被 call 走总共约 (340 − 302.60) × 100 = $3,740.', note: '按每次同样的权利金、股价不变来算, 只能做参考. 被行权的概率按这张 put 的 IV 算的到期价内概率. 按概率加权的期望 = 不被行权的概率 × 留下的权利金 + 被行权的概率 × 走完轮子的总共.' },
+  wv: { t: '轮子全貌', def: '(按中间价、每张每次扣 $0.65 手续费, 和建议、候选合约表用同一个价格.) 如果这张 CSP 到期被行权, 接股之后一直按真实成本卖 ~30 天的 CC (和下面详细步骤里的 B 一样: 第一个不低于真实成本、Δ 不超过当前 CC 模式上限的行权价), 每卖一次真实成本降低一次权利金. 阶梯线就是真实成本, 降到股价以下的点会圈出来. 第 n 次被 call 走时, 这一轮总共 = 行权价 − 那时的真实成本.', ex: '接股真实成本 357.90, 每次卖 340C 收 $7.90: 卖到第 7 次, 真实成本约 302.60, 被 call 走总共约 (340 − 302.60) × 100 = $3,740.', note: '按每次同样的权利金、股价不变来算, 只能做参考. 被行权的概率按这张 put 的 IV 算的到期价内概率. 按概率加权的期望 = 不被行权的概率 × 留下的权利金 + 被行权的概率 × 走完轮子的总共.' },
   wv_cmp: { t: '方案对比', def: '三条路放在同一个基础上比: 每张 = 不被行权的概率 × 那时留下的钱 + 被行权的概率 × 走完轮子的总共. 现在 roll 用「建议」选中的那张 (roll 之后仍被行权, 就从更低的真实成本开始走轮子); 不 roll 的两张分别是接股后按真实成本 (B) 或按接股价 (C) 卖 CC. 年化按加权的金额、加权的时间和占用资金 (行权价 × 股数) 算; 加权年化最高的标出来 (要超过 3 年的路不参加).', ex: '不被行权的概率 25% × 留下 $1,800 + 被行权的概率 75% × 走完轮子 $7,000 = 加权 $5,700.', note: '都是参考值, 不是推荐. 怎么做以「建议」为准; 两者不一致时卡片上方会说明.' },
   an_twr: { t: '你的账户 vs SPY', def: '你的账户这段时间的时间加权收益率 (TWR): 把每天收盘的 NAV 连起来, 每一天的收益 = (当天 NAV − 当天的入金出金) ÷ 前一天 NAV − 1, 再连乘. 入金出金不算赚的钱, 也不受金额大小的影响, 和 SPY 的涨跌可以直接比. 它包括已实现和未实现, 所以和上面的「区间已实现」不是同一个数.', ex: '1 月 1 日 NAV $100,000; 1 月 15 日入金 $20,000, 当天收盘 NAV $125,000: 这半个月的收益 = (125,000 − 20,000) ÷ 100,000 − 1 = +5%. 1 月 31 日 NAV $131,250: 后半个月 = 131,250 ÷ 125,000 − 1 = +5%. 合起来 = 1.05 × 1.05 − 1 = +10.25%, 而不是 (131,250 − 100,000) ÷ 100,000 = +31% (那里面有 2 万是你存进去的).', note: '每天的 NAV 来自 Worker 收盘时记下的快照, 只从开始记录的那天起有; 所选范围更早时, 从第一天有记录的开始算, SPY 也按同一段时间算. 图例里每个策略后面的 % 是占合计的比例, 不是收益率.' },
   an_av_held: { t: 'AVWAP 线守住的比例', def: '开仓时在现价下方的那条线 (也就是当时的支撑), 从开仓到平仓 (或到今天), 正股最低价有没有跌破它超过 1%. 守住的比例越高, 说明这一级支撑越可靠.', ex: '开仓时现价 200, A 线 192: 持有期间最低到 191 (只低了 0.5%) 算守住; 最低到 186 算被跌破. 10 笔里 8 笔守住, 就是 80%.', note: '用的是开仓当天你填的价格; AVWAP 每天会移动一点, 所以这是近似的检验.' },
@@ -16376,7 +16379,7 @@ function _rollAdviceHTML(x, ch, cfg) {
       const ns = Array.from({ length: nMax(o) }, (_, i) => i + 1); if (N > ns.length) ns.push(0, N);   // 0 = the gap row
       const rows = ns.map(n => n === 0 ? '<tr><td colspan="4">…</td></tr>' : `<tr${n === N ? ' class="rl-n"' : ''}><td>第 ${n} 次</td><td>约 ${Math.max(1, Math.round(n * o.dte / 30))} 个月</td><td>权利金共 ${usd(n * each)}</td><td class="${tot(o, n) >= 0 ? 'rk-t-safe' : 'rk-t-danger'}">总共 ${tot(o, n) >= 0 ? '' : '−'}${usd(Math.abs(tot(o, n)))}</td></tr>`).join('');
       return head + `<details class="rl-keep"><summary>每一次被 call 走时总共赚多少 ▸</summary><table class="rk-table rl-keep-t"><tbody>${rows}</tbody></table>
-        <div class="rk-note">假设每次都卖同一个行权价、按 bid 成交、每张扣 $${WV_FEE} 手续费, 而且正股一直在行权价以下, 直到第 n 次才被 call 走. 实际每次的权利金会变; 如果正股继续下跌, 浮亏也会抵掉一部分. 总共 = (行权价 − 有效成本) × 股数 + n × 每次扣费后的权利金 × 股数.</div></details>`; };
+        <div class="rk-note">假设每次都卖同一个行权价、按中间价成交、每张扣 $${WV_FEE} 手续费, 而且正股一直在行权价以下, 直到第 n 次才被 call 走. 实际每次的权利金会变; 如果正股继续下跌, 浮亏也会抵掉一部分. 总共 = (行权价 − 有效成本) × 股数 + n × 每次扣费后的权利金 × 股数.</div></details>`; };
     const line = (tag, o) => o ? `${tag} ${o.strike}C ${esc(_md(o.expiry))}: 每次 $${f2(_wvPx(o))} · Δ ${dl(o) != null ? dl(o).toFixed(2) : '—'} · 这一次就被 call 走<span class="${res(o) >= 0 ? 'rk-t-safe' : 'rk-t-danger'}">${res(o) >= 0 ? '赚' : '亏'} ${usd(Math.abs(res(o)))}</span> · 降到现价 ${gap <= 0 ? '已经低于现价' : `${nDn(o)} 次, 约 ${mo(o).toFixed(1)} 个月`}${keepOn(o)}` : `${tag}: 这个到期日没有 Δ ≤ ${cap.toFixed(2)} 的合约`;
     // the mode's Δ cap applies to both: say which first strikes were too close
     const skipped = [rawB, rawC].filter((o, k, a) => o && a.findIndex(z => z && z.strike === o.strike) === k && dl(o) != null && dl(o) > cap);
@@ -16431,6 +16434,10 @@ function _rollAdviceHTML(x, ch, cfg) {
   } else {
     rec = `${MODES[top.m]} → <b>${top.r.o.strike}${L} ${esc(_md(top.r.o.expiry))}</b>, 净收 <b class="rk-t-safe">$${f2(top.r.net)}</b> / 股${put ? `, 盈亏平衡降到 ${f2(top.r.be)}` : ''}`;
     rec += ` <span class="rk-quiet">· 因为${cashShort ? '接股会借钱, ' : ''}能收到净收入${lean === 'roll' ? '、比接股后卖 CC 更快降低成本' : ''}, 而且在三种方式里分数最高</span>`; __rollAdvTop[_posKey(x)] = { kind: 'roll', r: top.r, m: top.m };
+    { const A = all[top.m], o = top.r.o, ask = A.cAsk > 0 ? A.cAsk : null, bid = o.bid > 0 ? o.bid : null;
+      if (ask != null && bid != null) { const nat = bid - ask, spr = Math.max(0, (o.ask || o.mark) - bid) + Math.max(0, ask - ((A.cur && A.cur.bid) || A.cMid));
+        if (spr >= 0.5 || (nat < 0 && top.r.net >= 0)) rec += `<div class="rl-spread">按中间价${top.r.net >= 0 ? '净收' : '净付'} <b>$${f2(Math.abs(top.r.net))}</b> / 股; 按对手价 (卖 bid、买回 ask) ${nat >= 0 ? '净收' : '净付'} <b class="${nat >= 0 ? 'rk-t-safe' : 'rk-t-danger'}">$${f2(Math.abs(nat))}</b> / 股; 两条腿的 bid / ask 价差合计 <b>$${f2(spr)}</b> / 股.
+          在中间价附近挂限价单耐心等成交${top.r.net > 0 ? `; 成交不到净收 (每股 &gt; $0) 就先别 roll` : ''}.</div>`; } }
     act = `<button class="btn ghost small" onclick="rollFollow('${top.m}', ${top.i})">按建议选择</button>`;
   }
   return `<section class="rk-block rl-advice"><h3 class="rk-block-title">建议 ${_qBtn('roll_advice', 'short')}</h3>
@@ -16495,7 +16502,7 @@ window.rollChecklist = i => { const x = _rollPos(), ch = __rollChain[__rollKey];
   openScanChecklist(x.ticker, r.o.strike, r.o.expiry, x.kind === 'short_put' ? 'csp' : 'cc'); state.rollFrom = _posLabel(x); };
 /* ═════════════ v139 · the whole wheel ahead, one calculation shared by 全貌, 方案对比 and the steps ═════════════ */
 const WV_FEE = 0.65;                                                     // per contract, per trade (Schwab)
-const _wvPx = o => !o ? null : o.bid > 0 ? o.bid : o.mark;               // a sale fills at the bid, not the middle
+const _wvPx = o => !o ? null : o.mark;                                  // the middle price, the same one 建议 and the candidate list use
 const _wvNet = o => _wvPx(o) - WV_FEE / 100;                             // per share, after the commission
 const __rollAdvTop = {};                                                  // what 建议 decided for each position, so the cards can say whether they agree
 // the call to sell after being put: ~30 days, the first strike at or above the floor, Δ known and under the CC mode's cap (same rule as the steps)
@@ -16521,7 +16528,7 @@ function _wvCalc(x, ch) {
   return { ...base, B: _wvPath(P.B, eff, S, q, dte), C: _wvPath(P.C, eff, S, q, dte), cap: P.cap, nb };
 }
 const _wvKeepWord = W => W.rolls ? '这一路' : '这张 CSP ';
-let __wvSel = null;
+let __wvSel = null, __hcRecent = [];
 window.wvPick = n => { __wvSel = __wvSel === n ? null : n; const el = document.getElementById('wv-sec'); const x = _rollPos(); if (el && x) el.outerHTML = _wvHTML(x, __rollChain[__rollKey]); };
 function _wvHTML(x, ch) {
   const W = _wvCalc(x, ch); if (!W) return ''; const d0 = _distPct(x); if (d0 != null && d0 > 5) return '';   // only when it's in the money or close
@@ -16547,12 +16554,12 @@ function _wvHTML(x, ch) {
   const det = sel ? `<div class="wv-det"><b>第 ${sel} 次 CC 被 call 走</b> (约 ${mo(sel)} 个月后): 这一轮总共 <b class="${_thCls(P.tot(sel))}">${_fmtSigned(P.tot(sel))}</b> · 那时真实成本 ${P.cost(sel).toFixed(2)} · 收到的 CC 权利金共 ${_fmtUsd(sel * P.each)} · 年化约 ${(P.tot(sel) / (W.K * 100 * W.q) * 365 / Math.max(1, P.days(sel)) * 100).toFixed(0)}%<button class="app-link" onclick="wvPick(${sel})">关闭</button></div>`
     : `<div class="rk-quiet wv-tip">点 (或按) 阶梯上任意一个点, 看在那一次被 call 走时这一轮总共赚多少.</div>`;
   return `<section class="rk-block wv" id="wv-sec"><h3 class="rk-block-title">轮子全貌 ${_qBtn('wv', 'short')}</h3>
-    <div class="wv-hl">如果到期被行权, 按真实成本卖 <b>${o.strike}C</b> (每次按 bid 约 ${_fmtUsd(P.px * 100 * W.q)}, 扣手续费后 ${_fmtUsd(P.each)}): 约 <b>${mo(N)} 个月</b>、第 <b>${N}</b> 次被 call 走时这一轮总共赚约 <b class="${_thCls(P.tot(N))}">${_fmtSigned(P.tot(N))}</b>${P.tooLong ? ' <span class="rk-t-danger">(要超过 3 年, 这条路基本不现实)</span>' : cross ? '' : ' (按这个权利金, 真实成本还降不到现价)'}.
+    <div class="wv-hl">如果到期被行权, 按真实成本卖 <b>${o.strike}C</b> (每次按中间价约 ${_fmtUsd(P.px * 100 * W.q)}, 扣手续费后 ${_fmtUsd(P.each)}): 约 <b>${mo(N)} 个月</b>、第 <b>${N}</b> 次被 call 走时这一轮总共赚约 <b class="${_thCls(P.tot(N))}">${_fmtSigned(P.tot(N))}</b>${P.tooLong ? ' <span class="rk-t-danger">(要超过 3 年, 这条路基本不现实)</span>' : cross ? '' : ' (按这个权利金, 真实成本还降不到现价)'}.
       如果不被行权, ${_wvKeepWord(W)}留下 <b class="${_thCls(keep)}">${_fmtSigned(keep)}</b>.</div>
     <div class="wv-sub">现在被行权的概率约 <b>${W.pA != null ? Math.round(W.pA * 100) + '%' : '—'}</b>${ev != null ? ` · 按概率加权的期望约 <b class="${_thCls(ev)}">${_fmtSigned(ev)}</b> <span class="rk-quiet">(被行权那边假设最终在第 ${N} 次被 call 走, 也就是股价要涨回 ${o.strike})</span>` : ''}</div>
     ${svg}${det}
     <div class="rk-legend"><span><i class="rk-sw wv-sw-c"></i>真实成本 (每卖一次 CC 往下一阶)</span><span><i class="rk-sw wv-sw-s"></i>假设的股价</span><span><i class="rk-sw wv-sw-k"></i>卖 CC 的行权价</span>${cross ? '<span><i class="rk-sw wv-sw-x"></i>真实成本降到股价以下</span>' : ''}</div>
-    <div class="rk-note">参考: CC 按 bid 成交、每张扣 $${WV_FEE} 手续费, 每次同样的权利金、股价不变来算; 实际每次的权利金会变, 股价大跌时同一个行权价的 call 会便宜很多, 要的次数和时间会更长.</div></section>`;
+    <div class="rk-note">参考: 按中间价、每张扣 $${WV_FEE} 手续费, 每次同样的权利金、股价不变来算; 实际每次的权利金会变, 股价大跌时同一个行权价的 call 会便宜很多, 要的次数和时间会更长.</div></section>`;
 }
 // three ways forward on one footing: probability of each ending × what it ends with
 function _wvCmpHTML(x, ch, cfg) {
@@ -16562,10 +16569,10 @@ function _wvCmpHTML(x, ch, cfg) {
   try { const R0 = ch && ch.b ? _rollCands(x, ch.b, 'both', cfg) : null; let r = adv && adv.kind === 'roll' && adv.r ? adv.r : null;
     if (!r && R0 && !R0.err) r = R0.rows.find(z => z.credit) || R0.rows[0];
     if (r && R0 && !R0.err) {
-      const buy = R0.cAsk > 0 ? R0.cAsk : R0.cMid, netC = _wvPx(r.o) - buy, credN = W.creditPS + netC, keepR = credN * 100 * W.q - 2 * WV_FEE * W.q, effN = r.o.strike - credN;
+      const netC = r.net, credN = W.creditPS + netC, keepR = credN * 100 * W.q - 2 * WV_FEE * W.q, effN = r.o.strike - credN;
       const PB = _wvPicks(W.nb, effN, r.o.strike), path = PB && PB.B ? _wvPath(PB.B, effN, W.S, W.q, r.o.dte) : null, pNo = r.pNo != null ? r.pNo : null, capR = r.o.strike * 100 * W.q;
       const aTot = path ? path.tot(path.N) : null, ev = pNo != null && path ? pNo * keepR + (1 - pNo) * aTot : null, days = pNo != null && path ? pNo * r.o.dte + (1 - pNo) * path.days(path.N) : r.o.dte;
-      cards.push({ k: 'roll', h: '现在 roll', sub: `${r.o.strike}P ${_md(r.o.expiry)} · 按可成交价${netC >= 0 ? '净收' : '净付'} ${_fmtUsd(Math.abs(netC) * 100 * W.q)}`, ev, days, cap: capR,
+      cards.push({ k: 'roll', h: '现在 roll', sub: `${r.o.strike}P ${_md(r.o.expiry)} · 按中间价${netC >= 0 ? '净收' : '净付'} ${_fmtUsd(Math.abs(netC) * 100 * W.q)}`, ev, days, cap: capR,
         no: [pNo, keepR, `到期不被行权, ${_wvKeepWord(W)}留下`], yes: [pNo != null ? 1 - pNo : null, aTot, path ? `被行权 (真实成本 ${effN.toFixed(2)}), 卖 ${path.o.strike}C 第 ${path.N} 次被 call 走, 约 ${Math.round(path.days(path.N) / 30)} 个月` : '被行权后估算不了'],
         worst: path ? path.worst : null, long: path && path.tooLong }); } } catch (e) {}
   [['B', '不 roll, 接股后按真实成本卖 CC'], ['C', '不 roll, 接股后按接股价卖 CC']].forEach(([k, h]) => { const P = W[k]; if (!P) return; const keep = W.creditPS * 100 * W.q, a = W.pA;
@@ -16586,7 +16593,7 @@ function _wvCmpHTML(x, ch, cfg) {
       <div class="wv-row"><span>预计需要 (加权)</span><b>${c.days < 30 ? '不到 1' : Math.round(c.days / 30)} 个月</b></div><div class="wv-row"><span>占用资金</span><b>${_fmtUsd(c.cap)}</b></div>
       <div class="wv-row"><span>年化 (按加权)</span><b class="${_rCls(c.ann)}">${pc(c.ann)}</b></div><div class="wv-row"><span>被行权后股价再跌 20%</span><b class="${c.worst == null ? '' : _thCls(c.worst)}">${c.worst == null ? '—' : _fmtSigned(c.worst)}</b></div>
       ${c.long ? '<div class="wv-warn">被行权那条路要超过 3 年, 基本不现实</div>' : ''}</div>`).join('')}</div>
-    <div class="rk-note">都是参考值: 卖按 bid、买回按 ask, 每张每次扣 $${WV_FEE} 手续费; 走轮子按每次同样的权利金、股价不变. roll 用的是「建议」选中的那张 (建议不是 roll 时用排第一的候选). "被行权后股价再跌 20%" = 接股后股价比现在低 20%, 只收到第一张 CC 的权利金时的浮动盈亏.</div></section>`;
+    <div class="rk-note">都是参考值: 和「建议」一样按中间价, 每张每次扣 $${WV_FEE} 手续费; 走轮子按每次同样的权利金、股价不变. roll 用的是「建议」选中的那张 (建议不是 roll 时用排第一的候选). "被行权后股价再跌 20%" = 接股后股价比现在低 20%, 只收到第一张 CC 的权利金时的浮动盈亏.</div></section>`;
 }
 // the 待处理 line: fetch the call chain quietly for puts in or near the money, then one sentence
 const __wvBg = {};
@@ -16968,7 +16975,8 @@ function _anData() {
     let d0 = null, pA = null; if (iv0) { const s = iv0 * Math.sqrt(T0), d1 = (Math.log(c.S0 / h.strike) + (0.04 + iv0 * iv0 / 2) * T0) / s; d0 = put ? 1 - _ncdf(d1) : _ncdf(d1); pA = put ? _ncdf(-(d1 - s)) : _ncdf(d1 - s); }
     const e = entryOf[h.id], es = e ? String(e.strategy || '') : '';
     const baseL = !put ? U.filter(z => z.side === 'long' && z.putCall === 'CALL' && z.ticker === h.ticker && z.expiry > h.expiry && z.openTs <= h.openTs + 864e5 && (!z.closeTs || z.closeTs >= h.openTs)).sort((a, b) => b.openTs - a.openTs)[0] : null;
-    const pmcc = !put && (es.startsWith('PMCC') || (!es.startsWith('CC') && !!baseL));
+    const coveredByStock = !put && !!baseL && _sharesAt(h.ticker, h.openTs) >= 100 * Math.abs(Number(h.qty || h.openQty) || 1);
+    const pmcc = !put && (es.startsWith('PMCC') || (!es.startsWith('CC') && !!baseL && !coveredByStock));
     const why = !pmcc ? null : es.startsWith('PMCC') ? 'checklist' : 'leaps';
     rows.push({ k: h.id, strat: put ? 'csp' : pmcc ? 'pmcc' : 'cc', t: h.ticker, L, head: h, last, put, q, openTs: h.openTs, day, closeTs: done ? last.closeTs : null, done, end, pnl, credit, rolls: L.length - 1,
       K: h.strike, exp: h.expiry, dte0, prem, S0: c.S0, iv0, d0, pA, dist0: c.S0 ? (put ? (c.S0 - h.strike) / c.S0 : (h.strike - c.S0) / c.S0) * 100 : null,
@@ -17940,6 +17948,84 @@ function _wheelCycles() {
     return { a, ticker: a.ticker, strike: a.strike, shares, start, assignTs: a.ts, end, done, calledAway, rolls: chain ? chain.rolls : 0, cspPrem, ccInc, calls, openCalls, stockReal: a.realized, stockUnreal: a.unreal, total, capital, days, ann: total / capital * 365 / days, effCost, px };
   }).sort((x, y) => y.assignTs - x.assignTs);
 }
+/* ═════════════ v141 · holding cycles: every stretch of owning a stock, from first share to last, with everything sold against it ═════════════ */
+// how many shares of T were held at a moment (decides whether a short call was covered by stock or by a LEAPS)
+let __shAt = { at: null, by: {} };
+function _sharesAt(T, ts) {
+  const h = loadHist(); if (!h || !h.data) return 0; if (__shAt.at !== h.at) __shAt = { at: h.at, by: {} };
+  let L = __shAt.by[T];
+  if (!L) { const txs = h.data.slice().sort((a, b) => (a.ts || 0) - (b.ts || 0)), { closed } = buildPerfLots(h.data); let s = 0;
+    L = _wheelEvents(T, txs, closed).filter(e => e.kind === 'buy' || e.kind === 'sell').map(e => [e.ts, s = Math.max(0, s + (e.kind === 'buy' ? e.qty : -e.qty))]); __shAt.by[T] = L; }
+  let v = 0; for (const [t, s] of L) { if (t <= ts + 6e4) v = s; else break; } return v;
+}
+function _holdCycles() {
+  const h = loadHist(); if (!h || !h.data || !h.data.length) return null;
+  const txs = h.data.slice().sort((a, b) => (a.ts || 0) - (b.ts || 0)), { closed } = buildPerfLots(h.data);
+  const rows = (() => { try { return _anData().rows; } catch (e) { return []; } })(), pos = computeRisk().c.pos;
+  const pm = rows.filter(r => r.strat === 'pmcc').flatMap(r => (r.L || [r.head]).filter(Boolean).map(u => ({ t: r.t, key: `${u.strike}C|${u.expiry}`, a: u.openTs - 864e5, b: (u.closeTs || Date.now()) + 864e5 })));
+  const isPm = (T, e) => e.pc === 'CALL' && pm.some(z => z.t === T && z.key === e.key && e.ts >= z.a && e.ts <= z.b);
+  const cspCh = rows.filter(r => r.strat === 'csp' && r.end === 'assigned');
+  const tickers = [...new Set(txs.flatMap(t => (t.items || []).filter(i => (i.asset === 'EQUITY' || i.asset === 'COLLECTIVE_INVESTMENT') && i.ticker).map(i => i.ticker)))];
+  const out = [];
+  tickers.forEach(T => {
+    const ev = _wheelEvents(T, txs, closed).filter(e => !/^opt/.test(e.kind) || !isPm(T, e));
+    let sh = 0, c = null;
+    ev.forEach(e => {
+      if (e.kind === 'buy') {
+        if (sh <= 0) { c = { T, start: e.ts, buyCost: 0, bought: 0, sells: 0, sold: 0, csp: 0, cc: 0, puts: 0, rolls: 0, ev: [], fromCSP: false };
+          closed.filter(l => l.ticker === T && l.putCall === 'PUT' && l.method === 'assigned' && Math.abs((l.closeTs || 0) - e.ts) < 4 * 864e5).forEach(l => {
+            c.csp += l.openCash; c.fromCSP = true; c.ev.push({ ts: l.closeTs, kind: 'csp', K: l.strike, cash: l.openCash });
+            const ch = cspCh.find(r => r.t === T && r.closeTs && Math.abs(r.closeTs - l.closeTs) < 1.5 * 864e5); if (ch && ch.L.length > 1) { c.csp += ch.L.slice(0, -1).reduce((s, u) => s + (u.pnl || 0), 0); c.rolls += ch.L.length - 1; } }); }
+        sh += e.qty; c.buyCost += -e.cash; c.bought += e.qty; c.ev.push(e);
+      } else if (e.kind === 'sell') {
+        if (!c) { sh = Math.max(0, sh - e.qty); return; }
+        sh -= e.qty; c.sells += e.cash; c.sold += e.qty; c.ev.push(e); if (sh <= 0.5) { c.end = e.ts; c.away = !!e.assigned; out.push(c); c = null; sh = 0; }
+      } else if (c && sh > 0) { if (e.kind === 'opt') { if (e.pc === 'CALL') c.cc += e.cash; else c.puts += e.cash; } c.ev.push(e); }
+    });
+    if (c) { const x = pos.find(p => p.kind === 'stock' && p.ticker === T); c.end = null; c.shares = sh; c.px = x ? _stockPx(x) : null; out.push(c); }
+  });
+  return out.map(c => {
+    const stock = c.end ? c.sells - c.buyCost : c.px != null ? c.sells + c.shares * c.px - c.buyCost : null, prem = c.csp + c.cc + c.puts, total = stock == null ? null : prem + stock;
+    const days = Math.max(1, Math.round(((c.end || Date.now()) - c.start) / 864e5));
+    const calls = {}; c.ev.filter(e => /^opt/.test(e.kind) && e.pc === 'CALL').forEach(e => { const k = calls[e.key] || (calls[e.key] = { key: e.key, K: e.K, exp: e.exp, a: e.ts, b: e.ts, cash: 0, away: false }); k.b = Math.max(k.b, e.ts); k.cash += e.cash || 0; if (e.kind === 'opt_assigned') k.away = true; });
+    return { ...c, stock, prem, total, days, done: !!c.end, ann: total != null && c.buyCost > 0 ? total / c.buyCost * 365 / days : null, calls: Object.values(calls),
+      adj: !c.end && c.shares ? (c.buyCost - c.sells - prem) / c.shares : null, id: `hc-${c.T}-${Math.round(c.start / 1000)}` };
+  }).sort((a, b) => (b.end || 9e15) - (a.end || 9e15) || b.start - a.start);
+}
+// for win rate and the like: a stock that left at a loss while the round made money is one round, not one loss
+function _mergeRounds(lots) {
+  const C = (() => { try { return (_holdCycles() || []).filter(c => c.done); } catch (e) { return []; } })(); if (!C.length) return lots;
+  const used = new Set(), out = [];
+  C.forEach(c => { const m = lots.filter(l => !used.has(l) && l.ticker === c.T && (
+      (l.kind === 'stock' && l.closeTs >= c.start - 864e5 && l.closeTs <= c.end + 864e5) ||
+      (l.kind === 'option' && l.side === 'short' && l.openTs >= c.start - 4 * 864e5 && l.openTs <= c.end + 864e5 && !(l.putCall === 'CALL' && c.calls.every(k => k.K !== l.strike || k.exp !== l.expiry))) ||
+      (l.kind === 'option' && l.putCall === 'PUT' && l.method === 'assigned' && Math.abs((l.closeTs || 0) - c.start) < 4 * 864e5)));
+    if (!m.some(l => l.kind === 'stock')) return; m.forEach(l => used.add(l));
+    out.push({ kind: 'round', ticker: c.T, pnl: m.reduce((s, l) => s + l.pnl, 0), openTs: Math.min(...m.map(l => l.openTs || c.start)), closeTs: Math.max(...m.map(l => l.closeTs || c.end)) }); });
+  return lots.filter(l => !used.has(l)).concat(out);
+}
+function _holdCyclesHTML() {
+  const C = _holdCycles(); if (!C) return ''; if (!C.length) return `<section class="rk-block"><h3 class="rk-block-title">持股周期</h3><div class="rk-quiet">记录里还没有持有过正股.</div></section>`;
+  const D = C.filter(c => c.done), O = C.filter(c => !c.done), avg = (A, f) => A.length ? A.reduce((s, x) => s + f(x), 0) / A.length : null, pc = v => v == null ? '—' : `${v >= 0 ? '+' : '−'}${Math.abs(v * 100).toFixed(1)}%`;
+  const f = (v, l, c = '', s = '') => `<div class="cv-fig"><b class="${c}">${v}</b><span>${l}</span>${s ? `<em>${s}</em>` : ''}</div>`, dt = t => _tsDay(t).slice(2).replace(/-/g, '/');
+  const sumD = D.reduce((s, c) => s + c.total, 0), win = D.filter(c => c.total > 0).length, saved = D.filter(c => c.stock < 0 && c.total > 0).length;
+  const row = c => { const t0 = c.start, t1 = c.end || Date.now(), X = t => ((Math.min(t1, Math.max(t0, t)) - t0) / Math.max(1, t1 - t0) * 100).toFixed(2) + '%';
+    const segs = `<span class="wc-hold${c.done ? '' : ' open'}" style="left:0;right:0"></span>` + c.calls.map(k => `<span class="wc-cc ${k.cash >= 0 ? 'up' : 'dn'}" style="left:${X(k.a)};width:calc(${X(Math.max(k.b, k.a + 864e5))} - ${X(k.a)})" title="${k.K}C ${_md(k.exp)} · ${_fmtSigned(k.cash)}${k.away ? ' · 被 call 走' : ''}"></span>`).join('')
+      + `<i class="wc-mk ${c.fromCSP ? 'asg' : 'buy'}" style="left:0" title="${c.fromCSP ? '接股' : '买入'} ${dt(c.start)}"></i>${c.done ? `<i class="wc-mk end" style="left:100%" title="${c.away ? '被 call 走' : '卖出正股'} ${dt(c.end)}"></i>` : ''}`;
+    return `<div class="wc-row${c.done ? '' : ' open'}" id="${c.id}"><div class="wc-h"><b>${esc(c.T)}</b> <span class="rk-quiet">${c.fromCSP ? 'CSP 接股' : '买入'} ${Math.round(c.bought)} 股 · ${dt(c.start)} → ${c.done ? dt(c.end) : '进行中'} · ${c.days} 天${c.rolls ? ` · 接股前 roll ${c.rolls} 次` : ''}</span>
+        <span class="wc-tot ${c.total == null ? '' : _thCls(c.total)}">${c.total == null ? '—' : _fmtSigned(c.total)} <em>${pc(c.total != null && c.buyCost ? c.total / c.buyCost : null)} · 年化 ${pc(c.ann)}</em></span></div>
+      <div class="wc-track">${segs}</div>
+      <div class="wc-parts">${c.fromCSP ? `<span>CSP 权利金 <b>${_fmtSigned(c.csp)}</b></span>` : ''}<span>${c.calls.length} 张 CC <b class="${_thCls(c.cc)}">${_fmtSigned(c.cc)}</b></span>${c.puts ? `<span>持股期间卖 put <b class="${_thCls(c.puts)}">${_fmtSigned(c.puts)}</b></span>` : ''}
+        <span>正股${c.done ? (c.away ? ' (被 call 走)' : ' (卖出)') : ' (浮动)'} <b class="${c.stock == null ? '' : _thCls(c.stock)}">${c.stock == null ? '—' : _fmtSigned(c.stock)}</b></span>
+        ${c.done && c.stock < 0 && c.total > 0 ? '<span class="hc-flag">正股单独看是亏的, 整轮是赚的</span>' : ''}
+        ${c.done ? '' : `<span>现在的调整后成本 <b>${c.adj != null ? c.adj.toFixed(2) : '—'}</b>${c.px ? ` · 现价 ${c.px.toFixed(2)}` : ''}</span>`}</div></div>`; };
+  return `<section class="rk-block" id="hc-sec"><h3 class="rk-block-title">持股周期 ${_qBtn('hold_cycle', 'short')}</h3>
+    <div class="cv-figs">${f(D.length, '轮已结束', '', `${O.length} 轮进行中`)}${f(_fmtSigned(sumD), '已结束的合计', _thCls(sumD))}${f(D.length ? Math.round(win / D.length * 100) + '%' : '—', '赚钱的轮', '', `${win} / ${D.length}`)}
+      ${f(saved, '正股单独看亏、整轮赚', saved ? 'rk-t-safe' : '', 'Schwab 上那笔正股显示亏损')}${f(D.length ? Math.round(avg(D, c => c.days)) + ' 天' : '—', '平均每轮')}${f(pc(avg(D.filter(c => c.ann != null), c => c.ann)), '平均年化 (按买入成本)', _rCls(avg(D.filter(c => c.ann != null), c => c.ann)))}</div>
+    <div class="wc-list">${C.map(row).join('')}</div>
+    <div class="rk-legend"><span><i class="rk-sw" style="background:var(--border-hi)"></i>持有正股</span><span><i class="rk-sw" style="background:#F59E0B"></i>卖出的 CC (绿 / 红边 = 赚 / 亏)</span><span>◆ CSP 接股 · ■ 买入 · ● 全部卖出 / 被 call 走</span></div>
+    <div class="rk-note">「正股」一项按实际买入和卖出的价格算, 和 Schwab 交易记录的口径一样; 一轮的总数 = 正股 + 这期间所有 CC (和 CSP) 的权利金, 才是经济上的结果. PMCC (挂在 LEAPS 上的) call 不算进来.</div></section>`;
+}
 function _wheelCyclesHTML() {
   const C = _wheelCycles(); if (!C) return ''; if (!C.length) return `<section class="rk-block"><h3 class="rk-block-title">轮子 · 完整周期</h3><div class="rk-quiet">还没有被行权接股的记录.</div></section>`;
   const D = C.filter(c => c.done), O = C.filter(c => !c.done), avg = (A, f) => A.length ? A.reduce((s, x) => s + f(x), 0) / A.length : null, pc = v => v == null ? '—' : `${v >= 0 ? '+' : '−'}${Math.abs(v * 100).toFixed(1)}%`;
@@ -17972,7 +18058,7 @@ function renderCockpitPage() {
   const open = mins != null && wd >= 1 && wd <= 5 && mins >= 570 && mins < 960;
   const spark = N.length > 2 ? (() => { const v = N.map(x => x[1]), lo = Math.min(...v), hi = Math.max(...v), X = i => (i / (v.length - 1) * 300).toFixed(1), Y = x => (54 - (x - lo) / Math.max(1, hi - lo) * 50).toFixed(1);
     return `<svg viewBox="0 0 300 58" class="ck-spark"><path d="M0,58 ${v.map((x, i) => `L${X(i)},${Y(x)}`).join(' ')} L300,58Z" class="a"/><path d="${v.map((x, i) => `${i ? 'L' : 'M'}${X(i)},${Y(x)}`).join(' ')}" class="l"/></svg>`; })() : '';
-  const lv = (() => { try { const D = _lvData(); if (!D.length) return null; const A = _lvAlerts(D), G = []; A.forEach(a => { let g = G.find(z => z.r === a.r); if (!g) G.push(g = { r: a.r, lvl: 0, k: [] }); g.lvl = Math.max(g.lvl, a.lvl); if (!g.k.includes(a.kind)) g.k.push(a.kind); }); G.sort((a, b) => b.lvl - a.lvl); return { n: D.length, A, G }; } catch (e) { return null; } })(), wc = (() => { try { return (_wheelCycles() || []).filter(x => !x.done); } catch (e) { return []; } })();
+  const lv = (() => { try { const D = _lvData(); if (!D.length) return null; const A = _lvAlerts(D), G = []; A.forEach(a => { let g = G.find(z => z.r === a.r); if (!g) G.push(g = { r: a.r, lvl: 0, k: [] }); g.lvl = Math.max(g.lvl, a.lvl); if (!g.k.includes(a.kind)) g.k.push(a.kind); }); G.sort((a, b) => b.lvl - a.lvl); return { n: D.length, A, G }; } catch (e) { return null; } })(), wc = (() => { try { return (_holdCycles() || []).filter(x => !x.done).map(c => ({ ticker: c.T, effCost: c.adj, px: c.px })).filter(c => c.effCost != null); } catch (e) { return []; } })();
   const inc = (() => { try { return _incomeData(); } catch (e) { return null; } })(), m = _todayISO().slice(0, 7), got = inc && inc.M[m] ? inc.M[m].net : 0, goal = _rule('premium_goal_month');
   const tile = (cls, h, body) => `<div class="ck-tile ${cls}${h ? '' : ' reuse'}">${h ? `<div class="ck-th">${h}</div>` : ''}${body}</div>`;
   $app.innerHTML = `<div class="ckp"><div class="ckp-top"><div class="ckp-brand">PRE-TRADE · 驾驶舱</div><div class="ckp-clock"><span class="ckp-dot${open ? ' on' : ''}"></span>${open ? '美股交易中' : '休市'} · 美东 <span class="ckp-time">${esc(et)}</span></div>
@@ -18499,10 +18585,13 @@ function buildPerfLots(txs) {
         const per = cash ? -cash / qty : (fromAssign ? fromAssign.strike : (i.price || 0));
         q.push({ qty, per, ts: t.ts, assign: fromAssign || null });
       } else {
-        let left = qty; const per = cash / qty;
+        // called away with no amount on the stock leg: the shares went at the call's strike, not at 0
+        const byCall = !cash ? assignEvents.find(a => a.ticker === i.ticker && a.putCall === 'CALL' && Math.abs(a.ts - t.ts) < 4 * 86400000 && !a.usedSell) : null;
+        if (byCall) byCall.usedSell = true;
+        let left = qty; const per = cash ? cash / qty : byCall ? byCall.strike : (i.price || 0);
         while (left > 0 && q.length) {
           const lot = q[0], k = Math.min(left, lot.qty);
-          closed.push({ kind: 'stock', ticker: i.ticker, strategy: '正股', side: 'long', qty: k, openTs: lot.ts, closeTs: t.ts, pnl: (per - lot.per) * k, cost: lot.per * k, method: 'trade', assign: lot.assign });
+          closed.push({ kind: 'stock', ticker: i.ticker, strategy: '正股', side: 'long', qty: k, openTs: lot.ts, closeTs: t.ts, pnl: (per - lot.per) * k, cost: lot.per * k, method: byCall || t.type === 'RECEIVE_AND_DELIVER' ? 'assigned' : 'trade', assign: lot.assign });
           if (lot.assign) lot.assign.stockPnl = (lot.assign.stockPnl || 0) + (per - lot.per) * k, lot.assign.sold = (lot.assign.sold || 0) + k;
           lot.qty -= k; left -= k; if (!lot.qty) q.shift();
         }
@@ -18648,10 +18737,10 @@ function renderPerformancePage() {
   if (!loadSchwabCfg()) { $app.innerHTML = head + '<div class="rk-page"><div class="rk-notice">需要连接 Schwab.</div></div>'; return; }
   if (!p) { $app.innerHTML = head + `<div class="rk-page"><div class="rk-quiet" style="padding:24px 0">${__perfErr ? `<span class="rk-t-alert">${esc(__perfErr)}</span>` : '读取交易记录…'}</div></div>`; return; }
   const fig = (label, val, sub, cls) => `<div class="rk-fig"><span class="rk-fig-val ${cls || 'rk-t-acc'}">${val}</span><span class="rk-fig-label">${label}</span>${sub ? `<span class="rk-fig-sub">${sub}</span>` : ''}</div>`;
-  const s = p.stats, pc = v => v == null ? '—' : `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`, n0 = v => v == null ? '—' : v === Infinity ? '∞' : v.toFixed(2);
+  const s = (() => { try { const m = _mergeRounds(p.lots || []); return m.length !== (p.lots || []).length ? { ..._statsOf(m), merged: (p.lots || []).length } : p.stats; } catch (e) { return p.stats; } })(), pc = v => v == null ? '—' : `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`, n0 = v => v == null ? '—' : v === Infinity ? '∞' : v.toFixed(2);
   const strat = Object.entries(p.byStrat).map(([k, L]) => ({ k, s: _statsOf(L) })).sort((a, b) => b.s.pnl - a.s.pnl);
   const tick = Object.entries(p.byTicker).map(([k, L]) => ({ k, s: _statsOf(L) })).sort((a, b) => Math.abs(b.s.pnl) - Math.abs(a.s.pnl));
-  const recent = p.lots.slice().sort((a, b) => (b.closeTs || 0) - (a.closeTs || 0)).slice(0, 40);
+  const recent = p.lots.slice().sort((a, b) => (b.closeTs || 0) - (a.closeTs || 0)).slice(0, 40); try { __hcRecent = _holdCycles() || []; } catch (e) { __hcRecent = []; }
   const lotLabel = l => l.kind === 'stock' ? `${l.ticker} ${Math.round(l.qty)} 股` : `${l.ticker} ${l.strike}${l.putCall === 'PUT' ? 'P' : 'C'} ${_md(l.expiry)} × ${l.qty}`;
   const dt = ts => { const d = new Date(ts); return `${d.getMonth() + 1}/${d.getDate()}`; };
   const M = { trade: '平仓', expired: '到期', assigned: '被行权' };
@@ -18662,7 +18751,7 @@ function renderPerformancePage() {
         <div class="rk-figs">
           ${fig('YTD', p.ytd != null ? _fmtSigned(p.ytd) : '—', p.ytd != null ? `净值 ${_fmtUsd(p.nav)} · 年初 ${_fmtUsd(p.startNav)}` : '填年初净值', p.ytd != null ? _thCls(p.ytd) : 'rk-quiet')}
           ${fig(`YTD % ${_qBtn('ytd_pct', 'short')}`, pc(p.ytdPct), p.flowsYtd ? `净入金 ${_fmtSigned(p.flowsYtd)} 已剔除` : '时间加权', p.ytdPct != null ? _thCls(p.ytdPct * 100) : 'rk-quiet')}
-          ${fig('已实现', _fmtSigned(s.pnl), `${s.n} 笔${p.incomeYtd ? ` · 股息利息 ${_sg(p.incomeYtd)}` : ''}`, _thCls(s.pnl))}
+          ${fig('已实现', _fmtSigned(s.pnl), `${s.n} 笔${s.merged ? ` (正股和它的 CC 合成一轮; 逐笔是 ${s.merged} 笔)` : ''}${p.incomeYtd ? ` · 股息利息 ${_sg(p.incomeYtd)}` : ''}`, _thCls(s.pnl))}
           ${fig(`胜率 ${_qBtn('winpf', 'short')}`, s.wr != null ? s.wr.toFixed(0) + '%' : '—', `盈亏比 ${n0(s.pf)}`)}
           ${fig(`期望值 / 笔 ${_qBtn('expect', 'short')}`, s.exp != null ? _fmtSigned(s.exp) : '—', `均盈 ${_sg(s.avgW)} · 均亏 ${_sg(s.avgL)}`, s.exp != null ? _thCls(s.exp) : '')}
           ${fig(`权利金留存 (卖方) ${_qBtn('capture', 'short')}`, s.capture != null ? s.capture.toFixed(0) + '%' : '—', `卖方平仓时 · 平均持有 ${s.days != null ? s.days.toFixed(0) : '—'} 天`, 'rk-t-watch')}
@@ -18679,7 +18768,7 @@ function renderPerformancePage() {
             <td class="${_thCls(s.pnl)}">${_fmtSigned(s.pnl)}</td><td>${n0(s.pf)}</td><td class="pf-opt ${_thCls(s.avgW)}">${s.avgW != null ? _fmtSigned(s.avgW) : '—'}</td><td class="pf-opt ${_thCls(s.avgL)}">${s.avgL != null ? _fmtSigned(s.avgL) : '—'}</td>
             <td>${s.capture != null ? s.capture.toFixed(0) + '%' : '—'}</td><td class="pf-opt">${s.days != null ? s.days.toFixed(0) : '—'}</td></tr>`).join('') || '<tr><td colspan="10" class="rk-quiet">无平仓记录</td></tr>'}</tbody>
         </table></div></section>
-      ${_safe('持股成本', _wheelHTML)}${_safe('轮子周期', _wheelCyclesHTML, '')}
+      ${_safe('持股成本', _wheelHTML)}${_safe('持股周期', _holdCyclesHTML, '')}
       ${p.assigns.length ? `<section class="rk-block"><h3 class="rk-block-title">被行权</h3>
         <div class="rk-table-wrap"><table class="rk-table">
           <thead><tr><th>日期</th><th>合约</th><th>权利金</th><th>正股已实现</th><th>正股浮动</th><th>合计</th></tr></thead>
@@ -18690,7 +18779,7 @@ function renderPerformancePage() {
       <section class="rk-block"><h3 class="rk-block-title">平仓记录</h3>
         <div class="rk-table-wrap"><table class="rk-table">
           <thead><tr><th>日期</th><th>合约</th><th>策略</th><th>盈亏</th><th>方式</th><th>天数</th><th>留存 (卖方)</th></tr></thead>
-          <tbody>${recent.map(l => `<tr><td>${dt(l.closeTs)}</td><td>${esc(lotLabel(l))}</td><td>${esc(l.strategy)}</td><td class="${_thCls(l.pnl)}">${_fmtSigned(l.pnl)}</td>
+          <tbody>${recent.map(l => `<tr><td>${dt(l.closeTs)}</td><td>${esc(lotLabel(l))}</td><td>${esc(l.strategy)}</td><td class="${_thCls(l.pnl)}">${_fmtSigned(l.pnl)}${(() => { if (l.kind !== 'stock') return ''; const c = (__hcRecent || []).find(z => z.done && z.T === l.ticker && l.closeTs >= z.start - 864e5 && l.closeTs <= z.end + 864e5); return c && c.prem ? `<div class="hc-note">Schwab 口径 · <a href="#${c.id}" onclick="event.preventDefault(); uxGo('${c.id}')">这一轮含权利金总共 <b class="${_thCls(c.total)}">${_fmtSigned(c.total)}</b> ▸</a></div>` : ''; })()}</td>
             <td>${M[l.method] || ''}</td><td>${l.openTs ? Math.round((l.closeTs - l.openTs) / 86400000) : '—'}</td><td>${l.capture != null ? l.capture.toFixed(0) + '%' : '—'}</td></tr>`).join('') || '<tr><td colspan="7" class="rk-quiet">无</td></tr>'}</tbody>
         </table></div>
         <div class="rk-note">先进先出配对开平仓; 已实现含手续费. 交易记录 ${_ago(p.at)}读取${p.status && p.status !== 'ok' ? ` · <span class="rk-t-alert">${esc(p.status)}</span>` : ''}.</div></section>
