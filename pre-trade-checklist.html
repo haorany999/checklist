@@ -4035,6 +4035,15 @@
   .rl-win-h { font-size: 15px; margin-bottom: 2px; } .rl-win-f { margin-top: 4px; font: 12px var(--mono); color: var(--text-dim); } .rl-win b { font-family: var(--mono); }
   .rl-win.ok { border-left-color: var(--pass); } .rl-win.go { border-left-color: var(--accent); background: color-mix(in srgb, var(--accent) 6%, var(--panel)); } .rl-win.wait { border-left-color: #E5793B; } .rl-win.bad { border-left-color: var(--fail); background: color-mix(in srgb, var(--fail) 7%, var(--panel)); }
   .rl-win .rl-win-h b { font-family: var(--sans); }
+  .sync-opt { display: block; margin: 10px 0 4px; font-size: 13.5px; cursor: pointer; } .sync-opt input { margin-right: 6px; } .sync-opt span { display: block; margin: 2px 0 0 22px; font-size: 12px; color: var(--text-faint); }
+  /* v145 */
+  .per1 { font-size: 11.5px; color: var(--text-faint); font-weight: 400; white-space: nowrap; } .lt-in.lt-def::placeholder { color: var(--text-dim); } .lt-in.lt-def { border-style: dashed; }
+  .inc-fig-btn { cursor: pointer; } .inc-fig-btn:hover .cv-fig { border-color: var(--accent); } .inc-how { font-size: 12.5px; margin: 2px 0 8px; } .inc-t-h { font-weight: 700; font-size: 13px; margin: 10px 0 4px; } .inc-t td, .inc-t th { font-size: 12.5px; }
+  .inc-det-l { display: none; }
+  .gp-alloc { padding: 10px 12px; margin: 6px 0 12px; border: 1px solid var(--border); border-left: 4px solid var(--accent); border-radius: 8px; background: var(--panel-2); }
+  .gp-alloc-h { font-size: 14px; margin-bottom: 6px; } .gp-alloc-h b { font-family: var(--mono); } .gp-alloc-s { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 13px; } .gp-alloc-s input { vertical-align: middle; width: 160px; }
+  .gp-alloc-b { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 4px; } .gp-custom { border-style: dashed; } .gp-mine { background: var(--accent); } .gp-del { margin-left: 6px; font-size: 16px; }
+  .gp-add-r { display: flex; gap: 6px; align-items: center; margin: 6px 0; } .gp-add-r input { width: 130px; }
 </style>
 </head>
 <body class="theme-slate">
@@ -6291,7 +6300,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.17-v143';
+const APP_BUILD = '2026.10.17-v145';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
@@ -10999,7 +11008,25 @@ function buildSyncPayload() {
   return payload;
 }
 // settings that change verdicts or plans: the same on every device
-const SYNC_EXTRA = () => [['newLowWin', NEWLOW_KEY], ['discStart', DISC_START_KEY], ['discReset', 'pretrade_disc_reset'], ['room', ROOM_KEY], ['goal', GOAL_KEY], ['rollPlans', ROLL_PLAN_KEY], ['earnings', EARN_KEY], ['rollCfg', ROLL_CFG_KEY], ['discExcl', DISC_EXCL_KEY], ['scanLog', SCAN_LOG_KEY], ['shortTP', SHORT_TP_KEY], ['avwapLines', AVWAP_KEY], ['ckCustom', CK_CUSTOM_KEY], ['rules', RULES_KEY]];
+const SYNC_EXTRA = () => [['newLowWin', NEWLOW_KEY], ['discStart', DISC_START_KEY], ['discReset', 'pretrade_disc_reset'], ['room', ROOM_KEY], ['goal', GOAL_KEY], ['rollPlans', ROLL_PLAN_KEY], ['earnings', EARN_KEY], ['rollCfg', ROLL_CFG_KEY], ['discExcl', DISC_EXCL_KEY], ['scanLog', SCAN_LOG_KEY], ['shortTP', SHORT_TP_KEY], ['avwapLines', AVWAP_KEY], ['ckCustom', CK_CUSTOM_KEY], ['rules', RULES_KEY],
+  ['leapsOptStops', 'pretrade_leaps_ostop'], ['draft', DRAFT_KEY], ['stockRecent', STOCK_RECENT_KEY], ['stkLock', 'pretrade_stk_lock'], ['expView', EXP_VIEW_KEY], ['expRange', EXP_RANGE_KEY], ['attrRange', 'pretrade_attr_range'], ['gexRange', 'pretrade_gex_range'],
+  ['btTf', 'pretrade_bt_tf'], ['btCc', 'pretrade_bt_cc'], ['btStrat', BT_STRAT_KEY], ['btRecent', BT_RECENT_KEY], ['posSeen', 'pretrade_pos_seen'], ['posBaseline', 'pretrade_pos_baseline'],
+  ...((loadSyncConfig() || {}).syncWorker ? [['schwabCfg', SCHWAB_CFG_KEY]] : [])];
+const SYNC_JSON = ['leapsOptStops', 'riskWeights', 'betaOverrides', 'scanCfg', 'room', 'goal', 'rollPlans', 'earnings', 'rollCfg', 'discExcl', 'scanLog', 'avwapLines', 'ckCustom', 'rules', 'draft', 'stockRecent', 'attrRange', 'btRecent', 'posSeen', 'schwabCfg'];
+let __syncApplying = 0;
+// a setting changed anywhere (even by code that forgot to ask) → it goes up; what sync itself writes doesn't bounce back
+(function () { const set = Storage.prototype.setItem; Storage.prototype.setItem = function (k, v) { const mine = this === window.localStorage, old = mine ? this.getItem(k) : null; set.call(this, k, v);
+  if (!mine || __syncApplying || old === String(v)) return;
+  try { if (k !== 'pretrade_pos_seen' && k !== 'pretrade_pos_baseline' && (k === HISTORY_KEY || SYNC_PLAIN().some(x => x[1] === k))) { if (typeof scheduleAutoPushToGist === 'function') scheduleAutoPushToGist(); } } catch (e) {} }; })();
+// preferences already read into memory at start-up follow what sync brought down
+function _syncReloadPrefs() { const g = k => localStorage.getItem(k); let ch = false; try { __rulesCache = null; ch = true; } catch (e) {}
+  const upd = (cur, v, setter) => { if (v != null && v !== cur) { setter(v); ch = true; } };
+  try { upd(__expView, g(EXP_VIEW_KEY), v => { __expView = v; }); upd(__expRange, g(EXP_RANGE_KEY), v => { __expRange = v; }); } catch (e) {}
+  try { upd(__gexRange, g('pretrade_gex_range'), v => { __gexRange = v; }); } catch (e) {}
+  try { upd(__btTf, g('pretrade_bt_tf'), v => { __btTf = v; }); upd(__btCC, g('pretrade_bt_cc'), v => { __btCC = v; }); } catch (e) {}
+  try { const s = g('pretrade_stk_lock'); if (s != null && (s === '1') !== __stkLock) { __stkLock = s === '1'; ch = true; } } catch (e) {}
+  try { const a = g('pretrade_attr_range'); if (a && a !== JSON.stringify(__attrRange)) { __attrRange = { ...__attrRange, ...JSON.parse(a) }; ch = true; } } catch (e) {}
+  return ch; }
 // three-way merge: what each setting looked like at the last sync is the base. Changed only here → keep it; changed only in the cloud → take it.
 const SYNC_BASE_KEY = 'pretrade_sync_base';
 const SYNC_PLAIN = () => [['nav', NAV_KEY], ['cash', CASH_KEY], ['swvxx', SWVXX_KEY], ['riskWeights', RISK_WEIGHTS_KEY], ['betaOverrides', BETA_OVR_KEY], ['betaMode', BETA_MODE_KEY], ['scanCfg', SCAN_CFG_KEY],
@@ -11017,7 +11044,8 @@ function _take3(name, key, remote, valid = () => true) {
 // Apply downloaded payload to local storage. Handles both v2 (history only) and v3 formats.
 // For settings: last-write-wins (remote overwrites local).
 // Note: legacy remote.watchlist field is silently ignored (feature removed).
-function applyRemotePayload(remote, mode) {
+function applyRemotePayload(remote, mode) { __syncApplying++; try { return _applyRemotePayload(remote, mode); } finally { __syncApplying--; } }
+function _applyRemotePayload(remote, mode) {
   // mode: 'overwrite' (download) OR 'merge' (merge push/pull)
   // History handling is done by caller (needs merge logic); this handles settings only
 
@@ -11026,7 +11054,8 @@ function applyRemotePayload(remote, mode) {
   const isJSON = v => { try { JSON.parse(v); return true; } catch (e) { return false; } };
   if (mode === 'merge') {
     try {
-      SYNC_PLAIN().forEach(([n, k]) => _take3(n, k, s[n], ['riskWeights', 'betaOverrides', 'scanCfg', 'room', 'goal', 'rollPlans', 'earnings', 'rollCfg', 'discExcl', 'scanLog', 'avwapLines', 'ckCustom', 'rules'].includes(n) ? isJSON : n === 'betaMode' ? v => v === 'beta' || v === 'flat' : () => true));
+      SYNC_PLAIN().forEach(([n, k]) => _take3(n, k, s[n], n === 'schwabCfg' ? v => isJSON(v) && !(_syncBase()[n] === undefined && localStorage.getItem(k)) : SYNC_JSON.includes(n) ? isJSON : n === 'betaMode' ? v => v === 'beta' || v === 'flat' : () => true));   // a Worker connection already set up here is never replaced on the first sync
+      if (typeof s.schwabCfg === 'string' && isJSON(s.schwabCfg) && !localStorage.getItem(SCHWAB_CFG_KEY)) localStorage.setItem(SCHWAB_CFG_KEY, s.schwabCfg);
       if (typeof s.rocPhase === 'string' && s.rocPhase) _mergeRemoteRocPhase(s.rocPhase);
       if (typeof s.leapsTargets === 'string' && s.leapsTargets) _ltMerge(s.leapsTargets);
       if (typeof s.leapsStops === 'string' && s.leapsStops) _ltMerge(s.leapsStops, 'stop');
@@ -11135,7 +11164,8 @@ async function syncDownload() {
 
 // Core merge logic returning stats. Used by user-triggered syncMerge, snapshot upload, and auto-sync.
 // Handles tombstones (_deleted: true) so deletions propagate correctly across devices.
-async function syncMergeCore() {
+async function syncMergeCore() { __syncApplying++; try { return await _syncMergeCore(); } finally { __syncApplying--; } }   // everything written during a sync goes up with it
+async function _syncMergeCore() {
   const local = loadHistory();
   const localActiveIds = new Set(local.filter(e => !e._deleted).map(e => e.id));
   let remote = {};
@@ -11175,14 +11205,16 @@ async function syncMergeCore() {
     })
     .slice(0, HISTORY_MAX);
 
-  safeSetItem(HISTORY_KEY, JSON.stringify(merged));
+  __syncApplying++; try { safeSetItem(HISTORY_KEY, JSON.stringify(merged)); } finally { __syncApplying--; }
 
   // Apply remote settings (last-write-wins from remote)
-  applyRemotePayload(remote, 'merge');
+  applyRemotePayload(remote, 'merge'); if (_syncReloadPrefs() && typeof render === 'function') { try { render(); } catch (e) {} }
 
   // Build fresh payload from now-updated local state (includes merged history + local settings)
   const payload = buildSyncPayload();
   payload.history = merged;
+  // a device that never turned the option on keeps the shared Worker connection in the cloud; only turning it off removes it
+  try { const rs = (remote && remote.settings) || {}; if (!payload.settings.schwabCfg && rs.schwabCfg && (loadSyncConfig() || {}).syncWorker !== false) payload.settings.schwabCfg = rs.schwabCfg; } catch (e) {}
   await pushToGist(payload);
   const cfg = loadSyncConfig();
   saveSyncConfig({ ...cfg, lastSyncAt: payload.syncedAt });
@@ -11388,6 +11420,8 @@ function renderSyncSetup() {
                  autocomplete="off" spellcheck="false"
                  placeholder="留空 = 首次同步时自动创建" value="${esc(cfg.gistId || '')}">
         </div>
+        <label class="sync-opt"><input type="checkbox" id="sync-worker-input" ${cfg.syncWorker ? 'checked' : ''}> 也同步 Worker 连接 (网址 + 密码)
+          <span>打开后, 新设备只要设好这个 Gist 就能直接连 Schwab; 代价是 Worker 的密码会存进你的 private Gist. 已经设好 Worker 的设备不会被覆盖.</span></label>
         <div class="sync-note">
           Token 仅存本设备浏览器, 不上传任何第三方。Gist 设为 private (仅你 GitHub 账户可见)。
           <br>其他设备用同一 token + 同一 gist ID 即可同步。
@@ -11408,7 +11442,7 @@ function wireSyncSetup() {
     const gistId = document.getElementById('sync-gistid-input').value.trim();
     if (!token) { showToast('请填 Token', 'error'); return; }
     const cur = loadSyncConfig() || {};
-    saveSyncConfig({ ...cur, token, gistId: gistId || null });
+    saveSyncConfig({ ...cur, token, gistId: gistId || null, syncWorker: !!(document.getElementById('sync-worker-input') || {}).checked });
     showToast('已保存', 'success', '再次打开 Sync 即可同步');
     showSyncModal();  // Refresh to actions view
   });
@@ -13656,6 +13690,21 @@ function _leapsStyleFor(x) {
 // Positions that need a decision now — straight from the SOPs (50% / 21 days, LEAPS 9 / 6 months, profit ladders)
 // Positions that need a decision now, straight from the SOPs. Each item: tag (what), facts (why), act (what to do).
 const MG_ORDER = { danger: 0, alert: 1, watch: 2, info: 3 };
+/* ═════════════ v145 · LEAPS stop on the option's own price; one row per position in 待处理 ═════════════ */
+const LEAPS_OSTOP_KEY = 'pretrade_leaps_ostop';
+// the option's own stop: what you set, or by default the price where it has lost a set share of what it cost
+function _leapsOptStop(x) {
+  if (!x || x.kind !== 'leaps') return null; const m = (() => { try { return _ltLoad('ostop')[_ltKey(x)]; } catch (e) { return null; } })();
+  if (m && m.px > 0) return { px: m.px, src: 'user' };
+  const q = Math.abs(Number(x.qty)) || 1, per = x.avg > 0 ? x.avg : x.cost > 0 ? x.cost / (100 * q) : null; if (!per) return null;
+  return { px: +(per * (1 - _rule('lp_opt_stop_pct') / 100)).toFixed(2), src: 'default' };
+}
+// several reminders about one position become one row, every tag on it, the most urgent first
+function _mgmtGroup(items) {
+  const G = new Map(); items.forEach(it => { const g = G.get(it.x); if (!g) G.set(it.x, { ...it, tags: [{ tag: it.tag, level: it.level }], factsL: [it.facts], actsL: [it.act] }); else { g.tags.push({ tag: it.tag, level: it.level }); if (it.facts && !g.factsL.includes(it.facts)) g.factsL.push(it.facts); if (it.act && !g.actsL.includes(it.act)) g.actsL.push(it.act);
+    if (MG_ORDER[it.level] < MG_ORDER[g.level]) { g.level = it.level; g.tag = it.tag; } } });
+  return [...G.values()].map(g => { g.tags.sort((a, b) => MG_ORDER[a.level] - MG_ORDER[b.level]); return { ...g, facts: g.factsL.join(' · '), act: g.actsL.join(' / ') }; }).sort((a, b) => MG_ORDER[a.level] - MG_ORDER[b.level]);
+}
 function _mgmtItems(c) {
   if (!c.isSchwab) return [];
   const items = [];
@@ -13685,6 +13734,7 @@ function _mgmtItems(c) {
     } else if (x.kind === 'leaps') {
       const style = _leapsStyleFor(x), th = _lpTh(style);
       const prof = x.cost > 0 && x.marketValue != null ? (x.marketValue - x.cost) / x.cost * 100 : null;
+      { const O = _leapsOptStop(x); if (O && x.mark > 0 && x.mark <= O.px) items.push({ x, level: 'danger', tag: 'LEAPS 止损', facts: `期权 ${x.mark.toFixed(2)} ≤ 止损价 ${O.px.toFixed(2)}${O.src === 'default' ? ' (默认)' : ''}`, act: '按纪律止损' }); }
       if (dte != null && dte <= 180) items.push({ x, level: 'danger', tag: 'LEAPS 必退', facts: `${dte} 天 · ≤ 6 个月`, act: '平仓或 roll 到 ≥ 400 天' });
       else if (dte != null && dte < 270) items.push({ x, level: 'watch', tag: 'LEAPS roll', facts: `${dte} 天 · < 9 个月`, act: 'roll 到 ≥ 400 天' });
       if (__px[x.ticker] && __px[x.ticker].bars && Date.now() - (__px[x.ticker].at || 0) < 6 * 3600e3) { const a = (() => { try { return _lmAddCheck(x); } catch (e) { return null; } })();
@@ -13706,10 +13756,10 @@ function _mgmtChips(items, max = 3) {
 // home dashboard: the same to-do list as the risk page, first six rows
 function _mgmtMiniHTML() {
   const R = computeRisk(); if (!R.c.isSchwab) return '';
-  const items = _mgmtItems(R.c);
+  const items = _mgmtGroup(_mgmtItems(R.c));
   const row = it => { const i = R.c.pos.indexOf(it.x), pnl = _posPnl(it.x); return `
     <div class="rk-mg gl-row" role="button" tabindex="0" onclick="openOptionLab(${i})" onkeydown="if(event.key==='Enter')openOptionLab(${i})">
-      <div class="rk-mg-top"><span class="rk-pill rk-c-${it.level}">${esc(it.tag)}</span><b class="rk-mg-pos">${_tk(it.x.ticker)} ${esc(_posLabel(it.x).replace(it.x.ticker + ' ', ''))}</b>
+      <div class="rk-mg-top">${(it.tags || [it]).map(t => `<span class="rk-pill rk-c-${t.level}">${esc(t.tag)}</span>`).join('')}<b class="rk-mg-pos">${_tk(it.x.ticker)} ${esc(_posLabel(it.x).replace(it.x.ticker + ' ', ''))}</b>
         ${pnl != null ? `<span class="rk-mg-pnl ${_thCls(pnl)}">${_fmtSigned(pnl)}</span>` : ''}</div>
       <div class="rk-mg-sub">${esc(it.facts)} · <span class="rk-mg-act">${esc(it.act)}</span>${_rollBtn(it.x)}${_lmBtn(it.x)}</div>${_safe('轮子估算', () => _wvMini(it.x), '')}</div>`; };
   return `
@@ -13720,13 +13770,13 @@ function _mgmtMiniHTML() {
 }
 function _mgmtHTML(R) {
   if (!R.c.isSchwab) return '';
-  const items = _mgmtItems(R.c);
+  const items = _mgmtGroup(_mgmtItems(R.c));
   return `
     <section class="rk-block rk-mgmt">
       <h3 class="rk-block-title">待处理仓位${items.length ? ` <span class="rk-count">${items.length}</span>` : ''}</h3>
       ${items.length ? items.map(it => { const i = R.c.pos.indexOf(it.x), pnl = _posPnl(it.x); return `
         <div class="rk-mg gl-row" role="button" tabindex="0" onclick="openOptionLab(${i})" onkeydown="if(event.key==='Enter')openOptionLab(${i})">
-          <div class="rk-mg-top"><span class="rk-pill rk-c-${it.level}">${esc(it.tag)}</span><b class="rk-mg-pos">${_tk(it.x.ticker)} ${esc(_posLabel(it.x).replace(it.x.ticker + ' ', ''))}</b>
+          <div class="rk-mg-top">${(it.tags || [it]).map(t => `<span class="rk-pill rk-c-${t.level}">${esc(t.tag)}</span>`).join('')}<b class="rk-mg-pos">${_tk(it.x.ticker)} ${esc(_posLabel(it.x).replace(it.x.ticker + ' ', ''))}</b>
             ${pnl != null ? `<span class="rk-mg-pnl ${_thCls(pnl)}">${_fmtSigned(pnl)}</span>` : ''}</div>
           <div class="rk-mg-sub">${esc(it.facts)} · <span class="rk-mg-act">${esc(it.act)}</span>${_rollBtn(it.x)}${_lmBtn(it.x)}</div>
         </div>`; }).join('') : `<div class="rk-quiet">无.</div>`}
@@ -14753,6 +14803,7 @@ const GREEK_HELP = {
   daily_cal: { t: '每日盈亏日历', def: '每个交易日一格: 当天收盘 NAV − 前一天收盘 NAV − 当天的入金出金. 包括已实现和未实现, 是账户真实的每日变化.', note: '需要 Worker 每天收盘记下的 NAV; 某一天没有记录就是灰色.' },
   lp_count: { t: '笔和张', def: '笔 = 有几张不同的合约 (同一个标的、行权价、到期日算一笔); 张 = 合约的总数. 同一张合约加过仓, 笔数不变, 张数增加.', ex: 'AVGO 400C 1/21/28 买了 3 张, 后来又加 1 张: 1 笔 4 张.', note: '' },
   wv: { t: '轮子全貌', def: '(按中间价、每张每次扣 $0.65 手续费, 和建议、候选合约表用同一个价格.) 如果这张 CSP 到期被行权, 接股之后一直按真实成本卖 ~30 天的 CC (和下面详细步骤里的 B 一样: 第一个不低于真实成本、Δ 不超过当前 CC 模式上限的行权价), 每卖一次真实成本降低一次权利金. 阶梯线就是真实成本, 降到股价以下的点会圈出来. 第 n 次被 call 走时, 这一轮总共 = 行权价 − 那时的真实成本.', ex: '接股真实成本 357.90, 每次卖 340C 收 $7.90: 卖到第 7 次, 真实成本约 302.60, 被 call 走总共约 (340 − 302.60) × 100 = $3,740.', note: '按每次同样的权利金、股价不变来算, 只能做参考. 被行权的概率按这张 put 的 IV 算的到期价内概率. 按概率加权的期望 = 不被行权的概率 × 留下的权利金 + 被行权的概率 × 走完轮子的总共.' },
+  lp_ostop: { t: '期权止损价', def: '按 LEAPS 期权本身的价格止损 (每股), 和右边按正股价的止损位是两条独立的线, 哪条先到都提醒. 没填时用默认: 期权价格跌到成本的 (1 − 规则设置里的比例), 默认亏掉 50%; 填了就用你的, 点「恢复默认」回到默认.', ex: '成本 $40.00 / 股, 默认 50%: 期权止损价 $20.00. 期权现在 $26.00 → 需跌 23.1%.', note: '提醒出现在 LEAPS 监控台和首页待处理; 跨设备同步.' },
   roll_win: { t: 'Roll 窗口', def: 'roll = 买回现在这张 + 卖出新的. 买回要付「内在价值 + 剩下的时间价值」, 所以时间价值还多时 roll 等于把没赚到的部分送回去; 时间价值快没了再 roll, 买回几乎只付内在价值, 新卖的时间价值就是实打实多收的钱. 所以看的是剩下多少时间价值, 不是剩几天, 也和止盈无关.', ex: '开仓收 $5.00, 现在价内, 期权价 $12.40, 内在价值 $12.00: 时间价值 $0.40 = 开仓的 8%, 已经 ≤ 20%, 可以 roll 了. 如果时间价值只剩 $0.06 (少于 $0.10), 随时可能被提前行权 → 紧急.', note: '也不能等到时间价值完全为 0: 价内时可能被提前行权, 到期当天流动性差、价差大. 三个数 (20%、$0.10、3%) 在规则设置里可以改. 预计进入窗口的日子按现在的 Theta 估算; 越接近到期 Theta 越大, 实际通常会更早.' },
   wv_avg: { t: '平均结果 (按概率加权)', def: '每条路都有两种结局: 到期不被行权, 或被行权后走轮子. 平均结果 = 不被行权的概率 × 那时的结果 + 被行权的概率 × 走完轮子的结果. 它不是你会拿到的钱 — 实际只会是两种结局之一; 它的意思是「同样的情况遇到很多次, 平均每次大约赚多少」, 用来把三条路放在一起比.', ex: '25% × $1,053 + 75% × $5,948 ≈ $4,724.', note: '「加权年化最高」就是按这个数 (和按同样方法加权的时间) 评出来的.' },
   wv_cmp: { t: '方案对比', def: '三条路放在同一个基础上比: 每张 = 不被行权的概率 × 那时留下的钱 + 被行权的概率 × 走完轮子的总共. 现在 roll 用「建议」选中的那张 (roll 之后仍被行权, 就从更低的真实成本开始走轮子); 不 roll 的两张分别是接股后按真实成本 (B) 或按接股价 (C) 卖 CC. 年化按加权的金额、加权的时间和占用资金 (行权价 × 股数) 算; 加权年化最高的标出来 (要超过 3 年的路不参加).', ex: '不被行权的概率 25% × 留下 $1,800 + 被行权的概率 75% × 走完轮子 $7,000 = 加权 $5,700.', note: '都是参考值, 不是推荐. 怎么做以「建议」为准; 两者不一致时卡片上方会说明.' },
@@ -17390,6 +17441,7 @@ function _lvAlerts(D) {
   const A = [], add = (r, lvl, kind, txt, why) => A.push({ r, lvl, kind, txt, why }), pc = v => `${v >= 0 ? '+' : '−'}${Math.abs(v).toFixed(1)}%`;
   const byT = {}; D.forEach(r => { byT[r.x.ticker] = (byT[r.x.ticker] || 0) + (r.navPct || 0); });
   D.forEach(r => {
+    { const O = _leapsOptStop(r.x), m = r.x.mark; if (O && m > 0) { const dn = (m / O.px - 1) * 100; if (dn <= 0) add(r, 3, '止损', `期权 ${m.toFixed(2)} 已跌破期权止损价 ${O.px.toFixed(2)}`, O.src === 'default' ? `默认: 亏掉成本的 ${_rule('lp_opt_stop_pct')}%` : '你设的期权止损价'); else if (dn < _rule('mon_stop_pct')) add(r, 2, '止损', `期权离止损价 ${O.px.toFixed(2)} 只有 ${pc(-dn)}`, '期权止损'); } }
     if (r.P && r.S) { const dn = (r.S / r.P - 1) * 100; if (dn <= 0) add(r, 3, '止损', `正股 ${r.S.toFixed(2)} 已跌破止损位 ${r.P}`, '你设的趋势破坏线'); else if (dn < _rule('mon_stop_pct')) add(r, 2, '止损', `离止损位只有 ${pc(-dn)}`, `止损 ${r.P}`); }
     if (r.dte != null && r.dte <= _rule('lp_exit_days')) add(r, 3, '时间', `只剩 ${r.dte} 天, 到了 6 个月必退线`, '时间价值衰减会明显加快'); else if (r.dte != null && r.dte < _rule('lp_roll_days')) add(r, 2, '时间', `${r.dte} 天, 进入 9 个月 roll 窗口`, '考虑 roll 到 ≥ 400 天');
     if (r.T && r.S && r.S >= r.T) add(r, 2, '止盈', `正股已到止盈位 ${r.T}`, '按梯度分批止盈');
@@ -17535,6 +17587,7 @@ const RULES = [
     ['lp_tp_stock_sub', '替代正股 · 第一档止盈', 150, 20, 500, 5, '%', '浮盈到这个比例开始分批止盈. checklist、待处理、持仓页止盈进度、LEAPS 管理、监控台都用这一个.'],
     ['lp_tp_balanced', '平衡 · 第一档止盈', 100, 20, 500, 5, '%', ''],
     ['lp_tp_swing', '波段 · 第一档止盈', 50, 10, 500, 5, '%', ''],
+    ['lp_opt_stop_pct', 'LEAPS 期权止损价 (默认): 亏掉成本的', 50, 10, 90, 5, '%', '没有自己填期权止损价时, 期权价格跌到成本的 (1 − 这个比例) 就算到了止损. 持仓页 LEAPS 表、监控台、待处理都按它提醒.'],
     ['lp_exit_days', '必须退出 (离到期)', 180, 30, 400, 10, '天', '离到期少于这么多天必须 roll 或平仓.'],
     ['lp_roll_days', 'roll 窗口 (离到期)', 270, 60, 600, 10, '天', '进入这个窗口提醒你安排 roll.'],
     ['add_pull', '加仓: 从 20 日高点回落至少', 8, 0, 50, 1, '%', '参考项.'],
@@ -17907,15 +17960,22 @@ function _incomeHTML() {
   const chart = `<svg viewBox="0 0 ${W} ${H}" class="inc-chart">${[bot, 0, top / 2, top].filter((v, i, a) => a.indexOf(v) === i).map(v => `<line x1="${L}" x2="${W - 8}" y1="${yv(v).toFixed(1)}" y2="${yv(v).toFixed(1)}" class="${v === 0 ? 'cv-zero' : 'cv-grid'}"/><text x="${L - 6}" y="${(yv(v) + 3).toFixed(1)}" text-anchor="end" class="rk-ch-lab">${_cvK(v)}</text>`).join('')}
     ${bars}${goal ? hl(goal, 'inc-goal', `目标 ${_fmtUsd(goal)}`) : ''}${avg != null ? hl(avg, 'inc-avg', `月平均 ${_fmtSigned(avg)}`) : ''}</svg>`;
   // the chosen month, in detail
-  const sel = __incSel && M[__incSel] ? (() => { const s = M[__incSel], top3 = s.items.slice().sort((a, b) => (a.u.closeTs || 0) - (b.u.closeTs || 0));
-    return `<div class="inc-det"><div class="inc-det-h"><b>${__incSel}</b><button class="app-link" onclick="incPick('${__incSel}')">关闭</button></div>
-      <div class="inc-det-g"><span>收到 <b>${_fmtUsd(g(__incSel))}</b><em>CSP ${_fmtUsd(s.gross.CSP)} · CC ${_fmtUsd(s.gross.CC)} · PMCC ${_fmtUsd(s.gross.PMCC)}</em></span><span>买回花掉 <b class="rk-t-danger">${s.paid ? '−' + _fmtUsd(s.paid) : '$0'}</b></span><span>净权利金 <b class="${_thCls(s.net)}">${_fmtSigned(s.net)}</b><em>这个月结束的 ${s.items.length} 笔</em></span>
-        <span>结局 <b>${s.exp} 到期 · ${s.bought} 买回 · ${s.asg} 被行权</b></span></div>
-      ${top3.length ? `<div class="inc-det-l"><em>这个月结束的全部 ${top3.length} 笔 (按日期)</em>${top3.map(t => `<div><span>${_tsDay(t.u.closeTs).slice(5).replace('-', '/')} ${_tk(t.u.ticker)} ${t.u.strike}${t.u.putCall === 'PUT' ? 'P' : 'C'} ${esc(_md(t.u.expiry))} <em>${t.k} · ${{ exp: '到期', bought: '买回', asg: '被行权' }[t.how]}</em></span><b class="${_thCls(t.pnl)}">${_fmtSigned(t.pnl)}</b></div>`).join('')}</div>` : ''}</div>`; })() : `<div class="rk-quiet inc-tip">点 (或按) 任意一个月份的柱子看那个月的明细.</div>`;
+  const sel = __incSel && M[__incSel] ? (() => { const s = M[__incSel], how = { exp: '到期', bought: '买回', asg: '被行权' }, d5 = t => t ? _tsDay(t).slice(5).replace('-', '/') : '—';
+    const R = s.items.map(t => { const rec = t.u.openCash || 0, paid = t.how === 'bought' ? Math.max(0, rec - t.pnl) : 0; return { ...t, rec, paid }; }).sort((a, b) => b.pnl - a.pnl);
+    const sum = f => R.reduce((x, r) => x + f(r), 0), lab = t => `${_tk(t.u.ticker)} ${t.u.strike}${t.u.putCall === 'PUT' ? 'P' : 'C'} ${esc(_md(t.u.expiry))}`;
+    const F = []; R.forEach(r => { F.push({ ts: r.u.openTs, r, what: '卖出', amt: r.rec }); if (r.paid > 0) F.push({ ts: r.u.closeTs, r, what: '买回', amt: -r.paid }); }); F.sort((a, b) => (a.ts || 0) - (b.ts || 0));
+    return `<div class="inc-det"><div class="inc-det-h"><b>${__incSel} · 净权利金 ${_fmtSigned(s.net)}</b><button class="app-link" onclick="incPick('${__incSel}')">关闭</button></div>
+      <div class="rk-quiet inc-how">算的是这个月<b>结束</b>的卖方仓位 (到期、买回、被行权都算结束); 还没结束的和 LEAPS 不算. 一次 roll = 买回旧的 + 卖出新的: 旧的算在它结束的月份, 新的等它结束再算.</div>
+      <div class="inc-t-h">每一笔 · 按净权利金从高到低</div><div class="rk-table-wrap"><table class="rk-table inc-t"><thead><tr><th>合约</th><th>策略</th><th>卖出收到</th><th>买回花掉</th><th>净权利金</th><th>结局</th><th>开 → 结束</th></tr></thead>
+      <tbody>${R.map(r => `<tr><td>${lab(r)}</td><td>${r.k}</td><td>${_fmtUsd(r.rec)}</td><td class="${r.paid ? 'rk-t-danger' : 'rk-quiet'}">${r.paid ? '−' + _fmtUsd(r.paid) : '$0'}</td><td class="${_thCls(r.pnl)}"><b>${_fmtSigned(r.pnl)}</b></td><td>${how[r.how]}</td><td>${d5(r.u.openTs)} → ${d5(r.u.closeTs)}</td></tr>`).join('')}
+      <tr class="rk-total"><td>合计 ${R.length} 笔</td><td></td><td>${_fmtUsd(sum(r => r.rec))}</td><td class="rk-t-danger">−${_fmtUsd(sum(r => r.paid))}</td><td class="${_thCls(s.net)}"><b>${_fmtSigned(sum(r => r.pnl))}</b></td><td></td><td></td></tr></tbody></table></div>
+      <div class="inc-t-h">每一笔现金进出 · 按日期</div><div class="rk-table-wrap"><table class="rk-table inc-t"><thead><tr><th>日期</th><th>发生了什么</th><th>合约</th><th>金额</th></tr></thead>
+      <tbody>${F.map(f => `<tr><td>${d5(f.ts)}</td><td>${f.what}</td><td>${lab(f.r)}</td><td class="${_thCls(f.amt)}">${_fmtSigned(f.amt)}</td></tr>`).join('')}
+      <tr class="rk-total"><td>合计</td><td>收 ${_fmtUsd(sum(r => r.rec))} − 付 ${_fmtUsd(sum(r => r.paid))}</td><td></td><td class="${_thCls(s.net)}"><b>${_fmtSigned(F.reduce((x, f) => x + f.amt, 0))}</b></td></tr></tbody></table></div></div>`; })() : __incSel ? `<div class="inc-det"><div class="inc-det-h"><b>${__incSel} · 净权利金 $0</b><button class="app-link" onclick="incPick('${__incSel}')">关闭</button></div><div class="rk-quiet">这个月还没有结束的卖方仓位, 所以是 $0. 还在持有的仓位, 等它结束的那个月再算进去.</div></div>` : `<div class="rk-quiet inc-tip">点 (或按) 任意一个月份的柱子, 或上面的「本月净权利金」, 看那个月每一笔是怎么来的.</div>`;
   const f = (v, l, c = '', s = '') => `<div class="cv-fig"><b class="${c}">${v}</b><span>${l}</span>${s ? `<em>${s}</em>` : ''}</div>`;
   return `<section class="rk-block inc" id="pf-inc"><h3 class="rk-block-title rk-title-row"><span>权利金收入 ${_qBtn('income', 'short')}</span><button class="app-link" onclick="tlGo('rules')">目标 ${_fmtUsd(goal)} / 月 ▸</button></h3>
     <div class="rk-quiet inc-scope">只算卖方: CSP、CC、PMCC 的 short call. LEAPS 和其他买的期权不算. 净权利金 = 卖出收到的 − 买回花掉的.</div>
-    <div class="inc-top">${ring(cur, goal)}<div class="cv-figs inc-figs">${f(_fmtSigned(cur), '本月净权利金', _thCls(cur), `收到 ${_fmtUsd(g(now))} · 目标还差 ${_fmtUsd(Math.max(0, goal - cur))}`)}
+    <div class="inc-top">${ring(cur, goal)}<div class="cv-figs inc-figs"><div class="inc-fig-btn" role="button" tabindex="0" onclick="incPick('${now}')" onkeydown="if(event.key==='Enter')incPick('${now}')">${f(_fmtSigned(cur), '本月净权利金 · 点开看每一笔 ▸', _thCls(cur), `收到 ${_fmtUsd(g(now))} · 目标还差 ${_fmtUsd(Math.max(0, goal - cur))}`)}</div>
       ${f(avg != null ? _fmtSigned(avg) : '—', '月平均净权利金', avg != null && avg >= goal ? 'rk-t-safe' : '', `最近 ${done12.length} 个完整月份`)}
       ${f(_fmtSigned(ytdNet), `${y} 年净权利金`, _thCls(ytdNet), `收到 ${_fmtUsd(ytdGross)} · 买回花掉 ${_fmtUsd(ytdPaid)}`)}
       ${f(_fmtSigned(trueNet), '扣除接股的正股盈亏后', _thCls(trueNet), `正股 ${_fmtSigned(stockPnl)}${D.stock.open ? ` (${D.stock.open} 个轮子还在持股)` : ''}`)}
@@ -19874,7 +19934,7 @@ window.setShortTP = v => { v = Math.round(+v); if (!(v >= 10 && v <= 95)) { show
   showToast(`止盈线改为 ${v}%`, 'success', '待处理提醒、纪律分和止盈建议都按这个来'); const y = window.scrollY; render(); window.scrollTo(0, y); };
 const SHORT_TP_DEFAULT = 50;                                              // CSP / CC rule: buy back at 50% of the premium
 const LEAPS_TGT_KEY = 'pretrade_leaps_targets', LEAPS_STOP_KEY = 'pretrade_leaps_stops';
-const LT_KIND = { tgt: { key: LEAPS_TGT_KEY, field: 'target_level' }, stop: { key: LEAPS_STOP_KEY, field: 'stop_level' } };
+const LT_KIND = { tgt: { key: LEAPS_TGT_KEY, field: 'target_level' }, stop: { key: LEAPS_STOP_KEY, field: 'stop_level' }, ostop: { key: 'pretrade_leaps_ostop', field: 'opt_stop' } };
 const _ltKey = x => `${x.ticker}|${x.strike}|${x.expiry}`;
 function _ltLoad(kind = 'tgt') { let m = {}; try { m = JSON.parse(localStorage.getItem(LT_KIND[kind].key) || '{}') || {}; } catch (e) {}
   const out = {}; Object.entries(m).forEach(([k, v]) => { out[k] = v && typeof v === 'object' ? { px: v.px > 0 ? +v.px : null, at: +v.at || 0 } : { px: +v > 0 ? +v : null, at: 0 }; }); return out; }
@@ -19913,10 +19973,10 @@ function _lpShareHTML() {
   const G = [...new Set(L.map(x => x.ticker))].map(t => { const P = L.filter(x => x.ticker === t).sort((a, b) => String(a.expiry).localeCompare(String(b.expiry))); return { t, P, v: P.reduce((s, x) => s + val(x), 0), q: P.reduce((s, x) => s + Math.abs(Number(x.qty) || 0), 0) }; }).sort((a, b) => b.v - a.v);
   const mx = G[0].v || 1;
   const rows = G.map(g => { const sel = g.P.find(x => _posKey(x) === __lpSel);
-    return `<div class="lps-row"><div class="lps-h"><b>${_tk(g.t)}</b><span>${(g.v / tot * 100).toFixed(1)}% · ${nav ? (g.v / nav * 100).toFixed(1) + '% NAV' : '—'} · ${g.q} 张</span></div>
+    return `<div class="lps-row"><div class="lps-h"><b>${_tk(g.t)}</b><span>${(g.v / tot * 100).toFixed(1)}% · ${nav ? (g.v / nav * 100).toFixed(1) + '% NAV' : '—'} · ${g.q} 张 · 合计 ${_fmtUsd(g.v)} · 每张均 ${_fmtUsd(g.v / Math.max(1, g.q))}</span></div>
       <div class="lps-bar" style="width:${(g.v / mx * 100).toFixed(1)}%">${g.P.map(x => { const d = _dteOf(x), k = _posKey(x); return `<button class="lps-seg${__lpSel === k ? ' on' : ''}" style="flex:${val(x).toFixed(0)};background:${col(d)}" onclick="lpSel('${esc(k)}')" aria-label="${esc(_posLabel(x))}"><span>${x.strike}C ${esc(_md(x.expiry))}</span></button>`; }).join('')}</div>
-      ${sel ? (() => { const x = sel, cost = x.cost || 0, v = val(x), pl = v - cost, d = _dteOf(x); return `<div class="lps-det"><b>${esc(_posLabel(x))}</b><span>${d} 天${d <= EX ? ' · <em class="rk-t-danger">已过必须退出线</em>' : d < RO ? ' · <em class="rk-t-alert">roll 窗口</em>' : ''}</span>
-        <span>市值 <b>${_fmtUsd(v)}</b> · 成本 ${_fmtUsd(cost)} · <b class="${_thCls(pl)}">${_fmtSigned(pl)}${cost ? ` (${pl >= 0 ? '+' : '−'}${Math.abs(pl / cost * 100).toFixed(0)}%)` : ''}</b></span><button class="app-link" onclick="uxJumpRow('${esc(_posLabel(x))}')">跳到表格里这一行 ▸</button></div>`; })() : ''}</div>`; }).join('');
+      ${sel ? (() => { const x = sel, cost = x.cost || 0, v = val(x), pl = v - cost, d = _dteOf(x), qq = Math.abs(Number(x.qty)) || 1; return `<div class="lps-det"><b>${esc(_posLabel(x))}</b><span>${d} 天${d <= EX ? ' · <em class="rk-t-danger">已过必须退出线</em>' : d < RO ? ' · <em class="rk-t-alert">roll 窗口</em>' : ''}</span>
+        <span>市值 <b>${_fmtUsd(v)}</b> (每张 ${_fmtUsd(v / qq)} × ${qq}) · 成本 ${_fmtUsd(cost)} (每张 ${_fmtUsd(cost / qq)}) · <b class="${_thCls(pl)}">${_fmtSigned(pl)}${cost ? ` (${pl >= 0 ? '+' : '−'}${Math.abs(pl / cost * 100).toFixed(0)}%)` : ''}</b> · 每张 ${_fmtSigned(pl / qq)}</span><button class="app-link" onclick="uxJumpRow('${esc(_posLabel(x))}')">跳到表格里这一行 ▸</button></div>`; })() : ''}</div>`; }).join('');
   return `<div class="lps" id="lp-share"><div class="lps-t">仓位占比 · 按标的 <span class="rk-quiet">每一段是一张合约, 按到期先后; 点一段看明细</span></div>${rows}
     <div class="rk-legend lps-leg"><span><i class="rk-sw" style="background:color-mix(in srgb, var(--accent) 45%, var(--panel-2))"></i>离到期远</span><span><i class="rk-sw" style="background:var(--accent)"></i>近一些</span><span><i class="rk-sw" style="background:#E5793B"></i>roll 窗口 (&lt; ${RO} 天)</span><span><i class="rk-sw" style="background:var(--fail)"></i>必须退出 (≤ ${EX} 天)</span></div></div>`;
 }
@@ -19950,7 +20010,7 @@ function renderPositionsPage() {
   const theta = x => x.theta != null ? x.theta * 100 * (Number(x.qty) || 0) * (_isShortPos(x) ? -1 : 1) : 0;
   const cash = (pf.cash || 0) + (pf.swvxx || 0), cspN = sum(csp, x => x.exposure), free = cash - cspN;
   const mgTag = new Map(_mgmtItems(c).map(it => [it.x, it]));
-  const tag = x => { const it = mgTag.get(x); return it ? `<span class="rk-pill rk-c-${it.level}">${esc(it.tag)}</span>` : ''; };
+  const tag = x => { const it = mgTag.get(x); return it ? `${(it.tags || [it]).map(t => `<span class="rk-pill rk-c-${t.level}">${esc(t.tag)}</span>`).join('')}` : ''; };
   const row = (x, cells) => `<tr class="gl-row" role="button" tabindex="0" onclick="openOptionLab(${idx(x)})" onkeydown="if(event.key==='Enter')openOptionLab(${idx(x)})">${cells}</tr>`;
   const fig = (label, val, sub, cls = 'rk-t-acc') => `<div class="rk-fig"><span class="rk-fig-val ${cls}">${val}</span><span class="rk-fig-label">${label}</span>${sub ? `<span class="rk-fig-sub">${sub}</span>` : ''}</div>`;
   const money = v => v == null ? '—' : _fmtUsd(v), sgn = v => v == null ? '—' : _fmtSigned(v);
@@ -20071,14 +20131,16 @@ function renderPositionsPage() {
       </div>
       ${_safe('LEAPS 占比', _lpShareHTML, '')}
       <div class="rk-table-wrap"><table class="rk-table">
-        <thead><tr><th>合约</th><th>Mark ${_qBtn('mark_und', 'short')}</th><th>成本</th><th>市值</th><th>浮盈 %</th><th>浮盈</th><th>期权止盈进度</th><th>正股止盈位</th><th>需涨</th><th>正股止损位</th><th>需跌</th><th>正股价格位置</th><th>距退出</th><th>Δ</th><th>DTE</th><th>市值 % NAV</th><th>投入 % NAV</th><th>持有</th><th>正股等值</th><th>λ ${_qBtn('lambda', 'long')}</th></tr></thead>
-        <tbody>${lpRows.map(r => row(r.x, `<td><b>${esc(_posLabel(r.x))}</b>${_lmBtn(r.x)}</td>${_markTd(r.x)}<td>${money(r.cost)}</td><td>${money(r.val)}</td><td class="${_thCls(r.pnl)}">${_pct(r.pnlPct)}</td><td class="${_thCls(r.pnl)}">${sgn(r.pnl)}</td><td class="pc-cell">${r.prog != null ? _progBarHTML(r.prog, null, `/ +${r.tg.pct}% ${r.tg.style ? '' : '(默认)'}`) : '—'}</td>${(() => { const S = r.x.und, k = esc(_ltKey(r.x));
+        <thead><tr><th>合约</th><th>Mark ${_qBtn('mark_und', 'short')}</th><th>成本</th><th>市值</th><th>浮盈 %</th><th>浮盈</th><th>期权止盈进度</th><th>正股止盈位</th><th>需涨</th><th>期权止损价 ${_qBtn('lp_ostop', 'short')}</th><th>期权需跌</th><th>正股止损位</th><th>需跌</th><th>正股价格位置</th><th>距退出</th><th>Δ</th><th>DTE</th><th>市值 % NAV</th><th>投入 % NAV</th><th>持有</th><th>正股等值</th><th>λ ${_qBtn('lambda', 'long')}</th></tr></thead>
+        <tbody>${lpRows.map(r => row(r.x, `<td><b>${esc(_posLabel(r.x))}</b>${_lmBtn(r.x)}</td>${_markTd(r.x)}${(() => { const q = Math.abs(Number(r.x.qty)) || 1, per = (v, s) => `<div class="per1">每张 ${s ? sgn(v / q) : money(v / q)}${s ? '' : ` · 每股 ${(v / q / 100).toFixed(2)}`}</div>`; return `<td>${money(r.cost)}${per(r.cost)}</td><td>${money(r.val)}${per(r.val)}</td><td class="${_thCls(r.pnl)}">${_pct(r.pnlPct)}</td><td class="${_thCls(r.pnl)}">${sgn(r.pnl)}${per(r.pnl, true)}</td>`; })()}<td class="pc-cell">${r.prog != null ? _progBarHTML(r.prog, null, `/ +${r.tg.pct}% ${r.tg.style ? '' : '(默认)'}`) : '—'}</td>${(() => { const S = r.x.und, k = esc(_ltKey(r.x));
           const cell = (kind, L, label) => `<td class="lt-cell" onclick="event.stopPropagation()"><input type="number" step="0.5" class="gl-num lt-in${L ? '' : ' lt-miss'}" value="${L ? L.px : ''}" placeholder="填写" onchange="setLeapsLevel('${kind}', '${k}', this.value)" onkeydown="if (event.key === 'Enter') this.blur()" aria-label="${label}">${L && L.src === 'checklist' ? '<span class="rk-quiet lt-src">来自 checklist</span>' : ''}</td>`;
           const T = _leapsTgt(r.x), up = T && S > 0 ? (T.px / S - 1) * 100 : null;        // farther from the target = redder
           const P = _leapsStop(r.x), dn = P && S > 0 ? (1 - P.px / S) * 100 : null;      // closer to the stop = redder
           const upCls = up == null ? 'rk-quiet' : up <= 0 ? 'rk-t-safe' : up < 10 ? 'rk-t-safe' : up < 25 ? 'rk-t-alert' : 'rk-t-danger';
           const dnCls = dn == null ? 'rk-quiet' : dn <= 0 ? 'rk-t-danger' : dn < 5 ? 'rk-t-danger' : dn < 12 ? 'rk-t-alert' : 'rk-t-safe';
           return cell('tgt', T, '正股止盈位') + `<td class="${upCls}">${up == null ? (T ? '—' : '未设置') : up <= 0 ? '已到止盈位' : '+' + up.toFixed(1) + '%'}</td>`
+            + (() => { const O = _leapsOptStop(r.x), m = r.x.mark, dnO = O && m > 0 ? (1 - O.px / m) * 100 : null, cls = dnO == null ? 'rk-quiet' : dnO <= 0 ? 'rk-t-danger' : dnO < 5 ? 'rk-t-danger' : dnO < 15 ? 'rk-t-alert' : 'rk-t-safe';
+                return `<td class="lt-cell" onclick="event.stopPropagation()"><input type="number" step="0.05" class="gl-num lt-in${O && O.src === 'default' ? ' lt-def' : ''}" value="${O && O.src === 'user' ? O.px : ''}" placeholder="${O ? O.px.toFixed(2) : '填写'}" onchange="setLeapsLevel('ostop', '${k}', this.value)" onkeydown="if (event.key === 'Enter') this.blur()" aria-label="期权止损价">${O && O.src === 'default' ? `<span class="rk-quiet lt-src">默认 · 亏 ${_rule('lp_opt_stop_pct')}%</span>` : O ? `<button class="app-link lt-src" onclick="setLeapsLevel('ostop', '${k}', '')">恢复默认</button>` : ''}</td><td class="${cls}">${dnO == null ? '—' : dnO <= 0 ? '已到止损价' : '−' + dnO.toFixed(1) + '%'}</td>`; })()
             + cell('stop', P, '正股止损位') + `<td class="${dnCls}">${dn == null ? (P ? '—' : '未设置') : dn <= 0 ? '已到止损位' : '−' + dn.toFixed(1) + '%'}</td><td>${_lvlBarHTML(S, P && P.px, T && T.px)}</td>`; })()}<td class="${r.toExit != null && r.toExit <= 0 ? 'rk-t-danger' : r.toExit != null && r.toExit < 90 ? 'rk-t-alert' : ''}">${r.toExit != null ? (r.toExit <= 0 ? '已到退出线' : r.toExit + ' 天') : '—'}</td><td>${r.s ? _num2(r.s.delta) : '—'}</td><td>${_days(r.dte)}</td>
           <td>${_pct(pn(r.val))}</td>
           <td>${_pct(pn(r.cost))}</td>
@@ -21069,6 +21131,8 @@ let __goalOpen = false, __gpMemo = { k: null, v: null };
 function _goalCfg() { let c = {}; try { c = JSON.parse(localStorage.getItem(GOAL_KEY) || '{}') || {}; } catch (e) {}
   return { dep: 1000, depEnd: '2027-12-31', depOn: true, scen: 'base', ovr: {}, plan: null, inv: { g: 200000, d: '2027-12-31' },
     ...c, dates: { 200000: '2027-12-31', 500000: '2030-12-31', 1000000: '2035-12-31', ...(c.dates || {}) } }; }
+window.goalAdd = v => { const n = Math.round(+String(v).replace(/[^\d.]/g, '')); if (!(n > 0)) return; const c = _goalCfg(); if ((c.custom || []).includes(n) || GOALS.includes(n)) return; goalSet('custom', [...(c.custom || []), n].sort((a, b) => a - b)); };
+window.goalDel = v => { const c = _goalCfg(); goalSet('custom', (c.custom || []).filter(x => x !== v)); };
 function _goalSave(p) { try { localStorage.setItem(GOAL_KEY, JSON.stringify({ ..._goalCfg(), ...p })); } catch (e) {} }
 const _mIdx = iso => { const d = new Date(iso + 'T12:00:00'), n = new Date(); return (d.getFullYear() - n.getFullYear()) * 12 + d.getMonth() - n.getMonth(); };
 const _mAt = t => { const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() + t); return d; };
@@ -21125,15 +21189,15 @@ const _gpDep = (P, t) => P.dep > 0 && _mAt(t).toISOString().slice(0, 10) <= P.de
 function _gpDet(P, max = 600) { const out = GOALS.map(() => null); let v = P.start; const g = _gpExp(P);
   for (let t = 1; t <= max && out[2] == null; t++) { v = v * (1 + g) + _gpDep(P, t); GOALS.forEach((G, i) => { if (out[i] == null && v >= G) out[i] = t; }); if (v <= 0) break; }
   return out; }
-function _gpMC(P, n = 1500, H = 240) {
-  const key = JSON.stringify(P) + n + H; if (__gpMemo.k === key) return __gpMemo.v;
-  const hit = GOALS.map(() => []), band = Array.from({ length: H + 1 }, () => new Float64Array(n));
+function _gpMC(P, n = 1500, H = 240, G = GOALS) {
+  const key = JSON.stringify(P) + n + H + G.join(','); if (__gpMemo.k === key) return __gpMemo.v;
+  const hit = G.map(() => []), band = Array.from({ length: H + 1 }, () => new Float64Array(n));
   let seed = 0x9e3779b9; const rnd = () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
   const rn = () => Math.sqrt(-2 * Math.log(rnd() || 1e-12)) * Math.cos(2 * Math.PI * rnd());
-  for (let k = 0; k < n; k++) { let v = P.start; const h = [null, null, null]; band[0][k] = v;
+  for (let k = 0; k < n; k++) { let v = P.start; const h = G.map(() => null); band[0][k] = v;
     for (let t = 1; t <= H; t++) { let r = P.mS + P.vS * rn() + P.mL + P.vL * rn() + P.mC; if (P.crash && rnd() < 1 / 24) r -= 0.15 * P.risk;
-      v = Math.max(0, v * (1 + r) + _gpDep(P, t)); band[t][k] = v; for (let i = 0; i < 3; i++) if (h[i] == null && v >= GOALS[i]) h[i] = t; }
-    for (let i = 0; i < 3; i++) hit[i].push(h[i] == null ? Infinity : h[i]); }
+      v = Math.max(0, v * (1 + r) + _gpDep(P, t)); band[t][k] = v; for (let i = 0; i < G.length; i++) if (h[i] == null && v >= G[i]) h[i] = t; }
+    for (let i = 0; i < G.length; i++) hit[i].push(h[i] == null ? Infinity : h[i]); }
   const q = (a, p) => a[Math.min(a.length - 1, Math.floor(p * (a.length - 1)))];
   const bands = band.map(a => { a.sort(); return [q(a, .1), q(a, .25), q(a, .5), q(a, .75), q(a, .9)]; });
   const goals = hit.map(a => { a.sort((x, y) => x - y); return { p10: q(a, .1), p25: q(a, .25), p50: q(a, .5), p75: q(a, .75), p90: q(a, .9), reach: a.filter(isFinite).length / n, by: m => a.filter(x => x <= m).length / n }; });
@@ -21232,7 +21296,22 @@ function _goalHTML() {
       <span class="gp-scen">${S.d}</span>
       <span class="gp-dep"><label><input type="checkbox"${c.depOn ? ' checked' : ''} onchange="goalSet('depOn', this.checked)"> 入金</label>
         $<input type="number" class="gl-num gp-in" value="${c.dep}" min="0" step="100" onchange="goalSet('dep', +this.value || 0)"> / 月 至 ${_gpDateIn(c.depEnd, "goalSet('depEnd', this.value)")}</span></div>
-    <div class="gp-cards">${cards}</div>
+    ${(() => { const pcA = v => Math.round(v * 100), c0 = computeRisk().c, nav0 = c0.nav || 0;
+        const now = nav0 ? { s: c0.pos.filter(x => x.kind === 'short_put').reduce((s, x) => s + (x.exposure || x.strike * 100 * Math.abs(x.qty || 1)), 0) / nav0 + c0.pos.filter(x => x.kind === 'stock').reduce((s, x) => s + Math.abs(x.marketValue || 0), 0) / nav0,
+          l: c0.pos.filter(x => x.kind === 'leaps').reduce((s, x) => s + Math.abs(x.marketValue || 0), 0) / nav0 } : null, hs = H.allocHist || null;
+        const cl = v => Math.max(0, Math.min(1, v)), useBtn = (lab, a) => a ? `<button class="btn ghost small" onclick="goalOvr('aS', ${cl(a.s).toFixed(3)}); goalOvr('aL', ${cl(Math.min(a.l, 1 - cl(a.s))).toFixed(3)})">${lab} (${pcA(cl(a.s))} / ${pcA(cl(a.l))})</button>` : '';
+        return `<div class="gp-alloc"><div class="gp-alloc-h">按 <b>${pcA(A.aS)}%</b> 卖方 (CSP / CC) · <b>${pcA(A.aL)}%</b> LEAPS · <b>${pcA(A.aC)}%</b> 现金推算 — <span class="rk-t-alert">不是按你现在的持仓</span></div>
+          <div class="gp-alloc-s"><label>卖方 <input type="range" min="0" max="100" step="5" value="${pcA(A.aS)}" onchange="goalOvr('aS', +this.value / 100)"></label><label>LEAPS <input type="range" min="0" max="100" step="5" value="${pcA(A.aL)}" onchange="goalOvr('aL', Math.min(+this.value / 100, 1 - ${A.aS.toFixed(3)}))"></label></div>
+          <div class="gp-alloc-b"><button class="btn ghost small" onclick="goalOvr('aS', ''); goalOvr('aL', '')">默认 (60 / 20)</button>${useBtn('用现在的实际配比', now)}${useBtn('用过去一年的平均', hs)}</div>
+          <div class="rk-note">空仓期现金很多时, 按现在的持仓推算会严重低估; 所以用这里设的配比. 每一部分的回报来自你自己的历史, 现金按货币基金 ${(CASH_YLD * 100).toFixed(0)}%.</div></div>`; })()}
+    <div class="gp-cards">${cards}${(() => { const CG = [...new Set((c.custom || []).map(Number).filter(v => v > 0 && !GOALS.includes(v)))].sort((a, b) => a - b); const mcC = CG.length ? _gpMC(P, 1500, 240, CG) : null;
+        const dflt = new Date(); dflt.setFullYear(dflt.getFullYear() + 3); const dd = dflt.toISOString().slice(0, 10);
+        return CG.map((G, i) => { const g = mcC.goals[i], dt = c.dates[G] || dd, pr = g.by(_mIdx(dt)), done = H.nav >= G;
+          const rng = !isFinite(g.p25) ? `${p0(1 - g.reach)} 的情形 20 年内到不了` : !isFinite(g.p75) ? `最快 ${_mLab(g.p25)} 前后 · ${p0(1 - g.reach)} 的情形 20 年内到不了` : `大概率 ${_mLab(g.p25)} – ${_mLab(g.p75)}`;
+          return `<div class="gp-card gp-custom"><div class="gp-g">${(G / 10000).toLocaleString('zh-CN', { maximumFractionDigits: 2 })} 万 <span class="gp-tag gp-mine">自定义</span><button class="app-link gp-del" onclick="goalDel(${G})" aria-label="删除">×</button></div>
+            ${done ? '<div class="gp-big rk-t-safe">已达成</div>' : `<div class="gp-big">${isFinite(g.p50) ? _mLab(g.p50) : '20 年内到不了'}</div><div class="gp-rng">${rng}</div>
+            <div class="gp-prob"><span>到</span>${_gpDateIn(dt, `goalDate(${G}, this.value)`).replace('class="gl-date"', 'class="gl-date gp-dt"')}<b class="gp-chip rk-t-${_gpCls(pr)}">${p0(pr)}</b></div>`}</div>`; }).join('')
+          + `<div class="gp-card gp-add"><div class="gp-g">自己定一个目标</div><div class="gp-add-r">$<input type="number" class="gl-num" id="gp-new" min="1000" step="10000" placeholder="例如 300000" onkeydown="if(event.key==='Enter')goalAdd(this.value)"><button class="btn ghost small" onclick="goalAdd(document.getElementById('gp-new').value)">加上</button></div><div class="gp-rng">按上面的配比和入金推算什么时候能到</div></div>`; })()}</div>
     <div class="gp-chart">${_gpFanSVG(H, mc, c, horizon)}${plan ? `<div class="gp-plan-t">${plan}</div>` : ''}</div>
     ${warns.length ? `<div class="gp-warn"><b>注意</b><ul>${warns.map(w => `<li>${w}</li>`).join('')}</ul></div>` : ''}
     <div class="gp-sec"><div class="gp-h2">假设 <span class="gp-hint">历史 ${H.from} 起 ${H.months} 个月</span><span class="gp-acts"><button class="app-link" onclick="goalNowMix()">配置按现在</button><button class="app-link" onclick="goalDefMix()">配置用默认 60/20/20</button><button class="app-link" onclick="goalSet('ovr', {})">全部恢复历史</button></span></div>
