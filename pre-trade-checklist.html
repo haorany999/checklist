@@ -4042,8 +4042,23 @@
   .inc-det-l { display: none; }
   .gp-alloc { padding: 10px 12px; margin: 6px 0 12px; border: 1px solid var(--border); border-left: 4px solid var(--accent); border-radius: 8px; background: var(--panel-2); }
   .gp-alloc-h { font-size: 14px; margin-bottom: 6px; } .gp-alloc-h b { font-family: var(--mono); } .gp-alloc-s { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 13px; } .gp-alloc-s input { vertical-align: middle; width: 160px; }
-  .gp-alloc-b { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 4px; } .gp-custom { border-style: dashed; } .gp-mine { background: var(--accent); } .gp-del { margin-left: 6px; font-size: 16px; }
+  .gp-alloc-b { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 4px; } .gp-custom { border-style: dashed; } .gp-tag.gp-mine { background: none !important; color: var(--text-dim) !important; border: 1px dashed var(--border-hi) !important; } .gp-del { margin-left: 6px; font-size: 16px; }
   .gp-add-r { display: flex; gap: 6px; align-items: center; margin: 6px 0; } .gp-add-r input { width: 130px; }
+  .ux-newver { position: fixed; top: calc(8px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); z-index: 996; display: flex; gap: 12px; align-items: center; max-width: calc(100vw - 20px); padding: 9px 12px 9px 16px; border-radius: 22px; background: var(--accent); color: #fff; font-size: 13.5px; box-shadow: 0 8px 24px rgba(0,0,0,.3); animation: pt-in .25s ease-out; } .ux-newver button { border: 0; border-radius: 16px; padding: 7px 12px; background: #fff; color: var(--accent); font-weight: 800; cursor: pointer; }
+  .ver-bar { position: fixed; top: calc(8px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); z-index: 998; display: flex; align-items: center; gap: 10px; max-width: calc(100vw - 24px); padding: 8px 8px 8px 14px; border-radius: 12px; background: var(--accent); color: #fff; font-size: 13.5px; box-shadow: 0 8px 24px rgba(0,0,0,.3); animation: pt-in .25s ease-out; }
+  .ver-bar b { font-family: var(--mono); } .ver-bar button { min-height: 34px; padding: 0 12px; border: 0; border-radius: 8px; background: #fff; color: var(--accent); font-weight: 700; cursor: pointer; } .ver-bar .ver-x { background: none; color: #fff; font-size: 18px; padding: 0 6px; }
+  /* v147 */
+  .ticker-input { max-width: 100%; min-width: 0; box-sizing: border-box; }
+  .ux-fresh { display: flex; align-items: center; gap: 10px; justify-content: flex-end; font-size: 12px; color: var(--text-faint); margin: -4px 0 8px; } .ux-fresh.stale { color: #E5793B; } .ux-fresh .app-link { font-size: 12px; }
+  .ux-new { display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 8px; background: var(--fail); color: #fff; font: 700 10.5px var(--sans); vertical-align: 2px; letter-spacing: 0; text-transform: none; }
+  .cl-v { font: 700 13px var(--mono); color: var(--accent); margin: 10px 0 2px; } .cl-l { margin: 0 0 4px 18px; padding: 0; font-size: 13.5px; line-height: 1.6; } .ux-sheet-f .rk-quiet { font-size: 12px; align-self: center; }
+  .tr-link { font-size: 12px; margin-left: 4px; white-space: nowrap; } .tr-res { display: flex; justify-content: space-between; align-items: baseline; margin: 2px 0 6px; font-size: 13.5px; } .tr-res b { font: 800 20px var(--mono); }
+  .tr-ck { font-size: 13.5px; } .tr-cond { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; } .tr-cond span { display: flex; flex-direction: column; } .tr-cond em { font-style: normal; font-size: 11.5px; color: var(--text-faint); } .tr-cond b { font-family: var(--mono); }
+  .tr-legs td, .tr-legs th { font-size: 12.5px; } .tr-go { margin-top: 12px; } .tr-hl { font-size: 12.5px; margin: 2px 0 4px; color: var(--text-dim); } .tr-hl b { font-family: var(--mono); }
+  .tr-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-size: 12.5px; padding: 6px 10px; margin: 0 0 10px; border: 1px solid var(--border); border-radius: 8px; color: var(--text-dim); } .tr-bar b { color: var(--text); }
+  .gl-l.bub em { font-style: normal; font-weight: 600; margin-left: 3px; } .gl-l.bub em.up { color: var(--pass); } .gl-l.bub em.dn { color: var(--fail); }
+  .gl-l.fv { font: 700 11.5px var(--mono); color: var(--text); background: color-mix(in srgb, var(--panel) 85%, transparent); padding: 1px 5px; border-radius: 4px; border: 1px solid var(--border); }
+  .lv3-tip.focus { pointer-events: auto; } .lv3-tip .gl-open { margin-top: 6px; display: block; } .lv-enc { font-size: 12.5px; color: var(--text-dim); margin-left: 6px; } .lv-enc select { margin-left: 4px; } .lv-gl-leg { margin: 4px 0 6px; }
 </style>
 </head>
 <body class="theme-slate">
@@ -5621,12 +5636,17 @@ let __uxBusy = 0;
 function _uxBusy(d) { __uxBusy = Math.max(0, __uxBusy + d); let b = document.getElementById('ux-load'); if (!b) { b = document.createElement('div'); b.id = 'ux-load'; b.className = 'ux-load'; document.body.appendChild(b); } b.classList.toggle('on', __uxBusy > 0); }
 (function () { const of = window.fetch; window.fetch = function (...a) { _uxBusy(1); return of.apply(this, a).finally(() => _uxBusy(-1)); }; })();
 // ── 11 · keyboard on the desk; 12 · a quick jump to anything ──
+const _pi = (l, js, k) => ({ l, js, k });
 function _uxPalItems() {
   const L = UX_DEST.map(([l, js]) => ({ l, js, k: '页面' })).concat([['首页', 'state._view = null; render()'], ['持仓', 'showPositions()'], ['寻找 Edge', 'showAnalytics()']].map(([l, js]) => ({ l, js, k: '页面' })),
     [['新 CSP checklist', "pickStrategy('csp')"], ['新 CC checklist', "pickStrategy('cc')"], ['新 PMCC checklist', "pickStrategy('pmcc')"], ['新 LEAPS checklist', "pickStrategy('leaps')"], ['全部刷新', 'refreshAll()'], ['换主题', 'cycleTheme()']].map(([l, js]) => ({ l, js, k: '操作' })));
   try { const seen = new Set(); computeRisk().c.pos.forEach(x => { if (!x.ticker || seen.has(x.ticker)) return; seen.add(x.ticker); L.push({ l: `${x.ticker} · 这只股票的所有去处`, js: `uxTicker('${x.ticker}')`, k: '股票' }); });
     computeRisk().c.pos.filter(x => ['short_put', 'short_call'].includes(x.kind)).forEach(x => L.push({ l: `${_posLabel(x)} · Roll / 管理`, js: `showRoll('${_posKey(x)}')`, k: '持仓' }));
     computeRisk().c.pos.filter(x => x.kind === 'leaps').forEach(x => L.push({ l: `${_posLabel(x)} · LEAPS 管理`, js: `showLeapsMgmt('${_posKey(x)}')`, k: '持仓' })); } catch (e) {}
+  try { _trRows().filter(r => r.done).slice(-300).reverse().forEach(r => { const G = _trLegs(r), u = G[G.length - 1]; if (!u) return;
+      L.push(_pi(`${r.t} ${u.strike}${u.putCall === 'PUT' ? 'P' : 'C'} ${_md(u.expiry)} · ${({ csp: 'CSP', cc: 'CC', pmcc: 'PMCC', leaps: 'LEAPS', long: '买方' })[r.strat] || ''} · 已结束 ${_fmtSigned(r.pnl || 0)}`, `uxTrade('${G[0].id}')`, '过去的交易')); }); } catch (e) {}
+  try { getActiveHistory().slice(0, 300).forEach(e => { if (!e.ticker) return; const r = _trRows().find(z => z.entry && z.entry.id === e.id);
+      L.push(_pi(`${e.ticker} · ${e.strategy || ''} checklist · ${e.timestamp || ''} · ${typeof displayVerdict === 'function' ? displayVerdict(e.verdict) : e.verdict}`, r ? `uxTrade('${_trLegs(r)[0].id}')` : 'showHistory()', 'checklist')); }); } catch (e) {}
   return L;
 }
 window.uxPalFilter = (q, id) => { const box = document.getElementById(id); if (!box) return; q = String(q || '').trim().toLowerCase();
@@ -5674,7 +5694,129 @@ function _uxFreeze() {
   });
 }
 document.addEventListener('scroll', e => { const d = e.target; if (d && d.classList && d.classList.contains('ux-fc')) d.classList.toggle('end', d.scrollLeft + d.clientWidth >= d.scrollWidth - 2); }, true);
-function _uxAfterRender() { try { const t = document.querySelector('.rl-tabs'), hd = document.querySelector('.header-sticky, .header'); if (t && hd) t.style.top = Math.round(hd.getBoundingClientRect().height) + 'px'; } catch (e) {} try { _uxLoadingMarks(); } catch (e) {} try { _uxNavTrack(); } catch (e) {} try { _uxFreeze(); } catch (e) {} try { _uxJumpBar(); } catch (e) {} try { _uxTabbar(); } catch (e) {} try { _uxChecklistAids(); } catch (e) {} }
+let __verChecked = 0, __verNew = null;
+function _verSeen(text) { const m = /const APP_BUILD = '([^']+)'/.exec(text || ''); if (!m || m[1] === APP_BUILD) return null;
+  const n = s => +(String(s).match(/v(\d+)$/) || [0, 0])[1]; if (n(m[1]) <= n(APP_BUILD)) return null;
+  __verNew = m[1]; let b = document.getElementById('ux-newver'); if (!b) { b = document.createElement('div'); b.id = 'ux-newver'; b.className = 'ux-newver'; document.body.appendChild(b); }
+  b.innerHTML = `<span>有新版本 <b>${esc(m[1].split('-').pop())}</b> (你现在是 ${esc(APP_BUILD.split('-').pop())})</span><button onclick="verUpdate()">点这里更新</button>`; return m[1]; }
+window.verUpdate = () => { const u = location.href.split('#')[0].split('?')[0]; location.replace(u + '?v=' + Date.now() + location.hash); };
+function _verCheck(force) { if (!/^https?:/.test(location.protocol) || (!force && Date.now() - __verChecked < 10 * 60e3)) return; __verChecked = Date.now();
+  fetch(location.href.split('#')[0].split('?')[0] + '?nocache=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.text() : '').then(_verSeen).catch(() => {}); }
+setTimeout(() => _verCheck(true), 4000);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') _verCheck(false); });
+let __verSeen = null, __verAt = 0;
+function _verCheck(html) { const m = /const APP_BUILD = '([^']+)'/.exec(html || ''); if (!m || m[1] === APP_BUILD) return null;
+  const num = s => +((/v(\d+)$/.exec(s) || [])[1] || 0); if (num(m[1]) <= num(APP_BUILD)) return null; __verSeen = m[1]; _verBanner(); return m[1]; }
+function _verBanner() { if (!__verSeen || document.getElementById('ver-bar')) return; const b = document.createElement('div'); b.id = 'ver-bar'; b.className = 'ver-bar';
+  b.innerHTML = `<span>有新版本 <b>${esc(__verSeen.replace(/^.*-/, ''))}</b> (现在是 ${esc(APP_BUILD.replace(/^.*-/, ''))})</span><button type="button" onclick="verUpdate()">点这里更新</button><button type="button" class="ver-x" onclick="this.parentNode.remove()" aria-label="稍后">×</button>`; document.body.appendChild(b); }
+window.verUpdate = () => { const u = location.href.split('#')[0].replace(/[?&]v=\d+/, ''); location.replace(u + (u.includes('?') ? '&' : '?') + 'v=' + Date.now()); };
+async function _verPoll() { if (!/^https?:/.test(location.protocol) || Date.now() - __verAt < 5 * 60000) return; __verAt = Date.now();
+  try { const u = location.href.split('#')[0]; const r = await fetch(u + (u.includes('?') ? '&' : '?') + '_vc=' + Date.now(), { cache: 'no-store' }); if (r.ok) _verCheck(await r.text()); } catch (e) {} }
+setTimeout(_verPoll, 4000); document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') _verPoll(); });
+/* ═════════════ v147 · speed, plain back buttons, data age, undo everywhere, what changed ═════════════ */
+// the trade records are turned into lots once per version of the data, not once per caller
+(function () { const raw = buildPerfLots; let C = { k: null, v: null };
+  buildPerfLots = function (data) { let k = null; try { if (Array.isArray(data)) { let s = 0; for (const t of data) s += (t.ts || 0) % 1e9 + (+t.net || 0); k = data.length + '|' + s; } } catch (e) {}
+    if (k && C.k === k) return C.v; const v = raw.apply(this, arguments); if (k) C = { k, v }; return v; }; })();
+// 目标推演: the heavy simulation runs once per change of its inputs, and never blocks the page from appearing
+(function () { const full = _goalHTML; const M = { k: null, v: null, sum: null }; let pending = false;
+  const key = () => { try { return JSON.stringify([_goalCfg(), (loadHist() || {}).at, ((loadNavs() || {}).data || []).length, Math.round(computeRisk().c.nav || 0), __goalOpen]); } catch (e) { return String(Math.random()); } };
+  const sumOf = html => { const m = /<span class="rk-quiet gp-sum">([\s\S]*?)<\/span><\/summary>/.exec(html || ''); return m ? m[1] : null; };
+  _goalHTML = function () {
+    const k = key(); if (M.k === k && M.v != null) return M.v;
+    if (__goalOpen) { const v = full(); M.k = k; M.v = v; M.sum = sumOf(v) || M.sum; return v; }
+    if (!pending) { pending = true; setTimeout(() => { pending = false; const v = full(); if (!v) return; const k2 = key(); M.k = k2; M.v = v; M.sum = sumOf(v); const el = document.getElementById('goal-block'); if (el && !el.open) el.outerHTML = v; }, 60); }
+    return M.v || (_goalHistory() ? `<details class="rk-block pf-goal" id="goal-block" ontoggle="goalOpen(this.open)"><summary class="rk-block-title">目标推演 <span class="rk-quiet gp-sum">${M.sum || '计算中…'}</span></summary><div class="rk-quiet">计算中…</div></details>` : '');
+  };
+  window.goalOpen = o => { __goalOpen = o; if (o) { const el = document.getElementById('goal-block'); if (el) { el.outerHTML = _goalHTML(); const n = document.getElementById('goal-block'); if (n) n.open = true; } } };
+})();
+// back buttons say where they go
+const UX_VIEW_NAME = { home: '首页', positions: '持仓', risk: '风险', greeks: 'Greeks', performance: 'Performance', analytics: '寻找 Edge', leapsviz: 'LEAPS 监控台', leapsmgmt: 'LEAPS 管理', roll: 'Roll',
+  cockpit: '驾驶舱', scan: '潜在机会', stock: '个股', backtest: '回测', history: 'History', settings: '设置', rules: '规则设置', ckedit: 'Checklist 编辑器', diag: '自检', backup: '备份', manual: '说明书', checklist: 'checklist' };
+function _uxBackLabels() {
+  document.querySelectorAll('button').forEach(b => { if (b.dataset.uxb || !/^←\s*返回$/.test(b.textContent.trim())) return; const on = b.getAttribute('onclick') || ''; let to = null;
+    if (/hideRiskDashboard|hideHistory/.test(on)) to = 'home'; else if (/rollBack/.test(on)) to = __rollBack === 'roll' ? 'positions' : (__rollBack || 'home'); else if (/lvBack/.test(on)) to = __lv.back || 'positions';
+    else if (/lmBack/.test(on)) to = __lmBack === 'leapsmgmt' ? 'positions' : (__lmBack || 'positions'); else if (/tlBackGo/.test(on)) to = (typeof __tlBack !== 'undefined' && __tlBack) || 'settings';
+    if (to) { b.dataset.uxb = '1'; b.textContent = `← ${UX_VIEW_NAME[to] || '返回'}`; } });
+}
+// how old the numbers on this page are, and one tap to refresh
+function _uxFresh() {
+  const v = state._view; if (!['risk', 'greeks', 'performance', 'analytics', 'leapsviz', 'leapsmgmt', 'roll', 'cockpit'].includes(v) || document.querySelector('#app .ux-fresh')) return;
+  const c = loadSchwabCache(); if (!c) return; const min = _schwabAgeMin(c), stale = min > 30, page = document.querySelector('#app .rk-page, #app .ckp'); if (!page) return;
+  const ch = v === 'roll' && __rollChain[__rollKey] && __rollChain[__rollKey].at ? ` · 期权链 ${_schwabAgeText({ fetchedAt: __rollChain[__rollKey].at })}` : '';
+  const d = document.createElement('div'); d.className = 'ux-fresh' + (stale ? ' stale' : ''); d.innerHTML = `<span>Schwab 数据 ${_schwabAgeText(c)}${ch}${stale ? ' · 有点旧了' : ''}</span><button type="button" class="app-link" onclick="refreshAll(this)">刷新</button>`;
+  page.insertBefore(d, page.firstChild);
+}
+// anything you remove can be put back for a few seconds
+function _uxUndoable(keys, label, after) { const snap = keys.map(k => [k, localStorage.getItem(k)]);
+  return () => _uxSnack(label, '撤销', () => { snap.forEach(([k, v]) => { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) {} }); try { __rulesCache = null; } catch (e) {} if (after) after(); render(); }); }
+// what changed since the version you last opened; and a small "新" on the new things until you've used them
+const CHANGELOG = [
+  [147, ['点交易可以看「交易档案」: 开仓前的 checklist、每次 roll、结果, 一页看完', 'History 里的 checklist 会写后来开了哪笔、结果如何; Roll 页和 LEAPS 管理页可以看当初开仓的 checklist', 'LEAPS 监控台 3D: 光泽、渐变上色、标签不重叠、平滑转动、点球聚焦、轨迹和播放、可以切换大小和颜色的含义', '返回按钮写明回到哪里; 每页写数据是几分钟前的; 删除都能撤销; Performance 打开更快']],
+  [146, ['有新版本时顶部会提示, 点一下就更新', '风险页的待处理也有「如果被行权」那一行']],
+  [145, ['权利金收入: 点柱子或「本月净权利金」看每一笔怎么来的', '目标推演: 自己定目标金额; 配比放在最上面', '待处理每个仓位只显示一次', 'LEAPS: 单张和合计都显示; 新增按期权价格的止损']],
+  [144, ['更多设置跨设备同步 (草稿、显示偏好…); 可选同步 Worker 连接']], [143, ['Roll 页最上面的「Roll 窗口」: 按剩下的时间价值判断现在适不适合 roll']],
+  [142, ['点股票代码打开这只股票的面板', 'Performance 重新排序、顶部分页; 持股周期可以点开看明细']]];
+const NEW_MARKS = [['.gp-alloc-h', 'gp-alloc', 145], ['.inc-fig-btn .cv-fig span', 'inc-fig', 145], ['#rl-win .rl-win-h', 'rl-win', 143], ['#hc-sec > h3', 'hc-sec', 142], ['.lv3-ctl', 'lv3d', 147]];
+function _uxNewMarks() { let seen = {}; try { seen = JSON.parse(localStorage.getItem('pretrade_new_seen') || '{}'); } catch (e) {}
+  const first = +localStorage.getItem('pretrade_first_build_n') || 0;
+  NEW_MARKS.forEach(([sel, id, v]) => { if (seen[id] || v < first) return; const el = document.querySelector(sel); if (!el || el.querySelector('.ux-new')) return;
+    const s = document.createElement('span'); s.className = 'ux-new'; s.textContent = '新'; el.appendChild(s);
+    const host = el.closest('section, details, .rk-block, div') || el; host.addEventListener('click', () => { seen[id] = 1; try { localStorage.setItem('pretrade_new_seen', JSON.stringify(seen)); } catch (e) {} el.querySelectorAll('.ux-new').forEach(x => x.remove()); }, { once: true }); }); }
+function _uxChangelog() {
+  const n = s => +((/v(\d+)$/.exec(s || '') || [])[1] || 0), cur = n(APP_BUILD), last = localStorage.getItem('pretrade_seen_build');
+  if (!localStorage.getItem('pretrade_first_build_n')) localStorage.setItem('pretrade_first_build_n', String(last ? n(last) : cur));
+  if (!last) { localStorage.setItem('pretrade_seen_build', APP_BUILD); return; } if (last === APP_BUILD) return;
+  const L = CHANGELOG.filter(([v]) => v > n(last) && v <= cur); localStorage.setItem('pretrade_seen_build', APP_BUILD); if (!L.length) return;
+  const m = document.createElement('div'); m.id = 'ux-sheet'; m.className = 'ux-sheet'; m.addEventListener('click', e => { if (e.target === m) _uxSheetClose(); });
+  m.innerHTML = `<div class="ux-sheet-c"><div class="ux-sheet-h">这次更新了什么 <span class="rk-quiet">${esc(APP_BUILD.replace(/^.*-/, ''))}</span></div>${L.map(([v, items]) => `<div class="cl-v">v${v}</div><ul class="cl-l">${items.map(t => `<li>${esc(t)}</li>`).join('')}</ul>`).join('')}
+    <div class="ux-sheet-f"><button class="btn primary small" onclick="_uxSheetClose()">知道了</button><span class="rk-quiet">新东西旁边有「新」, 用过一次就消失.</span></div></div>`;
+  document.body.appendChild(m); requestAnimationFrame(() => m.classList.add('on'));
+}
+setTimeout(() => { try { _uxChangelog(); } catch (e) {} }, 1200);
+setTimeout(() => { const f = window.setLeapsLevel; if (typeof f !== 'function' || f.__undo) return;
+  const g = (kind, k, v) => { const had = (((_ltLoad(kind) || {})[k]) || {}).px > 0, clear = !(parseFloat(v) > 0); const u = had && clear ? _uxUndoable([LT_KIND[kind].key], '已恢复默认') : null; f(kind, k, v); if (u) u(); };
+  g.__undo = true; window.setLeapsLevel = g; }, 0);
+/* ═════════════ v147 · one dossier per trade: the checklist before it, every leg, how it ended ═════════════ */
+function _trRows() { try { return _anData().rows || []; } catch (e) { return []; } }
+const _trLegs = r => (r.L || [r.head]).filter(Boolean);
+function _trFind(id) { return _trRows().find(r => _trLegs(r).some(u => String(u.id) === String(id))) || null; }
+function _trFindBy(t, pc, K, exp, ts) { return _trRows().find(r => r.t === t && _trLegs(r).some(u => u.putCall === pc && Math.abs(u.strike - K) < 1e-6 && u.expiry === exp && (ts == null || Math.abs((u.openTs || 0) - ts) < 3 * 864e5))) || null; }
+function _trForPos(x) { if (!x) return null; return _trRows().filter(r => r.t === x.ticker && _trLegs(r).some(u => Math.abs(u.strike - x.strike) < 1e-6 && u.expiry === x.expiry)).sort((a, b) => (a.done ? 1 : 0) - (b.done ? 1 : 0))[0] || null; }
+window.uxTrade = id => { const r = _trFind(id); r ? _trSheet(r) : showToast('找不到这笔交易的完整记录', 'info'); };
+window.uxTradeBy = (t, pc, K, exp, ts) => { const r = _trFindBy(t, pc, K, exp, ts); r ? _trSheet(r) : showToast('找不到这笔交易的完整记录', 'info'); };
+window.uxTradePos = k => { const x = computeRisk().c.pos.find(p => _posKey(p) === k); const r = _trForPos(x); r ? _trSheet(r) : showToast('还没有这张合约的交易记录 (交易记录读取后才有)', 'info'); };
+const _trBtn = id => id != null ? `<button type="button" class="app-link tr-link" onclick="event.stopPropagation(); uxTrade('${esc(String(id))}')">档案 ▸</button>` : '';
+const _trBtnBy = (t, pc, K, exp, ts) => `<button type="button" class="app-link tr-link" onclick="event.stopPropagation(); uxTradeBy('${esc(t)}', '${pc}', ${K}, '${esc(exp)}', ${ts == null ? 'null' : ts})">档案 ▸</button>`;
+function _trSheet(r) {
+  _uxSheetClose(); const L = _trLegs(r), d = t => t ? _tsDay(t).slice(2).replace(/-/g, '/') : '—', lab = u => `${u.strike}${u.putCall === 'PUT' ? 'P' : 'C'} ${_md(u.expiry)}`;
+  const STRN = { csp: 'CSP', cc: 'CC', pmcc: 'PMCC', leaps: 'LEAPS', long: '买方' }[r.strat] || r.strat, e = r.entry;
+  const HOW = { tp: '止盈买回', expired: '到期作废', exp: '到期作废', assigned: '被行权', loss: '亏损买回', stop: '止损', bought: '买回', closed: '平仓' }, M = { trade: '平仓', expire: '到期', expired: '到期', assign: '被行权', assigned: '被行权' };
+  const cond = [['开仓时正股', r.S0 != null ? r.S0.toFixed(2) : null], ['DTE', r.dte0 != null ? r.dte0 + ' 天' : null], ['Δ', r.d0 != null ? Math.abs(r.d0).toFixed(2) : null], ['IV', r.iv0 != null ? (r.iv0 * 100).toFixed(0) + '%' : null],
+    ['离行权价', r.dist0 != null ? r.dist0.toFixed(1) + '%' : null], ['VIX', r.vix0 != null ? r.vix0.toFixed(1) : null], ['SPY 在 200 日线上', r.spyUp == null ? null : r.spyUp ? '是' : '否']].filter(x => x[1] != null);
+  const legs = L.map((u, i) => `<tr><td>${i === 0 ? '开仓' : `第 ${i} 次 roll`}</td><td>${esc(lab(u))}</td><td>${d(u.openTs)}</td><td class="${_thCls(u.openCash || 0)}">${_fmtSigned(u.openCash || 0)}</td><td>${u.open ? '持有中' : `${d(u.closeTs)} ${M[u.method] || u.method || ''}`}</td><td class="${u.open ? '' : _thCls(u.pnl || 0)}">${u.open ? '—' : _fmtSigned(u.pnl || 0)}</td></tr>`).join('');
+  const last = L[L.length - 1], x = r.done ? null : (() => { try { return computeRisk().c.pos.find(p => p.ticker === r.t && Math.abs(p.strike - last.strike) < 1e-6 && p.expiry === last.expiry); } catch (er) { return null; } })();
+  const fig = A => `<div class="tr-cond">${A.filter(z => z[1] != null).map(([a, b]) => `<span><em>${a}</em><b>${esc(String(b))}</b></span>`).join('')}</div>`;
+  const s = document.createElement('div'); s.id = 'ux-sheet'; s.className = 'ux-sheet tr-sheet'; s.addEventListener('click', ev => { if (ev.target === s) _uxSheetClose(); });
+  s.innerHTML = `<div class="ux-sheet-c"><div class="tk-h"><b>${esc(r.t)}</b><span>${STRN} · ${esc(lab(L[0]))}${L.length > 1 ? ` → ${esc(lab(last))}` : ''}</span><button class="modal-close" onclick="_uxSheetClose()" aria-label="关闭">×</button></div>
+    <div class="tr-res"><span>${r.done ? (HOW[r.end] || r.end || '已结束') : '进行中'}${r.held != null ? ` · 持有 ${r.held} 天` : ''}${L.length > 1 ? ` · roll 了 ${L.length - 1} 次` : ''}</span>${r.done && r.pnl != null ? `<b class="${_thCls(r.pnl)}">${_fmtSigned(r.pnl)}</b>` : ''}</div>
+    <div class="tk-sec">开仓前的 checklist</div>${e ? `<div class="tr-ck"><b class="${String(e.verdict || '').startsWith('CLEAR') ? 'rk-t-safe' : e.verdict === 'BLOCKED' ? 'rk-t-danger' : 'rk-t-alert'}">${esc(typeof displayVerdict === 'function' ? displayVerdict(e.verdict) : e.verdict)}</b> · ${esc(e.timestamp || '')}${e.subtype ? ' · ' + esc(e.subtype) : ''}${e.hardFails && e.hardFails.length ? `<div class="rk-t-danger">没过的 hard: ${e.hardFails.map(esc).join('、')}</div>` : ''}</div>` : '<div class="rk-quiet">这笔开仓前没有找到对应的 checklist.</div>'}
+    ${cond.length ? `<div class="tk-sec">开仓时的条件</div>${fig(cond)}` : ''}
+    <div class="tk-sec">每一条腿</div><div class="rk-table-wrap"><table class="rk-table tr-legs"><thead><tr><th></th><th>合约</th><th>开仓</th><th>开仓现金</th><th>结束</th><th>这条腿盈亏</th></tr></thead><tbody>${legs}</tbody></table></div>
+    ${r.done ? `<div class="tk-sec">结果</div>${fig([['盈亏', r.pnl != null ? _fmtSigned(r.pnl) : null], ['收益率', r.ret != null && isFinite(r.ret) ? (r.ret * 100).toFixed(1) + '%' : null], ['离行权价最近', r.near != null ? r.near.toFixed(1) + '%' : null], ['最深浮亏', r.dd != null ? r.dd.toFixed(1) + '%' : null]])}` : ''}
+    <div class="tk-grid tr-go"><button onclick="_uxSheetClose(); uxTicker('${esc(r.t)}')">${esc(r.t)} 的所有去处</button>${x ? (x.kind === 'leaps' ? `<button onclick="_uxSheetClose(); showLeapsMgmt('${_posKey(x)}')">LEAPS 管理 ▸</button>` : `<button onclick="_uxSheetClose(); showRoll('${_posKey(x)}')">Roll 规划 ▸</button>`) : ''}</div></div>`;
+  document.body.appendChild(s); requestAnimationFrame(() => s.classList.add('on'));
+}
+// the History line: what this checklist became
+function _trHistLine(e) { const r = _trRows().find(z => z.entry && z.entry.id === e.id); if (!r) return ''; const L = _trLegs(r), u = L[L.length - 1];
+  return `<div class="tr-hl">→ 开了 <b>${esc(r.t)} ${u.strike}${u.putCall === 'PUT' ? 'P' : 'C'} ${esc(_md(u.expiry))}</b>${L.length > 1 ? ` (roll ${L.length - 1} 次)` : ''} · ${r.done ? `结果 <b class="${_thCls(r.pnl)}">${_fmtSigned(r.pnl)}</b>` : '还在持有'} ${_trBtn(L[0].id)}</div>`; }
+// on Roll and LEAPS management: the dossier of this very position, its checklist included
+function _uxTradeBar() { const v = state._view; if (!['roll', 'leapsmgmt'].includes(v) || document.querySelector('#app .tr-bar')) return; const page = document.querySelector('#app .rk-page'); if (!page) return;
+  const x = v === 'roll' ? _rollPos() : (typeof _lmPos === 'function' ? _lmPos() : null); if (!x) return; const r = _trForPos(x);
+  const d = document.createElement('div'); d.className = 'tr-bar'; d.innerHTML = r ? `<span>${r.entry ? `开仓前的 checklist: <b>${esc(typeof displayVerdict === 'function' ? displayVerdict(r.entry.verdict) : r.entry.verdict)}</b> · ${esc(r.entry.timestamp || '')}` : '开仓前没有找到 checklist'}</span><button type="button" class="app-link" onclick="uxTradePos('${_posKey(x)}')">交易档案 ▸</button>` : '';
+  if (r) page.insertBefore(d, page.querySelector('.ux-fresh') ? page.querySelector('.ux-fresh').nextSibling : page.firstChild); }
+function _uxAfterRender() {
+  try { _uxBackLabels(); } catch (e) {} try { _uxTradeBar(); } catch (e) {} try { _uxFresh(); } catch (e) {} try { _uxNewMarks(); } catch (e) {} try { const t = document.querySelector('.rl-tabs'), hd = document.querySelector('.header-sticky, .header'); if (t && hd) t.style.top = Math.round(hd.getBoundingClientRect().height) + 'px'; } catch (e) {} try { _uxLoadingMarks(); } catch (e) {} try { _uxNavTrack(); } catch (e) {} try { _uxFreeze(); } catch (e) {} try { _uxJumpBar(); } catch (e) {} try { _uxTabbar(); } catch (e) {} try { _uxChecklistAids(); } catch (e) {} }
 window.addEventListener('resize', () => { try { _uxTabbar(); } catch (e) {} try { _uxFreeze(); } catch (e) {} });
 function _postRender() {
   requestAnimationFrame(() => {
@@ -6300,7 +6442,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.17-v145';
+const APP_BUILD = '2026.10.17-v147';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
@@ -10087,6 +10229,7 @@ function renderHistoryList() {
         <div class="history-main">
           <div class="history-time">${esc(e.timestamp)}${e.ticker ? ` · <span class="history-ticker">${esc(e.ticker)}</span>` : ''}${stkTag ? ' · ' + stkTag : ''}</div>
           <div class="history-title">${esc(e.strategy)} · ${esc(e.subtype)}</div>
+          ${_safe('交易', () => _trHistLine(e), '')}
           <div class="history-meta">
             <span class="history-verdict ${cls}">${esc(displayVerdict(e.verdict))}</span>
             <span class="history-tally">${e.pass}/${e.fail}/${e.pending}</span>
@@ -11009,10 +11152,10 @@ function buildSyncPayload() {
 }
 // settings that change verdicts or plans: the same on every device
 const SYNC_EXTRA = () => [['newLowWin', NEWLOW_KEY], ['discStart', DISC_START_KEY], ['discReset', 'pretrade_disc_reset'], ['room', ROOM_KEY], ['goal', GOAL_KEY], ['rollPlans', ROLL_PLAN_KEY], ['earnings', EARN_KEY], ['rollCfg', ROLL_CFG_KEY], ['discExcl', DISC_EXCL_KEY], ['scanLog', SCAN_LOG_KEY], ['shortTP', SHORT_TP_KEY], ['avwapLines', AVWAP_KEY], ['ckCustom', CK_CUSTOM_KEY], ['rules', RULES_KEY],
-  ['leapsOptStops', 'pretrade_leaps_ostop'], ['draft', DRAFT_KEY], ['stockRecent', STOCK_RECENT_KEY], ['stkLock', 'pretrade_stk_lock'], ['expView', EXP_VIEW_KEY], ['expRange', EXP_RANGE_KEY], ['attrRange', 'pretrade_attr_range'], ['gexRange', 'pretrade_gex_range'],
+  ['leapsOptStops', 'pretrade_leaps_ostop'], ['lvEnc', 'pretrade_lv_enc'], ['draft', DRAFT_KEY], ['stockRecent', STOCK_RECENT_KEY], ['stkLock', 'pretrade_stk_lock'], ['expView', EXP_VIEW_KEY], ['expRange', EXP_RANGE_KEY], ['attrRange', 'pretrade_attr_range'], ['gexRange', 'pretrade_gex_range'],
   ['btTf', 'pretrade_bt_tf'], ['btCc', 'pretrade_bt_cc'], ['btStrat', BT_STRAT_KEY], ['btRecent', BT_RECENT_KEY], ['posSeen', 'pretrade_pos_seen'], ['posBaseline', 'pretrade_pos_baseline'],
   ...((loadSyncConfig() || {}).syncWorker ? [['schwabCfg', SCHWAB_CFG_KEY]] : [])];
-const SYNC_JSON = ['leapsOptStops', 'riskWeights', 'betaOverrides', 'scanCfg', 'room', 'goal', 'rollPlans', 'earnings', 'rollCfg', 'discExcl', 'scanLog', 'avwapLines', 'ckCustom', 'rules', 'draft', 'stockRecent', 'attrRange', 'btRecent', 'posSeen', 'schwabCfg'];
+const SYNC_JSON = ['lvEnc', 'leapsOptStops', 'riskWeights', 'betaOverrides', 'scanCfg', 'room', 'goal', 'rollPlans', 'earnings', 'rollCfg', 'discExcl', 'scanLog', 'avwapLines', 'ckCustom', 'rules', 'draft', 'stockRecent', 'attrRange', 'btRecent', 'posSeen', 'schwabCfg'];
 let __syncApplying = 0;
 // a setting changed anywhere (even by code that forgot to ask) → it goes up; what sync itself writes doesn't bounce back
 (function () { const set = Storage.prototype.setItem; Storage.prototype.setItem = function (k, v) { const mine = this === window.localStorage, old = mine ? this.getItem(k) : null; set.call(this, k, v);
@@ -13778,7 +13921,7 @@ function _mgmtHTML(R) {
         <div class="rk-mg gl-row" role="button" tabindex="0" onclick="openOptionLab(${i})" onkeydown="if(event.key==='Enter')openOptionLab(${i})">
           <div class="rk-mg-top">${(it.tags || [it]).map(t => `<span class="rk-pill rk-c-${t.level}">${esc(t.tag)}</span>`).join('')}<b class="rk-mg-pos">${_tk(it.x.ticker)} ${esc(_posLabel(it.x).replace(it.x.ticker + ' ', ''))}</b>
             ${pnl != null ? `<span class="rk-mg-pnl ${_thCls(pnl)}">${_fmtSigned(pnl)}</span>` : ''}</div>
-          <div class="rk-mg-sub">${esc(it.facts)} · <span class="rk-mg-act">${esc(it.act)}</span>${_rollBtn(it.x)}${_lmBtn(it.x)}</div>
+          <div class="rk-mg-sub">${esc(it.facts)} · <span class="rk-mg-act">${esc(it.act)}</span>${_rollBtn(it.x)}${_lmBtn(it.x)}</div>${_safe('轮子估算', () => _wvMini(it.x), '')}
         </div>`; }).join('') : `<div class="rk-quiet">无.</div>`}
     </section>`;
 }
@@ -17190,7 +17333,7 @@ function _anWorstHTML(C, K0, NOUN) {
   const common = traits.filter(t => t.diff).map(t => `${t.l} 平均 <b>${t.fmt(t.a)}</b> (其他 ${t.b != null ? t.fmt(t.b) : '—'})`);
   if (near) common.push(`${near} / ${W.length} 笔持有期间到过价内`); if (ern) common.push(`${ern} 笔跨了财报`);
   return `<div class="rk-sub-title">最大的 ${W.length} 笔亏损 ${_qBtn('an_worst', 'short')}</div><div class="rk-table-wrap"><table class="rk-table"><thead><tr><th>合约</th><th>开仓</th><th>亏损</th><th>开仓 Δ</th><th>DTE</th><th>离行权价</th><th>IV</th><th>VIX</th><th>跨财报</th><th>结局</th></tr></thead><tbody>
-    ${W.map(r => `<tr><td><b>${esc(r.t)} ${r.K}${L1} ${esc(_md(r.exp))}</b>${r.rolls ? ` <span class="rk-quiet">roll ${r.rolls} 次</span>` : ''}</td><td>${_tsDay(r.openTs).slice(2).replace(/-/g, '/')}</td><td>${_sg(r.pnl)}</td><td>${r.d0 != null ? r.d0.toFixed(2) : '—'}</td><td>${r.dte0}</td>
+    ${W.map(r => `<tr><td>${_trBtn(_trLegs(r)[0] && _trLegs(r)[0].id)} <b>${esc(r.t)} ${r.K}${L1} ${esc(_md(r.exp))}</b>${r.rolls ? ` <span class="rk-quiet">roll ${r.rolls} 次</span>` : ''}</td><td>${_tsDay(r.openTs).slice(2).replace(/-/g, '/')}</td><td>${_sg(r.pnl)}</td><td>${r.d0 != null ? r.d0.toFixed(2) : '—'}</td><td>${r.dte0}</td>
       <td>${r.dist0 != null ? r.dist0.toFixed(1) + '%' : '—'}</td><td>${r.iv0 != null ? (r.iv0 * 100).toFixed(0) + '%' : '—'}</td><td>${r.vix0 != null ? r.vix0.toFixed(1) : '—'}</td><td>${r.earn ? '<span class="rk-t-alert">是</span>' : '<span class="rk-quiet">未知</span>'}</td>
       <td>${{ expired: '到期作废', tp: '买回', loss: '买回止损', assigned: K0 === 'csp' ? '被行权' : '被 call 走', open: '进行中' }[r.end]}</td></tr>`).join('')}</tbody></table></div>
     <div class="an-common">${common.length ? `<b>共同点</b> (和其他 ${rest.length} 个已结束的 ${NOUN} 比): ${common.join(' · ')}` : `<span class="rk-quiet">这 ${W.length} 笔和其他 ${NOUN} 在开仓条件上没有明显不同.</span>`}</div>
@@ -17620,7 +17763,7 @@ window.setRule = (k, v) => { const d = _RULE_DEF[k]; if (!d) return; const m = {
   if (typeof __rvMemo !== 'undefined') __rvMemo = { key: null }; if (typeof __anMemo !== 'undefined') __anMemo = { key: null };
   if (typeof scheduleAutoPushToGist === 'function') scheduleAutoPushToGist(); try { _pushAppSummary(); } catch (e) {}
   const y = window.scrollY; render(); window.scrollTo(0, y); };
-window.resetRules = () => { if (!confirm('把所有规则恢复成默认值?')) return; try { localStorage.removeItem(RULES_KEY); } catch (e) {} __rulesCache = null; showToast('已恢复默认', 'success'); render(); };
+window.resetRules = () => { if (!confirm('把所有规则恢复成默认值?')) return; const u = _uxUndoable([RULES_KEY], '所有规则已恢复默认'); try { localStorage.removeItem(RULES_KEY); } catch (e) {} __rulesCache = null; render(); u(); };
 function renderRulesPage() {
   const R = _rules(), changed = Object.keys(R).filter(k => _RULE_DEF[k]).length;
   const row = r => { const [k, label, def, min, max, step, unit, help] = r, cur = _rule(k), mod = R[k] != null && +R[k] !== def;
@@ -17672,7 +17815,7 @@ window.ckeMove = (id, dir) => { const L = _ckCustomApply(_ckBase(__ckeCtx), __ck
 window.ckeAdd = () => { const g = document.getElementById('cke-ng'), gn = document.getElementById('cke-ngn'), t = document.getElementById('cke-nt'), d = document.getElementById('cke-nd'), h = document.getElementById('cke-nh');
   if (!t.value.trim()) { showToast('先写标题', 'error'); return; } const group = g.value === '__new' ? (gn.value.trim() || '我的规则') : g.value;
   _ckeMut(C => { C.add = C.add || []; C.add.push({ id: 'u_' + Date.now().toString(36), group, title: t.value.trim(), desc: d.value.trim(), hard: h.checked }); }); showToast('已加上', 'success', '打开这个策略的 checklist 就能看到'); };
-window.ckeReset = () => { if (!confirm(`把「${(CK_CTX.find(c => c[0] === __ckeCtx) || [])[1]}」恢复成默认 (删除这里的自定义规则和所有改动)?`)) return; const m = _ckCustom(); delete m[__ckeCtx]; _ckSaveCustom(m); render(); };
+window.ckeReset = () => { if (!confirm(`把「${(CK_CTX.find(c => c[0] === __ckeCtx) || [])[1]}」恢复成默认 (删除这里的自定义规则和所有改动)?`)) return; const u = _uxUndoable([CK_CUSTOM_KEY], '已恢复默认'); const m = _ckCustom(); delete m[__ckeCtx]; _ckSaveCustom(m); render(); u(); };
 function _ckHiddenIds() { const C = _ckCustom()[__ckeCtx] || {}; return Object.keys(C.hide || {}); }
 function renderCkEditPage() {
   const base = _ckBase(__ckeCtx), C = _ckCustom()[__ckeCtx] || {}, shown = _ckCustomApply(base, __ckeCtx), hidden = [...base.filter(it => (C.hide || {})[it.id]), ...(C.add || []).filter(a => (C.hide || {})[a.id]).map(a => ({ ...a, custom: true }))];
@@ -17967,7 +18110,7 @@ function _incomeHTML() {
     return `<div class="inc-det"><div class="inc-det-h"><b>${__incSel} · 净权利金 ${_fmtSigned(s.net)}</b><button class="app-link" onclick="incPick('${__incSel}')">关闭</button></div>
       <div class="rk-quiet inc-how">算的是这个月<b>结束</b>的卖方仓位 (到期、买回、被行权都算结束); 还没结束的和 LEAPS 不算. 一次 roll = 买回旧的 + 卖出新的: 旧的算在它结束的月份, 新的等它结束再算.</div>
       <div class="inc-t-h">每一笔 · 按净权利金从高到低</div><div class="rk-table-wrap"><table class="rk-table inc-t"><thead><tr><th>合约</th><th>策略</th><th>卖出收到</th><th>买回花掉</th><th>净权利金</th><th>结局</th><th>开 → 结束</th></tr></thead>
-      <tbody>${R.map(r => `<tr><td>${lab(r)}</td><td>${r.k}</td><td>${_fmtUsd(r.rec)}</td><td class="${r.paid ? 'rk-t-danger' : 'rk-quiet'}">${r.paid ? '−' + _fmtUsd(r.paid) : '$0'}</td><td class="${_thCls(r.pnl)}"><b>${_fmtSigned(r.pnl)}</b></td><td>${how[r.how]}</td><td>${d5(r.u.openTs)} → ${d5(r.u.closeTs)}</td></tr>`).join('')}
+      <tbody>${R.map(r => `<tr><td>${lab(r)} ${_trBtn(r.u.id)}</td><td>${r.k}</td><td>${_fmtUsd(r.rec)}</td><td class="${r.paid ? 'rk-t-danger' : 'rk-quiet'}">${r.paid ? '−' + _fmtUsd(r.paid) : '$0'}</td><td class="${_thCls(r.pnl)}"><b>${_fmtSigned(r.pnl)}</b></td><td>${how[r.how]}</td><td>${d5(r.u.openTs)} → ${d5(r.u.closeTs)}</td></tr>`).join('')}
       <tr class="rk-total"><td>合计 ${R.length} 笔</td><td></td><td>${_fmtUsd(sum(r => r.rec))}</td><td class="rk-t-danger">−${_fmtUsd(sum(r => r.paid))}</td><td class="${_thCls(s.net)}"><b>${_fmtSigned(sum(r => r.pnl))}</b></td><td></td><td></td></tr></tbody></table></div>
       <div class="inc-t-h">每一笔现金进出 · 按日期</div><div class="rk-table-wrap"><table class="rk-table inc-t"><thead><tr><th>日期</th><th>发生了什么</th><th>合约</th><th>金额</th></tr></thead>
       <tbody>${F.map(f => `<tr><td>${d5(f.ts)}</td><td>${f.what}</td><td>${lab(f.r)}</td><td class="${_thCls(f.amt)}">${_fmtSigned(f.amt)}</td></tr>`).join('')}
@@ -18006,7 +18149,7 @@ function _dcDayDetail(P, d) {
     <div class="dc-det-g"><span>当日盈亏 <b class="${_thCls(v.pnl)}">${_fmtSigned(v.pnl)}</b><em>${v.pct >= 0 ? '+' : '−'}${Math.abs(v.pct * 100).toFixed(2)}%</em></span><span>收盘 NAV <b>${_fmtUsd(v.nav)}</b><em>前一天 ${_fmtUsd(v.prev)}</em></span>
       ${(() => { const m = new Date(d + 'T12:00:00Z'); m.setUTCDate(m.getUTCDate() - ((m.getUTCDay() + 6) % 7)); let s = 0, k = 0; for (let i = 0; i < 5; i++) { const x = new Date(m); x.setUTCDate(x.getUTCDate() + i); const q = P[x.toISOString().slice(0, 10)]; if (q) { s += q.pnl; k++; } } return k > 1 ? `<span>这一周合计 <b class="${_thCls(s)}">${_fmtSigned(s)}</b><em>${k} 个交易日</em></span>` : ''; })()}
       ${v.flow ? `<span>入金出金 <b>${_fmtSigned(v.flow)}</b><em>已从盈亏里扣除</em></span>` : ''}${spy != null ? `<span>SPY 当天 <b class="${spy >= 0 ? 'rk-t-safe' : 'rk-t-danger'}">${spy >= 0 ? '+' : '−'}${Math.abs(spy).toFixed(2)}%</b><em>你 ${v.pct >= 0 ? '+' : '−'}${Math.abs(v.pct * 100).toFixed(2)}%</em></span>` : ''}</div>
-    ${closed.length ? `<div class="dc-det-l"><em>当天结束的仓位</em>${closed.map(u => `<div><span>${lab(u)} <em>${u.side === 'short' ? '卖方' : '买方'} · ${esc(u.method || '平仓')}</em></span><b class="${_thCls(u.pnl)}">${_fmtSigned(u.pnl || 0)}</b></div>`).join('')}</div>` : ''}
+    ${closed.length ? `<div class="dc-det-l"><em>当天结束的仓位</em>${closed.map(u => `<div><span>${lab(u)} <em>${u.side === 'short' ? '卖方' : '买方'} · ${esc(u.method || '平仓')}</em> ${_trBtn(u.id)}</span><b class="${_thCls(u.pnl)}">${_fmtSigned(u.pnl || 0)}</b></div>`).join('')}</div>` : ''}
     ${opened.length ? `<div class="dc-det-l"><em>当天开的仓位</em>${opened.map(u => `<div><span>${lab(u)} <em>${u.side === 'short' ? '卖出' : '买入'}</em></span><b>${_fmtUsd(Math.abs(u.openCash || 0))}</b></div>`).join('')}</div>` : ''}
     ${ck.length ? `<div class="dc-det-l"><em>当天的 checklist</em>${ck.map(e => `<div><span>${esc(e.strategy || '')} ${esc(e.ticker || '')}</span><b class="${e.verdict === 'BLOCKED' ? 'rk-t-danger' : e.verdict === 'CLEAR' ? 'rk-t-safe' : 'rk-t-alert'}">${esc(e.verdict || '')}</b></div>`).join('')}</div>` : ''}
     ${!closed.length && !opened.length && !ck.length ? '<div class="rk-quiet">这一天没有开仓、平仓或 checklist, 盈亏来自持仓的价格变化.</div>' : ''}</div>`;
@@ -18163,7 +18306,7 @@ function _hcLedger(c) {
     if (e.kind === 'csp') { prem += e.cash; what = `CSP ${e.K}P 被行权 · 权利金留下`; amt = e.cash; }
     else if (e.kind === 'buy') { sh += e.qty; cost += -e.cash; what = `${e.assigned ? '接股' : '买入'} ${Math.round(e.qty)} 股 @ ${(-e.cash / e.qty).toFixed(2)}`; amt = e.cash; }
     else if (e.kind === 'sell') { sh -= e.qty; cost -= e.cash; what = `${e.assigned ? '被 call 走' : '卖出'} ${Math.round(e.qty)} 股 @ ${(e.cash / e.qty).toFixed(2)}`; amt = e.cash; }
-    else if (e.kind === 'opt') { prem += e.cash; what = `${e.cash >= 0 ? '卖出' : '买回'} ${e.K}${e.pc === 'PUT' ? 'P' : 'C'} ${_md(e.exp)}`; amt = e.cash; }
+    else if (e.kind === 'opt') { prem += e.cash; what = `${e.cash >= 0 ? '卖出' : '买回'} ${e.K}${e.pc === 'PUT' ? 'P' : 'C'} ${_md(e.exp)} ${_trBtnBy(c.T, e.pc, e.K, e.exp, null)}`; amt = e.cash; }
     else if (e.kind === 'opt_expired') what = `${e.K}${e.pc === 'PUT' ? 'P' : 'C'} ${_md(e.exp)} 到期作废`;
     else if (e.kind === 'opt_assigned') what = `${e.K}${e.pc === 'PUT' ? 'P' : 'C'} ${_md(e.exp)} 被行权`;
     if (!what) return;
@@ -18267,9 +18410,37 @@ document.addEventListener('keydown', e => {
   if (document.querySelector('#dc-full, .modal-overlay, #lv-modal') || (document.getElementById('gh-pop') && !document.getElementById('gh-pop').hidden)) return;
   if (state._view === 'leapsmgmt') { e.preventDefault(); lmBack(); } else if (state._view === 'leapsviz') { e.preventDefault(); lvBack(); }
 });
+/* ═════════════ v147 · LEAPS 3D: gloss and see-through, colour by degree, labels that make room, smooth camera, focus, trails, encodings ═════════════ */
+(function () { try { const e = JSON.parse(localStorage.getItem('pretrade_lv_enc') || '{}'); __lv.size = e.size || 'value'; __lv.color = e.color || 'pnl'; } catch (er) { __lv.size = 'value'; __lv.color = 'pnl'; } })();
+window.lvEnc = (k, v) => { __lv[k] = v; try { localStorage.setItem('pretrade_lv_enc', JSON.stringify({ size: __lv.size, color: __lv.color })); } catch (e) {} const l = document.getElementById('lv-gl-leg'); if (l) l.innerHTML = _glLegend(); };
+const _mixc = (a, b, t) => a.map((v, i) => v + (b[i] - v) * Math.max(0, Math.min(1, t)));
+function _glCol(r) {
+  if (__lv.color === 'roll') { const d = r.dte, EX = _rule('lp_exit_days'), RO = _rule('lp_roll_days'); if (d == null) return [0.5, 0.5, 0.55]; if (d <= EX) return [0.82, 0.16, 0.14]; if (d < RO) return [0.93, 0.5, 0.2]; return _mixc([0.15, 0.4, 0.9], [0.55, 0.75, 1.0], (d - RO) / 400); }
+  if (__lv.color === 'delta') { const dl = r.x && r.x.delta != null ? Math.abs(r.x.delta) : null; return dl == null ? [0.5, 0.5, 0.55] : _mixc([0.55, 0.78, 1.0], [0.42, 0.16, 0.72], (dl - 0.4) / 0.55); }
+  const p = r.pct || 0; return p >= 0 ? _mixc([0.55, 0.86, 0.66], [0.01, 0.46, 0.25], p / 150) : _mixc([0.98, 0.62, 0.56], [0.68, 0.06, 0.07], -p / 60);
+}
+function _glLegend() {
+  const sw = c => `<i class="rk-sw" style="background:rgb(${c.map(v => Math.round(v * 255)).join(',')})"></i>`;
+  const col = __lv.color === 'roll' ? `${sw([0.55, 0.75, 1.0])}离到期远 ${sw([0.15, 0.4, 0.9])}近一些 ${sw([0.93, 0.5, 0.2])}roll 窗口 ${sw([0.82, 0.16, 0.14])}必须退出`
+    : __lv.color === 'delta' ? `${sw([0.55, 0.78, 1.0])}Δ 低 → ${sw([0.42, 0.16, 0.72])}Δ 高` : `${sw([0.68, 0.06, 0.07])}亏得多 ${sw([0.98, 0.62, 0.56])}小亏 ${sw([0.55, 0.86, 0.66])}小赚 ${sw([0.01, 0.46, 0.25])}赚得多`;
+  return `<span>颜色: ${col}</span><span>大小: ${({ value: '市值', nav: '占 NAV', qty: '张数' })[__lv.size]}</span>`;
+}
+// where each LEAPS sat on each of the last few weeks (from the daily snapshots), in the same coordinates as now
+function _glTrail(r, S) {
+  const C = (() => { try { return _attrSeries() || []; } catch (e) { return []; } })(); if (!C.length || !r.x) return null;
+  const x = r.x, q = Math.abs(Number(x.qty)) || 1, cost = x.cost || 0, span = r.pos != null && r.S && r.P && r.pos > 0.02 ? (r.S - r.P) / r.pos : null, out = [];
+  C.slice(-30).forEach(sn => { const p = (sn.pos || []).find(z => z.t === x.ticker && z.k === 'leaps' && +z.K === +x.strike && z.e === x.expiry) || (sn.pos || []).find(z => z.s && z.s === x.symbol); if (!p || !(p.m > 0)) return;
+    const dte = Math.max(0, Math.round((Date.parse(x.expiry + 'T21:00:00Z') - Date.parse(sn.d + 'T21:00:00Z')) / 864e5)), pct = cost ? (p.m * 100 * q - cost) / cost * 100 : 0, pos = span && p.u ? (p.u - r.P) / span : r.pos;
+    out.push([S.X(dte), S.Y(pct), pos == null ? 0 : Math.max(-1.1, Math.min(1.1, pos * 2 - 1))]); });
+  return out.length >= 2 ? out : null;
+}
+window.lvGLPlay = () => { if (!__gl) return; __gl.play = { t0: performance.now(), dur: 4500 }; __gl.spin = __lv.spin = false; };
+function _glFocusOn(b) { const G = __gl; if (!G) return; G.focus = b ? b.r.key : null; G.tg = b ? { yaw: G.yaw, pitch: Math.max(0.2, G.pitch), dist: 3.2, look: b.c.slice() } : { yaw: G.yaw, pitch: G.pitch, dist: 5.3, look: [0, -0.12, 0] }; G.inertia = 0; }
 function _glSupported() { try { const c = document.createElement('canvas'); return !!(c.getContext('webgl') || c.getContext('experimental-webgl')); } catch (e) { return false; } }
 function _glColor(v, fb) { try { const s = getComputedStyle(document.body).getPropertyValue(v).trim(), c = document.createElement('canvas').getContext('2d'); c.fillStyle = s || fb; const h = c.fillStyle; if (h[0] === '#') return [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16) / 255); const m = h.match(/[\d.]+/g); return m ? m.slice(0, 3).map(x => x / 255) : [0.5, 0.5, 0.5]; } catch (e) { return [0.5, 0.5, 0.5]; } }
 function _glStop() { if (__gl) { __lv.yaw = __gl.yaw; __lv.pitch = __gl.pitch; __lv.dist = __gl.dist; __lv.spin = __gl.spin; cancelAnimationFrame(__gl.raf); try { __gl.ro && __gl.ro.disconnect(); } catch (e) {} __gl = null; } }
+// one listener per event type on the canvas, however many times the view is redrawn on it
+function _glOn(cv, t, f, o) { cv.__h = cv.__h || {}; if (cv.__h[t]) cv.removeEventListener(t, cv.__h[t], o); cv.__h[t] = f; cv.addEventListener(t, f, o); }
 function _glMount() {
   const host = document.getElementById('lv-gl'); if (!host) return; _glStop();
   const cv = host.querySelector('canvas'), gl = cv.getContext('webgl', { antialias: true, alpha: true, premultipliedAlpha: false }) || cv.getContext('experimental-webgl'); if (!gl) return;
@@ -18277,9 +18448,9 @@ function _glMount() {
   const mk = (vs, fs) => { const p = gl.createProgram(); gl.attachShader(p, sh(gl.VERTEX_SHADER, vs)); gl.attachShader(p, sh(gl.FRAGMENT_SHADER, fs)); gl.linkProgram(p); return p; };
   // lit spheres: Blinn-Phong with a key light, a fill light and a rim
   const P1 = mk(`attribute vec3 p; attribute vec3 n; uniform mat4 vp; uniform vec3 c; uniform float r; varying vec3 vn; varying vec3 wp; void main(){ wp = c + p * r; vn = n; gl_Position = vp * vec4(wp, 1.0); }`,
-    `precision mediump float; varying vec3 vn; varying vec3 wp; uniform vec3 col; uniform vec3 eye; uniform float hi; void main(){ vec3 N = normalize(vn), L = normalize(vec3(-0.4, 1.0, 0.6)), V = normalize(eye - wp), H = normalize(L + V);
+    `precision mediump float; varying vec3 vn; varying vec3 wp; uniform vec3 col; uniform vec3 eye; uniform float hi; uniform float al; void main(){ vec3 N = normalize(vn), L = normalize(vec3(-0.4, 1.0, 0.6)), V = normalize(eye - wp), H = normalize(L + V);
       float d = max(dot(N, L), 0.0), f = max(dot(N, normalize(vec3(0.6, 0.3, -0.7))), 0.0) * 0.25, s = pow(max(dot(N, H), 0.0), 48.0) * 0.6, rim = pow(1.0 - max(dot(N, V), 0.0), 3.0) * 0.35;
-      gl_FragColor = vec4(col * (0.32 + 0.68 * d + f) + vec3(s) + col * rim + vec3(hi * 0.18), 1.0); }`);
+      gl_FragColor = vec4(col * (0.3 + 0.62 * d + f) + vec3(s) * 1.3 + col * rim * 1.15 + vec3(pow(1.0 - max(dot(N, V), 0.0), 4.0) * 0.22) + vec3(hi * 0.2), al); }`);
   // flat things: lines, zones, shadows
   const P2 = mk(`attribute vec3 p; uniform mat4 vp; void main(){ gl_Position = vp * vec4(p, 1.0); }`, `precision mediump float; uniform vec4 col; void main(){ gl_FragColor = col; }`);
   const sphere = (() => { const v = [], ix = [], S = 28, R = 18; for (let i = 0; i <= R; i++) { const t = i / R * Math.PI; for (let j = 0; j <= S; j++) { const q = j / S * 2 * Math.PI; v.push(Math.sin(t) * Math.cos(q), Math.cos(t), Math.sin(t) * Math.sin(q)); } }
@@ -18290,24 +18461,32 @@ function _glMount() {
   const ro = new ResizeObserver(() => _glFrame(true)); ro.observe(host); __gl.ro = ro;
   // input: drag to orbit, wheel / pinch to zoom, hover to inspect, click to open
   const pts = new Map();
-  cv.addEventListener('pointerdown', e => { cv.setPointerCapture(e.pointerId); pts.set(e.pointerId, [e.clientX, e.clientY]); __gl.spin = __lv.spin = false; __gl.drag = { x: e.clientX, y: e.clientY, yaw: __gl.yaw, pitch: __gl.pitch, moved: false };
+  _glOn(cv, 'pointerdown', e => { cv.setPointerCapture(e.pointerId); pts.set(e.pointerId, [e.clientX, e.clientY]); __gl.spin = __lv.spin = false; __gl.drag = { x: e.clientX, y: e.clientY, yaw: __gl.yaw, pitch: __gl.pitch, moved: false };
     if (pts.size === 2) { const [a, b] = [...pts.values()]; __gl.pinch = { d: Math.hypot(a[0] - b[0], a[1] - b[1]), dist: __gl.dist }; } });
-  cv.addEventListener('pointermove', e => { if (pts.has(e.pointerId)) pts.set(e.pointerId, [e.clientX, e.clientY]);
+  _glOn(cv, 'pointermove', e => { if (pts.has(e.pointerId)) pts.set(e.pointerId, [e.clientX, e.clientY]);
     if (__gl.pinch && pts.size === 2) { const [a, b] = [...pts.values()]; __gl.dist = Math.max(2.2, Math.min(9, __gl.pinch.dist * __gl.pinch.d / Math.max(10, Math.hypot(a[0] - b[0], a[1] - b[1])))); __gl.drag && (__gl.drag.moved = true); return; }
-    if (__gl.drag && pts.size === 1) { const dx = e.clientX - __gl.drag.x, dy = e.clientY - __gl.drag.y; if (Math.abs(dx) + Math.abs(dy) > 3) __gl.drag.moved = true; __gl.yaw = __gl.drag.yaw - dx / 160; __gl.pitch = Math.max(0.05, Math.min(1.45, __gl.drag.pitch + dy / 200)); }
+    if (__gl.drag && pts.size === 1) { const dx = e.clientX - __gl.drag.x, dy = e.clientY - __gl.drag.y; if (Math.abs(dx) + Math.abs(dy) > 3) __gl.drag.moved = true; const ny = __gl.drag.yaw - dx / 160, tn = performance.now(); __gl.inertia = __gl.drag.t ? (ny - __gl.yaw) / Math.max(1, tn - __gl.drag.t) : 0; __gl.drag.t = tn; __gl.tg = null; __gl.yaw = ny; __gl.pitch = Math.max(0.05, Math.min(1.45, __gl.drag.pitch + dy / 200)); }
     else _glPick(e); });
-  const up = e => { const moved = __gl && __gl.drag && __gl.drag.moved; pts.delete(e.pointerId); if (pts.size < 2 && __gl) __gl.pinch = null; if (pts.size === 0 && __gl) { __gl.drag = null; if (!moved && e.type === 'pointerup') { const k = _glPick(e); if (k) lvOpen(k); } } };
-  cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up); cv.addEventListener('pointerleave', () => { if (__gl && !__gl.drag) { __gl.hover = null; _glTip(null); } });
-  cv.addEventListener('wheel', e => { e.preventDefault(); __gl.dist = Math.max(2.2, Math.min(9, __gl.dist * (e.deltaY > 0 ? 1.08 : 0.92))); }, { passive: false });
-  const loop = now => { if (!__gl || state._view !== 'leapsviz' || __lv.tab !== '3d' || !document.body.contains(cv)) { _glStop(); return; } if (__gl.spin) __gl.yaw += (now - __gl.last) / 9000; __gl.last = now; _glFrame(); __gl.raf = requestAnimationFrame(loop); };
+  const up = e => { const moved = __gl && __gl.drag && __gl.drag.moved; pts.delete(e.pointerId); if (pts.size < 2 && __gl) __gl.pinch = null; if (pts.size === 0 && __gl) { __gl.drag = null; if (!moved && e.type === 'pointerup') { __gl.inertia = 0; const k = _glPick(e), b = k && __gl.scene ? __gl.scene.B.find(z => z.r.key === k) : null; if (k && __gl.focus === k) lvOpen(k); else _glFocusOn(b); _glTip(k); } } };
+  _glOn(cv, 'pointerup', up); _glOn(cv, 'pointercancel', up); _glOn(cv, 'pointerleave', () => { if (__gl && !__gl.drag) { __gl.hover = null; _glTip(null); } });
+  _glOn(cv, 'wheel', e => { e.preventDefault(); __gl.dist = Math.max(2.2, Math.min(9, __gl.dist * (e.deltaY > 0 ? 1.08 : 0.92))); }, { passive: false });
+  const loop = now => { if (!__gl || state._view !== 'leapsviz' || __lv.tab !== '3d' || !document.body.contains(cv)) { _glStop(); return; } const dt = Math.min(64, now - __gl.last); if (__gl.spin) __gl.yaw += dt / 9000;
+    if (__gl.tg) { const T = __gl.tg, k = 1 - Math.pow(0.82, dt / 16); __gl.yaw += (T.yaw - __gl.yaw) * k; __gl.pitch += (T.pitch - __gl.pitch) * k; __gl.dist += (T.dist - __gl.dist) * k; const L0 = __gl.look || [0, -0.12, 0]; __gl.look = L0.map((v, i) => v + (T.look[i] - v) * k);
+      if (Math.abs(T.yaw - __gl.yaw) + Math.abs(T.pitch - __gl.pitch) + Math.abs(T.dist - __gl.dist) < 1e-3) __gl.tg = null; }
+    if (__gl.inertia && !__gl.drag) { __gl.yaw += __gl.inertia * dt; __gl.inertia *= Math.pow(0.9, dt / 16); if (Math.abs(__gl.inertia) < 2e-5) __gl.inertia = 0; }
+    if (__gl.play) { const p = (now - __gl.play.t0) / __gl.play.dur; __gl.playP = Math.min(1, p); if (p >= 1.15) { __gl.play = null; __gl.playP = null; } }
+    __gl.last = now; _glFrame(); __gl.raf = requestAnimationFrame(loop); };
   __gl.raf = requestAnimationFrame(loop);
 }
 function _glScene() {
   const D = _lvData(), maxD = Math.max(400, ...D.map(r => r.dte || 0)) * 1.05, ps = D.map(r => r.pct || 0), lo = Math.min(-50, ...ps) - 10, hi = Math.max(210, ...ps) + 10, N = (v, a, b) => (v - a) / (b - a) * 2 - 1, mv = Math.max(...D.map(r => r.val), 1);
   return { D, maxD, lo, hi, X: d => N(d, 0, maxD), Y: v => N(v, lo, hi), tiers: [0, ...new Set(D.flatMap(r => r.tiers))].filter(v => v < hi),
-    B: _glSpread(D.map(r => ({ r, c: [N(Math.max(0, r.dte || 0), 0, maxD), N(r.pct || 0, lo, hi), r.pos == null ? 0 : Math.max(-1.1, Math.min(1.1, r.pos * 2 - 1))], rad: Math.max(0.045, Math.sqrt(r.val / mv) * 0.16) }))) };
+    B: _glPlay(_glTrails(_glSpread(D.map(r => ({ r, c: [N(Math.max(0, r.dte || 0), 0, maxD), N(r.pct || 0, lo, hi), r.pos == null ? 0 : Math.max(-1.1, Math.min(1.1, r.pos * 2 - 1))], rad: Math.max(0.045, Math.sqrt((__lv.size === 'qty' ? (Math.abs(Number(r.x.qty)) || 1) / Math.max(...D.map(z => Math.abs(Number(z.x.qty)) || 1)) : r.val / mv)) * 0.16) }))), { maxD, lo, hi, X: d => N(d, 0, maxD), Y: v => N(v, lo, hi) })) };
 }
 // push overlapping bubbles apart, sideways only (time to expiry and price position); the height, profit, stays exact
+function _glTrails(B, S) { B.forEach(b => { const t = _glTrail(b.r, S); if (t) { const off = b.c.map((v, i) => v - (b.c0 ? b.c0[i] : v)); b.trail = t.map(p => p.map((v, i) => v + off[i])).concat([b.c.slice()]); } }); return B; }
+function _glPlay(B) { const p = __gl && __gl.playP; if (p == null) return B;
+  B.forEach(b => { if (!b.trail) return; const T = b.trail, f = p * (T.length - 1), i = Math.min(T.length - 2, Math.floor(f)), u = f - i; b.c = T[i].map((v, j) => v + (T[i + 1][j] - v) * u); }); return B; }
 function _glSpread(B) {
   B.forEach(b => { b.c0 = b.c.slice(); });
   for (let it = 0; it < 80; it++) { let moved = false;
@@ -18325,7 +18504,7 @@ function _glFrame(resize) {
   if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); cv.style.width = w + 'px'; cv.style.height = h + 'px'; }
   gl.viewport(0, 0, cv.width, cv.height); gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); gl.enable(gl.DEPTH_TEST); gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
   const S = G.scene = _glScene(), eye = [G.dist * Math.cos(G.pitch) * Math.sin(G.yaw), G.dist * Math.sin(G.pitch) + 0.15, G.dist * Math.cos(G.pitch) * Math.cos(G.yaw)];
-  const vp = G.vp = GLM.mul(GLM.persp(0.75, w / Math.max(1, h), 0.1, 50), GLM.look(eye, [0, -0.12, 0], [0, 1, 0])); G.eye = eye; G.w = w; G.h = h;
+  const vp = G.vp = GLM.mul(GLM.persp(0.75, w / Math.max(1, h), 0.1, 50), GLM.look(eye, G.look || [0, -0.12, 0], [0, 1, 0])); G.eye = eye; G.w = w; G.h = h;
   const txt = _glColor('--text', '#ddd'), dim = _glColor('--text-faint', '#888'), border = _glColor('--border-hi', '#666'), pass = _glColor('--pass', '#10b981'), fail = _glColor('--fail', '#ef4444');
   // flat geometry
   gl.useProgram(G.P2); const pa = gl.getAttribLocation(G.P2, 'p'), uvp = gl.getUniformLocation(G.P2, 'vp'), ucol = gl.getUniformLocation(G.P2, 'col'); gl.uniformMatrix4fv(uvp, false, vp);
@@ -18340,7 +18519,10 @@ function _glFrame(resize) {
   const L = []; for (let d = 0; d <= S.maxD; d += 90) L.push(S.X(d), -1, -1, S.X(d), -1, 1); [-1, -0.5, 0, 0.5, 1].forEach(z => L.push(-1, -1, z, 1, -1, z)); draw(L, gl.LINES, [...border, 0.45]);
   const E = [[-1, -1, -1, -1, 1, -1], [-1, -1, 1, -1, 1, 1], [1, -1, -1, 1, 1, -1], [-1, 1, -1, 1, 1, -1], [-1, 1, -1, -1, 1, 1], [-1, -1, -1, 1, -1, -1], [-1, -1, 1, 1, -1, 1], [1, -1, -1, 1, -1, 1], [-1, -1, -1, -1, -1, 1]].flat(); draw(E, gl.LINES, [...border, 0.9]);
   const T = []; S.tiers.forEach(v => { const y = S.Y(v); T.push(-1, y, -1, 1, y, -1, -1, y, -1, -1, y, 1); }); draw(T, gl.LINES, [...pass, 0.55]);
+  S.B.forEach(b => { if (!b.trail) return; const P = b.trail, seg = []; for (let i = 1; i < P.length; i++) seg.push(...P[i - 1], ...P[i]); const c = _glCol(b.r); draw(seg, gl.LINES, [...c, 0.55]); });
   draw(S.B.flatMap(b => [b.c[0], b.c[1], b.c[2], b.c[0], -1, b.c[2]]), gl.LINES, [...dim, 0.7]);
+  { const fb = G.focus && S.B.find(b => b.r.key === G.focus); if (fb) { const dash = (a, z) => { const o = []; for (let i = 0; i < 16; i += 2) { const t0 = i / 16, t1 = (i + 1) / 16; o.push(...a.map((v, j) => v + (z[j] - v) * t0), ...a.map((v, j) => v + (z[j] - v) * t1)); } return o; };
+      const c = fb.c; draw([...dash(c, [c[0], c[1], -1]), ...dash(c, [-1, c[1], c[2]]), ...dash(c, [c[0], -1, c[2]])], gl.LINES, [...txt, 0.85]); } }
   const mv = S.B.filter(b => b.moved); if (mv.length) draw(mv.flatMap(b => [b.c[0], b.c[1], b.c[2], b.c0[0], b.c0[1], b.c0[2]]), gl.LINES, [...txt, 0.35]);
   // take-profit rings around bubbles that reached a tier
   S.B.filter(b => b.r.pct != null && b.r.pct >= b.r.tiers[0]).forEach(b => { const a = [], n = 40, rr = b.rad * 1.45; for (let i = 0; i < n; i++) { const q0 = i / n * 2 * Math.PI, q1 = (i + 1) / n * 2 * Math.PI; a.push(b.c[0] + Math.cos(q0) * rr, b.c[1], b.c[2] + Math.sin(q0) * rr, b.c[0] + Math.cos(q1) * rr, b.c[1], b.c[2] + Math.sin(q1) * rr); } draw(a, gl.LINES, [...pass, 1]); });
@@ -18349,7 +18531,9 @@ function _glFrame(resize) {
   gl.uniformMatrix4fv(gl.getUniformLocation(G.P1, 'vp'), false, vp); gl.uniform3fv(gl.getUniformLocation(G.P1, 'eye'), eye);
   gl.bindBuffer(gl.ARRAY_BUFFER, G.sphere.vb); gl.enableVertexAttribArray(sp); gl.vertexAttribPointer(sp, 3, gl.FLOAT, false, 0, 0); gl.enableVertexAttribArray(sn); gl.vertexAttribPointer(sn, 3, gl.FLOAT, false, 0, 0); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, G.sphere.ib);
   const uc = gl.getUniformLocation(G.P1, 'c'), ur = gl.getUniformLocation(G.P1, 'r'), ucl = gl.getUniformLocation(G.P1, 'col'), uh = gl.getUniformLocation(G.P1, 'hi');
-  S.B.forEach(b => { gl.uniform3fv(uc, b.c); gl.uniform1f(ur, b.rad); gl.uniform3fv(ucl, b.r.pnl >= 0 ? [0.06, 0.66, 0.43] : [0.86, 0.2, 0.16]); gl.uniform1f(uh, G.hover === b.r.key ? 1 : 0); gl.drawElements(gl.TRIANGLES, G.sphere.n, gl.UNSIGNED_SHORT, 0); });
+  const ual = gl.getUniformLocation(G.P1, 'al'), sc = S.B.map(b => { const q = GLM.tx(vp, b.c), e2 = GLM.tx(vp, [b.c[0] + b.rad, b.c[1], b.c[2]]); return { b, x: q[0], y: q[1], z: q[2], r: Math.abs(e2[0] - q[0]) }; });
+  sc.forEach(a => { a.front = sc.some(o => o !== a && a.z < o.z && Math.hypot(a.x - o.x, (a.y - o.y) * h / w) < (a.r + o.r) * 0.95); });   // a ball covering another one turns see-through
+  sc.sort((a, b) => b.z - a.z).forEach(({ b, front }) => { gl.uniform3fv(uc, b.c); gl.uniform1f(ur, b.rad); gl.uniform3fv(ucl, _glCol(b.r)); gl.uniform1f(uh, G.hover === b.r.key || G.focus === b.r.key ? 1 : 0); gl.uniform1f(ual, front && G.focus !== b.r.key ? 0.62 : 1); gl.drawElements(gl.TRIANGLES, G.sphere.n, gl.UNSIGNED_SHORT, 0); });
   gl.disableVertexAttribArray(sn);
   _glLabels(S, vp, w, h);
 }
@@ -18361,7 +18545,12 @@ function _glLabels(S, vp, w, h) {
   S.tiers.forEach(v => L.push([pr([-1.12, S.Y(v), -1]), (v > 0 ? '+' : '') + v + '%', 'tk']));
   L.push([pr([0, -1.25, 1.32]), '离到期天数 →', 'ax'], [pr([-1.18, 1.12, -1]), '浮盈 %', 'ax'], [pr([1.18, -1.08, -1]), '止损', 'stop'], [pr([1.18, -1.08, 1]), '止盈', 'tgt'], [pr([1.32, -1.2, 0]), '价格位置 →', 'ax'],
     [pr([S.X(_rule('lp_exit_days') / 2), -0.99, 0]), '必须退出', 'zone'], [pr([S.X((_rule('lp_exit_days') + _rule('lp_roll_days')) / 2), -0.99, 0]), 'roll 窗口', 'zone']);
-  S.B.forEach(b => L.push([pr([b.c[0], b.c[1] + b.rad + 0.06, b.c[2]]), esc(b.r.x.ticker), 'bub']));
+  { const placed = [], items = S.B.map(b => ({ b, p: pr([b.c[0], b.c[1] + b.rad + 0.06, b.c[2]]) })).filter(o => o.p).sort((a, b2) => a.p[1] - b2.p[1]);
+    items.forEach(({ b, p }) => { const t = `${esc(b.r.x.ticker)} <em class="${(b.r.pct || 0) >= 0 ? 'up' : 'dn'}">${(b.r.pct || 0) >= 0 ? '+' : ''}${Math.round(b.r.pct || 0)}%</em>`, w = 78, hh = 15; let y = p[1];
+      for (let k = 0; k < 6 && placed.some(q => Math.abs(q[0] - p[0]) < w && Math.abs(q[1] - y) < hh); k++) y -= hh;
+      placed.push([p[0], y]); L.push([[p[0], y], t, 'bub']); }); }
+  { const fb = __gl && __gl.focus && S.B.find(b => b.r.key === __gl.focus); if (fb) { const c = fb.c, r = fb.r;
+      L.push([pr([c[0], -1.04, c[2]]), `剩 ${r.dte} 天`, 'fv'], [pr([-1.05, c[1], c[2]]), `浮盈 ${(r.pct || 0) >= 0 ? '+' : ''}${(r.pct || 0).toFixed(0)}%`, 'fv'], [pr([c[0], c[1], -1.05]), `价格位置 ${r.pos != null ? Math.round(r.pos * 100) + '%' : '—'}`, 'fv']); } }
   box.innerHTML = L.filter(x => x[0]).map(([p, t, c]) => `<span class="gl-l ${c}" style="transform:translate(${p[0].toFixed(1)}px,${p[1].toFixed(1)}px)">${t}</span>`).join('');
 }
 function _glPick(e) {
@@ -18370,15 +18559,19 @@ function _glPick(e) {
     if (d <= rr && c[2] < bd) { bd = c[2]; best = b.r.key; } });
   G.hover = best; _glTip(best); G.cv.style.cursor = best ? 'pointer' : 'grab'; return best;
 }
-function _glTip(k) { const t = document.getElementById('lv3-tip'); if (!t) return; if (!k) { t.hidden = true; return; } __lvHover = k; _lvTip(k); }
-window.lvGLView = v => { if (!__gl) return; __gl.spin = __lv.spin = false; [__gl.yaw, __gl.pitch] = v === 'front' ? [0, 0.08] : v === 'top' ? [0, 1.42] : v === 'side' ? [-Math.PI / 2, 0.08] : [-0.62, 0.38]; __gl.dist = 5.3; };
+function _glTip(k) { const t = document.getElementById('lv3-tip'); if (!t) return; if (!k) { if (!(__gl && __gl.focus)) t.hidden = true; return; } __lvHover = k; _lvTip(k);
+  if (__gl && __gl.focus === k && !t.querySelector('.gl-open')) { t.insertAdjacentHTML('beforeend', `<button type="button" class="btn primary small gl-open" onclick="lvOpen('${esc(k)}')">打开管理 ▸</button>`); t.classList.add('focus'); } else if (!(__gl && __gl.focus === k)) t.classList.remove('focus'); }
+window.lvGLView = v => { if (!__gl) return; __gl.spin = __lv.spin = false; const [yw, pt] = v === 'front' ? [0, 0.08] : v === 'top' ? [0, 1.42] : v === 'side' ? [-Math.PI / 2, 0.08] : [-0.62, 0.38]; __gl.focus = null; __gl.inertia = 0; __gl.tg = { yaw: yw, pitch: pt, dist: 5.3, look: [0, -0.12, 0] }; };
 window.lvGLSpin = () => { if (!__gl) return; __gl.spin = __lv.spin = !__gl.spin; const b = document.getElementById('lv-gl-spin'); if (b) b.textContent = __gl.spin ? '停止旋转' : '自动旋转'; };
 function _lvGLHTML() {
   setTimeout(_glMount, 0);
   return `<div class="lv3-ctl"><span class="rk-presets">${[['front', '正面 · 时间 × 浮盈'], ['top', '俯视 · 时间 × 价格位置'], ['side', '侧面 · 价格位置 × 浮盈'], ['reset', '默认']].map(([k, l]) => `<button class="rk-preset" onclick="lvGLView('${k}')">${l}</button>`).join('')}</span>
+      <label class="lv-enc">大小 <select onchange="lvEnc('size', this.value)">${[['value', '市值'], ['nav', '占 NAV'], ['qty', '张数']].map(([k, l]) => `<option value="${k}"${__lv.size === k ? ' selected' : ''}>${l}</option>`).join('')}</select></label>
+      <label class="lv-enc">颜色 <select onchange="lvEnc('color', this.value)">${[['pnl', '浮盈'], ['roll', '离 roll 窗口'], ['delta', 'Δ']].map(([k, l]) => `<option value="${k}"${__lv.color === k ? ' selected' : ''}>${l}</option>`).join('')}</select></label>
+      <button class="btn ghost small" onclick="lvGLPlay()" ${(() => { try { return (_attrSeries() || []).length >= 2 ? '' : 'disabled title="需要每天的快照"'; } catch (e) { return 'disabled'; } })()}>▶ 播放轨迹</button>
       <button class="btn ghost small" id="lv-gl-spin" onclick="lvGLSpin()">${__lv.spin ? '停止旋转' : '自动旋转'}</button></div>
-    <div class="lv-gl" id="lv-gl"><canvas aria-label="LEAPS 3D 气泡图"></canvas><div class="lv-gl-lab" id="lv-gl-lab"></div><div class="lv3-tip" id="lv3-tip" hidden></div></div>
-    <div class="rk-note">WebGL 实时渲染: 拖动旋转, 滚轮或两指缩放; 球太近时会自动沿时间 / 价格位置方向稍微错开 (浮盈高度不变, 细线连回真实位置). 三个轴: 离到期天数 (地面红区 = 6 个月内必退, 橙区 = roll 窗口)、浮盈 % (后墙的绿线是你的止盈梯度)、价格位置 (止损 → 止盈). 球的大小 = 市值, 绿 = 赚, 红 = 亏, 绿环 = 已到止盈档; 竖线和地上的影子帮你看前后位置. 点球打开管理.</div>`;
+    <div class="rk-legend lv-gl-leg" id="lv-gl-leg">${_glLegend()}</div><div class="lv-gl" id="lv-gl"><canvas aria-label="LEAPS 3D 气泡图"></canvas><div class="lv-gl-lab" id="lv-gl-lab"></div><div class="lv3-tip" id="lv3-tip" hidden></div></div>
+    <div class="rk-note">WebGL 实时渲染: 拖动旋转 (松手有惯性), 滚轮或两指缩放; 切换视角会平滑转过去. 点一个球: 镜头转向它并拉近, 三条虚线标出它在三个轴上的位置; 再点一次 (或点「打开管理」) 打开它的管理页, 点空白处取消. 重叠时前面的球会变透明. 有每天的快照时, 每个球后面有一条最近几周的轨迹, 点「播放轨迹」看它是怎么移动过来的. 大小和颜色的含义可以在上面切换.</div>`;
 }
 function _anOverviewHTML(D) {
   const R = D.rows, by = k => R.filter(r => r.strat === k);
@@ -18957,7 +19150,7 @@ function renderPerformancePage() {
       <details class="rk-block pf-closed" id="pf-closed"><summary class="rk-block-title">平仓记录 <span class="rk-quiet">最近 ${recent.length} 笔 · 点开</span></summary>
         <div class="rk-table-wrap"><table class="rk-table">
           <thead><tr><th>日期</th><th>合约</th><th>策略</th><th>盈亏</th><th>方式</th><th>天数</th><th>留存 (卖方)</th></tr></thead>
-          <tbody>${recent.map(l => `<tr><td>${dt(l.closeTs)}</td><td>${_tk(l.ticker)} ${esc(lotLabel(l).replace(l.ticker + ' ', ''))}</td><td>${esc(l.strategy)}</td><td class="${_thCls(l.pnl)}">${_fmtSigned(l.pnl)}${(() => { if (l.kind !== 'stock') return ''; const c = (__hcRecent || []).find(z => z.done && z.T === l.ticker && l.closeTs >= z.start - 864e5 && l.closeTs <= z.end + 864e5); return c && c.prem ? `<div class="hc-note">Schwab 口径 · <a href="#${c.id}" onclick="event.preventDefault(); uxGo('${c.id}')">这一轮含权利金总共 <b class="${_thCls(c.total)}">${_fmtSigned(c.total)}</b> ▸</a></div>` : ''; })()}</td>
+          <tbody>${recent.map(l => `<tr><td>${dt(l.closeTs)}</td><td>${_tk(l.ticker)} ${esc(lotLabel(l).replace(l.ticker + ' ', ''))}${l.kind === 'option' ? ' ' + _trBtnBy(l.ticker, l.putCall, l.strike, l.expiry, l.openTs) : ''}</td><td>${esc(l.strategy)}</td><td class="${_thCls(l.pnl)}">${_fmtSigned(l.pnl)}${(() => { if (l.kind !== 'stock') return ''; const c = (__hcRecent || []).find(z => z.done && z.T === l.ticker && l.closeTs >= z.start - 864e5 && l.closeTs <= z.end + 864e5); return c && c.prem ? `<div class="hc-note">Schwab 口径 · <a href="#${c.id}" onclick="event.preventDefault(); uxGo('${c.id}')">这一轮含权利金总共 <b class="${_thCls(c.total)}">${_fmtSigned(c.total)}</b> ▸</a></div>` : ''; })()}</td>
             <td>${M[l.method] || ''}</td><td>${l.openTs ? Math.round((l.closeTs - l.openTs) / 86400000) : '—'}</td><td>${l.capture != null ? l.capture.toFixed(0) + '%' : '—'}</td></tr>`).join('') || '<tr><td colspan="7" class="rk-quiet">无</td></tr>'}</tbody>
         </table></div>
         <div class="rk-note">先进先出配对开平仓; 已实现含手续费. 交易记录 ${_ago(p.at)}读取${p.status && p.status !== 'ok' ? ` · <span class="rk-t-alert">${esc(p.status)}</span>` : ''}.</div></details>
@@ -21132,7 +21325,7 @@ function _goalCfg() { let c = {}; try { c = JSON.parse(localStorage.getItem(GOAL
   return { dep: 1000, depEnd: '2027-12-31', depOn: true, scen: 'base', ovr: {}, plan: null, inv: { g: 200000, d: '2027-12-31' },
     ...c, dates: { 200000: '2027-12-31', 500000: '2030-12-31', 1000000: '2035-12-31', ...(c.dates || {}) } }; }
 window.goalAdd = v => { const n = Math.round(+String(v).replace(/[^\d.]/g, '')); if (!(n > 0)) return; const c = _goalCfg(); if ((c.custom || []).includes(n) || GOALS.includes(n)) return; goalSet('custom', [...(c.custom || []), n].sort((a, b) => a - b)); };
-window.goalDel = v => { const c = _goalCfg(); goalSet('custom', (c.custom || []).filter(x => x !== v)); };
+window.goalDel = v => { const u = _uxUndoable([GOAL_KEY], `已删除目标 ${(v / 10000).toLocaleString('zh-CN')} 万`); const c = _goalCfg(); goalSet('custom', (c.custom || []).filter(x => x !== v)); u(); };
 function _goalSave(p) { try { localStorage.setItem(GOAL_KEY, JSON.stringify({ ..._goalCfg(), ...p })); } catch (e) {} }
 const _mIdx = iso => { const d = new Date(iso + 'T12:00:00'), n = new Date(); return (d.getFullYear() - n.getFullYear()) * 12 + d.getMonth() - n.getMonth(); };
 const _mAt = t => { const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() + t); return d; };
