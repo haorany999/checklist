@@ -4069,6 +4069,16 @@
   .lv-focus[hidden], .lv3-tip[hidden] { display: none !important; } .lv-li:has(.lv-li-al) { padding-right: 18px; }
   .h3d-b { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; } .h3d-btn { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; min-height: 64px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; cursor: pointer; text-align: left; color: var(--text);
     background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 10%, var(--panel-2)), var(--panel-2)); } .h3d-btn b { font-size: 15px; } .h3d-btn span { font-size: 11.5px; color: var(--text-dim); } .h3d-btn:hover { border-color: var(--accent); } .h3d-btn:disabled { opacity: .5; cursor: default; }
+  /* v150 · list toggle, fullscreen */
+  .lv3-ctl-r { margin-left: auto; display: inline-flex; gap: 6px; } .lv3-wrap.list-off { grid-template-columns: 1fr; } .lv3-wrap.list-off .lv-list { display: none; }
+  .lv-fs-host.fs { position: fixed; inset: 0; z-index: 995; background: var(--bg); display: flex; flex-direction: column; gap: 4px; overflow: hidden;
+    padding: calc(8px + env(safe-area-inset-top, 0px)) calc(10px + env(safe-area-inset-right, 0px)) calc(8px + env(safe-area-inset-bottom, 0px)) calc(10px + env(safe-area-inset-left, 0px)); }
+  .lv-fs-host.fs > .rk-note { display: none; } .lv-fs-host.fs .lv3-wrap { flex: 1; min-height: 0; grid-template-rows: 100%; } .lv-fs-host.fs .lv-gl { height: 100%; } .lv-fs-host.fs .lv-list { max-height: 100%; }
+  .lv-fs-host:fullscreen { background: var(--bg); } body.lv-fs { overflow: hidden; } body.lv-fs .ux-tabbar, body.lv-fs .ux-load { display: none !important; }
+  @media (max-width: 900px) { .lv-fs-host.fs .lv3-wrap { position: relative; grid-template-rows: 100%; } .lv-fs-host.fs .lv-list { position: absolute; left: 0; right: 0; bottom: 0; max-height: 42%; padding: 6px; background: color-mix(in srgb, var(--bg) 92%, transparent); border-top: 1px solid var(--border); border-radius: 10px 10px 0 0; } .lv-fs-host.fs .lv3-ctl .rk-presets { display: none; } }
+  @media (max-width: 900px) { .lv-fs-host.fs .lv-gl-leg, .lv-fs-host.fs .lv-play.off, .lv-fs-host.fs .lv-play .lv-enc { display: none; } .lv-fs-host.fs .lv3-ctl { flex-wrap: nowrap; overflow-x: auto; white-space: nowrap; scrollbar-width: none; } .lv-fs-host.fs .lv3-ctl::-webkit-scrollbar { display: none; } .lv-fs-host.fs .lv-list { max-height: 30%; } .lv-fs-host.fs .lv-play { flex-wrap: nowrap; } }
+  @media (max-width: 900px) { .lv-fs-host.fs .lv3-ctl-r { position: sticky; right: 0; z-index: 2; padding-left: 8px; background: linear-gradient(90deg, transparent, var(--bg) 14px); } }
+  .gl-l.bub .gl-st { font: 600 9.5px var(--sans); color: var(--text-dim); border: 1px solid var(--border); border-radius: 3px; padding: 0 3px; }
 </style>
 </head>
 <body class="theme-slate">
@@ -5628,6 +5638,7 @@ function _uxNavTrack() {
   __uxPop = false;
 }
 window.uxBack = () => {
+  if (document.body.classList.contains('lv-fs')) { lvFull(false); return true; }
   if (document.getElementById('gl-overlay')) { closeOptionLab(); return true; } if (document.getElementById('ux-sheet')) { _uxSheetClose(); return true; }
   const v = _uxCurView(); if (v === 'home') return false;
   if (v === 'leapsmgmt' && typeof lmBack === 'function') { lmBack(); return true; } if (v === 'leapsviz') { lvBack(); return true; } if (TL_VIEWS[v]) { tlBackGo(); return true; } if (v === 'checklist') { uxHome(); return true; }
@@ -5762,6 +5773,8 @@ function _uxUndoable(keys, label, after) { const snap = keys.map(k => [k, localS
   return () => _uxSnack(label, '撤销', () => { snap.forEach(([k, v]) => { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) {} }); try { __rulesCache = null; } catch (e) {} if (after) after(); render(); }); }
 // what changed since the version you last opened; and a small "新" on the new things until you've used them
 const CHANGELOG = [
+  [151, ['LEAPS 3D 和全组合 3D 用同一套颜色: 默认都按浮盈 (越绿赚越多, 越红亏越多); 全组合也可以切换成按策略']],
+  [150, ['3D 球图可以全屏 (电脑、iPad 用系统全屏, iPhone 铺满整个屏幕)', '球图旁边的列表可以收起和拉出, 会记住']],
   [149, ['首页多了「3D 视图」: 一下直达 LEAPS 3D 或全组合 3D (更多菜单和 ⌘K 里也有)']],
   [148, ['LEAPS 监控台多了「全组合 3D」: 所有仓位放在一张图里, 颜色按策略', '3D 旁边有列表, 点一行聚焦那个球; 聚焦时显示到止损会亏多少、到止盈会赚多少', '轨迹可以播放、暂停、拖到某一天、调速度, 范围可选; 有提醒的球会闪、外面有一圈', '「大小」可以选成本、到止损会亏多少、Δ 美元; 不再变透明']],
   [147, ['点交易可以看「交易档案」: 开仓前的 checklist、每次 roll、结果, 一页看完', 'History 里的 checklist 会写后来开了哪笔、结果如何; Roll 页和 LEAPS 管理页可以看当初开仓的 checklist', 'LEAPS 监控台 3D: 光泽、渐变上色、标签不重叠、平滑转动、点球聚焦、轨迹和播放、可以切换大小和颜色的含义', '返回按钮写明回到哪里; 每页写数据是几分钟前的; 删除都能撤销; Performance 打开更快']],
@@ -6454,7 +6467,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.17-v149';
+const APP_BUILD = '2026.10.17-v151';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
@@ -17586,7 +17599,7 @@ function _anAvwapHTML(D) {
 let __lv = { tab: '3d', yaw: -0.62, pitch: 0.38, zoom: 1, spin: true, back: 'positions' };
 window.showLeapsViz = () => { __lv.back = !state._view ? 'home' : state._view !== 'leapsviz' ? state._view : (__lv.back || 'positions'); state._view = 'leapsviz'; __lv.spin = true; render(); window.scrollTo(0, 0);
   const t = _lvData().map(r => r.x.ticker); if (t.length) fetchPrices([...new Set(t)], { maxAge: 6 * 3600e3 }).then(() => { if (state._view === 'leapsviz') _lvRedraw(); }).catch(() => {}); };
-window.lvBack = () => { _lvStop(); _glStop(); state._view = __lv.back === 'home' ? null : (__lv.back || 'positions'); render(); window.scrollTo(0, 0); };
+window.lvBack = () => { if (document.body.classList.contains('lv-fs')) lvFull(false); _lvStop(); _glStop(); state._view = __lv.back === 'home' ? null : (__lv.back || 'positions'); render(); window.scrollTo(0, 0); };
 window.lvTab = t => { __lv.tab = t; _lvRedraw(); };
 window.lvOpen = key => { if (Date.now() - __lvDragEnd < 250) return; __lv.scrollY = window.scrollY; _lvStop(); _glStop(); __lmBack = 'leapsviz'; showLeapsMgmt(key); };   // a drag that ends on a bubble isn't a click
 function _lvRedraw() { if (state._view !== 'leapsviz') return; const y = window.scrollY; render(); window.scrollTo(0, y); }
@@ -18432,20 +18445,22 @@ document.addEventListener('keydown', e => {
 });
 /* ═════════════ v147 · LEAPS 3D: gloss and see-through, colour by degree, labels that make room, smooth camera, focus, trails, encodings ═════════════ */
 (function () { try { const e = JSON.parse(localStorage.getItem('pretrade_lv_enc') || '{}'); __lv.size = e.size || 'value'; __lv.color = e.color || 'pnl'; } catch (er) { __lv.size = 'value'; __lv.color = 'pnl'; } })();
-window.lvEnc = (k, v) => { __lv[k] = v; _lvEncSave(); const l = document.getElementById('lv-gl-leg'); if (l) l.innerHTML = _glLegend(); };
+window.lvEnc = (k, v) => { __lv[k] = v; _lvEncSave(); if (k === 'colorAll' && __lv.tab === 'all3d') { render(); return; } const l = document.getElementById('lv-gl-leg'); if (l) l.innerHTML = _glLegend(); };
 const _mixc = (a, b, t) => a.map((v, i) => v + (b[i] - v) * Math.max(0, Math.min(1, t)));
 function _glCol(r) {
-  if (r.all) { const base = A3_COL[r.strat] || [0.5, 0.5, 0.55], t = Math.min(1, Math.abs(r.pct || 0) / 80); return (r.pct || 0) >= 0 ? _mixc([0.9, 0.92, 0.95], base, 0.35 + 0.65 * t) : _mixc(base, [0.72, 0.08, 0.08], 0.2 + 0.55 * t); }
-  if (__lv.color === 'roll') { const d = r.dte, EX = _rule('lp_exit_days'), RO = _rule('lp_roll_days'); if (d == null) return [0.5, 0.5, 0.55]; if (d <= EX) return [0.82, 0.16, 0.14]; if (d < RO) return [0.93, 0.5, 0.2]; return _mixc([0.15, 0.4, 0.9], [0.55, 0.75, 1.0], (d - RO) / 400); }
-  if (__lv.color === 'delta') { const dl = r.x && r.x.delta != null ? Math.abs(r.x.delta) : null; return dl == null ? [0.5, 0.5, 0.55] : _mixc([0.55, 0.78, 1.0], [0.42, 0.16, 0.72], (dl - 0.4) / 0.55); }
+  const mode = r.all ? (__lv.colorAll || 'pnl') : __lv.color;
+  if (r.all && mode === 'strat') return A3_COL[r.strat] || [0.5, 0.5, 0.55];
+  if (mode === 'roll' && !r.all) { const d = r.dte, EX = _rule('lp_exit_days'), RO = _rule('lp_roll_days'); if (d == null) return [0.5, 0.5, 0.55]; if (d <= EX) return [0.82, 0.16, 0.14]; if (d < RO) return [0.93, 0.5, 0.2]; return _mixc([0.15, 0.4, 0.9], [0.55, 0.75, 1.0], (d - RO) / 400); }
+  if (mode === 'delta') { const dl = r.x && r.x.delta != null ? Math.abs(r.x.delta) : null; return dl == null ? [0.5, 0.5, 0.55] : _mixc([0.55, 0.78, 1.0], [0.42, 0.16, 0.72], (dl - 0.4) / 0.55); }
   const p = r.pct || 0; return p >= 0 ? _mixc([0.55, 0.86, 0.66], [0.01, 0.46, 0.25], p / 150) : _mixc([0.98, 0.62, 0.56], [0.68, 0.06, 0.07], -p / 60);
 }
 function _glLegend() {
-  if (__lv.tab === 'all3d') return `<span>颜色: ${Object.entries(A3_COL).map(([k, c]) => `<i class="rk-sw" style="background:rgb(${c.map(v => Math.round(v * 255)).join(',')})"></i>${k}`).join(' ')} · 越深赚得越多, 偏红是亏</span><span>大小: 占用的资金 (CSP 按名义金额)</span>`;
+  if (__lv.tab === 'all3d' && (__lv.colorAll || 'pnl') === 'strat') return `<span>颜色: ${Object.entries(A3_COL).map(([k, c]) => `<i class="rk-sw" style="background:rgb(${c.map(v => Math.round(v * 255)).join(',')})"></i>${k}`).join(' ')}</span><span>大小: 占用的资金 (CSP 按名义金额)</span>`;
+  const ALL = __lv.tab === 'all3d', cm = ALL ? (__lv.colorAll || 'pnl') : __lv.color;
   const sw = c => `<i class="rk-sw" style="background:rgb(${c.map(v => Math.round(v * 255)).join(',')})"></i>`;
-  const col = __lv.color === 'roll' ? `${sw([0.55, 0.75, 1.0])}离到期远 ${sw([0.15, 0.4, 0.9])}近一些 ${sw([0.93, 0.5, 0.2])}roll 窗口 ${sw([0.82, 0.16, 0.14])}必须退出`
-    : __lv.color === 'delta' ? `${sw([0.55, 0.78, 1.0])}Δ 低 → ${sw([0.42, 0.16, 0.72])}Δ 高` : `${sw([0.68, 0.06, 0.07])}亏得多 ${sw([0.98, 0.62, 0.56])}小亏 ${sw([0.55, 0.86, 0.66])}小赚 ${sw([0.01, 0.46, 0.25])}赚得多`;
-  return `<span>颜色: ${col}</span><span>大小: ${({ value: '市值', cost: '成本', risk: '到止损会亏多少', delta: 'Δ 美元', qty: '张数' })[__lv.size] || '市值'}</span>`;
+  const col = cm === 'roll' && !ALL ? `${sw([0.55, 0.75, 1.0])}离到期远 ${sw([0.15, 0.4, 0.9])}近一些 ${sw([0.93, 0.5, 0.2])}roll 窗口 ${sw([0.82, 0.16, 0.14])}必须退出`
+    : cm === 'delta' ? `${sw([0.55, 0.78, 1.0])}Δ 低 → ${sw([0.42, 0.16, 0.72])}Δ 高` : `${sw([0.68, 0.06, 0.07])}亏得多 ${sw([0.98, 0.62, 0.56])}小亏 ${sw([0.55, 0.86, 0.66])}小赚 ${sw([0.01, 0.46, 0.25])}赚得多`;
+  return `<span>颜色: ${col}</span><span>大小: ${ALL ? '占用的资金 (CSP 按名义金额)' : ({ value: '市值', cost: '成本', risk: '到止损会亏多少', delta: 'Δ 美元', qty: '张数' })[__lv.size] || '市值'}</span>`;
 }
 // where each LEAPS sat on each of the last few weeks (from the daily snapshots), in the same coordinates as now
 function _glTrail(r, S) {
@@ -18460,7 +18475,17 @@ function _glTrail(r, S) {
 function _glFocusOn(b) { const G = __gl; if (!G) return; G.focus = b ? b.r.key : null; G.tg = b ? { yaw: G.yaw, pitch: Math.max(0.2, G.pitch), dist: 3.2, look: b.c.slice() } : { yaw: G.yaw, pitch: G.pitch, dist: 5.3, look: [0, -0.12, 0] }; G.inertia = 0; }
 /* ═════════════ v148 · 3D: trails you can scrub, sizes that mean something, a list beside it, risk and reward, alerts that show ═════════════ */
 (function () { try { const e = JSON.parse(localStorage.getItem('pretrade_lv_enc') || '{}'); __lv.trailRange = e.trailRange || '1m'; __lv.speed = +e.speed || 1; if (__lv.size === 'nav') __lv.size = 'value'; } catch (er) { __lv.trailRange = '1m'; __lv.speed = 1; } })();
-const _lvEncSave = () => { try { localStorage.setItem('pretrade_lv_enc', JSON.stringify({ size: __lv.size, color: __lv.color, trailRange: __lv.trailRange, speed: __lv.speed })); } catch (e) {} };
+const _lvEncSave = () => { try { localStorage.setItem('pretrade_lv_enc', JSON.stringify({ size: __lv.size, color: __lv.color, colorAll: __lv.colorAll || 'pnl', trailRange: __lv.trailRange, speed: __lv.speed, listOff: !!__lv.listOff })); } catch (e) {} };
+try { const e0 = JSON.parse(localStorage.getItem('pretrade_lv_enc') || '{}'); __lv.listOff = !!e0.listOff; __lv.colorAll = e0.colorAll || 'pnl'; } catch (e) {}
+// the list beside the chart: hide it, pull it back
+window.lvList = () => { __lv.listOff = !__lv.listOff; _lvEncSave(); const w = document.querySelector('.lv3-wrap'); if (w) w.classList.toggle('list-off', __lv.listOff); const b = document.getElementById('lv-list-btn'); if (b) { b.textContent = __lv.listOff ? '◂ 列表' : '列表 ▸'; b.setAttribute('aria-expanded', String(!__lv.listOff)); } };
+// fullscreen: the system's own where the browser allows it on an element (desktop, iPad), the whole window otherwise (iPhone)
+window.lvFull = on => { const host = document.querySelector('.lv-fs-host'); if (!host) return; const want = on == null ? !document.body.classList.contains('lv-fs') : !!on;
+  document.body.classList.toggle('lv-fs', want); host.classList.toggle('fs', want);
+  try { if (want && host.requestFullscreen && !document.fullscreenElement) { window.__lvFsEl = host; host.requestFullscreen({ navigationUI: 'hide' }).catch(() => {}); } else if (!want && document.fullscreenElement) document.exitFullscreen().catch(() => {}); } catch (e) {}
+  const b = document.getElementById('lv-fs-btn'); if (b) b.textContent = want ? '✕ 退出全屏' : '⛶ 全屏'; };
+document.addEventListener('fullscreenchange', () => { if (document.fullscreenElement || !document.body.classList.contains('lv-fs')) return; if (window.__lvFsEl && !document.body.contains(window.__lvFsEl)) return;   // the page redrew under it: stay full-window
+  lvFull(false); });
 // what a LEAPS is worth if the stock reached its stop, or its target (Black-Scholes at today's IV)
 function _lvRR(r) {
   const x = r.x; if (!x || !(r.S > 0)) return null; const q = Math.abs(Number(x.qty)) || 1, ivr = x.iv != null ? +x.iv : null, iv = ivr == null ? 0.4 : ivr > 3 ? ivr / 100 : ivr, T = Math.max(1, r.dte || 1) / 365, m = x.mark;
@@ -18499,7 +18524,7 @@ function _lvPlayHTML() {
 }
 // the list beside the chart, and the panel of the ball you've picked
 window.lvFocus = k => { if (!__gl || !__gl.scene) return; const b = __gl.scene.B.find(z => z.r.key === k); if (!b) return; if (__gl.focus === k) { _glOpen(k); return; } _glFocusOn(b); _glFocusPanel(); };
-function _glOpen(k) { if (__lv.tab !== 'all3d') return lvOpen(k); const x = computeRisk().c.pos.find(p => _posKey(p) === k); if (!x) return; _lvStop(); _glStop();
+function _glOpen(k) { if (document.body.classList.contains('lv-fs')) lvFull(false); if (__lv.tab !== 'all3d') return lvOpen(k); const x = computeRisk().c.pos.find(p => _posKey(p) === k); if (!x) return; _lvStop(); _glStop();
   if (x.kind === 'short_put' || x.kind === 'short_call') showRoll(k); else if (x.kind === 'leaps') showLeapsMgmt(k); else { showPositions(); setTimeout(() => uxJumpRow(x.ticker), 400); } }
 function _glFocusPanel() {
   const el = document.getElementById('lv-focus'); if (!el) return; const k = __gl && __gl.focus, b = k && __gl.scene ? __gl.scene.B.find(z => z.r.key === k) : null;
@@ -18644,7 +18669,7 @@ function _glLabels(S, vp, w, h) {
   else L.push([pr([0, -1.25, 1.32]), '离到期天数 →', 'ax'], [pr([-1.18, 1.12, -1]), '浮盈 %', 'ax'], [pr([1.18, -1.08, -1]), '止损', 'stop'], [pr([1.18, -1.08, 1]), '止盈', 'tgt'], [pr([1.32, -1.2, 0]), '价格位置 →', 'ax'],
     [pr([S.X(_rule('lp_exit_days') / 2), -0.99, 0]), '必须退出', 'zone'], [pr([S.X((_rule('lp_exit_days') + _rule('lp_roll_days')) / 2), -0.99, 0]), 'roll 窗口', 'zone']);
   { const placed = [], items = S.B.map(b => ({ b, p: pr([b.c[0], b.c[1] + b.rad + 0.06, b.c[2]]) })).filter(o => o.p).sort((a, b2) => a.p[1] - b2.p[1]);
-    items.forEach(({ b, p }) => { const t = `${esc(b.r.x.ticker)} <em class="${(b.r.pct || 0) >= 0 ? 'up' : 'dn'}">${(b.r.pct || 0) >= 0 ? '+' : ''}${Math.round(b.r.pct || 0)}%</em>`, w = 78, hh = 15; let y = p[1];
+    items.forEach(({ b, p }) => { const t = `${b.r.all ? `<span class="gl-st">${b.r.strat}</span> ` : ''}${esc(b.r.x.ticker)} <em class="${(b.r.pct || 0) >= 0 ? 'up' : 'dn'}">${(b.r.pct || 0) >= 0 ? '+' : ''}${Math.round(b.r.pct || 0)}%</em>`, w = 16 + 7.2 * (b.r.x.ticker.length + String(Math.round(b.r.pct || 0)).length + 2) + (b.r.all ? 8 * String(b.r.strat).length + 18 : 0), hh = 15; let y = p[1];
       for (let k = 0; k < 6 && placed.some(q => Math.abs(q[0] - p[0]) < w && Math.abs(q[1] - y) < hh); k++) y -= hh;
       placed.push([p[0], y]); L.push([[p[0], y], t, 'bub']); }); }
   { const fb = __gl && __gl.focus && S.B.find(b => b.r.key === __gl.focus); if (fb) { const c = fb.c, r = fb.r;
@@ -18664,14 +18689,16 @@ window.lvGLSpin = () => { if (!__gl) return; __gl.spin = __lv.spin = !__gl.spin;
 function _lvGLHTML() {
   setTimeout(_glMount, 0); const ALL = __lv.tab === 'all3d', D = (() => { try { return ALL ? _a3Data() : _lvData(); } catch (e) { return []; } })();
   const views = ALL ? [['front', '正面 · 时间 × 浮盈'], ['top', '俯视 · 时间 × 离危险'], ['side', '侧面 · 离危险 × 浮盈'], ['reset', '默认']] : [['front', '正面 · 时间 × 浮盈'], ['top', '俯视 · 时间 × 价格位置'], ['side', '侧面 · 价格位置 × 浮盈'], ['reset', '默认']];
-  return `<div class="lv3-ctl"><span class="rk-presets">${views.map(([k, l]) => `<button class="rk-preset" onclick="lvGLView('${k}')">${l}</button>`).join('')}</span>
-      ${ALL ? '' : `<label class="lv-enc">大小 <select onchange="lvEnc('size', this.value)">${[['value', '市值'], ['cost', '成本'], ['risk', '到止损会亏多少'], ['delta', 'Δ 美元'], ['qty', '张数']].map(([k, l]) => `<option value="${k}"${__lv.size === k ? ' selected' : ''}>${l}</option>`).join('')}</select></label>
+  const fs = document.body.classList.contains('lv-fs');
+  return `<div class="lv-fs-host${fs ? ' fs' : ''}"><div class="lv3-ctl"><span class="rk-presets">${views.map(([k, l]) => `<button class="rk-preset" onclick="lvGLView('${k}')">${l}</button>`).join('')}</span>
+      ${ALL ? `<label class="lv-enc">颜色 <select onchange="lvEnc('colorAll', this.value)">${[['pnl', '浮盈'], ['delta', 'Δ'], ['strat', '策略']].map(([k, l]) => `<option value="${k}"${(__lv.colorAll || 'pnl') === k ? ' selected' : ''}>${l}</option>`).join('')}</select></label>` : `<label class="lv-enc">大小 <select onchange="lvEnc('size', this.value)">${[['value', '市值'], ['cost', '成本'], ['risk', '到止损会亏多少'], ['delta', 'Δ 美元'], ['qty', '张数']].map(([k, l]) => `<option value="${k}"${__lv.size === k ? ' selected' : ''}>${l}</option>`).join('')}</select></label>
       <label class="lv-enc">颜色 <select onchange="lvEnc('color', this.value)">${[['pnl', '浮盈'], ['roll', '离 roll 窗口'], ['delta', 'Δ']].map(([k, l]) => `<option value="${k}"${__lv.color === k ? ' selected' : ''}>${l}</option>`).join('')}</select></label>`}
-      <button class="btn ghost small" id="lv-gl-spin" onclick="lvGLSpin()">${__lv.spin ? '停止旋转' : '自动旋转'}</button></div>
+      <button class="btn ghost small" id="lv-gl-spin" onclick="lvGLSpin()">${__lv.spin ? '停止旋转' : '自动旋转'}</button>
+      <span class="lv3-ctl-r"><button class="btn ghost small" id="lv-list-btn" onclick="lvList()" aria-expanded="${!__lv.listOff}">${__lv.listOff ? '◂ 列表' : '列表 ▸'}</button><button class="btn ghost small" id="lv-fs-btn" onclick="lvFull()">${fs ? '✕ 退出全屏' : '⛶ 全屏'}</button></span></div>
     <div class="rk-legend lv-gl-leg" id="lv-gl-leg">${_glLegend()}</div>${_lvPlayHTML()}<div class="lv-focus" id="lv-focus" hidden></div>
-    <div class="lv3-wrap"><div class="lv-gl" id="lv-gl"><canvas aria-label="${ALL ? '全组合' : 'LEAPS'} 3D 气泡图"></canvas><div class="lv-gl-lab" id="lv-gl-lab"></div><div class="lv3-tip" id="lv3-tip" hidden></div></div>${_lvListHTML(D)}</div>
-    <div class="rk-note">${ALL ? '全组合: 每一个仓位一个球. 左右 = 离到期天数 (正股在最右边「无到期」), 上下 = 浮盈 % (卖出的期权按已经赚到的权利金比例), 前后 = 离危险有多远 (卖出的期权按离行权价, LEAPS 按离止损; 越靠前越危险, 正股放在中间), 大小 = 占用的资金, 颜色 = 策略. 点一下聚焦, 再点一次去对应的地方 (Roll / LEAPS 管理 / 持仓).'
-      : 'WebGL 实时渲染: 拖动旋转 (松手有惯性), 滚轮或两指缩放; 切换视角会平滑转过去. 点一个球或右边列表里的一行: 镜头转向它并拉近, 上方显示它的数值和「到止损会亏多少、到止盈会赚多少」; 再点一次打开管理页. 有提醒的球会闪, 外面有一圈 (红 = 严重, 橙 = 注意). 轨迹: 每天一个点, 可以播放、暂停、拖到某一天、调速度.'}</div>`;
+    <div class="lv3-wrap${__lv.listOff ? ' list-off' : ''}"><div class="lv-gl" id="lv-gl"><canvas aria-label="${ALL ? '全组合' : 'LEAPS'} 3D 气泡图"></canvas><div class="lv-gl-lab" id="lv-gl-lab"></div><div class="lv3-tip" id="lv3-tip" hidden></div></div>${_lvListHTML(D)}</div>
+    <div class="rk-note">${ALL ? '全组合: 每一个仓位一个球. 左右 = 离到期天数 (正股在最右边「无到期」), 上下 = 浮盈 % (卖出的期权按已经赚到的权利金比例), 前后 = 离危险有多远 (卖出的期权按离行权价, LEAPS 按离止损; 越靠前越危险, 正股放在中间), 大小 = 占用的资金, 颜色 = 浮盈 (和 LEAPS 3D 一样: 越绿赚得越多, 越红亏得越多; 也可以切换成 Δ 或策略), 标签前面写策略. 点一下聚焦, 再点一次去对应的地方 (Roll / LEAPS 管理 / 持仓).'
+      : 'WebGL 实时渲染: 拖动旋转 (松手有惯性), 滚轮或两指缩放; 切换视角会平滑转过去. 点一个球或右边列表里的一行: 镜头转向它并拉近, 上方显示它的数值和「到止损会亏多少、到止盈会赚多少」; 再点一次打开管理页. 有提醒的球会闪, 外面有一圈 (红 = 严重, 橙 = 注意). 轨迹: 每天一个点, 可以播放、暂停、拖到某一天、调速度.'} 右上角可以收起或拉出列表、全屏 (Esc 或返回手势退出).</div></div>`;
 }
 function _anOverviewHTML(D) {
   const R = D.rows, by = k => R.filter(r => r.strat === k);
