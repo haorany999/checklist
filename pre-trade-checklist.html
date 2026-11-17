@@ -4079,6 +4079,11 @@
   @media (max-width: 900px) { .lv-fs-host.fs .lv-gl-leg, .lv-fs-host.fs .lv-play.off, .lv-fs-host.fs .lv-play .lv-enc { display: none; } .lv-fs-host.fs .lv3-ctl { flex-wrap: nowrap; overflow-x: auto; white-space: nowrap; scrollbar-width: none; } .lv-fs-host.fs .lv3-ctl::-webkit-scrollbar { display: none; } .lv-fs-host.fs .lv-list { max-height: 30%; } .lv-fs-host.fs .lv-play { flex-wrap: nowrap; } }
   @media (max-width: 900px) { .lv-fs-host.fs .lv3-ctl-r { position: sticky; right: 0; z-index: 2; padding-left: 8px; background: linear-gradient(90deg, transparent, var(--bg) 14px); } }
   .gl-l.bub .gl-st { font: 600 9.5px var(--sans); color: var(--text-dim); border: 1px solid var(--border); border-radius: 3px; padding: 0 3px; }
+  .lt-os { width: 92px; } .lt-pct { font: 600 12px var(--mono); margin-left: 4px; white-space: nowrap; } .lt-cell .lt-src { margin-left: 4px; }
+  /* v152 · fullscreen layer under <body> */
+  #lv-fs-layer { display: none; } body.lv-fs #lv-fs-layer { display: block; position: fixed; left: 0; top: 0; width: 100vw; height: 100vh; z-index: 995; background: var(--bg); overflow: hidden; transform: none; }
+  #lv-fs-layer .lv-fs-host.fs { position: absolute; inset: 0; } #lv-fs-layer, #lv-fs-layer * { animation: none !important; }
+  #lv-fs-layer:fullscreen { width: 100vw !important; height: 100vh !important; } #lv-fs-layer .lv3-wrap { flex: none; } #lv-fs-layer .lv-gl { min-height: 180px; }
 </style>
 </head>
 <body class="theme-slate">
@@ -5773,6 +5778,7 @@ function _uxUndoable(keys, label, after) { const snap = keys.map(k => [k, localS
   return () => _uxSnack(label, '撤销', () => { snap.forEach(([k, v]) => { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) {} }); try { __rulesCache = null; } catch (e) {} if (after) after(); render(); }); }
 // what changed since the version you last opened; and a small "新" on the new things until you've used them
 const CHANGELOG = [
+  [152, ['3D 球图在 iPhone / iPad 上全屏可以正常显示了', 'LEAPS 期权止损价: 旁边直接写 (−X%); 可以填价格, 也可以填 -35% 自动换算成价格', '(Worker v27) 早上 8 点只发一封日报, 新提醒合并进去; 日报改成机构日报的样式']],
   [151, ['LEAPS 3D 和全组合 3D 用同一套颜色: 默认都按浮盈 (越绿赚越多, 越红亏越多); 全组合也可以切换成按策略']],
   [150, ['3D 球图可以全屏 (电脑、iPad 用系统全屏, iPhone 铺满整个屏幕)', '球图旁边的列表可以收起和拉出, 会记住']],
   [149, ['首页多了「3D 视图」: 一下直达 LEAPS 3D 或全组合 3D (更多菜单和 ⌘K 里也有)']],
@@ -5841,6 +5847,7 @@ function _uxTradeBar() { const v = state._view; if (!['roll', 'leapsmgmt'].inclu
   const d = document.createElement('div'); d.className = 'tr-bar'; d.innerHTML = r ? `<span>${r.entry ? `开仓前的 checklist: <b>${esc(typeof displayVerdict === 'function' ? displayVerdict(r.entry.verdict) : r.entry.verdict)}</b> · ${esc(r.entry.timestamp || '')}` : '开仓前没有找到 checklist'}</span><button type="button" class="app-link" onclick="uxTradePos('${_posKey(x)}')">交易档案 ▸</button>` : '';
   if (r) page.insertBefore(d, page.querySelector('.ux-fresh') ? page.querySelector('.ux-fresh').nextSibling : page.firstChild); }
 function _uxAfterRender() {
+  if (_lvFsOn() && (state._view !== 'leapsviz' || !['3d', 'all3d'].includes(__lv.tab))) { document.body.classList.remove('lv-fs'); try { if (document.fullscreenElement) document.exitFullscreen().catch(() => {}); } catch (e) {} const L = document.getElementById('lv-fs-layer'); if (L) { L.innerHTML = ''; L.removeAttribute('style'); } }
   try { _uxBackLabels(); } catch (e) {} try { _uxTradeBar(); } catch (e) {} try { _uxFresh(); } catch (e) {} try { _uxNewMarks(); } catch (e) {} try { const t = document.querySelector('.rl-tabs'), hd = document.querySelector('.header-sticky, .header'); if (t && hd) t.style.top = Math.round(hd.getBoundingClientRect().height) + 'px'; } catch (e) {} try { _uxLoadingMarks(); } catch (e) {} try { _uxNavTrack(); } catch (e) {} try { _uxFreeze(); } catch (e) {} try { _uxJumpBar(); } catch (e) {} try { _uxTabbar(); } catch (e) {} try { _uxChecklistAids(); } catch (e) {} }
 window.addEventListener('resize', () => { try { _uxTabbar(); } catch (e) {} try { _uxFreeze(); } catch (e) {} });
 function _postRender() {
@@ -6467,7 +6474,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.17-v151';
+const APP_BUILD = '2026.10.17-v152';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
@@ -13862,6 +13869,14 @@ const MG_ORDER = { danger: 0, alert: 1, watch: 2, info: 3 };
 /* ═════════════ v145 · LEAPS stop on the option's own price; one row per position in 待处理 ═════════════ */
 const LEAPS_OSTOP_KEY = 'pretrade_leaps_ostop';
 // the option's own stop: what you set, or by default the price where it has lost a set share of what it cost
+// cost per share of a LEAPS, and a stop price written as a percent of it
+function _lpCostPS(x) { const q = Math.abs(Number(x && x.qty)) || 1; return x && x.avg > 0 ? x.avg : x && x.cost > 0 ? x.cost / (100 * q) : null; }
+const _lpPctTxt = (px, per) => { if (!(px > 0) || !(per > 0)) return ''; const p = (px / per - 1) * 100; return `(${p >= 0 ? '+' : '−'}${Math.abs(p).toFixed(Math.abs(p) < 10 ? 1 : 0)}%)`; };
+// what you type: a price ("26", "$26.40") or a loss from cost ("35%", "-35%", "−35"); a negative number can only be a percent
+function _lpParseStop(v, per) { const s = String(v == null ? '' : v).trim().replace(/[−–—]/g, '-').replace(/[$,\s]/g, ''); if (!s) return null;
+  const n = parseFloat(s); if (!isFinite(n)) return NaN; if (s.endsWith('%') || n < 0) { if (!(per > 0)) return NaN; const p = Math.abs(n); if (p >= 100) return NaN; return +(per * (1 - p / 100)).toFixed(2); } return n > 0 ? n : NaN; }
+window.setLeapsOStop = (k, v, el) => { const x = computeRisk().c.pos.find(p => p.kind === 'leaps' && _ltKey(p) === k) || computeRisk().c.pos.find(p => _posKey(p) === k), px = _lpParseStop(v, _lpCostPS(x));
+  if (Number.isNaN(px)) { showToast('看不懂: 填期权价格 (例如 26) 或亏损百分比 (例如 -35%)', 'error'); if (el) { const O = _leapsOptStop(x); el.value = O && O.src === 'user' ? O.px.toFixed(2) : ''; } return; } setLeapsLevel('ostop', k, px == null ? '' : px); };
 function _leapsOptStop(x) {
   if (!x || x.kind !== 'leaps') return null; const m = (() => { try { return _ltLoad('ostop')[_ltKey(x)]; } catch (e) { return null; } })();
   if (m && m.px > 0) return { px: m.px, src: 'user' };
@@ -18480,12 +18495,34 @@ try { const e0 = JSON.parse(localStorage.getItem('pretrade_lv_enc') || '{}'); __
 // the list beside the chart: hide it, pull it back
 window.lvList = () => { __lv.listOff = !__lv.listOff; _lvEncSave(); const w = document.querySelector('.lv3-wrap'); if (w) w.classList.toggle('list-off', __lv.listOff); const b = document.getElementById('lv-list-btn'); if (b) { b.textContent = __lv.listOff ? '◂ 列表' : '列表 ▸'; b.setAttribute('aria-expanded', String(!__lv.listOff)); } };
 // fullscreen: the system's own where the browser allows it on an element (desktop, iPad), the whole window otherwise (iPhone)
-window.lvFull = on => { const host = document.querySelector('.lv-fs-host'); if (!host) return; const want = on == null ? !document.body.classList.contains('lv-fs') : !!on;
-  document.body.classList.toggle('lv-fs', want); host.classList.toggle('fs', want);
-  try { if (want && host.requestFullscreen && !document.fullscreenElement) { window.__lvFsEl = host; host.requestFullscreen({ navigationUI: 'hide' }).catch(() => {}); } else if (!want && document.fullscreenElement) document.exitFullscreen().catch(() => {}); } catch (e) {}
-  const b = document.getElementById('lv-fs-btn'); if (b) b.textContent = want ? '✕ 退出全屏' : '⛶ 全屏'; };
-document.addEventListener('fullscreenchange', () => { if (document.fullscreenElement || !document.body.classList.contains('lv-fs')) return; if (window.__lvFsEl && !document.body.contains(window.__lvFsEl)) return;   // the page redrew under it: stay full-window
-  lvFull(false); });
+// fullscreen: the chart moves to a layer of its own right under <body>, so no ancestor (a kept animation, a transform) can hold it inside the page;
+// its height is measured in pixels, not left to percentages. The system's own fullscreen is used on top of that only with a mouse (desktop).
+function _lvFsLayer() { let L = document.getElementById('lv-fs-layer'); if (!L) { L = document.createElement('div'); L.id = 'lv-fs-layer'; document.body.appendChild(L); } return L; }
+const _lvFsNative = () => !(navigator.maxTouchPoints > 0) && window.matchMedia('(pointer: fine)').matches;   // a desktop with a mouse; never a phone or tablet
+function _lvFsOn() { return document.body.classList.contains('lv-fs'); }
+function _lvFsSize() {
+  const L = document.getElementById('lv-fs-layer'); if (!L || !_lvFsOn()) return; const vv = window.visualViewport, H = Math.round(vv ? vv.height : innerHeight), W = Math.round(vv ? vv.width : innerWidth);
+  L.style.width = W + 'px'; L.style.height = H + 'px'; const host = L.querySelector('.lv-fs-host'), wrap = host && host.querySelector('.lv3-wrap'), g = host && host.querySelector('#lv-gl'); if (!wrap || !g) return;
+  const bottomPad = parseFloat(getComputedStyle(host).paddingBottom) || 0, avail = Math.max(180, Math.floor(H - (wrap.getBoundingClientRect().top - L.getBoundingClientRect().top) - bottomPad));
+  wrap.style.height = avail + 'px'; g.style.height = avail + 'px'; const li = host.querySelector('.lv-list'); if (li && W > 900) li.style.maxHeight = avail + 'px';
+  if (__gl && typeof _glFrame === 'function') { try { _glFrame(true); } catch (e) {} }
+}
+function _lvFsAdopt() {   // after a redraw, the new chart replaces the one in the layer
+  if (!_lvFsOn()) return; const host = document.querySelector('#app .lv-fs-host'); if (!host) return; const L = _lvFsLayer(); L.innerHTML = ''; host.classList.add('fs'); L.appendChild(host);
+  requestAnimationFrame(_lvFsSize); setTimeout(_lvFsSize, 120);
+}
+window.lvFull = on => {
+  const want = on == null ? !_lvFsOn() : !!on; if (want === _lvFsOn()) return; const L = _lvFsLayer();
+  if (want) { document.body.classList.add('lv-fs'); _lvFsAdopt();
+    try { if (_lvFsNative() && L.requestFullscreen && !document.fullscreenElement) L.requestFullscreen({ navigationUI: 'hide' }).catch(() => {}); } catch (e) {} }
+  else { document.body.classList.remove('lv-fs'); try { if (document.fullscreenElement) document.exitFullscreen().catch(() => {}); } catch (e) {} L.innerHTML = ''; L.removeAttribute('style');
+    if (state._view === 'leapsviz') { const y = window.scrollY; render(); window.scrollTo(0, y); } }
+  const b = document.getElementById('lv-fs-btn'); if (b) b.textContent = want ? '✕ 退出全屏' : '⛶ 全屏';
+};
+document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement && _lvFsOn() && _lvFsNative()) lvFull(false); });
+window.addEventListener('resize', () => requestAnimationFrame(_lvFsSize)); window.addEventListener('orientationchange', () => setTimeout(_lvFsSize, 300));
+if (window.visualViewport) window.visualViewport.addEventListener('resize', () => requestAnimationFrame(_lvFsSize));
+{ const m0 = _glMount; _glMount = function () { _lvFsAdopt(); return m0.apply(this, arguments); }; }
 // what a LEAPS is worth if the stock reached its stop, or its target (Black-Scholes at today's IV)
 function _lvRR(r) {
   const x = r.x; if (!x || !(r.S > 0)) return null; const q = Math.abs(Number(x.qty)) || 1, ivr = x.iv != null ? +x.iv : null, iv = ivr == null ? 0.4 : ivr > 3 ? ivr / 100 : ivr, T = Math.max(1, r.dte || 1) / 365, m = x.mark;
@@ -20460,7 +20497,7 @@ function renderPositionsPage() {
           const dnCls = dn == null ? 'rk-quiet' : dn <= 0 ? 'rk-t-danger' : dn < 5 ? 'rk-t-danger' : dn < 12 ? 'rk-t-alert' : 'rk-t-safe';
           return cell('tgt', T, '正股止盈位') + `<td class="${upCls}">${up == null ? (T ? '—' : '未设置') : up <= 0 ? '已到止盈位' : '+' + up.toFixed(1) + '%'}</td>`
             + (() => { const O = _leapsOptStop(r.x), m = r.x.mark, dnO = O && m > 0 ? (1 - O.px / m) * 100 : null, cls = dnO == null ? 'rk-quiet' : dnO <= 0 ? 'rk-t-danger' : dnO < 5 ? 'rk-t-danger' : dnO < 15 ? 'rk-t-alert' : 'rk-t-safe';
-                return `<td class="lt-cell" onclick="event.stopPropagation()"><input type="number" step="0.05" class="gl-num lt-in${O && O.src === 'default' ? ' lt-def' : ''}" value="${O && O.src === 'user' ? O.px : ''}" placeholder="${O ? O.px.toFixed(2) : '填写'}" onchange="setLeapsLevel('ostop', '${k}', this.value)" onkeydown="if (event.key === 'Enter') this.blur()" aria-label="期权止损价">${O && O.src === 'default' ? `<span class="rk-quiet lt-src">默认 · 亏 ${_rule('lp_opt_stop_pct')}%</span>` : O ? `<button class="app-link lt-src" onclick="setLeapsLevel('ostop', '${k}', '')">恢复默认</button>` : ''}</td><td class="${cls}">${dnO == null ? '—' : dnO <= 0 ? '已到止损价' : '−' + dnO.toFixed(1) + '%'}</td>`; })()
+                return `<td class="lt-cell" onclick="event.stopPropagation()"><input type="text" inputmode="text" class="gl-num lt-in lt-os${O && O.src === 'default' ? ' lt-def' : ''}" value="${O && O.src === 'user' ? O.px.toFixed(2) : ''}" placeholder="${O ? O.px.toFixed(2) : '价格 / -35%'}" title="填期权价格 (例如 26), 或亏损百分比 (例如 -35%), 会换算成价格" onchange="setLeapsOStop('${_ltKey(r.x)}', this.value, this)" onkeydown="if (event.key === 'Enter') this.blur()" aria-label="期权止损价"><span class="lt-pct ${O ? (O.px < _lpCostPS(r.x) ? 'rk-t-danger' : 'rk-t-safe') : ''}">${O ? _lpPctTxt(O.px, _lpCostPS(r.x)) : ''}</span>${O && O.src === 'default' ? '<span class="rk-quiet lt-src">默认</span>' : O ? `<button class="app-link lt-src" onclick="setLeapsLevel('ostop', '${_ltKey(r.x)}', '')" title="恢复默认">↺</button>` : ''}</td><td class="${cls}">${dnO == null ? '—' : dnO <= 0 ? '已到止损价' : '−' + dnO.toFixed(1) + '%'}</td>`; })()
             + cell('stop', P, '正股止损位') + `<td class="${dnCls}">${dn == null ? (P ? '—' : '未设置') : dn <= 0 ? '已到止损位' : '−' + dn.toFixed(1) + '%'}</td><td>${_lvlBarHTML(S, P && P.px, T && T.px)}</td>`; })()}<td class="${r.toExit != null && r.toExit <= 0 ? 'rk-t-danger' : r.toExit != null && r.toExit < 90 ? 'rk-t-alert' : ''}">${r.toExit != null ? (r.toExit <= 0 ? '已到退出线' : r.toExit + ' 天') : '—'}</td><td>${r.s ? _num2(r.s.delta) : '—'}</td><td>${_days(r.dte)}</td>
           <td>${_pct(pn(r.val))}</td>
           <td>${_pct(pn(r.cost))}</td>
