@@ -4084,6 +4084,10 @@
   #lv-fs-layer { display: none; } body.lv-fs #lv-fs-layer { display: block; position: fixed; left: 0; top: 0; width: 100vw; height: 100vh; z-index: 995; background: var(--bg); overflow: hidden; transform: none; }
   #lv-fs-layer .lv-fs-host.fs { position: absolute; inset: 0; } #lv-fs-layer, #lv-fs-layer * { animation: none !important; }
   #lv-fs-layer:fullscreen { width: 100vw !important; height: 100vh !important; } #lv-fs-layer .lv3-wrap { flex: none; } #lv-fs-layer .lv-gl { min-height: 180px; }
+  .lt-os-row { display: flex; align-items: center; gap: 4px; white-space: nowrap; } .lt-pwrap { font: 600 13px var(--mono); white-space: nowrap; }
+  .lt-pin { width: 46px; padding: 3px 4px; border: 1px dashed currentColor; border-radius: 5px; background: transparent; color: inherit; font: inherit; text-align: right; } .lt-pin:focus { outline: 2px solid var(--accent); border-style: solid; }
+  .lt-in.lt-bad, .lt-pin.lt-bad { border-color: var(--fail) !important; outline-color: var(--fail); } .lt-os-cell.lt-dirty .lt-src { visibility: hidden; } .lt-in.lt-def { color: var(--text-dim); }
+  @media (pointer: coarse) { .lt-pin { width: 52px; min-height: 36px; font-size: 16px; } .lt-os { font-size: 16px; } }
 </style>
 </head>
 <body class="theme-slate">
@@ -5778,6 +5782,7 @@ function _uxUndoable(keys, label, after) { const snap = keys.map(k => [k, localS
   return () => _uxSnack(label, '撤销', () => { snap.forEach(([k, v]) => { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) {} }); try { __rulesCache = null; } catch (e) {} if (after) after(); render(); }); }
 // what changed since the version you last opened; and a small "新" on the new things until you've used them
 const CHANGELOG = [
+  [153, ['LEAPS 期权止损价: 括号里的百分比可以直接改, 价格和「期权需跌」马上跟着变']],
   [152, ['3D 球图在 iPhone / iPad 上全屏可以正常显示了', 'LEAPS 期权止损价: 旁边直接写 (−X%); 可以填价格, 也可以填 -35% 自动换算成价格', '(Worker v27) 早上 8 点只发一封日报, 新提醒合并进去; 日报改成机构日报的样式']],
   [151, ['LEAPS 3D 和全组合 3D 用同一套颜色: 默认都按浮盈 (越绿赚越多, 越红亏越多); 全组合也可以切换成按策略']],
   [150, ['3D 球图可以全屏 (电脑、iPad 用系统全屏, iPhone 铺满整个屏幕)', '球图旁边的列表可以收起和拉出, 会记住']],
@@ -6474,7 +6479,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.17-v152';
+const APP_BUILD = '2026.10.17-v153';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
@@ -13875,6 +13880,21 @@ const _lpPctTxt = (px, per) => { if (!(px > 0) || !(per > 0)) return ''; const p
 // what you type: a price ("26", "$26.40") or a loss from cost ("35%", "-35%", "−35"); a negative number can only be a percent
 function _lpParseStop(v, per) { const s = String(v == null ? '' : v).trim().replace(/[−–—]/g, '-').replace(/[$,\s]/g, ''); if (!s) return null;
   const n = parseFloat(s); if (!isFinite(n)) return NaN; if (s.endsWith('%') || n < 0) { if (!(per > 0)) return NaN; const p = Math.abs(n); if (p >= 100) return NaN; return +(per * (1 - p / 100)).toFixed(2); } return n > 0 ? n : NaN; }
+const _lpPctNum = (px, per) => { const p = (px / per - 1) * 100; return (p < 0 ? '−' : '+') + Math.abs(p).toFixed(Math.abs(p) < 10 && Math.abs(p) % 1 ? 1 : 0); };
+const _lpNum = s => { const n = parseFloat(String(s == null ? '' : s).trim().replace(/[−–—]/g, '-').replace(/[$,%\s+]/g, '')); return isFinite(n) ? n : null; };
+// type in either box: the other one and「期权需跌」follow at once; nothing is saved until you leave the box (or press Enter)
+window.lpOsLive = (el, which) => {
+  const td = el.closest('.lt-os-cell'); if (!td) return; const per = +td.dataset.per, mark = +td.dataset.mark, pi = td.querySelector('.lt-os'), qi = td.querySelector('.lt-pin'), w = td.querySelector('.lt-pwrap');
+  let px = null;
+  if (which === 'pct') { const p = _lpNum(el.value); if (p != null && p > -100 && p <= 500 && per > 0) { px = +(per * (1 + p / 100)).toFixed(2); pi.value = px.toFixed(2); } }
+  else { px = _lpParseStop(el.value, per); if (px > 0 && per > 0) qi.value = _lpPctNum(px, per); else px = null; }
+  el.classList.toggle('lt-bad', px == null && String(el.value).trim() !== ''); pi.classList.remove('lt-def'); td.classList.add('lt-dirty');
+  if (w) { w.classList.toggle('rk-t-danger', px != null && px < per); w.classList.toggle('rk-t-safe', px != null && px >= per); }
+  const dn = td.nextElementSibling; if (dn && dn.classList.contains('lt-osdn') && px > 0 && mark > 0) { const v = (1 - px / mark) * 100; dn.textContent = v <= 0 ? '已到止损价' : '−' + v.toFixed(1) + '%'; dn.className = 'lt-osdn ' + (v < 5 ? 'rk-t-danger' : v < 15 ? 'rk-t-alert' : 'rk-t-safe'); }
+};
+window.lpOsCommit = el => { const td = el.closest('.lt-os-cell'); if (!td || !td.classList.contains('lt-dirty')) return; const pi = td.querySelector('.lt-os');
+  if (el.classList.contains('lt-bad')) { showToast('看不懂: 价格填数字 (例如 26), 百分比填 -35 这样的数', 'error'); return; }
+  setTimeout(() => { if (td.contains(document.activeElement)) return; td.classList.remove('lt-dirty'); setLeapsOStop(td.dataset.k, pi.value, pi); }, 0); };   // moving between the two boxes doesn't save yet
 window.setLeapsOStop = (k, v, el) => { const x = computeRisk().c.pos.find(p => p.kind === 'leaps' && _ltKey(p) === k) || computeRisk().c.pos.find(p => _posKey(p) === k), px = _lpParseStop(v, _lpCostPS(x));
   if (Number.isNaN(px)) { showToast('看不懂: 填期权价格 (例如 26) 或亏损百分比 (例如 -35%)', 'error'); if (el) { const O = _leapsOptStop(x); el.value = O && O.src === 'user' ? O.px.toFixed(2) : ''; } return; } setLeapsLevel('ostop', k, px == null ? '' : px); };
 function _leapsOptStop(x) {
@@ -20497,7 +20517,10 @@ function renderPositionsPage() {
           const dnCls = dn == null ? 'rk-quiet' : dn <= 0 ? 'rk-t-danger' : dn < 5 ? 'rk-t-danger' : dn < 12 ? 'rk-t-alert' : 'rk-t-safe';
           return cell('tgt', T, '正股止盈位') + `<td class="${upCls}">${up == null ? (T ? '—' : '未设置') : up <= 0 ? '已到止盈位' : '+' + up.toFixed(1) + '%'}</td>`
             + (() => { const O = _leapsOptStop(r.x), m = r.x.mark, dnO = O && m > 0 ? (1 - O.px / m) * 100 : null, cls = dnO == null ? 'rk-quiet' : dnO <= 0 ? 'rk-t-danger' : dnO < 5 ? 'rk-t-danger' : dnO < 15 ? 'rk-t-alert' : 'rk-t-safe';
-                return `<td class="lt-cell" onclick="event.stopPropagation()"><input type="text" inputmode="text" class="gl-num lt-in lt-os${O && O.src === 'default' ? ' lt-def' : ''}" value="${O && O.src === 'user' ? O.px.toFixed(2) : ''}" placeholder="${O ? O.px.toFixed(2) : '价格 / -35%'}" title="填期权价格 (例如 26), 或亏损百分比 (例如 -35%), 会换算成价格" onchange="setLeapsOStop('${_ltKey(r.x)}', this.value, this)" onkeydown="if (event.key === 'Enter') this.blur()" aria-label="期权止损价"><span class="lt-pct ${O ? (O.px < _lpCostPS(r.x) ? 'rk-t-danger' : 'rk-t-safe') : ''}">${O ? _lpPctTxt(O.px, _lpCostPS(r.x)) : ''}</span>${O && O.src === 'default' ? '<span class="rk-quiet lt-src">默认</span>' : O ? `<button class="app-link lt-src" onclick="setLeapsLevel('ostop', '${_ltKey(r.x)}', '')" title="恢复默认">↺</button>` : ''}</td><td class="${cls}">${dnO == null ? '—' : dnO <= 0 ? '已到止损价' : '−' + dnO.toFixed(1) + '%'}</td>`; })()
+                return `<td class="lt-cell lt-os-cell" data-k="${esc(_ltKey(r.x))}" data-per="${_lpCostPS(r.x) || ''}" data-mark="${m || ''}" onclick="event.stopPropagation()"><div class="lt-os-row">
+                  <input type="text" inputmode="decimal" class="gl-num lt-in lt-os${O && O.src === 'default' ? ' lt-def' : ''}" value="${O ? O.px.toFixed(2) : ''}" placeholder="价格" title="期权止损价 (每股)" oninput="lpOsLive(this, 'px')" onchange="lpOsCommit(this)" onkeydown="if (event.key === 'Enter') this.blur()" aria-label="期权止损价">
+                  <span class="lt-pwrap ${O ? (O.px < _lpCostPS(r.x) ? 'rk-t-danger' : 'rk-t-safe') : ''}">(<input type="text" inputmode="decimal" class="lt-pin" value="${O && _lpCostPS(r.x) ? _lpPctNum(O.px, _lpCostPS(r.x)) : ''}" placeholder="−50" title="相对成本的百分比, 改了价格跟着变" oninput="lpOsLive(this, 'pct')" onchange="lpOsCommit(this)" onkeydown="if (event.key === 'Enter') this.blur()" aria-label="期权止损百分比">%)</span></div>
+                  ${O && O.src === 'default' ? '<span class="rk-quiet lt-src">默认</span>' : O ? `<button class="app-link lt-src" onclick="setLeapsLevel('ostop', '${_ltKey(r.x)}', '')" title="恢复默认">↺ 默认</button>` : ''}</td><td class="lt-osdn ${cls}">${dnO == null ? '—' : dnO <= 0 ? '已到止损价' : '−' + dnO.toFixed(1) + '%'}</td>`; })()
             + cell('stop', P, '正股止损位') + `<td class="${dnCls}">${dn == null ? (P ? '—' : '未设置') : dn <= 0 ? '已到止损位' : '−' + dn.toFixed(1) + '%'}</td><td>${_lvlBarHTML(S, P && P.px, T && T.px)}</td>`; })()}<td class="${r.toExit != null && r.toExit <= 0 ? 'rk-t-danger' : r.toExit != null && r.toExit < 90 ? 'rk-t-alert' : ''}">${r.toExit != null ? (r.toExit <= 0 ? '已到退出线' : r.toExit + ' 天') : '—'}</td><td>${r.s ? _num2(r.s.delta) : '—'}</td><td>${_days(r.dte)}</td>
           <td>${_pct(pn(r.val))}</td>
           <td>${_pct(pn(r.cost))}</td>
