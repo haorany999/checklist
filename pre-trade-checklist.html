@@ -3274,6 +3274,7 @@
   .sc-exp.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, var(--panel)); } .sc-exp.on span { color: var(--accent); } .sc-exp.on.mo::after { background: var(--accent); }
   .sc-exp:hover { border-color: color-mix(in srgb, var(--accent) 60%, var(--border)); }
   .sc-wait { padding: 18px 0; }
+  .sc-old { margin: 0 0 8px; padding: 7px 10px; border-radius: 8px; font-size: 12px; color: var(--text-dim); background: color-mix(in srgb, #E5793B 12%, transparent); border: 1px solid color-mix(in srgb, #E5793B 40%, transparent); }
   .sc-wrap { border: 1px solid var(--border); border-radius: 10px; }
   table.sc-t { width: 100%; border-collapse: separate; border-spacing: 0; font: 12.5px var(--mono); }
   table.sc-t th { position: sticky; top: 0; z-index: 2; background: var(--panel-2); font: 600 10.5px var(--sans); color: var(--text-faint); letter-spacing: .03em; padding: 7px 8px; border-bottom: 1px solid var(--border); white-space: nowrap; }
@@ -6607,7 +6608,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.17-v159';
+const APP_BUILD = '2026.10.17-v160';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
@@ -12576,7 +12577,7 @@ const QUOTES = [
   ['Plan your trade and trade your plan.', '计划你的交易, 交易你的计划.', '交易格言'] ];
 let __qIdx = null, __qTimer = null;
 // the App expects this Worker; an older one keeps running but misses these fixes
-const WORKER_NEED = 26, WORKER_FIXES = [[15, '每日快照只在收盘后记录 (盈亏归因的「今天」准确)'], [16, '早报 / 周报按触发时间识别 (星期写法不会再错)'], [17, '日线缓存修正 (J 等指标不会停在旧数据)'], [18, '借钱 / 追保提醒和早报里的借钱状态'], [19, '盘中报价时间和是否实时'], [20, '邮件里的 Equity % 按账户计算 (多个账户时不再被减半)'], [21, 'Roll 提醒: 提前行权风险、执行 roll 计划、到提醒价'], [22, '提醒邮件里「21 天」的写法和 App 一致'], [23, '止盈提醒按你设的止盈线']];
+const WORKER_NEED = 28, WORKER_FIXES = [[27, '早上 8 点合并成一封日报'], [28, '个股期权链: 一个到期日的全部行权价'], [15, '每日快照只在收盘后记录 (盈亏归因的「今天」准确)'], [16, '早报 / 周报按触发时间识别 (星期写法不会再错)'], [17, '日线缓存修正 (J 等指标不会停在旧数据)'], [18, '借钱 / 追保提醒和早报里的借钱状态'], [19, '盘中报价时间和是否实时'], [20, '邮件里的 Equity % 按账户计算 (多个账户时不再被减半)'], [21, 'Roll 提醒: 提前行权风险、执行 roll 计划、到提醒价'], [22, '提醒邮件里「21 天」的写法和 App 一致'], [23, '止盈提醒按你设的止盈线']];
 function _workerAgeHTML() {
   const p = getPortfolio(); if (p.source !== 'schwab' || !p.workerVersion || p.workerVersion >= WORKER_NEED) return '';
   const miss = WORKER_FIXES.filter(([v]) => v > p.workerVersion);
@@ -21351,7 +21352,7 @@ async function _scFetchExps(t, force) {
 async function _scFetchExp(t, e, force) {
   const st = _scSt(t), d = st.data[e]; if (d && (d.busy || (!force && d.C && Date.now() - d.at < 5 * 60000))) return;
   st.data[e] = { ...(d || {}), busy: true }; _scRedraw(t);
-  const get = async type => { const r = await _wfetch(`/chain?ticker=${encodeURIComponent(t)}&type=${type}&from=${e}&to=${e}&strikeCount=60`), b = await r.json().catch(() => null);
+  const get = async type => { const r = await _wfetch(`/chain?ticker=${encodeURIComponent(t)}&type=${type}&from=${e}&to=${e}&strikeCount=60&all=1`), b = await r.json().catch(() => null);
     if (!r.ok || !b || !Array.isArray(b.contracts)) throw new Error((b && b.message) || 'HTTP ' + r.status); return b; };
   try { const [C, P] = await Promise.all([get('C'), get('P')]);
     st.data[e] = { at: Date.now(), S: C.underlying ?? P.underlying, C: C.contracts.filter(o => o.expiry === e), P: P.contracts.filter(o => o.expiry === e) };
@@ -21432,7 +21433,8 @@ function _stkChainHTML(t) {
           ${!P && adj ? f('vs 调整后成本', `${o.strike >= adj ? '高于' : '低于'} ${usd(adj)}`, o.strike >= adj ? 'rk-t-safe' : 'rk-t-danger') : ''}</div>
         <div class="sc-acts">${acts.map(([k, l]) => `<button class="btn small${k === cK ? ' primary' : ''}" onclick="openScanChecklist('${esc(t)}', ${o.strike}, '${st.sel}', '${k}')">${l}</button>`).join('')}</div></div>`; } }
   const body = `<div class="rk-table-wrap sc-wrap"><table class="rk-table sc-t sc-${side === 'T' ? 'tee' : 'one'}${wide ? '' : ' narrow'}"><thead>${thead}</thead><tbody>${rowsHTML.join('') || `<tr><td colspan="${cols}" class="rk-quiet">没有合约</td></tr>`}</tbody></table></div>`;
-  return shell(chips + body + detail, ` <span class="rk-quiet sc-sub">${esc(t)} ${usd(S)} · ${esc(_md(st.sel))} · ${dte} 天${D.busy ? ' · 刷新中…' : ''}</span>`);
+  const wv = getPortfolio().workerVersion, old = wv && wv < 28 ? `<div class="sc-old">Worker v${wv} 只取现价附近 60 个行权价, 部署 v28 后显示这个到期日的全部行权价.</div>` : '';
+  return shell(chips + old + body + detail, ` <span class="rk-quiet sc-sub">${esc(t)} ${usd(S)} · ${esc(_md(st.sel))} · ${dte} 天${D.busy ? ' · 刷新中…' : ''}</span>`);
 }
 function renderStockPage() {
   const t = __stockT, recent = _stockRecent();
