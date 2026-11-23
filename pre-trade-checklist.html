@@ -3040,7 +3040,7 @@
   }
   @media (min-width: 1200px) {
     body.theme-pro #pnl-block { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 0 18px; align-items: start; }
-    body.theme-pro #pnl-block > .rk-block-title, body.theme-pro #pnl-block > .rk-note { grid-column: 1 / -1; }
+    body.theme-pro #pnl-block > .rk-block-title, body.theme-pro #pnl-block > .rk-note, body.theme-pro #pnl-block > .pnl-list { grid-column: 1 / -1; }
     body.theme-pro #pnl-block > .rk-figs { grid-template-columns: 1fr; }
     body.theme-pro #pnl-block > .wf-chart { max-height: 300px; width: 100%; }
   }
@@ -3158,7 +3158,7 @@
   @media (min-width: 1200px) {
     body.theme-pro .stock-page { column-count: 2; column-gap: 12px; }
     body.theme-pro .stock-page > * { break-inside: avoid; }
-    body.theme-pro .stock-page > .stk-search, body.theme-pro .stock-page > .stk-top, body.theme-pro .stock-page > .stk-chart-block, body.theme-pro .stock-page > .rk-notice { column-span: all; }
+    body.theme-pro .stock-page > .stk-search, body.theme-pro .stock-page > .stk-top, body.theme-pro .stock-page > .stk-chart-block, body.theme-pro .stock-page > .stk-chain, body.theme-pro .stock-page > .rk-notice { column-span: all; }
   }
   .tkx .rk-sw-stock { background: #8B95A3; } .tkx .rk-sw-leaps { background: #A371F7; } .tkx .rk-sw-csp { background: var(--accent); } .tkx .rk-sw-oth { background: #E2C27A; }
   @media (pointer: coarse) { .stk-recent .sc-chip { min-height: 32px; padding: 6px 10px; } .tkx-t { min-height: 32px; } .stk-acts .btn.small { min-height: 34px; } }
@@ -3263,6 +3263,76 @@
     .tv-body { padding-left: 2px; padding-right: 2px; }
     .tv-x .tv-sub { display: none; }
   }
+  /* v158 · 个股期权链 (T 型) */
+  .stk-chain .rk-title-row { flex-wrap: wrap; gap: 8px; }
+  .stk-chain .sc-sub { font-size: 12px; font-weight: 400; margin-left: 6px; font-family: var(--mono); }
+  .stk-chain .sc-ctl { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .sc-exps { display: flex; gap: 6px; overflow-x: auto; padding: 2px 0 8px; margin-bottom: 4px; scrollbar-width: thin; -webkit-overflow-scrolling: touch; scroll-snap-type: x proximity; }
+  .sc-exp { flex: 0 0 auto; scroll-snap-align: start; display: flex; flex-direction: column; align-items: center; gap: 1px; min-width: 62px; padding: 6px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--panel); color: var(--text); cursor: pointer; position: relative; }
+  .sc-exp b { font: 600 12.5px var(--mono); } .sc-exp span { font: 10.5px var(--mono); color: var(--text-faint); }
+  .sc-exp.mo::after { content: ''; position: absolute; top: 4px; right: 5px; width: 5px; height: 5px; border-radius: 50%; background: var(--text-faint); }
+  .sc-exp.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, var(--panel)); } .sc-exp.on span { color: var(--accent); } .sc-exp.on.mo::after { background: var(--accent); }
+  .sc-exp:hover { border-color: color-mix(in srgb, var(--accent) 60%, var(--border)); }
+  .sc-wait { padding: 18px 0; }
+  .sc-wrap { border: 1px solid var(--border); border-radius: 10px; }
+  table.sc-t { width: 100%; border-collapse: separate; border-spacing: 0; font: 12.5px var(--mono); }
+  table.sc-t th { position: sticky; top: 0; z-index: 2; background: var(--panel-2); font: 600 10.5px var(--sans); color: var(--text-faint); letter-spacing: .03em; padding: 7px 8px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  table.sc-t td { padding: 7px 8px; border-bottom: 1px solid color-mix(in srgb, var(--border) 45%, transparent); white-space: nowrap; }
+  table.sc-tee { table-layout: fixed; } table.sc-tee th, table.sc-tee td { text-align: center; }
+  table.sc-tee tr.sc-grp th { font-size: 11.5px; color: var(--text); padding: 6px 8px; }
+  table.sc-tee .sc-gc { background: color-mix(in srgb, var(--pass) 9%, var(--panel-2)); } table.sc-tee .sc-gp { background: color-mix(in srgb, var(--fail) 8%, var(--panel-2)); }
+  table.sc-t .sc-k { background: var(--panel-2); color: var(--text); font-weight: 700; width: 84px; border-left: 1px solid var(--border); border-right: 1px solid var(--border); }
+  table.sc-one .sc-k { border-left: 0; text-align: left; }
+  table.sc-tee td.sc-k b { font-size: 13px; }
+  td.sc-c { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  table.sc-t td.itm, table.sc-one tr.itm > td:not(.sc-k) { background: color-mix(in srgb, var(--accent) 7%, transparent); }
+  table.sc-t td.sc-c:hover, table.sc-one tr.gl-row:hover > td:not(.sc-k) { background: color-mix(in srgb, var(--accent) 14%, transparent); }
+  table.sc-t td.sc-c.on, table.sc-one tr.on > td { background: color-mix(in srgb, var(--accent) 26%, transparent) !important; color: var(--text); }
+  table.sc-one tr.on > td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
+  #stk-chain { scroll-margin-top: 72px; }
+  table.sc-t td.c-d { font-weight: 700; color: var(--text); } table.sc-t td.c-px { font-weight: 600; }
+  table.sc-t td.c-vol, table.sc-t td.c-oi, table.sc-t td.c-iv { color: var(--text-dim); }
+  tr.sc-px td, tr.sc-cost td { padding: 0 !important; height: 22px; line-height: 0; font-size: 0; border: 0 !important; position: relative; background: transparent !important; }
+  tr.sc-px td span, tr.sc-cost td span { position: absolute; z-index: 3; left: 50%; top: 50%; transform: translate(-50%, -50%); padding: 2px 10px; border-radius: 999px; font: 700 11px/16px var(--mono); white-space: nowrap; }
+  tr.sc-px td::before, tr.sc-cost td::before { content: ''; position: absolute; z-index: 2; left: 0; right: 0; top: 50%; }
+  tr.sc-px td::before { border-top: 2px solid var(--accent); } tr.sc-px td span { background: var(--accent); color: #fff; }
+  tr.sc-cost td { text-align: center; } tr.sc-cost td::before { border-top: 1px dashed var(--sl-stk); } tr.sc-cost td span { background: var(--panel); color: var(--sl-stk); border: 1px solid var(--sl-stk); }
+  table.sc-one tr.sc-px td span, table.sc-one tr.sc-cost td span { left: 8px; transform: translateY(-50%); }
+  .sc-mine { display: inline-block; margin-left: 4px; padding: 0 5px; border-radius: 999px; font: 700 10px var(--mono); color: #fff; vertical-align: 1px; line-height: 16px; }
+  .sc-mine.pc-sc { color: var(--text); }
+  .sc-detail { position: relative; margin-top: 10px; border: 1px solid var(--accent); border-radius: 12px; padding: 12px; background: color-mix(in srgb, var(--accent) 5%, var(--panel)); scroll-margin-bottom: 16px; }
+  .sc-dh { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; } .sc-dh b { font: 700 15px var(--mono); } .sc-dh { padding-right: 36px; } .sc-dh .sc-x { position: absolute; top: 6px; right: 6px; font-size: 22px; line-height: 1; min-width: 36px; min-height: 36px; text-decoration: none; }
+  .sc-dg { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 8px 14px; margin: 10px 0 12px; }
+  .sc-dg > div { display: flex; flex-direction: column; gap: 2px; } .sc-dg span { font-size: 10.5px; color: var(--text-faint); } .sc-dg b { font: 600 13.5px var(--mono); }
+  .sc-acts { display: flex; flex-wrap: wrap; gap: 8px; } .sc-acts .btn { min-height: 36px; }
+  .sc-chain-btn { margin-left: auto; } .st-tk { font: 700 13px var(--mono); }
+  @media (max-width: 739px) {
+    table.sc-t td, table.sc-t th { padding: 8px 4px; } table.sc-t .sc-k { width: 70px; }
+    table.sc-tee td { font-size: 13px; } table.sc-tee td.c-d { font-size: 12px; }
+    .stk-chain .sc-sub { display: block; margin: 2px 0 0; }
+    .sc-dg { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .stk-chain .sc-ctl { gap: 4px; } .stk-chain .sc-ctl .rk-preset { padding: 5px 7px; font-size: 12px; min-width: 0; }
+  }
+  /* v159 · gauge with margin room · 浮动盈亏 expandable figures */
+  .fz-margin { background: #E5793B; } .fz-over { background: var(--fail); }
+  .fuel-bar .fuel-fill.fz-margin { background: #E5793B; } .fuel-bar .fuel-fill.fz-over { background: var(--fail); }
+  .fuel-zones { display: flex; font-size: 10.5px; color: var(--text-faint); margin-bottom: 3px; } .fuel-zones span { text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .fuel-zones span + span { color: #E5793B; }
+  .fuel-zones em { font-style: normal; } .fuel-zones .fz-sm { display: none; }
+  @media (max-width: 640px) { .fuel-zones .fz-lg, .fuel-scale .fs-150 { display: none; } .fuel-zones .fz-sm { display: inline; } }
+  .fuel-own { position: absolute; top: -4px; bottom: -4px; width: 2px; margin-left: -1px; background: var(--text-dim); opacity: .8; }
+  .fuel-mark.over { background: var(--fail); box-shadow: 0 0 0 2px color-mix(in srgb, var(--fail) 35%, transparent); }
+  .fuel-scale .fs-own { color: var(--text-dim); font-weight: 700; }
+  .fuel-maint { margin-top: 6px; font-size: 12px; color: var(--text-dim); } .fuel-maint b { font-family: var(--mono); }
+  button.rk-fig.pnl-fx { text-align: left; font: inherit; color: inherit; cursor: pointer; border: 0; width: 100%; -webkit-tap-highlight-color: transparent; }
+  button.rk-fig.pnl-fx:hover { background: color-mix(in srgb, var(--accent) 7%, var(--panel-2)); }
+  button.rk-fig.pnl-fx.on { box-shadow: inset 0 0 0 1.5px var(--accent); background: color-mix(in srgb, var(--accent) 9%, var(--panel-2)); }
+  body.theme-pro button.rk-fig.pnl-fx:hover { background: color-mix(in srgb, var(--accent) 6%, transparent); }
+  body.theme-pro button.rk-fig.pnl-fx.on { box-shadow: inset -1px -1px 0 var(--border), inset 0 0 0 1.5px var(--accent); background: color-mix(in srgb, var(--accent) 8%, transparent); }
+  .pnl-car { font-style: normal; color: var(--accent); font-size: 10px; }
+  .pnl-list { margin: 12px 0 4px; } .pnl-list .tv-sw { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+  .pnl-share { display: inline-block; width: 46px; height: 6px; margin-right: 6px; border-radius: 3px; background: color-mix(in srgb, var(--border) 60%, transparent); vertical-align: 1px; overflow: hidden; }
+  .pnl-share i { display: block; height: 100%; } .pnl-share i.up { background: var(--pass); } .pnl-share i.dn { background: var(--fail); }
   /* v38 · one palette for sleeves (high contrast on dark and light), visible thin guides */
   /* v157 · one sleeve palette app-wide: 正股 copper (calm at night) · LEAPS purple · CSP blue · 其他期权 slate · 自由现金 = --pass green */
   :root { --sl-csp: #4C8DFF; --sl-stk: #C98A5E; --sl-leaps: #B98AF5; --sl-oth: #8B95A3; }
@@ -5768,7 +5838,7 @@ function _uxLoadingMarks() { document.querySelectorAll('#app .rk-quiet, #app .rk
 // wide tables scroll sideways as before, with the first column pinned (the rank and the contract when the first column is a rank)
 function _uxFreeze() {
   document.querySelectorAll('#app .rk-table-wrap > table.rk-table').forEach(t => {
-    if (!t.tHead || !t.tHead.rows[0] || t.closest('.dc-wrap')) return; const wrap = t.parentElement;
+    if (!t.tHead || !t.tHead.rows[0] || t.closest('.dc-wrap') || t.classList.contains('sc-tee')) return; const wrap = t.parentElement;
     if (wrap.scrollWidth - wrap.clientWidth <= 4) { t.classList.remove('ux-freeze', 'ux-freeze2'); return; }
     const h0 = (t.tHead.rows[0].cells[0] || {}).textContent || '', two = !h0.trim() || /^(#|排名|序号|名次)$/.test(h0.trim());
     t.classList.add('ux-freeze'); t.classList.toggle('ux-freeze2', two);
@@ -6537,7 +6607,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.17-v157';
+const APP_BUILD = '2026.10.17-v159';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
@@ -20206,22 +20276,31 @@ function _tkViewHTML(c) {
     <div class="tv-total"><span>合计</span><b>${_fmtUsd(total)}</b><span class="rk-quiet">${nav ? _pct(pn(total)) + ' NAV' : ''}</span></div>
   </section>`;
 }
+let __pnlOpen = null;
+window.pnlOpen = k => { __pnlOpen = __pnlOpen === k ? null : k; const el = document.getElementById('pnl-block'); if (el) { el.outerHTML = _pnlBlockHTML(); _fitChartText(); try { _uxFreeze(); } catch (e) {} } };
 window.setPnlMode = m => { __pnlMode = m; const el = document.getElementById('pnl-block'); if (el) { el.outerHTML = _pnlBlockHTML(); _fitChartText(); } };
 const PNL_SLEEVES = [['stock', '正股', x => x.kind === 'stock'], ['leaps', 'LEAPS', x => x.kind === 'leaps'], ['csp', 'CSP', x => x.kind === 'short_put'],
   ['sc', 'Short call', x => x.kind === 'short_call'], ['oth', '其他期权', x => x.kind === 'long_call' || x.kind === 'long_put']];
-const FUEL_ZONES = [[60, 'safe', '充足'], [75, 'watch', '可以加, 要挑'], [90, 'alert', '接近满仓'], [100, 'danger', '基本满了']];
-function _fuelZone(p) { return FUEL_ZONES.find(z => p <= z[0]) || FUEL_ZONES[3]; }
+// v159 · 0–100% = your own money (cash-secured), 100–170% = margin, at most 70% of NAV borrowed if every CSP were assigned today. 90% = the 10% free-cash floor.
+const FUEL_MAX = 170;
+const FUEL_ZONES = [[60, 'safe', '充足'], [90, 'watch', '可以加, 要挑'], [100, 'alert', '低于现金底线 · 不开新仓'], [150, 'margin', '在用 margin'], [170, 'danger', '接近 margin 上限']];
+function _fuelZone(p) { return FUEL_ZONES.find(z => p <= z[0]) || [Infinity, 'over', '超过 margin 上限']; }
 function _fuelHTML(r) {
   if (r.used == null) return '';
   const z = _fuelZone(r.used), za = _fuelZone(r.usedAfter), mv = r.spend > 0 && r.usedAfter > r.used;
+  const X = v => (Math.min(FUEL_MAX, Math.max(0, v)) / FUEL_MAX * 100).toFixed(2) + '%';
   let prev = 0;
-  const segs = FUEL_ZONES.map(([to, k]) => { const w = to - prev; prev = to; return `<i class="fz fz-${k}" style="width:${w}%"></i>`; }).join('');
+  const segs = FUEL_ZONES.map(([to, k]) => { const w = (to - prev) / FUEL_MAX * 100; prev = to; return `<i class="fz fz-${k}" style="width:${w.toFixed(2)}%"></i>`; }).join('');
+  const loan = Math.max(0, -r.free), loanPct = r.nav ? loan / r.nav * 100 : 0;
+  const mu = r.maint, muCls = mu == null ? '' : mu >= 60 ? 'rk-t-danger' : mu >= 40 ? 'rk-t-alert' : 'rk-t-safe';
   return `<div class="fuel" id="fuel">
-    <div class="fuel-head"><span>仓位已用 <b class="rk-t-${z[1]}">${r.used.toFixed(0)}%</b> · ${z[2]} · 自由现金 <b class="${r.free < 0 ? 'rk-t-danger' : ''}">${r.free < 0 ? '−' : ''}${_fmtUsd(Math.abs(r.free))}</b>${r.usedBp != null ? ` <span class="rk-quiet">· Schwab 保证金口径 ${r.usedBp.toFixed(0)}%</span>` : ''}</span>
+    <div class="fuel-head"><span>仓位已用 <b class="rk-t-${z[1]}">${r.used.toFixed(0)}%</b> · ${z[2]} · ${loan > 0.5 ? `全部被行权要借 <b class="rk-t-${loanPct > 70 ? 'danger' : 'alert'}">${_fmtUsd(loan)}</b> <span class="rk-quiet">(NAV 的 ${loanPct.toFixed(0)}% / 上限 70%)</span>` : `自由现金 <b>${_fmtUsd(r.free)}</b>`}</span>
       ${mv ? `<span>这笔之后 <b class="rk-t-${za[1]}">${r.usedAfter.toFixed(0)}%</b> · ${za[2]}</span>` : ''}</div>
-    <div class="fuel-bar">${segs}<span class="fuel-fill fz-${z[1]}" style="width:${r.used.toFixed(1)}%"></span>${mv ? `<span class="fuel-add" style="left:${r.used.toFixed(1)}%;width:${(r.usedAfter - r.used).toFixed(1)}%"></span>` : ''}
-      <span class="fuel-mark" style="left:${(mv ? r.usedAfter : r.used).toFixed(1)}%"></span></div>
-    <div class="fuel-scale"><span>0</span><span style="left:60%">60</span><span style="left:75%">75</span><span style="left:90%">90</span><span style="right:0">100%</span></div>
+    <div class="fuel-zones"><span style="width:${X(100)}">自己的钱</span><span style="width:${(70 / FUEL_MAX * 100).toFixed(2)}%">margin <em class="fz-lg">· 最多借 NAV 的 70%</em><em class="fz-sm">≤ 70%</em></span></div>
+    <div class="fuel-bar">${segs}<span class="fuel-fill fz-${z[1]}" style="width:${X(r.used)}"></span>${mv ? `<span class="fuel-add" style="left:${X(r.used)};width:calc(${X(r.usedAfter)} - ${X(r.used)})"></span>` : ''}
+      <span class="fuel-own" style="left:${X(100)}"></span><span class="fuel-mark${r.used > FUEL_MAX || (mv && r.usedAfter > FUEL_MAX) ? ' over' : ''}" style="left:${X(mv ? r.usedAfter : r.used)}"></span></div>
+    <div class="fuel-scale"><span>0</span><span style="left:${X(60)}">60</span><span style="left:${X(90)}">90</span><span class="fs-own" style="left:${X(100)}">100</span><span class="fs-150" style="left:${X(150)}">150</span><span style="right:0">170%</span></div>
+    ${mu != null ? `<div class="fuel-maint">Schwab 维持保证金占用 <b class="${muCls}">${mu.toFixed(0)}%</b> <span class="rk-quiet">· 100% = margin call</span></div>` : ''}
   </div>`;
 }
 /* ---------- v74 · Option Buying Power: what can still go into options without ever borrowing ---------- */
@@ -20236,11 +20315,12 @@ function _leapsRoom(spend = 0) {
   const cspN = c.pos.filter(x => x.kind === 'short_put').reduce((s, x) => s + (x.exposure || 0), 0);
   const limit = bp == null ? cash : Math.min(bp, cash), nav = c.nav || 0, free = cash - cspN;
   // v156 · cash-secured basis: every CSP is held at its full strike × 100 (Schwab's margin view only holds ~20%, which made this look half empty)
-  const clamp = v => Math.max(0, Math.min(100, v));
-  const used = nav ? clamp((nav - free) / nav * 100) : null;
-  const usedAfter = used != null ? clamp((nav - free + spend) / nav * 100) : null;
-  const usedBp = nav && bp != null ? clamp((nav - bp) / nav * 100) : null;
-  return { bp, cash, cashOnly: pf.cash || 0, swv: pf.swvxx || 0, cspN, nav, limit, used, usedAfter, usedBp, free, spend, c };
+  // v159 · no ceiling at 100%: past it the rest is borrowed (margin), shown up to 170% = 70% of NAV borrowed
+  const used = nav ? Math.max(0, (nav - free) / nav * 100) : null;
+  const usedAfter = used != null ? Math.max(0, (nav - free + spend) / nav * 100) : null;
+  const mreq = _balPick(c.bal, ['maintenanceRequirement']), eq = _balPick(c.bal, ['equity', 'liquidationValue']) ?? nav;
+  const maint = mreq != null && eq > 0 ? mreq / eq * 100 : null;
+  return { bp, cash, cashOnly: pf.cash || 0, swv: pf.swvxx || 0, cspN, nav, limit, used, usedAfter, maint, free, spend, c };
 }
 // Schwab: a negative margin balance is a loan; Equity % under 100 says the same from the other side
 // Equity % belongs to each account: only the accounts that report it, weighted by their value (never summed across accounts)
@@ -20400,7 +20480,17 @@ function _pnlBlockHTML() {
     items = top.map(([t, v]) => ({ label: t, v, key: 'tk:' + t })).concat(Math.abs(rest) > 0.5 ? [{ label: '其他', v: rest, key: 'tk-other' }] : []);
   } else items = PNL_SLEEVES.map(([k, l, f]) => ({ key: k, label: l, v: pos.filter(f).reduce((s, x) => s + pnl(x), 0), n: pos.filter(f).length })).filter(s => s.n);
   const worst = lose.slice().sort((a, b) => pnl(a) - pnl(b))[0], best = win.slice().sort((a, b) => pnl(b) - pnl(a))[0];
-  const fig = (label, val, sub, cls) => `<div class="rk-fig"><span class="rk-fig-val ${cls}">${val}</span><span class="rk-fig-label">${label}</span>${sub ? `<span class="rk-fig-sub">${sub}</span>` : ''}</div>`;
+  const fig = (label, val, sub, cls, k) => k ? `<button class="rk-fig pnl-fx${__pnlOpen === k ? ' on' : ''}" onclick="pnlOpen('${k}')" aria-expanded="${__pnlOpen === k}"><span class="rk-fig-val ${cls}">${val}</span><span class="rk-fig-label">${label} <i class="pnl-car">${__pnlOpen === k ? '▾' : '▸'}</i></span>${sub ? `<span class="rk-fig-sub">${sub}</span>` : ''}</button>`
+    : `<div class="rk-fig"><span class="rk-fig-val ${cls}">${val}</span><span class="rk-fig-label">${label}</span>${sub ? `<span class="rk-fig-sub">${sub}</span>` : ''}</div>`;
+  const list = (() => { if (!__pnlOpen) return ''; const L = (__pnlOpen === 'win' ? win : lose).slice().sort((a, b) => Math.abs(pnl(b)) - Math.abs(pnl(a))), tot = L.reduce((s, x) => s + pnl(x), 0);
+    if (!L.length) return '';
+    const base = x => _isShortPos(x) ? (x.avg || 0) * 100 * Math.abs(Number(x.qty) || 0) : (x.cost || 0);
+    const slv = x => (TV_SLV.find(([, , f]) => f(x)) || [0, 'pc-sc'])[1];
+    return `<div class="rk-table-wrap pnl-list"><table class="rk-table"><thead><tr><th>${__pnlOpen === 'win' ? '盈利' : '亏损'}仓位 · ${L.length}</th><th>类型</th><th>浮盈</th><th>浮盈 %</th><th>占${__pnlOpen === 'win' ? '盈利' : '亏损'}合计</th><th>市值</th></tr></thead><tbody>
+      ${L.map(x => { const v = pnl(x), b0 = base(x), go = x.kind === 'stock' ? `tvGoStock('${esc(x.ticker)}')` : `tvGo(${pos.indexOf(x)})`;
+        return `<tr class="gl-row" role="button" tabindex="0" onclick="${go}" onkeydown="if(event.key==='Enter')${go}"><td><b>${x.kind === 'stock' ? `${esc(x.ticker)} <span class="rk-quiet">${Math.round(Number(x.qty) || 0)} 股</span>` : _posLabelHTML(x)}</b></td>
+          <td><i class="tv-sw ${slv(x)}"></i>${esc(x.kind === 'stock' ? '正股' : _KIND_LABEL[x.kind] || x.kind)}</td><td class="${_thCls(v)}">${_fmtSigned(v)}</td><td class="${_thCls(v)}">${b0 ? _sgP(v / b0 * 100) : '—'}</td>
+          <td><span class="pnl-share"><i style="width:${tot ? Math.abs(v / tot * 100).toFixed(1) : 0}%" class="${v >= 0 ? 'up' : 'dn'}"></i></span>${tot ? Math.abs(v / tot * 100).toFixed(0) + '%' : '—'}</td><td>${_fmtUsd(Math.abs(x.marketValue || 0))}</td></tr>`; }).join('')}</tbody></table></div>`; })();
   return `
     <section class="rk-block" id="pnl-block">
       <h3 class="rk-block-title rk-title-row"><span>浮动盈亏</span><span class="rk-presets"><button class="rk-preset${__pnlMode === 'sleeve' ? ' active' : ''}" onclick="setPnlMode('sleeve')">按策略</button><button class="rk-preset${__pnlMode === 'ticker' ? ' active' : ''}" onclick="setPnlMode('ticker')">按标的</button></span></h3>
@@ -20409,10 +20499,11 @@ function _pnlBlockHTML() {
           return fig('NAV', nav ? _fmtUsd(nav) : '—', chg != null ? `较上一日 <span class="${_thCls(chg)}">${_fmtSigned(chg)} (${chg >= 0 ? '+' : '−'}${Math.abs(chg / prev[1] * 100).toFixed(2)}%)</span>` : '较上一日 —', 'rk-t-acc'); })()}
         ${(() => { const c0 = total >= 0 ? 'rk-t-safe' : 'rk-t-danger', p = v => `<span class="${c0}">${v >= 0 ? '+' : '−'}${Math.abs(v).toFixed(1)}%</span>`;
           return fig('浮动盈亏', _fmtSigned(total), `${nav ? `${p(total / nav * 100)} NAV` : ''}${cost ? ` · 成本的 ${p(total / cost * 100)}` : ''}`, c0); })()}
-        ${fig('盈利的仓位', _fmtSigned(win.reduce((s, x) => s + pnl(x), 0)), `${win.length} 个${best ? ` · 最多 ${esc(_posLabel(best).split(' ').slice(0, 2).join(' '))} <span class="rk-t-safe">${_fmtSigned(pnl(best))}</span>` : ''}`, 'rk-t-safe')}
-        ${fig('亏损的仓位', _fmtSigned(lose.reduce((s, x) => s + pnl(x), 0)), `${lose.length} 个${worst ? ` · 最多 ${esc(_posLabel(worst).split(' ').slice(0, 2).join(' '))} <span class="rk-t-danger">${_fmtSigned(pnl(worst))}</span>` : ''}`, 'rk-t-alert')}
+        ${fig('盈利的仓位', _fmtSigned(win.reduce((s, x) => s + pnl(x), 0)), `${win.length} 个${best ? ` · 最多 ${esc(_posLabel(best).split(' ').slice(0, 2).join(' '))} <span class="rk-t-safe">${_fmtSigned(pnl(best))}</span>` : ''}`, 'rk-t-safe', win.length ? 'win' : null)}
+        ${fig('亏损的仓位', _fmtSigned(lose.reduce((s, x) => s + pnl(x), 0)), `${lose.length} 个${worst ? ` · 最多 ${esc(_posLabel(worst).split(' ').slice(0, 2).join(' '))} <span class="rk-t-danger">${_fmtSigned(pnl(worst))}</span>` : ''}`, 'rk-t-alert', lose.length ? 'lose' : null)}
       </div>
       ${items.length ? _pnlWaterfallSVG(items, total) : ''}
+      ${list}
       
     </section>`;
 }
@@ -20657,7 +20748,7 @@ function renderPositionsPage() {
       <h3 class="rk-block-title" id="sec-stock">正股 · ${stk.length} 只</h3>
       <div class="rk-table-wrap"><table class="rk-table">
         <thead><tr><th>标的</th><th>股数</th><th>现价</th><th>调整后成本 ${_qBtn('adj_cost', 'long')}</th><th>真实浮盈 ${_qBtn('real_pnl', 'short')}</th><th>账面浮盈</th><th>Schwab 均价</th><th>每股降低</th><th>降低金额</th><th>CC 覆盖</th><th>% NAV</th><th>市值</th><th>持有</th></tr></thead>
-        <tbody>${stRows.map(r => `<tr data-st="${esc(r.x.ticker)}"><td><b>${esc(r.x.ticker)}</b></td><td>${Math.round(r.q)}</td><td>${r.px != null ? r.px.toFixed(2) : '—'}</td><td class="rk-t-acc">${r.adj != null ? `<button class="app-link wh-open" onclick="showWheelDetail('${esc(r.x.ticker)}')">${r.adj.toFixed(2)} ▸</button>` : '—'}</td>
+        <tbody>${stRows.map(r => `<tr data-st="${esc(r.x.ticker)}"><td><button class="tkx-t st-tk" onclick="showStock('${esc(r.x.ticker)}')">${esc(r.x.ticker)} ›</button></td><td>${Math.round(r.q)}</td><td>${r.px != null ? r.px.toFixed(2) : '—'}</td><td class="rk-t-acc">${r.adj != null ? `<button class="app-link wh-open" onclick="showWheelDetail('${esc(r.x.ticker)}')">${r.adj.toFixed(2)} ▸</button>` : '—'}</td>
           <td class="${r.real == null ? '' : _thCls(r.real)}">${r.real != null ? `${sgn(r.real)} ${_sgP(r.realPct)}` : '—'}</td>
           <td class="${_thCls(r.pnl)}">${sgn(r.pnl)}${r.pnl != null && r.x.avg > 0 && r.q ? ` ${_sgP(r.pnl / (r.x.avg * r.q) * 100)}` : ''}</td><td>${r.x.avg != null ? r.x.avg.toFixed(2) : '—'}</td>
           <td>${r.down == null ? '—' : Math.abs(r.down) < 0.005 ? '<span class="rk-quiet">0</span>' : `<span class="${r.down >= 0 ? 'rk-t-safe' : 'rk-t-alert'}">${r.down >= 0 ? '−' : '+'}${Math.abs(r.down).toFixed(2)}</span> <span class="rk-quiet">${r.buy ? (Math.abs(r.down) / r.buy * 100).toFixed(1) + '%' : ''}</span>`}</td>
@@ -21004,8 +21095,8 @@ function renderScanPage() {
       <div class="sc-chips"><span class="sc-chip ok">近 3 日 J 最低 ${x.J.toFixed(0)} (≤ 15)</span><span class="sc-chip ok">收盘未创新低</span><span class="sc-chip">RSI ${x.rsi.toFixed(0)}</span>${x.d200 != null ? `<span class="sc-chip ${Math.abs(x.d200) <= 5 ? 'ok' : ''}">距 200MA ${x.d200 >= 0 ? '+' : ''}${x.d200.toFixed(1)}%</span>` : ''}${x.d250 != null ? `<span class="sc-chip ${Math.abs(x.d250) <= 5 ? 'ok' : ''}">距 250MA ${x.d250 >= 0 ? '+' : ''}${x.d250.toFixed(1)}%</span>` : ''}<span class="sc-chip">52 周位置 ${(x.pos52 * 100).toFixed(0)}%</span>${b.spread != null && b.spread > 15 ? `<span class="sc-chip no">价差 ${b.spread.toFixed(0)}%</span>` : ''}</div>
       ${x.alts.length ? `<div class="sc-alts">其他: ${x.alts.map(o => `<button class="app-link" onclick="openScanChecklist('${esc(x.t)}', ${o.K}, '${esc(o.exp)}', 'leaps')">${o.K}C ${esc(_md(o.exp))}</button> <span class="rk-quiet">Δ${o.d} · ${o.carry.toFixed(1)}%/年 · OI ${(o.oi || 0).toLocaleString()}</span>`).join(' · ')}</div>` : ''}</div>`; }).join('') : '<div class="rk-quiet">目前没有 KDJ J ≤ 15 且有合适合约的标的.</div>';
   else body = r.rows.length ? r.rows.map(x => `
-    <div class="sc-row${x.ready ? ' sc-ready' : ''}"><div class="sc-top"><b class="sc-t">${esc(tab === 'pmcc' ? x.label : x.t)}</b>${tab === 'cc' ? `<span class="rk-quiet">${x.shares} 股 · 调整后成本 ${x.cost != null ? x.cost.toFixed(2) : '—'}</span>` : `<span class="rk-quiet">安全线 ${x.floor.toFixed(2)} (行权价 + 成本)</span>`}
-      <span class="sc-state ${x.ready ? 'ok' : ''}">${x.ready ? '可以做 ' + (tab === 'pmcc' ? 'PMCC' : 'CC') : '等待'}</span></div>
+    <div class="sc-row${x.ready ? ' sc-ready' : ''}"><div class="sc-top"><button class="sc-t tkx-t" onclick="showStockChain('${esc(x.t)}', 'C')">${esc(tab === 'pmcc' ? x.label : x.t)}</button>${tab === 'cc' ? `<span class="rk-quiet">${x.shares} 股 · 调整后成本 ${x.cost != null ? x.cost.toFixed(2) : '—'}</span>` : `<span class="rk-quiet">安全线 ${x.floor.toFixed(2)} (行权价 + 成本)</span>`}
+      <span class="sc-state ${x.ready ? 'ok' : ''}">${x.ready ? '可以做 ' + (tab === 'pmcc' ? 'PMCC' : 'CC') : '等待'}</span><button class="btn small sc-chain-btn" onclick="showStockChain('${esc(x.t)}', 'C')">期权链 ›</button></div>
       <div class="sc-chips">${x.checks.map(ch => `<span class="sc-chip ${ch.ok ? 'ok' : 'no'}">${esc(ch.k)} · ${esc(ch.v)}</span>`).join('')}${x.wall ? `<span class="sc-chip">Call Wall ${x.wall}</span>` : ''}</div>
       ${x.ready ? (x.cands.length ? `<div class="rk-table-wrap"><table class="rk-table"><thead><tr><th>合约</th><th>Δ</th><th>DTE</th><th>权利金</th><th>年化</th><th>每月约</th><th>被 call 走 ${_qBtn('cc_called', 'short')}</th><th>OI</th><th></th></tr></thead><tbody>${x.cands.map(o => `<tr><td><b>${o.K}C ${esc(_md(o.exp))}</b></td><td>${o.d}</td><td>${o.dte}</td><td>${o.mid.toFixed(2)}</td><td class="${o.ann >= 30 ? 'rk-t-safe' : ''}">${o.ann.toFixed(0)}%</td><td>${o.perMo != null ? _fmtUsd(o.perMo) : '—'}</td>
         <td>${o.vsCost != null ? `<span class="${o.calledPnl >= 0 ? 'rk-t-safe' : 'rk-t-danger'}">${o.calledPnl >= 0 ? '赚' : '亏'} ${_fmtUsd(Math.abs(o.calledPnl))}</span> <span class="${o.vsCost >= 0 ? 'rk-t-safe' : 'rk-t-danger'}">比成本 ${o.vsCost >= 0 ? '+' : '−'}${Math.abs(o.vsCost).toFixed(1)}%</span>` : '—'}</td><td class="${(o.oi || 0) < 100 ? 'rk-t-alert' : ''}">${o.oi != null ? o.oi.toLocaleString() : '—'}</td>
@@ -21218,6 +21309,131 @@ function _stockOscSVG(t) {
     <div class="rk-quiet stk-kdj-asof">KDJ / RSI / MACD 截至 ${(() => { const b = all[endI - 1], d = b ? `${+b.d.slice(5, 7)}/${+b.d.slice(8)}` : ''; return p.live && endI === n0 ? `${d} 盘中 · ${_quoteStamp(p)}` : `${d} 收盘`; })()}</div>
     ${_jAuditHTML(t, p)}`;
 }
+/* ---------- v158 · 个股期权链: moomoo-style T layout (Call | 行权价 | Put), expiry tabs with DTE, price line, ITM shading, tap a contract for details ---------- */
+const __sc = {}; let __scFocus = false;
+const _scSt = t => __sc[t] || (__sc[t] = { side: null, n: 10, data: {} });
+const _scBucket = () => { const w = (document.getElementById('app') || document.body).clientWidth || innerWidth; return w >= 1100 ? 2 : w >= 740 ? 1 : 0; };
+let __scB = null; addEventListener('resize', () => { const b = _scBucket(); if (b !== __scB) { __scB = b; if (state._view === 'stock' && __stockT) _scRedraw(__stockT); } }, { passive: true });
+const _scMonthly = e => { const d = new Date(e + 'T12:00:00'); return d.getDay() === 5 && d.getDate() >= 15 && d.getDate() <= 21; };
+function _scRedraw(t) {
+  if (state._view !== 'stock' || __stockT !== t) return;
+  const el = document.getElementById('stk-chain'); if (!el) return;
+  const wrap = el.querySelector('.rk-table-wrap'), sx = wrap ? wrap.scrollLeft : 0;
+  el.outerHTML = _stkChainHTML(t);
+  const w2 = document.querySelector('#stk-chain .rk-table-wrap'); if (w2) w2.scrollLeft = sx;
+  try { _uxFreeze(); } catch (e) {}
+  _scChipIntoView(); _scFocusNow();
+}
+function _scChipIntoView() { const box = document.querySelector('#stk-chain .sc-exps'), on = box && box.querySelector('.sc-exp.on'); if (!on) return;
+  const l = on.offsetLeft - box.offsetLeft, r = l + on.offsetWidth; if (l < box.scrollLeft || r > box.scrollLeft + box.clientWidth) box.scrollLeft = Math.max(0, l - (box.clientWidth - on.offsetWidth) / 2); }
+let __scFocusUntil = 0;
+['wheel', 'touchstart', 'keydown'].forEach(ev => addEventListener(ev, () => { __scFocusUntil = 0; }, { passive: true }));
+function _scFocusNow() {   // came from 机会扫描: land on the chain once its table is there, and stay there while the page settles
+  const el = document.getElementById('stk-chain'); if (!el) return;
+  if (__scFocus && el.querySelector('table')) { __scFocus = false; __scFocusUntil = Date.now() + 1800; }
+  if (!__scFocus && Date.now() > __scFocusUntil) return;
+  const go = () => { const e = document.getElementById('stk-chain'); if (!e || !(__scFocus || Date.now() <= __scFocusUntil)) return;
+    const hd = document.querySelector('.header-sticky'), off = (hd ? hd.getBoundingClientRect().height : 0) + 8;
+    window.scrollTo(0, Math.max(0, e.getBoundingClientRect().top + window.scrollY - off)); };
+  requestAnimationFrame(go); setTimeout(go, 350); setTimeout(go, 900);
+}
+async function _scFetchExps(t, force) {
+  const st = _scSt(t); if (st.busy || (!force && st.exps && Date.now() - st.at < 30 * 60000)) return;
+  st.busy = true; const today = _todayISO();
+  try { const r = await _wfetch(`/chain?ticker=${encodeURIComponent(t)}&type=C&from=${today}&to=${_addDays(today, 900)}&strikeCount=4`), b = await r.json().catch(() => null);
+    if (r.ok && b && Array.isArray(b.contracts)) { const m = {}; b.contracts.forEach(o => { if (o.expiry) m[o.expiry] = o.dte; }); st.exps = Object.keys(m).sort().map(e => ({ e, dte: m[e] })); st.err = null; }
+    else st.err = (b && b.message) || 'HTTP ' + r.status;
+  } catch (e) { st.err = '网络错误'; }
+  st.at = Date.now(); st.busy = false;
+  if (st.exps && st.exps.length && !(st.sel && st.exps.some(x => x.e === st.sel))) st.sel = (st.exps.find(x => x.dte >= 21) || st.exps[st.exps.length - 1]).e;
+  _scRedraw(t); if (st.sel) _scFetchExp(t, st.sel);
+}
+async function _scFetchExp(t, e, force) {
+  const st = _scSt(t), d = st.data[e]; if (d && (d.busy || (!force && d.C && Date.now() - d.at < 5 * 60000))) return;
+  st.data[e] = { ...(d || {}), busy: true }; _scRedraw(t);
+  const get = async type => { const r = await _wfetch(`/chain?ticker=${encodeURIComponent(t)}&type=${type}&from=${e}&to=${e}&strikeCount=60`), b = await r.json().catch(() => null);
+    if (!r.ok || !b || !Array.isArray(b.contracts)) throw new Error((b && b.message) || 'HTTP ' + r.status); return b; };
+  try { const [C, P] = await Promise.all([get('C'), get('P')]);
+    st.data[e] = { at: Date.now(), S: C.underlying ?? P.underlying, C: C.contracts.filter(o => o.expiry === e), P: P.contracts.filter(o => o.expiry === e) };
+  } catch (err) { st.data[e] = { at: Date.now(), err: String(err.message || err) }; }
+  _scRedraw(t);
+}
+window.scExp = (t, e) => { const st = _scSt(t); st.sel = e; st.pick = null; _scRedraw(t); _scFetchExp(t, e); };
+window.scSide = (t, v) => { _scSt(t).side = v; _scRedraw(t); };
+window.scN = (t, v) => { _scSt(t).n = v; _scRedraw(t); };
+window.scPick = (t, type, K) => { const st = _scSt(t); st.pick = st.pick && st.pick.type === type && st.pick.K === K ? null : { type, K }; _scRedraw(t);
+  if (st.pick) setTimeout(() => { const d = document.getElementById('sc-detail'); if (d && d.getBoundingClientRect().bottom > innerHeight) d.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 30); };
+window.scRefresh = t => { const st = _scSt(t); _scFetchExps(t, true); if (st.sel) _scFetchExp(t, st.sel, true); };
+window.showStockChain = (t, side) => { t = _normTicker(t); const st = _scSt(t); if (side) st.side = side; __scFocus = true; showStock(t); };
+function _stkChainHTML(t) {
+  if (!loadSchwabCfg() || !t) return '';
+  const st = _scSt(t); if (!st.exps && !st.busy && !st.err) setTimeout(() => _scFetchExps(t), 0);
+  const wide = _scBucket() > 0, side = st.side || 'T';
+  const ctl = `<span class="rk-presets">${[['C', 'Call'], ['T', 'T 型'], ['P', 'Put']].map(([k, l]) => `<button class="rk-preset${side === k ? ' active' : ''}" onclick="scSide('${esc(t)}', '${k}')">${l}</button>`).join('')}</span>
+    <span class="rk-presets">${[[6, '±6'], [10, '±10'], [20, '±20'], [0, '全部']].map(([k, l]) => `<button class="rk-preset${st.n === k ? ' active' : ''}" onclick="scN('${esc(t)}', ${k})">${l}</button>`).join('')}</span>
+    <button class="rk-preset" onclick="scRefresh('${esc(t)}')" aria-label="刷新期权链">↻</button>`;
+  const shell = (inner, sub = '') => `<section class="rk-block stk-chain" id="stk-chain"><h3 class="rk-block-title rk-title-row"><span>期权链${sub}</span><span class="sc-ctl">${ctl}</span></h3>${inner}</section>`;
+  if (st.err && !st.exps) return shell(`<div class="rk-t-alert">读取期权链失败: ${esc(st.err)} · <button class="app-link" onclick="scRefresh('${esc(t)}')">重试</button></div>`);
+  if (!st.exps) return shell(`<div class="rk-quiet">读取 ${esc(t)} 到期日…</div>`);
+  const chips = `<div class="sc-exps">${st.exps.map(x => `<button class="sc-exp${x.e === st.sel ? ' on' : ''}${_scMonthly(x.e) ? ' mo' : ''}" onclick="scExp('${esc(t)}', '${x.e}')"><b>${esc(_md(x.e))}</b><span>${x.dte} 天</span></button>`).join('')}</div>`;
+  const D = st.data[st.sel];
+  if (!D || (D.busy && !D.C)) return shell(chips + `<div class="rk-quiet sc-wait">读取 ${esc(_md(st.sel))} 期权链…</div>`);
+  if (D.err) return shell(chips + `<div class="rk-t-alert">读取失败: ${esc(D.err)} · <button class="app-link" onclick="scRefresh('${esc(t)}')">重试</button></div>`);
+  const pxNow = __px[t] && __px[t].live ? __px[t].live : null, S = (pxNow && pxNow.last) || D.S, ex = st.exps.find(x => x.e === st.sel), dte = ex ? ex.dte : (D.C[0] || D.P[0] || {}).dte;
+  const byK = {}; D.C.forEach(o => { (byK[o.strike] = byK[o.strike] || {}).C = o; }); D.P.forEach(o => { (byK[o.strike] = byK[o.strike] || {}).P = o; });
+  let Ks = Object.keys(byK).map(Number).sort((a, b) => a - b);
+  if (st.n && S) { const i = Ks.findIndex(k => k >= S), at = i < 0 ? Ks.length : i; Ks = Ks.slice(Math.max(0, at - st.n), at + st.n); }
+  // your positions on this expiry, and your adjusted cost for CC
+  let pos = []; try { pos = computeRisk().c.pos.filter(x => x.ticker === t && x.kind !== 'stock' && String(x.expiry).slice(0, 10) === st.sel); } catch (e) {}
+  const mine = (type, K) => pos.filter(x => Math.abs((x.strike || 0) - K) < 0.005 && (type === 'P') === (x.kind === 'short_put' || x.kind === 'long_put'));
+  const badge = (type, K) => mine(type, K).map(x => `<span class="sc-mine ${(TV_SLV.find(([, , f]) => f(x)) || [0, 'pc-sc'])[1]}" title="${esc(_posLabel(x))}">${_isShortPos(x) ? '−' : '+'}${Math.abs(Number(x.qty) || 0)}</span>`).join('');
+  let adj = null; try { const w = computeWheel(), r = w && w.rows.find(x => x.T === t); adj = r && r.adj != null ? r.adj : null; } catch (e) {}
+  const usd = v => v == null || !isFinite(v) ? '—' : v.toFixed(2), dI = o => o ? _dInt(o.delta) : '—', iv = o => o && o.iv != null ? (o.iv > 3 ? o.iv : o.iv * 100).toFixed(0) + '%' : '—';
+  const k0 = o => o ? (o.oi || 0).toLocaleString() : '—', v0 = o => o ? (o.vol || 0).toLocaleString() : '—', mid = o => o ? (o.mark != null ? o.mark : o.bid != null && o.ask != null ? (o.bid + o.ask) / 2 : null) : null;
+  const itm = (type, K) => S && (type === 'C' ? K < S : K > S);
+  const on = (type, K) => st.pick && st.pick.type === type && Math.abs(st.pick.K - K) < 0.005;
+  const cell = (type, K, inner, cls = '') => `<td class="sc-c ${type === 'C' ? 'sc-call' : 'sc-put'}${itm(type, K) ? ' itm' : ''}${on(type, K) ? ' on' : ''} ${cls}" role="button" tabindex="0" onclick="scPick('${esc(t)}', '${type}', ${K})" onkeydown="if(event.key==='Enter')scPick('${esc(t)}', '${type}', ${K})">${inner}</td>`;
+  let thead, rowsHTML = [], cols;
+  const pxRow = n => `<tr class="sc-px"><td colspan="${n}"><span>现价 ${usd(S)}</span></td></tr>`, costRow = n => `<tr class="sc-cost"><td colspan="${n}"><span>调整后成本 ${usd(adj)}</span></td></tr>`;
+  const markers = (n, prev, K) => (S && prev < S && K >= S ? pxRow(n) : '') + (adj && side !== 'P' && prev < adj && K >= adj ? costRow(n) : '');
+  if (side === 'T') {
+    // per side: wide → Vol OI IV Δ Bid Ask; narrow → Δ 价格
+    const ALL = [['成交量', o => v0(o), 'c-vol'], ['OI', k0, 'c-oi'], ['IV', iv, 'c-iv'], ['Δ', dI, 'c-d'], ['Bid', o => usd(o && o.bid), 'c-ba'], ['Ask', o => usd(o && o.ask), 'c-ba']];
+    const L = _scBucket() === 2 ? ALL : _scBucket() === 1 ? ALL.slice(2) : [['Δ', dI, 'c-d'], ['价格', o => usd(mid(o)), 'c-px']];
+    const R = [...L].reverse(); { const a = R.findIndex(c => c[0] === 'Ask'), b = R.findIndex(c => c[0] === 'Bid'); if (a >= 0 && b >= 0) [R[a], R[b]] = [R[b], R[a]]; }   // put side reads Bid → Ask
+    cols = L.length * 2 + 1;
+    thead = `<tr class="sc-grp"><th colspan="${L.length}" class="sc-gc">Call</th><th class="sc-k">${dte} 天</th><th colspan="${L.length}" class="sc-gp">Put</th></tr><tr>${L.map(c => `<th class="${c[2]}">${c[0]}</th>`).join('')}<th class="sc-k">行权价</th>${R.map(c => `<th class="${c[2]}">${c[0]}</th>`).join('')}</tr>`;
+    let prev = -Infinity;
+    Ks.forEach(K => { const b = byK[K]; rowsHTML.push(markers(cols, prev, K)); prev = K;
+      rowsHTML.push(`<tr>${L.map(c => cell('C', K, c[1](b.C), c[2])).join('')}<td class="sc-k"><b>${K}</b>${badge('C', K)}${badge('P', K)}</td>${R.map(c => cell('P', K, c[1](b.P), c[2])).join('')}</tr>`); });
+    if (S && prev < S) rowsHTML.push(pxRow(cols));
+  } else {
+    const type = side, ann = o => { const m = mid(o); return m && dte > 0 ? m / (type === 'P' ? o.strike : S) * 365 / dte * 100 : null; };
+    const be = o => { const m = mid(o); return m == null ? null : type === 'P' ? o.strike - m : o.strike + m; };
+    const C = [['距现价', (o, K) => S ? `${K >= S ? '+' : '−'}${Math.abs((K / S - 1) * 100).toFixed(1)}%` : '—'], ['Bid', o => usd(o.bid)], ['Ask', o => usd(o.ask)], ['Mid', o => usd(mid(o))], ['每张', o => mid(o) != null ? _fmtUsd(mid(o) * 100) : '—'],
+      ['Δ', o => dI(o)], ['IV', iv], ['Θ / 天', o => o.theta != null ? usd(o.theta * 100) : '—'], ['OI', o => `<span class="${(o.oi || 0) < 100 ? 'rk-t-alert' : ''}">${k0(o)}</span>`], ['成交量', v0],
+      ['卖出年化', o => { const a = ann(o); return a == null ? '—' : `<span class="${a >= 30 ? 'rk-t-safe' : a < 10 ? 'rk-quiet' : ''}">${a.toFixed(0)}%</span>`; }], ['盈亏平衡', o => usd(be(o))]];
+    cols = C.length + 1;
+    thead = `<tr><th class="sc-k">行权价</th>${C.map(c => `<th>${c[0]}</th>`).join('')}</tr>`;
+    let prev = -Infinity;
+    Ks.forEach(K => { const o = (byK[K] || {})[type]; if (!o) return; rowsHTML.push(markers(cols, prev, K)); prev = K;
+      rowsHTML.push(`<tr class="gl-row sc-${type === 'C' ? 'call' : 'put'}${itm(type, K) ? ' itm' : ''}${on(type, K) ? ' on' : ''}" role="button" tabindex="0" onclick="scPick('${esc(t)}', '${type}', ${K})"><td class="sc-k"><b>${K}</b>${badge(type, K)}</td>${C.map(c => `<td>${c[1](o, K)}</td>`).join('')}</tr>`); });
+    if (S && prev < S) rowsHTML.push(pxRow(cols));
+  }
+  // detail of the tapped contract
+  let detail = '';
+  if (st.pick) { const o = (byK[st.pick.K] || {})[st.pick.type];
+    if (o) { const m = mid(o), P = st.pick.type === 'P', a = m && dte > 0 ? m / (P ? o.strike : S) * 365 / dte * 100 : null, cK = P ? 'csp' : 'cc';
+      const f = (l, v, cls = '') => `<div><span>${l}</span><b class="${cls}">${v}</b></div>`;
+      const acts = P ? [['csp', '开 CSP checklist']] : [['cc', '开 CC checklist'], ...(dte >= 300 ? [['leaps', '开 LEAPS checklist']] : []), ['pmcc', '开 PMCC checklist']];
+      detail = `<div class="sc-detail" id="sc-detail"><div class="sc-dh"><b>${esc(t)} ${o.strike}${st.pick.type} ${esc(_md(st.sel))}</b><span class="rk-quiet">${dte} 天${S ? ` · 距现价 ${o.strike >= S ? '+' : '−'}${Math.abs((o.strike / S - 1) * 100).toFixed(1)}%` : ''}${itm(st.pick.type, o.strike) ? ' · 价内' : ''}</span><button class="app-link sc-x" onclick="scPick('${esc(t)}', '${st.pick.type}', ${o.strike})" aria-label="关闭">×</button></div>
+        <div class="sc-dg">${f('Bid / Ask', `${usd(o.bid)} / ${usd(o.ask)}`)}${f('Mid', usd(m))}${f('每张', m != null ? _fmtUsd(m * 100) : '—')}${f('Δ', dI(o))}${f('Γ', o.gamma != null ? o.gamma.toFixed(3) : '—')}${f('Θ / 天 · 每张', o.theta != null ? _fmtSigned(o.theta * 100) : '—')}
+          ${f('Vega · 每张', o.vega != null ? usd(o.vega * 100) : '—')}${f('IV', iv(o))}${f('OI', k0(o), (o.oi || 0) < 100 ? 'rk-t-alert' : '')}${f('成交量', v0(o))}${f('卖出年化', a == null ? '—' : a.toFixed(0) + '%')}${f('盈亏平衡', usd(m == null ? null : P ? o.strike - m : o.strike + m))}
+          ${!P && adj ? f('vs 调整后成本', `${o.strike >= adj ? '高于' : '低于'} ${usd(adj)}`, o.strike >= adj ? 'rk-t-safe' : 'rk-t-danger') : ''}</div>
+        <div class="sc-acts">${acts.map(([k, l]) => `<button class="btn small${k === cK ? ' primary' : ''}" onclick="openScanChecklist('${esc(t)}', ${o.strike}, '${st.sel}', '${k}')">${l}</button>`).join('')}</div></div>`; } }
+  const body = `<div class="rk-table-wrap sc-wrap"><table class="rk-table sc-t sc-${side === 'T' ? 'tee' : 'one'}${wide ? '' : ' narrow'}"><thead>${thead}</thead><tbody>${rowsHTML.join('') || `<tr><td colspan="${cols}" class="rk-quiet">没有合约</td></tr>`}</tbody></table></div>`;
+  return shell(chips + body + detail, ` <span class="rk-quiet sc-sub">${esc(t)} ${usd(S)} · ${esc(_md(st.sel))} · ${dte} 天${D.busy ? ' · 刷新中…' : ''}</span>`);
+}
 function renderStockPage() {
   const t = __stockT, recent = _stockRecent();
   const head = `<div class="header header-sticky"><div class="brand">Pre-Trade Checklist</div><div class="header-actions">
@@ -21314,9 +21530,10 @@ function renderStockPage() {
     </section>`;
   const rollHint = (() => { const xs = computeRisk().c.pos.filter(x => x.ticker === t && _rollBtn(x)); if (!xs.length) return '';
     return `<div class="stk-roll">${xs.map(x => { const d = _distPct(x); return `<span><b>${esc(_posLabel(x))}</b> ${d != null ? (d < 0 ? `价内 ${Math.abs(d).toFixed(1)}%` : `距行权价 ${d.toFixed(1)}%`) : ''} · ${_dteOf(x) ?? '—'} 天 ${_rollBtn(x)}</span>`; }).join('')}</div>`; })();
-  $app.innerHTML = head + `<div class="rk-page stock-page">${search}${rollHint}${lead}${chart}${_safe('期权结构', () => optBlock)}${_safe('相对强弱', () => rsBlock)}${_safe('你和这只股票', () => youBlock)}${_safe('机会状态', () => oppBlock)}</div>`;
+  $app.innerHTML = head + `<div class="rk-page stock-page">${search}${rollHint}${lead}${chart}${_safe('期权链', () => _stkChainHTML(t), '')}${_safe('期权结构', () => optBlock)}${_safe('相对强弱', () => rsBlock)}${_safe('你和这只股票', () => youBlock)}${_safe('机会状态', () => oppBlock)}</div>`;
   _fitChartText && _fitChartText();
   _stkBind();
+  _scFocusNow();
   requestAnimationFrame(() => { const el = document.getElementById('stk-chart'); if (el && el.querySelector('svg') && Math.abs(el.querySelector('svg').viewBox.baseVal.width - el.clientWidth) > 2) _stkRedraw(); });
 }
 
