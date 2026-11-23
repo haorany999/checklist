@@ -2992,7 +2992,15 @@
   .wf-chart .wf-link { stroke: var(--text-faint); stroke-width: 1; stroke-dasharray: 3 3; }
   .wf-chart .wf-val { font-weight: 700; font-family: var(--mono); }
   .wf-chart .wf-totlab { font-weight: 700; fill: var(--text); }
-  .wf-chart .wf-bar[role="button"] { cursor: pointer; } .wf-chart .wf-bar[role="button"]:hover rect { opacity: 0.85; }
+  .wf-chart .wf-bar[role="button"] { cursor: pointer; outline: none; }
+  .wf-chart .wf-hit { fill: transparent; } .wf-chart .wf-bar[role="button"]:hover .wf-hit, .wf-chart .wf-bar[role="button"]:focus-visible .wf-hit { fill: color-mix(in srgb, var(--accent) 7%, transparent); }
+  .wf-chart .wf-bar[role="button"]:hover rect.wf-pos, .wf-chart .wf-bar[role="button"]:hover rect.wf-neg { opacity: 1; filter: brightness(1.08); }
+  .wf-chart rect.wf-oth { opacity: .6; }
+  .wf-chart .wf-sw.pc-stk { fill: var(--sl-stk); } .wf-chart .wf-sw.pc-leaps { fill: var(--sl-leaps); } .wf-chart .wf-sw.pc-csp { fill: var(--sl-csp); } .wf-chart .wf-sw.pc-oth { fill: var(--sl-oth); }
+  .wf-chart .wf-sw.pc-sc { fill: transparent; stroke: var(--text-faint); stroke-width: 1; }
+  .wf-chart.tight .wf-val { font-size: 10px; } .wf-chart.tight .wf-lab { font-size: 10px; }
+  .wf-chart .wf-sep { stroke: var(--border); stroke-width: 1; } .wf-chart.wf-rows .wf-lab { font-family: var(--mono); fill: var(--text); }
+  body.theme-pro #pnl-block > .wf-chart.wf-rows { max-height: none; }
   .pos-page h3[id^="sec-"] { scroll-margin-top: 70px; }
   .wf-chart .wf-val.rk-t-safe { fill: var(--pass); } .wf-chart .wf-val.rk-t-alert { fill: var(--rk-alert, var(--fail)); } .wf-chart .wf-val.rk-t-danger { fill: var(--fail); }
   /* v25 · desktop dashboard (Pro, ≥ 1000 px): even KPI tiles, slim notices, balanced columns */
@@ -6608,7 +6616,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.17-v160';
+const APP_BUILD = '2026.10.17-v161';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
@@ -20453,21 +20461,52 @@ function _leapsRoomLineHTML() {
   return `<div class="room-line">Option Buying Power <b class="rk-t-acc">${r.bp != null ? _fmtUsd(r.bp) : '—'}</b> · 不借钱还能花 (我的计划) ${say(S, 'now')}${spend ? ` · 这笔 ${n} 张约 ${_fmtUsd(spend)} · 之后 ${say(A, 'after')}` : ''}${sv}</div>`;
 }
 function _pnlWaterfallSVG(items, total) {
-  const W = _chartW(), H = 210, L = 8, R = 8, T = 22, B = 34, n = items.length + 1, bw = Math.min(64, (W - L - R) / n * 0.62), X = i => L + (i + 0.5) * (W - L - R) / n;
+  // v161 · read as a bridge: gains climb (largest first), losses fall (largest first), then "其他", then 合计
+  const other = items.filter(it => it.key === 'tk-other'), main = items.filter(it => it.key !== 'tk-other');
+  if (__pnlMode === 'ticker') items = [...main.filter(it => it.v >= 0).sort((a, b) => b.v - a.v), ...main.filter(it => it.v < 0).sort((a, b) => a.v - b.v), ...other];
+  const W = _chartW(), n = items.length + 1, L = 8, R = 8, slot = (W - L - R) / n, tight = slot < 64, tiny = slot < 40;
+  if (slot < 34) return _pnlWaterfallRowsSVG(items, total, W);   // phone with many bars: one row per item reads better than slivers
+  const H = tiny ? 200 : 214, T = 24, B = items.some(it => it.sw) ? 40 : 34, bw = Math.min(64, slot * 0.62), X = i => L + (i + 0.5) * slot;
+  const money = v => { if (!tight) return _fmtSigned(v); const a = Math.abs(v), sg = v < 0 ? '−' : '+'; return a >= 1000 ? `${sg}${(a / 1000).toFixed(a >= 9950 ? 0 : 1)}k` : `${sg}${Math.round(a)}`; };
+  const short = l => !tiny ? l : ({ 'Short call': 'SC', '其他期权': '其他' })[l] || (l.length > 5 ? l.slice(0, 5) : l);
   let run = 0; const segs = items.map(it => { const a = run; run += it.v; return { ...it, a, b: run }; });
   const lo = Math.min(0, ...segs.map(s => Math.min(s.a, s.b)), total), hi = Math.max(0, ...segs.map(s => Math.max(s.a, s.b)), total), span = hi - lo || 1;
   const Y = v => T + (hi - v) / span * (H - T - B);
+  const share = v => total && Math.abs(total) > 0.5 ? ` · 占合计 ${(v / total * 100).toFixed(0)}%` : '';
   const bars = segs.map((s, i) => { const y1 = Y(Math.max(s.a, s.b)), h = Math.max(1, Math.abs(Y(s.a) - Y(s.b))), up = s.v >= 0;
-    return `<g class="wf-bar" ${s.key ? `role="button" tabindex="0" onclick="pnlJump('${esc(s.key)}')"` : ''}>
-      <rect x="${(X(i) - bw / 2).toFixed(1)}" y="${y1.toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" class="${up ? 'wf-pos' : 'wf-neg'}"><title>${esc(s.label)} ${_fmtSigned(s.v)}</title></rect>
+    const tip = `${s.label} ${_fmtSigned(s.v)}${share(s.v)}${s.n ? ` · ${s.n} 个仓位` : ''}`;
+    return `<g class="wf-bar" ${s.key ? `role="button" tabindex="0" aria-label="${esc(tip)}" onclick="pnlJump('${esc(s.key)}')" onkeydown="if(event.key==='Enter')pnlJump('${esc(s.key)}')"` : ''}>
+      <rect x="${(X(i) - slot / 2).toFixed(1)}" y="${T - 14}" width="${slot.toFixed(1)}" height="${(H - T + 14).toFixed(1)}" class="wf-hit"/>
+      <rect x="${(X(i) - bw / 2).toFixed(1)}" y="${y1.toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" rx="2" class="${up ? 'wf-pos' : 'wf-neg'}${s.key === 'tk-other' ? ' wf-oth' : ''}"><title>${esc(tip)}</title></rect>
       ${i < segs.length - 1 ? `<line x1="${(X(i) + bw / 2).toFixed(1)}" x2="${(X(i + 1) - bw / 2).toFixed(1)}" y1="${Y(s.b).toFixed(1)}" y2="${Y(s.b).toFixed(1)}" class="wf-link"/>` : ''}
-      <text x="${X(i).toFixed(1)}" y="${(up ? y1 - 6 : y1 + h + 13).toFixed(1)}" text-anchor="middle" class="rk-ch-lab wf-val ${Math.abs(s.v) < 0.5 ? '' : up ? 'rk-t-safe' : 'rk-t-danger'}">${esc(_fmtSigned(s.v))}</text>
-      <text x="${X(i).toFixed(1)}" y="${H - 8}" text-anchor="middle" class="rk-ch-lab">${esc(s.label)}</text></g>`; }).join('');
+      <text x="${X(i).toFixed(1)}" y="${(up ? y1 - 6 : y1 + h + 13).toFixed(1)}" text-anchor="middle" class="rk-ch-lab wf-val ${Math.abs(s.v) < 0.5 ? '' : up ? 'rk-t-safe' : 'rk-t-danger'}">${esc(money(s.v))}</text>
+      ${s.sw ? `<rect x="${(X(i) - Math.min(14, bw / 2)).toFixed(1)}" y="${H - 27}" width="${Math.min(28, bw).toFixed(1)}" height="4" rx="2" class="wf-sw ${s.sw}"/>` : ''}
+      <text x="${X(i).toFixed(1)}" y="${H - 8}" text-anchor="middle" class="rk-ch-lab wf-lab">${esc(short(s.label))}</text></g>`; }).join('');
   const ti = segs.length, ty = Y(Math.max(0, total)), th = Math.max(1, Math.abs(Y(0) - Y(total)));
-  const tot = `<rect x="${(X(ti) - bw / 2).toFixed(1)}" y="${ty.toFixed(1)}" width="${bw.toFixed(1)}" height="${th.toFixed(1)}" class="wf-tot ${total >= 0 ? 'pos' : 'neg'}"/>
-    <text x="${X(ti).toFixed(1)}" y="${(total >= 0 ? ty - 6 : ty + th + 13).toFixed(1)}" text-anchor="middle" class="rk-ch-lab wf-val ${total >= 0 ? 'rk-t-safe' : 'rk-t-danger'}">${esc(_fmtSigned(total))}</text>
-    <text x="${X(ti).toFixed(1)}" y="${H - 8}" text-anchor="middle" class="rk-ch-lab wf-totlab">合计</text>`;
-  return `<svg class="rk-chart wf-chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="浮动盈亏构成"><line x1="${L}" x2="${W - R}" y1="${Y(0).toFixed(1)}" y2="${Y(0).toFixed(1)}" class="gex-zero"/>${bars}${tot}</svg>`;
+  const tot = `<g class="wf-bar"><rect x="${(X(ti) - bw / 2).toFixed(1)}" y="${ty.toFixed(1)}" width="${bw.toFixed(1)}" height="${th.toFixed(1)}" rx="2" class="wf-tot ${total >= 0 ? 'pos' : 'neg'}"><title>合计 ${_fmtSigned(total)}</title></rect>
+    <text x="${X(ti).toFixed(1)}" y="${(total >= 0 ? ty - 6 : ty + th + 13).toFixed(1)}" text-anchor="middle" class="rk-ch-lab wf-val ${total >= 0 ? 'rk-t-safe' : 'rk-t-danger'}">${esc(money(total))}</text>
+    <text x="${X(ti).toFixed(1)}" y="${H - 8}" text-anchor="middle" class="rk-ch-lab wf-totlab">合计</text></g>`;
+  return `<svg class="rk-chart wf-chart${tight ? ' tight' : ''}" viewBox="0 0 ${W} ${H}" role="img" aria-label="浮动盈亏构成"><line x1="${L}" x2="${W - R}" y1="${Y(0).toFixed(1)}" y2="${Y(0).toFixed(1)}" class="gex-zero"/>${bars}${tot}</svg>`;
+}
+function _pnlWaterfallRowsSVG(items, total, W) {
+  const rh = 26, T = 6, Lw = 62, Rw = 72, x0 = Lw, x1 = W - Rw, H = T + (items.length + 1) * rh + 8;
+  let run = 0; const segs = items.map(it => { const a = run; run += it.v; return { ...it, a, b: run }; });
+  const lo = Math.min(0, ...segs.map(s => Math.min(s.a, s.b)), total), hi = Math.max(0, ...segs.map(s => Math.max(s.a, s.b)), total), span = hi - lo || 1;
+  const Xv = v => x0 + (v - lo) / span * (x1 - x0), share = v => total && Math.abs(total) > 0.5 ? ` · 占合计 ${(v / total * 100).toFixed(0)}%` : '';
+  const rows = segs.map((s, i) => { const y = T + i * rh, xa = Xv(Math.min(s.a, s.b)), w = Math.max(1.5, Math.abs(Xv(s.b) - Xv(s.a))), up = s.v >= 0, tip = `${s.label} ${_fmtSigned(s.v)}${share(s.v)}${s.n ? ` · ${s.n} 个仓位` : ''}`;
+    return `<g class="wf-bar" ${s.key ? `role="button" tabindex="0" aria-label="${esc(tip)}" onclick="pnlJump('${esc(s.key)}')" onkeydown="if(event.key==='Enter')pnlJump('${esc(s.key)}')"` : ''}>
+      <rect x="0" y="${y}" width="${W}" height="${rh}" class="wf-hit"/>
+      ${s.sw ? `<rect x="2" y="${y + rh / 2 - 5}" width="4" height="10" rx="2" class="wf-sw ${s.sw}"/>` : ''}
+      <text x="${Lw - 8}" y="${y + rh / 2 + 4}" text-anchor="end" class="rk-ch-lab wf-lab">${esc(s.label)}</text>
+      <rect x="${xa.toFixed(1)}" y="${y + 6}" width="${w.toFixed(1)}" height="${rh - 12}" rx="2" class="${up ? 'wf-pos' : 'wf-neg'}${s.key === 'tk-other' ? ' wf-oth' : ''}"><title>${esc(tip)}</title></rect>
+      ${i < segs.length - 1 ? `<line x1="${Xv(s.b).toFixed(1)}" x2="${Xv(s.b).toFixed(1)}" y1="${y + rh - 6}" y2="${y + rh + 6}" class="wf-link"/>` : ''}
+      <text x="${W - 4}" y="${y + rh / 2 + 4}" text-anchor="end" class="rk-ch-lab wf-val ${Math.abs(s.v) < 0.5 ? '' : up ? 'rk-t-safe' : 'rk-t-danger'}">${esc(_fmtSigned(s.v))}</text></g>`; }).join('');
+  const yt = T + segs.length * rh, xt = Xv(Math.min(0, total)), wt = Math.max(1.5, Math.abs(Xv(total) - Xv(0)));
+  const tot = `<g class="wf-bar"><line x1="0" x2="${W}" y1="${yt}" y2="${yt}" class="wf-sep"/>
+    <text x="${Lw - 8}" y="${yt + rh / 2 + 4}" text-anchor="end" class="rk-ch-lab wf-totlab">合计</text>
+    <rect x="${xt.toFixed(1)}" y="${yt + 5}" width="${wt.toFixed(1)}" height="${rh - 10}" rx="2" class="wf-tot ${total >= 0 ? 'pos' : 'neg'}"><title>合计 ${_fmtSigned(total)}</title></rect>
+    <text x="${W - 4}" y="${yt + rh / 2 + 4}" text-anchor="end" class="rk-ch-lab wf-val ${total >= 0 ? 'rk-t-safe' : 'rk-t-danger'}">${esc(_fmtSigned(total))}</text></g>`;
+  return `<svg class="rk-chart wf-chart wf-rows" viewBox="0 0 ${W} ${H}" role="img" aria-label="浮动盈亏构成"><line x1="${Xv(0).toFixed(1)}" x2="${Xv(0).toFixed(1)}" y1="${T}" y2="${H - 4}" class="gex-zero"/>${rows}${tot}</svg>`;
 }
 function _pnlBlockHTML() {
   const R = computeRisk(), c = R.c, nav = c.nav || 0, pos = c.pos, pnl = x => _posPnl(x) || 0;
@@ -20476,10 +20515,12 @@ function _pnlBlockHTML() {
   let items;
   if (__pnlMode === 'ticker') {
     const by = {}; pos.forEach(x => { by[x.ticker] = (by[x.ticker] || 0) + pnl(x); });
-    const all = Object.entries(by).sort((a, b) => Math.abs(b[1]) - Math.abs(a[1])), top = all.slice(0, 7), rest = all.slice(7).reduce((s, x) => s + x[1], 0);
-    __pnlOthers = all.slice(7).map(([t]) => t);
-    items = top.map(([t, v]) => ({ label: t, v, key: 'tk:' + t })).concat(Math.abs(rest) > 0.5 ? [{ label: '其他', v: rest, key: 'tk-other' }] : []);
-  } else items = PNL_SLEEVES.map(([k, l, f]) => ({ key: k, label: l, v: pos.filter(f).reduce((s, x) => s + pnl(x), 0), n: pos.filter(f).length })).filter(s => s.n);
+    const all = Object.entries(by).sort((a, b) => Math.abs(b[1]) - Math.abs(a[1])), top = all.slice(0, 10), rest = all.slice(10).reduce((s, x) => s + x[1], 0);
+    __pnlOthers = all.slice(10).map(([t]) => t);
+    const cnt = t => pos.filter(x => x.ticker === t).length;
+    items = top.map(([t, v]) => ({ label: t, v, key: 'tk:' + t, n: cnt(t) })).concat(Math.abs(rest) > 0.5 ? [{ label: `其他 ${all.length - 10}`, v: rest, key: 'tk-other', n: all.slice(10).reduce((s, [t]) => s + cnt(t), 0) }] : []);
+  } else { const SW = { stock: 'pc-stk', leaps: 'pc-leaps', csp: 'pc-csp', sc: 'pc-sc', oth: 'pc-oth' };
+    items = PNL_SLEEVES.map(([k, l, f]) => ({ key: k, label: l, sw: SW[k], v: pos.filter(f).reduce((s, x) => s + pnl(x), 0), n: pos.filter(f).length })).filter(s => s.n); }
   const worst = lose.slice().sort((a, b) => pnl(a) - pnl(b))[0], best = win.slice().sort((a, b) => pnl(b) - pnl(a))[0];
   const fig = (label, val, sub, cls, k) => k ? `<button class="rk-fig pnl-fx${__pnlOpen === k ? ' on' : ''}" onclick="pnlOpen('${k}')" aria-expanded="${__pnlOpen === k}"><span class="rk-fig-val ${cls}">${val}</span><span class="rk-fig-label">${label} <i class="pnl-car">${__pnlOpen === k ? '▾' : '▸'}</i></span>${sub ? `<span class="rk-fig-sub">${sub}</span>` : ''}</button>`
     : `<div class="rk-fig"><span class="rk-fig-val ${cls}">${val}</span><span class="rk-fig-label">${label}</span>${sub ? `<span class="rk-fig-sub">${sub}</span>` : ''}</div>`;
