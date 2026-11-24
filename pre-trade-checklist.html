@@ -3036,8 +3036,6 @@
   @media (min-width: 1200px) {
     body.theme-pro .app:has(.rk-page) { max-width: 1400px; padding-left: 24px; padding-right: 24px; }
     body.theme-pro .rk-page, body.theme-pro .rk-page.pos-page { max-width: none; }
-    body.theme-pro .app:has(.pos-page) { max-width: min(1760px, 100%); }
-    .app:has(.pos-page) { max-width: min(1760px, 100%); }
     body.theme-pro .risk-page, body.theme-pro .gk-page, body.theme-pro .pf-page { column-count: 2; column-gap: 12px; }
     body.theme-pro .risk-page > *, body.theme-pro .gk-page > *, body.theme-pro .pf-page > * { break-inside: avoid; -webkit-column-break-inside: avoid; }
     body.theme-pro .risk-page > .rk-hero, body.theme-pro .risk-page > .rk-decomp, body.theme-pro .risk-page > .rk-groups, body.theme-pro .risk-page > .rk-notice,
@@ -3052,6 +3050,7 @@
     body.theme-pro #pnl-block { display: grid; grid-template-columns: 460px minmax(0, 1fr); gap: 0 18px; align-items: start; }
     body.theme-pro #pnl-block > .rk-block-title, body.theme-pro #pnl-block > .rk-note, body.theme-pro #pnl-block > .pnl-list { grid-column: 1 / -1; }
     body.theme-pro #pnl-block > .rk-figs { grid-template-columns: 1fr 1fr; }
+    body.theme-pro #pnl-block > .rk-figs { grid-column: 1; grid-row: 2; } body.theme-pro #pnl-block > .wf-chart { grid-column: 2; grid-row: 2; } body.theme-pro #pnl-block > .pnl-list { grid-row: 3; }
     body.theme-pro #pnl-block > .wf-chart { max-height: 300px; width: 100%; }
   }
   /* v26 · LEAPS room */
@@ -3494,6 +3493,7 @@
   .at-chart .at-tick { stroke: var(--text-faint); stroke-width: 1; }
   .pnl-figs { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .pnl-tot td { border-top: 1px solid var(--border); }
+  .rk-block.ux-hl { animation: uxhl 1.8s ease-out; } @keyframes uxhl { 0%, 35% { box-shadow: 0 0 0 2px var(--accent), 0 0 0 6px color-mix(in srgb, var(--accent) 25%, transparent); } 100% { box-shadow: 0 0 0 0 transparent; } }
   @media (max-width: 640px) { .pnl-figs { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   /* v51 · goal projection */
   .gp-sum { text-transform: none; letter-spacing: 0; font-weight: 500; }
@@ -6653,7 +6653,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.17-v167';
+const APP_BUILD = '2026.10.17-v168';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
@@ -20383,7 +20383,11 @@ function _ddLev(c) {
 }
 const _levCls = x => !isFinite(x) ? '' : x < 1 ? 'rk-t-safe' : x < 1.5 ? 'rk-t-watch' : x < 2 ? 'rk-t-alert' : 'rk-t-danger';
 let __pnlOpen = null;
-window.pnlOpen = k => { __pnlOpen = __pnlOpen === k ? null : k; const el = document.getElementById('pnl-block'); if (el) { el.outerHTML = _pnlBlockHTML(); _fitChartText(); try { _uxFreeze(); } catch (e) {} } };
+window.pnlOpen = k => { __pnlOpen = __pnlOpen === k ? null : k; const el = document.getElementById('pnl-block'); if (!el) return; el.outerHTML = _pnlBlockHTML(); _fitChartText(); try { _uxFreeze(); } catch (e) {}
+  // v168 · the list opens right under the tiles; bring it into view when it lands under the fold / the bottom bar
+  const l = document.querySelector('#pnl-block .pnl-list'); if (!l) return; const nav = document.getElementById('ux-tabbar'), bottom = innerHeight - (nav ? nav.getBoundingClientRect().height : 0) - 12, r = l.getBoundingClientRect();
+  if (r.top > bottom - 120 || r.bottom > bottom) window.scrollTo({ top: window.scrollY + Math.min(r.top - 90, r.bottom - bottom), behavior: 'smooth' }); };
+window.uxGoFlash = id => { uxGo(id); const el = document.getElementById(id); if (!el) return; el.classList.remove('ux-hl'); void el.offsetWidth; el.classList.add('ux-hl'); setTimeout(() => el.classList.remove('ux-hl'), 1800); };
 window.setPnlMode = m => { __pnlMode = m; const el = document.getElementById('pnl-block'); if (el) { el.outerHTML = _pnlBlockHTML(); _fitChartText(); } };
 const PNL_SLEEVES = [['stock', '正股', x => x.kind === 'stock'], ['leaps', 'LEAPS', x => x.kind === 'leaps'], ['csp', 'CSP', x => x.kind === 'short_put'],
   ['sc', 'Short call', x => x.kind === 'short_call'], ['oth', '其他期权', x => x.kind === 'long_call' || x.kind === 'long_put']];
@@ -20647,10 +20651,10 @@ function _pnlBlockHTML() {
         ${fig('亏损的仓位', _fmtSigned(lose.reduce((s, x) => s + pnl(x), 0)), `${lose.length} 个${worst ? ` · 最多 ${esc(_posLabel(worst).split(' ').slice(0, 2).join(' '))} <span class="rk-t-danger">${_fmtSigned(pnl(worst))}</span>` : ''}`, 'rk-t-alert', lose.length ? 'lose' : null)}
         ${(() => { const L = _ddLev(c); if (!L) return ''; return fig('美元 Delta', (L.dd < 0 ? '−' : '') + _fmtUsd(Math.abs(L.dd)), nav ? `NAV 的 <span class="${_levCls(L.x)}">${L.x.toFixed(2)}x</span> · β 加权 <span class="${_levCls(L.xb)}">${L.xb.toFixed(2)}x</span>` : '', 'rk-t-acc', 'dd'); })()}
         ${(() => { const r = _leapsRoom(); if (!r || r.used == null) return ''; const z = _fuelZone(r.used), k = { margin: 'alert', over: 'danger' }[z[1]] || z[1];
-          return `<button class="rk-fig pnl-fx pnl-go" onclick="uxGo('room-block')"><span class="rk-fig-val ${r.free < 0 ? 'rk-t-danger' : 'rk-t-' + k}">${(r.free < 0 ? '−' : '') + _fmtUsd(Math.abs(r.free))}</span><span class="rk-fig-label">自由现金 <i class="pnl-car">›</i></span><span class="rk-fig-sub">仓位已用 <span class="rk-t-${k}">${r.used.toFixed(0)}%</span> · ${esc(z[2].split(' · ')[0])}</span></button>`; })()}
+          return `<button class="rk-fig pnl-fx pnl-go" onclick="uxGoFlash('room-block')"><span class="rk-fig-val ${r.free < 0 ? 'rk-t-danger' : 'rk-t-' + k}">${(r.free < 0 ? '−' : '') + _fmtUsd(Math.abs(r.free))}</span><span class="rk-fig-label">自由现金 <i class="pnl-car">›</i></span><span class="rk-fig-sub">仓位已用 <span class="rk-t-${k}">${r.used.toFixed(0)}%</span> · ${esc(z[2].split(' · ')[0])}</span></button>`; })()}
       </div>
-      ${items.length ? _pnlWaterfallSVG(items, total) : ''}
       ${list}
+      ${items.length ? _pnlWaterfallSVG(items, total) : ''}
       
     </section>`;
 }
