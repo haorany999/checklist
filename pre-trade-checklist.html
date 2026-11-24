@@ -3377,6 +3377,30 @@
   .lt-seg button:not(.on):hover { color: var(--text); background: color-mix(in srgb, var(--accent) 10%, transparent); }
   td.lt-off { opacity: .42; } td.lt-off:focus-within, td.lt-off:hover { opacity: .8; }
   td.lt-on input.lt-in { box-shadow: 0 0 0 1.5px var(--accent); }
+  /* v169 · both 构成 views fit the card they sit in (container queries): columns fold away step by step, never past the border */
+  .tv { container-type: inline-size; }
+  @container (max-width: 960px) {
+    .tv-head, .tv-row { grid-template-columns: 92px minmax(110px, 1fr) 40px 112px 60px 92px 64px 96px; }
+    .tv-slv .tv-head, .tv-slv .tv-row { grid-template-columns: 150px minmax(100px, 1fr) 40px 112px 60px 92px 64px 96px; }
+    .tv .c-th { display: none !important; }
+  }
+  @container (max-width: 830px) {
+    .tv-head, .tv-row { grid-template-columns: 88px minmax(100px, 1fr) 112px 60px 100px 96px; }
+    .tv-slv .tv-head, .tv-slv .tv-row { grid-template-columns: 140px minmax(90px, 1fr) 112px 60px 100px 96px; }
+    .tv .c-n, .tv .c-pp { display: none !important; } .tv .m-pp { display: block !important; }
+  }
+  @container (max-width: 700px) {
+    .tv-head, .tv-row { grid-template-columns: 84px minmax(90px, 1fr) 116px 104px; }
+    .tv-slv .tv-head, .tv-slv .tv-row { grid-template-columns: 128px minmax(80px, 1fr) 116px 104px; }
+    .tv .c-pct, .tv .c-dd { display: none !important; } .tv .m-pct { display: block !important; }
+    .tv-row > .tv-sub { display: flex !important; grid-column: 2 / -1; gap: 14px; font-size: 11px; color: var(--text-faint); margin-top: -2px; }
+  }
+  @container (max-width: 540px) {
+    .tv-head, .tv-row, .tv-slv .tv-head, .tv-slv .tv-row { grid-template-columns: minmax(0, 1fr) 104px 92px; grid-template-areas: "tk inv pnl" "bar bar bar" "sub sub sub"; gap: 4px 8px; }
+    .tv-row > .tv-tk, .tv-head > .h-tk { grid-area: tk; } .tv-row > .tv-bars { grid-area: bar; } .tv-row > .tv-amt, .tv-head > .h-amt { grid-area: inv; }
+    .tv-row > .tv-pl, .tv-head > .h-pl { grid-area: pnl; } .tv-row > .tv-sub { grid-area: sub; grid-column: auto; }
+    .tv-head { grid-template-areas: "tk inv pnl"; } .tv-head > .tv-scale, .tv-head > .tv-c, .tv-row > .tv-c { display: none !important; }
+  }
   /* v38 · one palette for sleeves (high contrast on dark and light), visible thin guides */
   /* v157 · one sleeve palette app-wide: 正股 copper (calm at night) · LEAPS purple · CSP blue · 其他期权 slate · 自由现金 = --pass green */
   :root { --sl-csp: #4C8DFF; --sl-stk: #C98A5E; --sl-leaps: #B98AF5; --sl-oth: #8B95A3; }
@@ -6653,7 +6677,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.17-v168';
+const APP_BUILD = '2026.10.17-v169';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
@@ -20253,18 +20277,18 @@ function _paCells(o) {   // o: { name, bar, n, inv, pnl, dd, est, th, nav, mv, p
   const pct = o.nav ? a / o.nav * 100 : null, pp = o.inv > 0 ? o.pnl / o.inv * 100 : null, dir = v => Math.abs(v) < 0.5 ? '' : v > 0 ? 'rk-t-safe' : 'rk-t-danger';
   const pctTxt = pct == null ? '—' : _pct(pct), pctC = o.pctCls ? o.pctCls(pct) : '';
   return `<span class="tv-tk">${o.name}</span>${o.bar}<span class="tv-c c-n">${o.n ?? ''}</span>
-    <span class="tv-num tv-amt"><b class="${a < 0 ? 'rk-t-danger' : ''}">${usd(a)}</b><em>${other}</em><em class="m-only ${pctC}">占 NAV ${pctTxt}</em></span><span class="tv-c c-pct ${pctC}">${pctTxt}</span>
-    <span class="tv-num tv-pl"><b class="${_thCls(o.pnl)}">${_fmtSigned(o.pnl)}</b><em class="m-only">${pp == null ? '' : _sgP(pp)}</em></span><span class="tv-c c-pp ${_thCls(o.pnl)}">${pp == null ? '—' : _sgP(pp)}</span>
+    <span class="tv-num tv-amt"><b class="${a < 0 ? 'rk-t-danger' : ''}">${usd(a)}</b><em>${other}</em><em class="m-only m-pct ${pctC}">占 NAV ${pctTxt}</em></span><span class="tv-c c-pct ${pctC}">${pctTxt}</span>
+    <span class="tv-num tv-pl"><b class="${_thCls(o.pnl)}">${_fmtSigned(o.pnl)}</b><em class="m-only m-pp">${pp == null ? '' : _sgP(pp)}</em></span><span class="tv-c c-pp ${_thCls(o.pnl)}">${pp == null ? '—' : _sgP(pp)}</span>
     <span class="tv-c c-dd ${dir(o.dd)}">${o.dd == null ? '—' : usd(o.dd)}${o.est ? '<em class="hr-est">估</em>' : ''}</span><span class="tv-c c-th ${o.th == null ? '' : _thCls(o.th)}">${o.th == null || Math.abs(o.th) < 0.5 ? '—' : _fmtSigned(o.th)}</span>
     ${o.dd == null ? '' : `<span class="tv-sub"><span>美元 Delta <b class="${dir(o.dd)}">${usd(o.dd)}</b></span>${o.th != null && Math.abs(o.th) >= 0.5 ? `<span>Theta/天 <b class="${_thCls(o.th)}">${_fmtSigned(o.th)}</b></span>` : ''}</span>`}`;
 }
-const _paHead = (first, amtLabel, scale = '') => `<div class="tv-head"><span class="h-tk">${first}</span><span class="tv-scale">${scale}</span><span class="tv-c">仓位</span><span class="h-amt">${amtLabel}</span><span class="tv-c">% NAV</span><span class="h-pl">浮盈</span><span class="tv-c">浮盈 %</span><span class="tv-c">美元 Delta</span><span class="tv-c">Theta/天</span></div>`;
+const _paHead = (first, amtLabel, scale = '') => `<div class="tv-head"><span class="h-tk">${first}</span><span class="tv-scale">${scale}</span><span class="tv-c c-n">仓位</span><span class="h-amt">${amtLabel}</span><span class="tv-c c-pct">% NAV</span><span class="h-pl">浮盈</span><span class="tv-c c-pp">浮盈 %</span><span class="tv-c c-dd">美元 Delta</span><span class="tv-c c-th">Theta/天</span></div>`;
 function _paFreeRow(key, free, cash, swv, cspN, nav, W, guides, openSet) {
   const usd = v => (v < 0 ? '−' : '') + _fmtUsd(Math.abs(v)), pct = nav ? free / nav * 100 : null, cls = free < 0 ? 'rk-t-danger' : pct != null && pct < 10 ? 'rk-t-alert' : 'rk-t-safe';
   return `<details class="tv-r tv-x" data-k="${key}" ontoggle="tvTog(this)"${openSet.has(key) ? ' open' : ''}><summary class="tv-row"><span class="tv-tk">自由现金</span>
       <div class="tv-bars"><div class="tv-track"><i class="tv-seg ${free >= 0 ? 'pc-free' : 'pc-neg'}" style="width:${W(Math.abs(free))}"></i>${guides}</div></div><span class="tv-c c-n"></span>
-      <span class="tv-num tv-amt"><b class="${free < 0 ? 'rk-t-danger' : ''}">${usd(free)}</b><em class="m-only ${cls}">占 NAV ${pct == null ? '—' : _pct(pct)}</em></span><span class="tv-c c-pct ${cls}">${pct == null ? '—' : _pct(pct)}</span>
-      <span class="tv-num tv-pl"></span><span class="tv-c"></span><span class="tv-c"></span><span class="tv-c"></span></summary>
+      <span class="tv-num tv-amt"><b class="${free < 0 ? 'rk-t-danger' : ''}">${usd(free)}</b><em class="m-only m-pct ${cls}">占 NAV ${pct == null ? '—' : _pct(pct)}</em></span><span class="tv-c c-pct ${cls}">${pct == null ? '—' : _pct(pct)}</span>
+      <span class="tv-num tv-pl"></span><span class="tv-c c-pp"></span><span class="tv-c c-dd"></span><span class="tv-c c-th"></span></summary>
     <div class="tv-body"><div class="tv-parts"><div><span>现金</span><b>${_fmtUsd(cash)}</b></div><div><span>+ SWVXX</span><b>${_fmtUsd(swv)}</b></div><div><span>− CSP 担保名义</span><b class="rk-t-danger">−${_fmtUsd(cspN)}</b></div></div></div></details>`;
 }
 // 策略构成 · 图: one row per strategy, the same bar and columns as 标的构成; open a strategy to see each position as its own row
