@@ -3049,9 +3049,9 @@
     body.theme-pro .scan-page .rk-block:has(.sc-row) .sc-row:nth-child(2) { border-top: none; padding-top: 2px; }
   }
   @media (min-width: 1200px) {
-    body.theme-pro #pnl-block { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 0 18px; align-items: start; }
+    body.theme-pro #pnl-block { display: grid; grid-template-columns: 460px minmax(0, 1fr); gap: 0 18px; align-items: start; }
     body.theme-pro #pnl-block > .rk-block-title, body.theme-pro #pnl-block > .rk-note, body.theme-pro #pnl-block > .pnl-list { grid-column: 1 / -1; }
-    body.theme-pro #pnl-block > .rk-figs { grid-template-columns: 1fr; }
+    body.theme-pro #pnl-block > .rk-figs { grid-template-columns: 1fr 1fr; }
     body.theme-pro #pnl-block > .wf-chart { max-height: 300px; width: 100%; }
   }
   /* v26 · LEAPS room */
@@ -3492,7 +3492,8 @@
   .gl-bigs { display: flex; flex-direction: column; gap: 4px; font-size: 12.5px; } .gl-bigs b { font-family: var(--mono); }
   .gl-act { display: flex; gap: 10px; align-items: center; margin: 10px 0 4px; flex-wrap: wrap; }
   .at-chart .at-tick { stroke: var(--text-faint); stroke-width: 1; }
-  .pnl-figs { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .pnl-figs { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .pnl-tot td { border-top: 1px solid var(--border); }
   @media (max-width: 640px) { .pnl-figs { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   /* v51 · goal projection */
   .gp-sum { text-transform: none; letter-spacing: 0; font-weight: 500; }
@@ -6652,7 +6653,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.17-v166';
+const APP_BUILD = '2026.10.17-v167';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
@@ -20372,6 +20373,15 @@ function _tkViewHTML(c) {
     ${head}${tkRows}${freeRow}
   </section>`;
 }
+// v167 · net dollar delta (delta-adjusted exposure): stock = shares × price, options = Δ × 100 × qty × price (CSP counts by its Δ, not the full notional — that worst case lives in Buying Power)
+function _ddLev(c) {
+  const pos = c.pos || [], nav = c.nav || 0; if (!pos.length) return null;
+  const rows = PNL_SLEEVES.map(([k, l, f]) => { const P = pos.filter(f); return { k, l, cls: { stock: 'pc-stk', leaps: 'pc-leaps', csp: 'pc-csp', sc: 'pc-sc', oth: 'pc-oth' }[k], n: P.length,
+    dd: P.reduce((s, x) => s + _hrExp(x).v, 0), ddb: P.reduce((s, x) => s + _hrExp(x).v * (_betaInfo(x.ticker).beta || 1), 0), est: P.some(x => _hrExp(x).est && x.kind !== 'stock') }; }).filter(r => r.n);
+  const dd = rows.reduce((s, r) => s + r.dd, 0), ddb = rows.reduce((s, r) => s + r.ddb, 0), gross = rows.reduce((s, r) => s + Math.abs(r.dd), 0);
+  return { rows, dd, ddb, gross, x: nav ? dd / nav : 0, xb: nav ? ddb / nav : 0 };
+}
+const _levCls = x => !isFinite(x) ? '' : x < 1 ? 'rk-t-safe' : x < 1.5 ? 'rk-t-watch' : x < 2 ? 'rk-t-alert' : 'rk-t-danger';
 let __pnlOpen = null;
 window.pnlOpen = k => { __pnlOpen = __pnlOpen === k ? null : k; const el = document.getElementById('pnl-block'); if (el) { el.outerHTML = _pnlBlockHTML(); _fitChartText(); try { _uxFreeze(); } catch (e) {} } };
 window.setPnlMode = m => { __pnlMode = m; const el = document.getElementById('pnl-block'); if (el) { el.outerHTML = _pnlBlockHTML(); _fitChartText(); } };
@@ -20611,7 +20621,12 @@ function _pnlBlockHTML() {
   const worst = lose.slice().sort((a, b) => pnl(a) - pnl(b))[0], best = win.slice().sort((a, b) => pnl(b) - pnl(a))[0];
   const fig = (label, val, sub, cls, k) => k ? `<button class="rk-fig pnl-fx${__pnlOpen === k ? ' on' : ''}" onclick="pnlOpen('${k}')" aria-expanded="${__pnlOpen === k}"><span class="rk-fig-val ${cls}">${val}</span><span class="rk-fig-label">${label} <i class="pnl-car">${__pnlOpen === k ? '▾' : '▸'}</i></span>${sub ? `<span class="rk-fig-sub">${sub}</span>` : ''}</button>`
     : `<div class="rk-fig"><span class="rk-fig-val ${cls}">${val}</span><span class="rk-fig-label">${label}</span>${sub ? `<span class="rk-fig-sub">${sub}</span>` : ''}</div>`;
-  const list = (() => { if (!__pnlOpen) return ''; const L = (__pnlOpen === 'win' ? win : lose).slice().sort((a, b) => Math.abs(pnl(b)) - Math.abs(pnl(a))), tot = L.reduce((s, x) => s + pnl(x), 0);
+  const ddList = (() => { if (__pnlOpen !== 'dd') return ''; const L = _ddLev(c); if (!L) return '';
+    return `<div class="rk-table-wrap pnl-list"><table class="rk-table"><thead><tr><th>美元 Delta · 按策略</th><th>美元 Delta</th><th>× NAV</th><th>β 加权</th><th>占净敞口</th><th>仓位</th></tr></thead><tbody>
+      ${L.rows.map(r => `<tr class="gl-row" role="button" tabindex="0" onclick="pnlJump('${r.k}')" onkeydown="if(event.key==='Enter')pnlJump('${r.k}')"><td><i class="tv-sw ${r.cls}"></i><b>${r.l}</b></td><td class="${r.dd >= 0 ? 'rk-t-safe' : 'rk-t-danger'}">${(r.dd < 0 ? '−' : '') + _fmtUsd(Math.abs(r.dd))}${r.est ? '<em class="hr-est">估</em>' : ''}</td>
+        <td>${nav ? (r.dd / nav).toFixed(2) + 'x' : '—'}</td><td>${nav ? (r.ddb / nav).toFixed(2) + 'x' : '—'}</td><td><span class="pnl-share"><i style="width:${L.gross ? Math.abs(r.dd / L.gross * 100).toFixed(1) : 0}%" class="${r.dd >= 0 ? 'up' : 'dn'}"></i></span>${L.gross ? Math.abs(r.dd / L.gross * 100).toFixed(0) + '%' : '—'}</td><td>${r.n}</td></tr>`).join('')}
+      <tr class="pnl-tot"><td><b>合计 (净)</b></td><td class="${L.dd >= 0 ? 'rk-t-safe' : 'rk-t-danger'}"><b>${(L.dd < 0 ? '−' : '') + _fmtUsd(Math.abs(L.dd))}</b></td><td class="${_levCls(L.x)}"><b>${L.x.toFixed(2)}x</b></td><td class="${_levCls(L.xb)}"><b>${L.xb.toFixed(2)}x</b></td><td></td><td>${L.rows.reduce((s, r) => s + r.n, 0)}</td></tr></tbody></table></div>`; })();
+  const list = (() => { if (!__pnlOpen || __pnlOpen === 'dd') return ddList; const L = (__pnlOpen === 'win' ? win : lose).slice().sort((a, b) => Math.abs(pnl(b)) - Math.abs(pnl(a))), tot = L.reduce((s, x) => s + pnl(x), 0);
     if (!L.length) return '';
     const base = x => _isShortPos(x) ? (x.avg || 0) * 100 * Math.abs(Number(x.qty) || 0) : (x.cost || 0);
     const slv = x => (TV_SLV.find(([, , f]) => f(x)) || [0, 'pc-sc'])[1];
@@ -20630,6 +20645,9 @@ function _pnlBlockHTML() {
           return fig('浮动盈亏', _fmtSigned(total), `${nav ? `${p(total / nav * 100)} NAV` : ''}${cost ? ` · 成本的 ${p(total / cost * 100)}` : ''}`, c0); })()}
         ${fig('盈利的仓位', _fmtSigned(win.reduce((s, x) => s + pnl(x), 0)), `${win.length} 个${best ? ` · 最多 ${esc(_posLabel(best).split(' ').slice(0, 2).join(' '))} <span class="rk-t-safe">${_fmtSigned(pnl(best))}</span>` : ''}`, 'rk-t-safe', win.length ? 'win' : null)}
         ${fig('亏损的仓位', _fmtSigned(lose.reduce((s, x) => s + pnl(x), 0)), `${lose.length} 个${worst ? ` · 最多 ${esc(_posLabel(worst).split(' ').slice(0, 2).join(' '))} <span class="rk-t-danger">${_fmtSigned(pnl(worst))}</span>` : ''}`, 'rk-t-alert', lose.length ? 'lose' : null)}
+        ${(() => { const L = _ddLev(c); if (!L) return ''; return fig('美元 Delta', (L.dd < 0 ? '−' : '') + _fmtUsd(Math.abs(L.dd)), nav ? `NAV 的 <span class="${_levCls(L.x)}">${L.x.toFixed(2)}x</span> · β 加权 <span class="${_levCls(L.xb)}">${L.xb.toFixed(2)}x</span>` : '', 'rk-t-acc', 'dd'); })()}
+        ${(() => { const r = _leapsRoom(); if (!r || r.used == null) return ''; const z = _fuelZone(r.used), k = { margin: 'alert', over: 'danger' }[z[1]] || z[1];
+          return `<button class="rk-fig pnl-fx pnl-go" onclick="uxGo('room-block')"><span class="rk-fig-val ${r.free < 0 ? 'rk-t-danger' : 'rk-t-' + k}">${(r.free < 0 ? '−' : '') + _fmtUsd(Math.abs(r.free))}</span><span class="rk-fig-label">自由现金 <i class="pnl-car">›</i></span><span class="rk-fig-sub">仓位已用 <span class="rk-t-${k}">${r.used.toFixed(0)}%</span> · ${esc(z[2].split(' · ')[0])}</span></button>`; })()}
       </div>
       ${items.length ? _pnlWaterfallSVG(items, total) : ''}
       ${list}
