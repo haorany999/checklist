@@ -3260,25 +3260,6 @@
     background-size: 7px 1.5px, 7px 1.5px, 1.5px 7px, 1.5px 7px; background-repeat: repeat-x, repeat-x, repeat-y, repeat-y; background-position: 0 0, 0 100%, 100% 0, 0 0; }
   .tv .tv-sw.tv-loss { background: color-mix(in srgb, var(--fail) 12%, transparent); border: 1.5px dashed var(--fail); box-sizing: border-box; }
   .tv-lg-pl { margin-left: auto; }
-  /* v170 · P/L cap split by strategy: red family = 浮亏, green family = 浮盈; shade + bottom edge (strategy colour) = which strategy */
-  .tv { --cg-stk: var(--sl-stk); --cg-leaps: var(--sl-leaps); --cg-csp: var(--sl-csp); --cg-oth: var(--sl-oth); --cg-sc: var(--text-dim); }
-  .tv .cg-stk { --cg: var(--cg-stk); --cgk: 92%; } .tv .cg-leaps { --cg: var(--cg-leaps); --cgk: 74%; } .tv .cg-csp { --cg: var(--cg-csp); --cgk: 56%; }
-  .tv .cg-oth { --cg: var(--cg-oth); --cgk: 42%; } .tv .cg-sc { --cg: var(--cg-sc); --cgk: 30%; }
-  .tv .tv-seg.tv-loss[class*="cg-"], .tv .tv-sw.tv-loss[class*="cg-"] { background-color: color-mix(in srgb, var(--fail) var(--cgk), var(--panel)); }
-  .tv .tv-seg.tv-gain[class*="cg-"], .tv .tv-sw.tv-gain[class*="cg-"] { background: repeating-linear-gradient(135deg, transparent 0 4px, color-mix(in srgb, var(--panel) 42%, transparent) 4px 7px), color-mix(in srgb, var(--pass) var(--cgk), var(--panel)); }
-  .tv .tv-seg[class*="cg-"] { box-shadow: inset 0 -3px 0 var(--cg); }
-  .tv .tv-seg[class*="cg-"] + .tv-seg[class*="cg-"] { box-shadow: inset 0 -3px 0 var(--cg), inset 1.5px 0 0 var(--panel); }
-  .tv .tv-sw[class*="cg-"] { border-bottom: 3px solid var(--cg); box-sizing: border-box; }
-  .tv .tv-sw.tv-loss[class*="cg-"] { border: 1.5px dashed var(--fail); border-bottom: 3px solid var(--cg); }
-  .tv-row.tv-pos .tv-seg[class*="cg-"] { box-shadow: inset 0 -2px 0 var(--cg); }
-  .tv .tv-seg[class*="cg-"] { border-radius: 0; } .tv .tv-seg[class*="cg-"]:last-of-type { border-radius: 0 4px 4px 0; } .tv .tv-seg[class*="cg-"]:first-of-type { border-radius: 4px 0 0 4px; } .tv .tv-seg[class*="cg-"]:only-of-type { border-radius: 4px; }
-  .tv-plmix { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; padding: 6px 2px 4px; font-size: 12px; }
-  .tv-plmix .tv-pm { display: inline-flex; align-items: center; white-space: nowrap; color: var(--text-dim); } .tv-plmix .tv-pm b { font: 600 12px var(--mono); margin-left: 5px; }
-  .tv-plmix .tv-sw { width: 12px; height: 12px; }
-  .tv-pmb { display: flex; gap: 1px; width: min(88px, 100%); height: 8px; margin-top: 4px; border-radius: 2px; overflow: hidden; }
-  .tv-pmb i { height: 100%; flex: none; min-width: 2px; box-shadow: inset 0 -2px 0 var(--cg); }
-  .tv-pmb .pm-l { background: color-mix(in srgb, var(--fail) var(--cgk), var(--panel)); }
-  .tv-pmb .pm-g { background: repeating-linear-gradient(135deg, transparent 0 3px, color-mix(in srgb, var(--panel) 40%, transparent) 3px 5px), color-mix(in srgb, var(--pass) var(--cgk), var(--panel)); }
   td.lp-band { font-weight: 700; font-family: var(--mono); }
   .tv-seg { height: 100%; } .tv-seg:first-child { border-radius: 4px 0 0 4px; } .tv-seg + .tv-seg:not(.tv-loss) { box-shadow: inset 2px 0 0 var(--panel); } .tv-seg.tv-loss:first-child { border-radius: 4px; }
   .tv-guide { position: absolute; top: -2px; bottom: -2px; width: 0; border-left: 1px dashed color-mix(in srgb, var(--text-faint) 55%, transparent); } .tv-guide.strong { border-left-color: var(--text-dim); }
@@ -6696,7 +6677,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.17-v170';
+const APP_BUILD = '2026.10.17-v174';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
@@ -20285,41 +20266,11 @@ const TV_SLV = [['正股', 'pc-stk', x => x.kind === 'stock'], ['LEAPS', 'pc-lea
 // v165 · shared by 策略构成 (图) and 标的构成: same columns, same plan-A bar
 const _paInv = x => x.kind === 'short_call' ? 0 : x.kind === 'short_put' ? (x.exposure || 0) : x.kind === 'stock' ? ((x.side || 1) > 0 ? x.cost || 0 : 0) : x.cost || 0;
 const _posTheta = x => x.theta != null ? x.theta * 100 * (Number(x.qty) || 0) * (_isShortPos(x) ? -1 : 1) : 0;
-// v170 · the P/L cap is split by strategy: each strategy nets its own P/L, losses sit in red (carved out of what it put in), gains in green on top;
-// shade + a strategy-coloured bottom edge tell which strategy each piece belongs to
-const CG = [['stk', '正股', 'pc-stk', x => x.kind === 'stock'], ['leaps', 'LEAPS', 'pc-leaps', x => x.kind === 'leaps'], ['csp', 'CSP', 'pc-csp', x => x.kind === 'short_put'],
-  ['oth', '其他期权', 'pc-oth', x => x.kind === 'long_call' || x.kind === 'long_put'], ['sc', 'Short call', 'pc-sc', x => x.kind === 'short_call']];
-const _cgOfCls = c => (CG.find(g => g[2] === c) || [null])[0];
-const _cgSplit = P => CG.map(([k, l, c, f]) => { const Q = P.filter(f); return { k, l, c, n: Q.length, inv: Q.reduce((s, x) => s + (_paInv(x) || 0), 0), pnl: Q.reduce((s, x) => s + (_posPnl(x) || 0), 0) }; }).filter(g => g.n);
-function _paBar2(sl, W, guides = '') {   // sl: [{k, l, c, inv, pnl}] in CG order
-  const inv = sl.reduce((s, g) => s + g.inv, 0), pnl = sl.reduce((s, g) => s + g.pnl, 0), loss = sl.reduce((s, g) => s + Math.max(0, -g.pnl), 0);
-  let sol = sl.map(g => Math.max(0, g.inv - Math.max(0, -g.pnl))); const S = sol.reduce((a, b) => a + b, 0), tgt = Math.max(0, inv - loss);
-  if (S > tgt + 0.01) sol = sol.map(v => S ? v * tgt / S : 0);
-  const cg = g => g.k ? ' cg-' + g.k : '';
-  const segs = sl.map((g, i) => sol[i] > 0.5 ? `<i class="tv-seg ${g.c}" style="width:${W(sol[i])}"></i>` : '').join('');
-  const ls = sl.map(g => -g.pnl > 0.5 ? `<i class="tv-seg tv-loss${cg(g)}" style="width:${W(-g.pnl)}"></i>` : '').join('');
-  const gs = sl.map(g => g.pnl > 0.5 ? `<i class="tv-seg tv-gain${cg(g)}" style="width:${W(g.pnl)}"></i>` : '').join('');
-  const mix = sl.filter(g => Math.abs(g.pnl) >= 0.5 && g.l), tip = `投入 ${_fmtUsd(inv)} · 浮盈 ${_fmtSigned(pnl)} · 现值 ${(inv + pnl < 0 ? '−' : '') + _fmtUsd(Math.abs(inv + pnl))}` + (mix.length > 1 ? '\n' + mix.map(g => `${g.l} ${_fmtSigned(g.pnl)}`).join(' · ') : '');
-  return `<div class="tv-bars" title="${esc(tip)}"><div class="tv-track">${segs}${ls}${gs}${guides}</div></div>`;
-}
 function _paBarHTML(parts, inv, pnl, W, guides = '') {   // parts: [[cls, invested]] — solid = invested (shrunk by a loss), then the P/L cap
-  if (parts.length === 1) return _paBar2([{ k: _cgOfCls(parts[0][0]), l: '', c: parts[0][0], inv, pnl }], W, guides);
   const loss = pnl < 0 ? -pnl : 0, solid = Math.max(0, inv - loss), k = inv > 0 ? solid / inv : 0;
   const segs = parts.map(([c, v]) => v > 0 && k > 0 ? `<i class="tv-seg ${c}" style="width:${W(v * k)}"></i>` : '').join('');
   const cap = pnl > 0.5 ? `<i class="tv-seg tv-gain" style="width:${W(pnl)}"></i>` : loss > 0.5 ? `<i class="tv-seg tv-loss" style="width:${W(loss)}"></i>` : '';
   return `<div class="tv-bars" title="投入 ${_fmtUsd(inv)} · 浮盈 ${_fmtSigned(pnl)} · 现值 ${(inv + pnl < 0 ? '−' : '') + _fmtUsd(Math.abs(inv + pnl))}"><div class="tv-track">${segs}${cap}${guides}</div></div>`;
-}
-// v170 · a small mix bar under the 浮盈 number: this row's P/L pieces at their own scale (losses left, gains right), only when 2+ strategies carry P/L
-function _cgMicro(sl) {
-  const m = (sl || []).filter(g => Math.abs(g.pnl) >= 0.5); if (m.length < 2) return '';
-  const gross = m.reduce((s, g) => s + Math.abs(g.pnl), 0), L = m.filter(g => g.pnl < 0).sort((a, b) => a.pnl - b.pnl), G = m.filter(g => g.pnl > 0).sort((a, b) => a.pnl - b.pnl);
-  const seg = (g, c) => `<i class="${c} cg-${g.k}" style="width:${(Math.abs(g.pnl) / gross * 100).toFixed(2)}%"></i>`;
-  return `<span class="tv-pmb" title="${esc(m.map(g => `${g.l} ${_fmtSigned(g.pnl)}`).join(' · '))}">${L.map(g => seg(g, 'pm-l')).join('')}${G.map(g => seg(g, 'pm-g')).join('')}</span>`;
-}
-// the strategy mix of one ticker's P/L, shown when it is opened
-function _cgMixHTML(sl) {
-  const m = sl.filter(g => Math.abs(g.pnl) >= 0.5).sort((a, b) => a.pnl - b.pnl); if (!m.length) return '';
-  return `<div class="tv-plmix"><span class="rk-quiet">浮盈构成</span>${m.map(g => `<span class="tv-pm"><i class="tv-sw tv-${g.pnl < 0 ? 'loss' : 'gain'} cg-${g.k}"></i>${g.l} <b class="${_thCls(g.pnl)}">${_fmtSigned(g.pnl)}</b></span>`).join('')}</div>`;
 }
 function _paCells(o) {   // o: { name, bar, n, inv, pnl, dd, est, th, nav, mv, pctCls }
   const usd = v => (v < 0 ? '−' : '') + _fmtUsd(Math.abs(v)), a = o.mv ? o.inv + o.pnl : o.inv, other = o.mv ? `投入 ${usd(o.inv)}` : `现值 ${usd(o.inv + o.pnl)}`;
@@ -20327,7 +20278,7 @@ function _paCells(o) {   // o: { name, bar, n, inv, pnl, dd, est, th, nav, mv, p
   const pctTxt = pct == null ? '—' : _pct(pct), pctC = o.pctCls ? o.pctCls(pct) : '';
   return `<span class="tv-tk">${o.name}</span>${o.bar}<span class="tv-c c-n">${o.n ?? ''}</span>
     <span class="tv-num tv-amt"><b class="${a < 0 ? 'rk-t-danger' : ''}">${usd(a)}</b><em>${other}</em><em class="m-only m-pct ${pctC}">占 NAV ${pctTxt}</em></span><span class="tv-c c-pct ${pctC}">${pctTxt}</span>
-    <span class="tv-num tv-pl"><b class="${_thCls(o.pnl)}">${_fmtSigned(o.pnl)}</b><em class="m-only m-pp">${pp == null ? '' : _sgP(pp)}</em>${o.mix ? _cgMicro(o.mix) : ''}</span><span class="tv-c c-pp ${_thCls(o.pnl)}">${pp == null ? '—' : _sgP(pp)}</span>
+    <span class="tv-num tv-pl"><b class="${_thCls(o.pnl)}">${_fmtSigned(o.pnl)}</b><em class="m-only m-pp">${pp == null ? '' : _sgP(pp)}</em></span><span class="tv-c c-pp ${_thCls(o.pnl)}">${pp == null ? '—' : _sgP(pp)}</span>
     <span class="tv-c c-dd ${dir(o.dd)}">${o.dd == null ? '—' : usd(o.dd)}${o.est ? '<em class="hr-est">估</em>' : ''}</span><span class="tv-c c-th ${o.th == null ? '' : _thCls(o.th)}">${o.th == null || Math.abs(o.th) < 0.5 ? '—' : _fmtSigned(o.th)}</span>
     ${o.dd == null ? '' : `<span class="tv-sub"><span>美元 Delta <b class="${dir(o.dd)}">${usd(o.dd)}</b></span>${o.th != null && Math.abs(o.th) >= 0.5 ? `<span>Theta/天 <b class="${_thCls(o.th)}">${_fmtSigned(o.th)}</b></span>` : ''}</span>`}`;
 }
@@ -20389,7 +20340,7 @@ function _tkViewHTML(c) {
   const rows = Object.entries(by).map(([t, P]) => { const S = P.filter(x => x.kind === 'stock'), O = P.filter(x => x.kind !== 'stock');
     const r = { t, P, S, O, invS: sum(S, invOf), invO: sum(O, invOf), mvS: sum(S, mvOf), mvO: sum(O, mvOf), pnl: sum(P, _posPnl), dd: sum(P, x => _hrExp(x).v), est: P.some(x => _hrExp(x).est && x.kind !== 'stock') };
     r.inv4 = TV_SLV.map(([, , f]) => sum(P.filter(f), invOf)); r.mv4 = TV_SLV.map(([, , f]) => sum(P.filter(f), mvOf));
-    r.inv = r.invS + r.invO; r.mv = r.mvS + r.mvO; r.cg = _cgSplit(P); return r; });
+    r.inv = r.invS + r.invO; r.mv = r.mvS + r.mvO; return r; });
   if (__tvSort !== 'inv') __tvSort = 'mv';
   const SORTS = [['mv', '现值'], ['inv', '投入']], MV = __tvSort === 'mv';
   const key = MV ? r => r.inv + r.pnl : r => r.inv;
@@ -20397,11 +20348,11 @@ function _tkViewHTML(c) {
   const csp = pos.filter(x => x.kind === 'short_put'), sc = pos.filter(x => x.kind === 'short_call');
   const cash = pf.cash || 0, swv = pf.swvxx || 0, cspN = sum(csp, x => x.exposure), free = cash + swv - cspN, scLiab = sum(sc, absMv);
   const mvTot = sum(rows, r => r.mv), total = mvTot + free - scLiab;
-  const den = Math.max(...rows.map(r => r.inv + r.cg.reduce((t, g) => t + Math.max(0, g.pnl), 0) + Math.max(0, r.cg.reduce((t, g) => t + Math.max(0, -g.pnl), 0) - r.inv)), Math.abs(free), nav * 0.35, 1) * 1.04;
+  const den = Math.max(...rows.map(r => Math.max(r.inv, r.inv + r.pnl, Math.abs(r.pnl))), Math.abs(free), nav * 0.35, 1) * 1.04;
   const W = v => (Math.max(0, v) / den * 100).toFixed(2) + '%', G = p => (nav * p / 100 / den * 100).toFixed(2) + '%';
   // v163 · plan A: one bar = what you put in (sleeve colours), capped by the P/L — green hatch = gained on top, red dashed = the part that is gone
   const guides = `<em class="tv-guide" style="left:${G(20)}"></em><em class="tv-guide strong" style="left:${G(30)}"></em>`;
-  const bar = r => _paBar2(r.cg, W, guides);
+  const bar = r => _paBarHTML(TV_SLV.map(([, c], k) => [c, r.inv4[k]]), r.inv, r.pnl, W, guides);
   const slvOf = x => (TV_SLV.find(([, , f]) => f(x)) || [null, 'pc-sc'])[1];
   const wRow = t => wheel && wheel.rows ? wheel.rows.find(w => w.T === t) : null;
   const pctCls = v => v == null ? '' : 'rk-t-' + riskLevel(_scoreMax(v, [20, 30, 40])).key;
@@ -20433,8 +20384,8 @@ function _tkViewHTML(c) {
       <span class="tv-k-v">${twoNum(MV ? '现值 ' + usd(inv + gp) : '投入 ' + _fmtUsd(inv), `${MV ? '投入 ' + _fmtUsd(inv) : '现值 ' + usd(inv + gp)} · 浮盈 <span class="${_thCls(gp)}">${_fmtSigned(gp)}</span>`)}</span></summary>${tbl(r)}</details>`; };
   const head = _paHead('标的', MV ? '现值' : '投入', `<i style="left:${G(20)}">20%</i><i class="strong" style="left:${G(30)}">30%</i>`);
   const tkRows = rows.map(r => `<details class="tv-r" id="tv-${esc(r.t)}" data-k="${esc(r.t)}" ontoggle="tvTog(this)"${__tvOpen.has(r.t) ? ' open' : ''}>
-      <summary class="tv-row">${_paCells({ name: esc(r.t), bar: bar(r), mix: r.cg, n: r.P.length, inv: r.inv, pnl: r.pnl, dd: r.dd, est: r.est, th: sum(r.P, _posTheta), nav, mv: MV, pctCls })}</summary>
-      <div class="tv-body">${_cgMixHTML(r.cg)}
+      <summary class="tv-row">${_paCells({ name: esc(r.t), bar: bar(r), n: r.P.length, inv: r.inv, pnl: r.pnl, dd: r.dd, est: r.est, th: sum(r.P, _posTheta), nav, mv: MV, pctCls })}</summary>
+      <div class="tv-body">
         ${part(r, 'stk', '正股', r.S, r.invS, r.mvS, 'pc-stk', `${Math.round(sum(r.S, x => (Number(x.qty) || 0) * (x.side || 1)))} 股`, stkTable)}
         ${part(r, 'opt', '期权', r.O, r.invO, r.mvO, 'opt', `${r.O.length} 个合约 · ${sum(r.O, x => Math.abs(Number(x.qty) || 0))} 张`, optTable)}
         <div class="tv-foot"><button class="app-link" onclick="showStock('${esc(r.t)}')">个股页 ›</button></div>
@@ -20442,7 +20393,7 @@ function _tkViewHTML(c) {
   const freeRow = _paFreeRow('__free', free, cash, swv, cspN, nav, W, guides, __tvOpen);
   return `<section class="rk-block tv" id="tv">
     <h3 class="rk-block-title rk-title-row"><span>标的构成 · NAV ${_fmtUsd(nav)}</span><span class="rk-presets">${SORTS.map(([k, l]) => `<button class="rk-preset${__tvSort === k ? ' active' : ''}" onclick="tvSort('${k}')">${l}</button>`).join('')}</span></h3>
-    <div class="rk-legend">${TV_SLV.map(([l, c]) => `<span><i class="tv-sw ${c}"></i>${l}</span>`).join('')}${pos.some(x => x.kind === 'short_call') ? '<span><i class="tv-sw pc-sc"></i>Short call</span>' : ''}<span><i class="tv-sw pc-free"></i>自由现金</span><span class="tv-lg-pl"><i class="tv-sw tv-gain"></i>浮盈 <i class="tv-sw tv-loss"></i>浮亏 <span class="rk-quiet">· 按策略分段</span></span></div>
+    <div class="rk-legend">${TV_SLV.map(([l, c]) => `<span><i class="tv-sw ${c}"></i>${l}</span>`).join('')}<span><i class="tv-sw pc-free"></i>自由现金</span><span class="tv-lg-pl"><i class="tv-sw tv-gain"></i>浮盈 <i class="tv-sw tv-loss"></i>浮亏</span></div>
     ${head}${tkRows}${freeRow}
   </section>`;
 }
