@@ -3261,7 +3261,7 @@
   .tv .tv-sw.tv-loss { background: color-mix(in srgb, var(--fail) 12%, transparent); border: 1.5px dashed var(--fail); box-sizing: border-box; }
   .tv-lg-pl { margin-left: auto; }
   td.lp-band { font-weight: 700; font-family: var(--mono); }
-  .tv-seg { height: 100%; } .tv-seg:first-child { border-radius: 4px 0 0 4px; } .tv-seg + .tv-seg:not(.tv-loss) { box-shadow: inset 2px 0 0 var(--panel); } .tv-seg.tv-loss:first-child { border-radius: 4px; }
+  .tv-seg { height: 100%; } .tv-seg:first-child { border-radius: 4px 0 0 4px; } .tv-seg + .tv-seg:not(.tv-loss):not(.tv-gain) { box-shadow: inset 2px 0 0 var(--panel); } .tv .tv-seg.tv-gain, .tv .tv-seg.tv-loss { min-width: 4px; } .tv-seg.tv-loss:first-child { border-radius: 4px; }
   .tv-guide { position: absolute; top: -2px; bottom: -2px; width: 0; border-left: 1px dashed color-mix(in srgb, var(--text-faint) 55%, transparent); } .tv-guide.strong { border-left-color: var(--text-dim); }
   .tv-num { display: flex; flex-direction: column; align-items: flex-end; line-height: 1.25; white-space: nowrap; } .tv-num b { font: 600 12.5px var(--mono); } .tv-num em { font: 10.5px var(--mono); font-style: normal; color: var(--text-faint); }
   .tv-c { text-align: right; font: 600 12.5px var(--mono); white-space: nowrap; }
@@ -6677,7 +6677,7 @@ function clearSparklineFilters() {
 window.clearSparklineFilters = clearSparklineFilters;
 
 // Bump on every release so it's obvious which file the browser actually loaded
-const APP_BUILD = '2026.10.17-v174';
+const APP_BUILD = '2026.10.17-v175';
 function pickerFooterHTML() {
   const history = getActiveHistory();
 
